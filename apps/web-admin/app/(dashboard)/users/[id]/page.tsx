@@ -1,0 +1,181 @@
+"use client";
+
+import { use } from "react";
+import Link from "next/link";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+import StatusBadge from "@/components/ui/StatusBadge";
+import Tabs from "@/components/ui/Tabs";
+import { mockUsers, mockHotelBookings } from "@/lib/mock-data";
+import { formatDate, formatPrice, formatDateTime } from "@/lib/utils";
+import { USER_STATUS_MAP, BOOKING_STATUS_MAP } from "@/lib/constants";
+import {
+  ArrowLeft, Ban, CheckCircle, MessageSquare, Mail, Gift, Trash2,
+  CalendarCheck, CreditCard, AlertTriangle,
+} from "lucide-react";
+
+export default function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const user = mockUsers.find((u) => u.id === id);
+
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+        <p className="text-lg text-[var(--text-muted)]">Foydalanuvchi topilmadi</p>
+        <Link href="/users" className="text-sm text-[var(--primary)] hover:underline">
+          ← Ro&apos;yxatga qaytish
+        </Link>
+      </div>
+    );
+  }
+
+  const userBookings = mockHotelBookings.slice(0, 5).map((b) => ({
+    ...b,
+    customerName: user.fullName,
+  }));
+
+  return (
+    <div className="max-w-[1200px] mx-auto flex flex-col gap-6">
+      {/* Back */}
+      <Link
+        href="/users"
+        className="inline-flex items-center gap-2 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors w-fit"
+      >
+        <ArrowLeft size={16} />
+        Foydalanuvchilar ro&apos;yxatiga qaytish
+      </Link>
+
+      {/* Profile header */}
+      <Card padding="lg">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-5">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-light)] flex items-center justify-center text-white text-xl font-bold">
+              {user.fullName.split(" ").map((n) => n[0]).join("")}
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-[var(--text-primary)]">{user.fullName}</h1>
+              <p className="text-sm text-[var(--text-muted)] mt-0.5">{user.email}</p>
+              <div className="flex items-center gap-3 mt-2">
+                <StatusBadge status={user.status} statusMap={USER_STATUS_MAP} />
+                <span className="text-xs text-[var(--text-muted)]">ID: {user.id}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {user.status === "active" ? (
+              <Button variant="danger" size="sm" icon={<Ban size={14} />}>
+                Bloklash
+              </Button>
+            ) : (
+              <Button variant="accent" size="sm" icon={<CheckCircle size={14} />}>
+                Faollashtirish
+              </Button>
+            )}
+            <Button variant="secondary" size="sm" icon={<MessageSquare size={14} />}>
+              SMS
+            </Button>
+            <Button variant="secondary" size="sm" icon={<Mail size={14} />}>
+              Email
+            </Button>
+            <Button variant="secondary" size="sm" icon={<Gift size={14} />}>
+              Bonus berish
+            </Button>
+            <Button variant="ghost" size="sm" icon={<Trash2 size={14} />}>
+              O&apos;chirish
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      {/* Info cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: "Telefon", value: user.phone },
+          { label: "Ro'yxatdan o'tgan", value: formatDate(user.createdAt) },
+          { label: "Oxirgi kirish", value: formatDateTime(user.lastLogin) },
+          { label: "Bonus balansi", value: formatPrice(user.bonusBalance) },
+        ].map((info) => (
+          <Card key={info.label} padding="sm">
+            <p className="text-xs text-[var(--text-muted)] mb-1">{info.label}</p>
+            <p className="text-sm font-semibold text-[var(--text-primary)]">{info.value}</p>
+          </Card>
+        ))}
+      </div>
+
+      {/* Tabs */}
+      <Tabs
+        tabs={[
+          {
+            id: "bookings",
+            label: "Bronlar tarixi",
+            icon: <CalendarCheck size={16} />,
+            count: user.bookingsCount,
+            content: (
+              <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-white">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-[var(--border)] bg-[var(--bg-tertiary)]">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase">Bron ID</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase">Xizmat</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase">Sana</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase">Summa</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase">Holat</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--border-light)]">
+                    {userBookings.map((b) => (
+                      <tr key={b.id} className="hover:bg-[var(--bg-tertiary)] transition-colors">
+                        <td className="px-4 py-3 font-mono text-xs text-[var(--text-muted)]">{b.id}</td>
+                        <td className="px-4 py-3 font-medium">{b.hotelName}</td>
+                        <td className="px-4 py-3 text-[var(--text-secondary)]">{formatDate(b.createdAt)}</td>
+                        <td className="px-4 py-3 font-medium">{formatPrice(b.amount)}</td>
+                        <td className="px-4 py-3">
+                          <StatusBadge status={String(b.status)} statusMap={BOOKING_STATUS_MAP} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ),
+          },
+          {
+            id: "finance",
+            label: "Moliya",
+            icon: <CreditCard size={16} />,
+            content: (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card padding="md">
+                  <p className="text-xs text-[var(--text-muted)] mb-1">Jami sarflagan</p>
+                  <p className="text-lg font-bold text-[var(--text-primary)]">{formatPrice(user.totalSpent)}</p>
+                </Card>
+                <Card padding="md">
+                  <p className="text-xs text-[var(--text-muted)] mb-1">Jami bronlar</p>
+                  <p className="text-lg font-bold text-[var(--text-primary)]">{user.bookingsCount} ta</p>
+                </Card>
+                <Card padding="md">
+                  <p className="text-xs text-[var(--text-muted)] mb-1">Bonus balansi</p>
+                  <p className="text-lg font-bold text-[var(--accent)]">{formatPrice(user.bonusBalance)}</p>
+                </Card>
+              </div>
+            ),
+          },
+          {
+            id: "complaints",
+            label: "Shikoyatlar",
+            icon: <AlertTriangle size={16} />,
+            count: 0,
+            content: (
+              <div className="text-center py-12 text-[var(--text-muted)]">
+                <AlertTriangle size={32} className="mx-auto mb-3 opacity-30" />
+                <p className="text-sm">Shikoyatlar yo&apos;q</p>
+              </div>
+            ),
+          },
+        ]}
+      />
+    </div>
+  );
+}

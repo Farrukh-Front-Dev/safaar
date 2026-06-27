@@ -13,8 +13,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "UzBron Super Admin",
-  description: "UzBron platformasi boshqaruv paneli.",
+  title: {
+    default: "UzBron Admin — Boshqaruv paneli",
+    template: "%s | UzBron Admin",
+  },
+  description: "UzBron.uz platformasining super admin boshqaruv paneli. Foydalanuvchilar, hamkorlar, bronlar va moliyani boshqaring.",
 };
 
 export default function RootLayout({
@@ -25,9 +28,9 @@ export default function RootLayout({
   return (
     <html
       lang="uz"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full">{children}</body>
     </html>
   );
 }
