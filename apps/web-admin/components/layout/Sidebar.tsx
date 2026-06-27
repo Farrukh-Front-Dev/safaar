@@ -8,7 +8,7 @@ import {
   MapPin, Ticket, MessageCircle, Settings, ScrollText, FileText, List,
   Hotel, Bus, BarChart3, ArrowDownToLine, FileSpreadsheet, Image, Tag,
   Newspaper, Mail, Settings2, CreditCard, Send, ShieldCheck,
-  ChevronLeft,
+  ChevronLeft, History
 } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -39,6 +39,7 @@ const ICON_MAP: Record<string, ReactNode> = {
   CreditCard: <CreditCard size={16} />,
   Send: <Send size={16} />,
   ShieldCheck: <ShieldCheck size={16} />,
+  History: <History size={18} />,
 };
 
 function getIcon(name: string): ReactNode {

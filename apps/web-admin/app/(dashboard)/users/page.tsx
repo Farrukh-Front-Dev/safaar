@@ -14,6 +14,7 @@ import { formatDate, formatPrice } from "@/lib/utils";
 import { USER_STATUS_MAP } from "@/lib/constants";
 import { Download, Mail } from "lucide-react";
 import type { AdminManagedUser } from "@/types/admin";
+import { exportToExcel } from "@/lib/export";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -109,7 +110,7 @@ export default function UsersPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm" icon={<Download size={14} />}>
+          <Button variant="secondary" size="sm" icon={<Download size={14} />} onClick={() => exportToExcel(filtered, "Foydalanuvchilar")}>
             Eksport
           </Button>
           <Button variant="secondary" size="sm" icon={<Mail size={14} />}>

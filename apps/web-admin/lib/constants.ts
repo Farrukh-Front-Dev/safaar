@@ -99,17 +99,11 @@ export const SIDEBAR_ITEMS: NavItem[] = [
     label: "Sozlamalar",
     href: "/settings",
     icon: "Settings",
-    children: [
-      { label: "Umumiy", href: "/settings/general", icon: "Settings2" },
-      { label: "To'lovlar", href: "/settings/payments", icon: "CreditCard" },
-      { label: "SMS/Email", href: "/settings/sms-email", icon: "Send" },
-      { label: "Adminlar", href: "/settings/admins", icon: "ShieldCheck" },
-    ],
   },
   {
-    label: "Audit log",
-    href: "/audit-log",
-    icon: "ScrollText",
+    label: "Audit jurnali",
+    href: "/audit",
+    icon: "History",
   },
 ];
 

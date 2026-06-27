@@ -11,8 +11,10 @@ import Pagination from "@/components/ui/Pagination";
 import { mockPartners } from "@/lib/mock-data";
 import { formatPrice } from "@/lib/utils";
 import { PARTNER_STATUS_MAP } from "@/lib/constants";
-import { Hotel, Bus, Star } from "lucide-react";
+import { Hotel, Bus, Star, Download } from "lucide-react";
+import Button from "@/components/ui/Button";
 import type { Partner } from "@/types/admin";
+import { exportToExcel } from "@/lib/export";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -116,13 +118,18 @@ export default function PartnersListPage() {
   return (
     <div className="max-w-[1400px] mx-auto flex flex-col gap-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">
-          Hamkorlar ro&apos;yxati
-        </h1>
-        <p className="text-sm text-[var(--text-muted)] mt-1">
-          Jami {filtered.length} ta hamkor
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">
+            Hamkorlar ro&apos;yxati
+          </h1>
+          <p className="text-sm text-[var(--text-muted)] mt-1">
+            Jami {filtered.length} ta hamkor
+          </p>
+        </div>
+        <Button variant="secondary" size="sm" icon={<Download size={14} />} onClick={() => exportToExcel(filtered, "Hamkorlar")}>
+          Eksport
+        </Button>
       </div>
 
       {/* Filters */}
