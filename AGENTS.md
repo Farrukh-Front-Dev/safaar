@@ -80,8 +80,10 @@ npm run test           # barcha testlar
 - TypeScript **strict** rejimida. `any` dan qoching.
 - Format: Prettier (`.prettierrc`). Lint: har app'da ESLint.
 - O'zgartirishdan keyin **build va testni ishga tushiring**, yashil bo'lsin.
-- Commit'lar aniq va kichik bo'lsin; har bir dev o'z branch'ida ishlaydi,
-  `main`'ga to'g'ridan-to'g'ri push qilinmaydi — faqat PR orqali.
+- Commit'lar aniq va kichik bo'lsin. Kundalik ish **`develop`** branch'ida bo'ladi
+  (hamma shu yerda, faqat o'z papkasida). Push'dan oldin doim
+  `git pull --rebase origin develop`. `develop` barqaror bo'lganda admin uni
+  `main`'ga merge qiladi. Batafsil — `CONTRIBUTING.md`.
 - Til: UI matnlari O'zbek tilida (kerak bo'lsa Rus/Ingliz). Pul birligi — so'm (UZS).
 
 Tafsilotlar uchun har bir app'ning o'z `AGENTS.md` fayliga qarang.

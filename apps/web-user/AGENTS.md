@@ -97,33 +97,34 @@ npm run lint     # ESLint
 Sen nafaqat kod yozasan, balki to'g'ri Git odatlarini ham **o'zing tashabbus bilan
 eslatib turasan**.
 
-**Shaxsiy branch:** `farrukh` (doimiy, o'chirilmaydi).
-**`main`'ga to'g'ridan-to'g'ri push QILINMAYDI** — faqat PR orqali.
+**Branch modeli:** hamma **`develop`** branch'ida ishlaydi (har kim o'z papkasida).
+`main` — barqaror release; unga faqat admin `develop`'dan merge qiladi.
+**Sen `main`'ga tegmaysan** — faqat `develop`'da ishlaysan.
 
-### Ish boshlashdan oldin — main'ni sinxronlashni eslat
+### Ish boshlashdan oldin — develop'ni sinxronlashni eslat
 ```bash
-git checkout main && git pull
-git checkout farrukh && git merge main
+git checkout develop
+git pull --rebase origin develop
 ```
-Sabab: backend/`@agoda/types` o'zgargan bo'lishi mumkin — eng yangisini ol.
+Sabab: backend/`@agoda/types` yoki boshqalar o'zgargan bo'lishi mumkin — eng yangisini ol.
+Agar `@agoda/types` o'zgargan bo'lsa: `npm install && npm run build:types`.
 
 ### Ish tugaganda (ENG MUHIM) — o'zing push'ni tavsiya qil
 Bir mantiqiy bo'lak yoki sahifa tayyor bo'lsa **VA** `npm run build` / `npm run lint`
 yashil bo'lsa — foydalanuvchi so'ramasa ham, **o'zing ayt**:
 
-> ✅ "Ish tayyor va build yashil. Hozir commit qilib push qilishni tavsiya qilaman."
+> ✅ "Ish tayyor va build yashil. Hozir commit qilib develop'ga push qilishni tavsiya qilaman."
 
 So'ng ish mazmuniga **mos, eslab qolarli commit xabari** taklif qil:
 ```bash
 git add .
 git commit -m "feat(web-user): mehmonxona qidiruv sahifasi + filtrlar"
-git push
+git pull --rebase origin develop   # push'dan oldin yana bir bor
+git push origin develop
 ```
 
-### Bosqich tayyor bo'lganda — PR'ni eslat
-`farrukh` → `main` ga PR ochishni ayt; papka egasi review qiladi.
-
 ### Qoidalar
-- Build/lint **yashil bo'lmasa** — push tavsiya qilma, avval xatoni tuzat.
+- Push'dan oldin **DOIM `git pull --rebase origin develop`** — boshqalarning ishini ol.
+- Build/lint **yashil bo'lmasa** — push tavsiya qilma (develop'ni buzma), avval tuzat.
 - Commit xabari aniq va ish bilan mos bo'lsin — quruq "update"/"fix" emas.
-- `main`'ga **hech qachon** to'g'ridan-to'g'ri push qilma.
+- **Faqat `develop`'ga push qil.** `main`'ga tegma — uni admin boshqaradi.

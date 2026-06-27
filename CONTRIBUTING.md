@@ -24,60 +24,57 @@ Har bir dasturchi **faqat o'z papkasida** ishlaydi. To'liq jadval — `CODEOWNER
 
 ---
 
-## 2. Branch va ish oqimi
+## 2. Branch modeli va ish oqimi
 
-Har bir dasturchining **bitta doimiy shaxsiy branch**i bor. U **o'chirilmaydi** —
-hamma ishingiz shu branch'da davom etadi. **`main`'ga to'g'ridan-to'g'ri push
-qilinmaydi** — shaxsiy branch'dan `main`'ga faqat PR (Pull Request) orqali o'tadi.
+Ikkita asosiy branch:
 
-### Shaxsiy branch nomlari
+| Branch | Maqsad |
+|---|---|
+| `main` | **Barqaror release** — faqat to'liq ishlaydigan, "zo'r versiya" kod. To'g'ridan-to'g'ri ishlanmaydi. |
+| `develop` | **Umumiy ish branch'i** — hamma shu yerda ishlaydi (har kim o'z papkasida). Kundalik ish shu yerda. |
+
 ```
-farrukh      → @Farrukh-Front-Dev  (web-user)
-adham        → @adhambek7717        (web-partner)
-scarygun     → @scarygun            (web-admin)
-laziz        → @Lazizdeveloper      (backend)
+hamma  →  develop  (har kim faqat o'z papkasida ishlaydi)
+              │
+   barqaror, to'liq ishlaydigan "zo'r versiya" bo'lganda
+              ▼
+            main  (release)
 ```
 
 ### Asosiy qoida
-> **Bugungi / bir o'tirgandagi ish tugagach — o'z branch'ingga push qil.**
-> Ish biror mantiqiy bosqichga yetganda (masalan, bir sahifa tayyor bo'lганda),
-> `main`'ga PR och. Hammasini oxirigacha yig'ib qo'yma — tez-tez kichik PR yaxshi.
+> Kundalik ish **`develop`** branch'ida bo'ladi. Hamma shu branch'ga push qiladi,
+> lekin **faqat o'z papkasida**. `develop`'dagi kod barqaror va to'liq ishlaydigan
+> "zo'r versiya" bo'lganda — uni **`main`'ga merge** qilinadi (buni admin/lid qiladi).
 
 ### Kundalik qadamlar
 ```bash
-# 1. O'z shaxsiy branch'ingda ishla (bir marta yaratilgan, o'chirilmaydi)
-git checkout farrukh
+# 1. develop'ga o't
+git checkout develop
 
-# 2. main'dagi yangiliklarni o'z branch'ingga ol (backend/types o'zgargan bo'lishi mumkin)
-git merge main
+# 2. Push'dan OLDIN doim boshqalarning ishini ol (rebase = toza tarix)
+git pull --rebase origin develop
 
 # 3. O'z papkangda ishla (AI'ni shu papkadan ishga tushir)
 cd apps/web-user && claude
 
-# 4. Bugungi / bir o'tirgandagi ish tugagach — push
+# 4. Ish tugagach — faqat ISHLAYDIGAN kodni push qil
 git add .
 git commit -m "feat(web-user): qidiruv sahifasi"
-git push
-
-# 5. Ish bosqichi tayyor bo'lganda — GitHub'da PR och: farrukh -> main
-#    Papka egasi review qiladi -> tasdiqlaydi -> main'ga merge.
-#    (Branch o'chirilmaydi — keyingi ishni shu branch'da davom ettirasan.)
+git pull --rebase origin develop   # yana bir bor — kimdir push qilgan bo'lishi mumkin
+git push origin develop
 ```
 
-### ⚠️ Muhim — branch'ni yangilab tur
-Shaxsiy branch o'chirilmagani uchun, `main`'ga merge qilingandan keyin ham,
-**har safar ishni boshlashdan oldin `git merge main`** qil. Shunda branch'ing
-`main`'dan uzoqlashib ketmaydi va backend/types o'zgarishlarini o'z vaqtida olasan.
+### ⚠️ Umumiy branch intizomi (MUHIM)
+`develop`'da hamma birga ishlaydi, shuning uchun:
+1. **Push'dan oldin DOIM `git pull --rebase origin develop`** — boshqalarning ishini ol.
+2. **Faqat ishlaydigan kod push qil** — `develop`'ni buzma (build/lint/test yashil bo'lsin).
+3. **O'z papkangdan chiqma** — shunda boshqalar bilan konflikt bo'lmaydi.
+4. `main`'ga merge'ni **faqat admin/lid** qiladi (develop barqaror bo'lganda).
 
-### Merge qayerga?
-Shaxsiy branch'lar **`main`'ga** merge qilinadi (PR + review orqali).
-`main` doim toza va ishlaydigan holatda turadi.
-
-### Qachon `pull` qilinadi
-- **Har kuni ish boshlashdan oldin** — `main`'ni pull qilib, o'z branch'ingga merge qil.
-- **PR ochishdan oldin** — yana bir marta `main`'ni merge qil (konflikt PR'da emas, o'zingda hал bo'lsin).
-- **Backend `@agoda/types`ni o'zgartirganini bilsang** — darrov `main`'ni ol.
-- **Boshqa kompyuterda ishlasang** — o'z branch'ingni `git pull` qil.
+### main'ga qachon merge qilinadi
+`develop` to'liq sinovdan o'tib, barqaror "release" versiya bo'lganda — admin
+`develop` → `main` ga merge qiladi. Shu tariqa `main` doim ishlaydigan, toza
+release versiya bo'lib qoladi.
 
 ---
 
@@ -117,6 +114,7 @@ Yashil bo'lmasa — PR ochma, avval tuzat.
 ```bash
 git clone git@github.com:Startup-loyihalar/agoda_frontend_backend.git
 cd agoda_frontend_backend
+git checkout develop    # kundalik ish shu branch'da
 npm install
 npm run build:types     # MAJBURIY — birinchi shu
 
@@ -127,7 +125,7 @@ npm run dev:user        # yoki dev:partner / dev:admin / dev:backend
 
 ## Qisqa eslatma
 
-1. O'z papkangda ishла, boshqasiga tegma.
-2. Har bir sahifa/ish tugagach — branch'dan `main`'ga PR.
-3. PR kichik bo'lsin, build/test yashil bo'lsin.
-4. `main`'ga to'g'ridan-to'g'ri push yo'q.
+1. O'z papkangda ishla, boshqasiga tegma.
+2. Kundalik ish **`develop`**'da; push'dan oldin doim `git pull --rebase origin develop`.
+3. Faqat **ishlaydigan** kod push qil (build/lint/test yashil bo'lsin).
+4. `develop` barqaror "zo'r versiya" bo'lganda — **admin** uni `main`'ga merge qiladi.
