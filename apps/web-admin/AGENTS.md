@@ -84,3 +84,41 @@ npm run lint     # ESLint
 4. **Tekshir** — `npm run build` va `npm run lint`, xatoni tuzat.
 5. **Xavfsizlik:** bu admin panel — maxfiy ma'lumot va ruxsatlar bilan ehtiyot bo'l.
 6. **Til:** O'zbek. Pul — so'm (UZS). Dark mode ixtiyoriy qo'llab-quvvatlanadi.
+
+---
+
+## Git ish oqimi — buni FOYDALANUVCHIGA o'zing eslatib tur
+
+Sen nafaqat kod yozasan, balki to'g'ri Git odatlarini ham **o'zing tashabbus bilan
+eslatib turasan**.
+
+**Shaxsiy branch:** `scarygun` (doimiy, o'chirilmaydi).
+**`main`'ga to'g'ridan-to'g'ri push QILINMAYDI** — faqat PR orqali.
+
+### Ish boshlashdan oldin — main'ni sinxronlashni eslat
+```bash
+git checkout main && git pull
+git checkout scarygun && git merge main
+```
+Sabab: backend/`@agoda/types` o'zgargan bo'lishi mumkin — eng yangisini ol.
+
+### Ish tugaganda (ENG MUHIM) — o'zing push'ni tavsiya qil
+Bir mantiqiy bo'lak yoki sahifa tayyor bo'lsa **VA** `npm run build` / `npm run lint`
+yashil bo'lsa — foydalanuvchi so'ramasa ham, **o'zing ayt**:
+
+> ✅ "Ish tayyor va build yashil. Hozir commit qilib push qilishni tavsiya qilaman."
+
+So'ng ish mazmuniga **mos, eslab qolarli commit xabari** taklif qil:
+```bash
+git add .
+git commit -m "feat(web-admin): hamkorlarni tasdiqlash sahifasi"
+git push
+```
+
+### Bosqich tayyor bo'lganda — PR'ni eslat
+`scarygun` → `main` ga PR ochishni ayt; papka egasi review qiladi.
+
+### Qoidalar
+- Build/lint **yashil bo'lmasa** — push tavsiya qilma, avval xatoni tuzat.
+- Commit xabari aniq va ish bilan mos bo'lsin — quruq "update"/"fix" emas.
+- `main`'ga **hech qachon** to'g'ridan-to'g'ri push qilma.

@@ -73,6 +73,12 @@ Shaxsiy branch o'chirilmagani uchun, `main`'ga merge qilingandan keyin ham,
 Shaxsiy branch'lar **`main`'ga** merge qilinadi (PR + review orqali).
 `main` doim toza va ishlaydigan holatda turadi.
 
+### Qachon `pull` qilinadi
+- **Har kuni ish boshlashdan oldin** — `main`'ni pull qilib, o'z branch'ingga merge qil.
+- **PR ochishdan oldin** — yana bir marta `main`'ni merge qil (konflikt PR'da emas, o'zingda hал bo'lsin).
+- **Backend `@agoda/types`ni o'zgartirganini bilsang** — darrov `main`'ni ol.
+- **Boshqa kompyuterda ishlasang** — o'z branch'ingni `git pull` qil.
+
 ---
 
 ## 3. Commit xabarlari

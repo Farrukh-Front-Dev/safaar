@@ -80,3 +80,41 @@ npm run lint     # ESLint
 4. **Tekshir** — `npm run build` va `npm run lint`, xatoni tuzat.
 5. **Accessibility** va semantik HTML.
 6. **Til:** O'zbek. Pul — so'm (UZS), `toLocaleString("uz-UZ")`.
+
+---
+
+## Git ish oqimi — buni FOYDALANUVCHIGA o'zing eslatib tur
+
+Sen nafaqat kod yozasan, balki to'g'ri Git odatlarini ham **o'zing tashabbus bilan
+eslatib turasan**.
+
+**Shaxsiy branch:** `adham` (doimiy, o'chirilmaydi).
+**`main`'ga to'g'ridan-to'g'ri push QILINMAYDI** — faqat PR orqali.
+
+### Ish boshlashdan oldin — main'ni sinxronlashni eslat
+```bash
+git checkout main && git pull
+git checkout adham && git merge main
+```
+Sabab: backend/`@agoda/types` o'zgargan bo'lishi mumkin — eng yangisini ol.
+
+### Ish tugaganda (ENG MUHIM) — o'zing push'ni tavsiya qil
+Bir mantiqiy bo'lak yoki sahifa tayyor bo'lsa **VA** `npm run build` / `npm run lint`
+yashil bo'lsa — foydalanuvchi so'ramasa ham, **o'zing ayt**:
+
+> ✅ "Ish tayyor va build yashil. Hozir commit qilib push qilishni tavsiya qilaman."
+
+So'ng ish mazmuniga **mos, eslab qolarli commit xabari** taklif qil:
+```bash
+git add .
+git commit -m "feat(web-partner): dashboard statistika bloklari"
+git push
+```
+
+### Bosqich tayyor bo'lganda — PR'ni eslat
+`adham` → `main` ga PR ochishni ayt; papka egasi review qiladi.
+
+### Qoidalar
+- Build/lint **yashil bo'lmasa** — push tavsiya qilma, avval xatoni tuzat.
+- Commit xabari aniq va ish bilan mos bo'lsin — quruq "update"/"fix" emas.
+- `main`'ga **hech qachon** to'g'ridan-to'g'ri push qilma.
