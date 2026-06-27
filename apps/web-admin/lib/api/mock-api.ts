@@ -1,4 +1,4 @@
-import { mockUsers, mockPartners, mockHotelBookings } from "../mock-data";
+import { mockUsers, mockPartners, mockHotelBookings, mockWithdrawals, mockFinanceReports, mockCmsBanners, mockCmsNews, mockCmsPages, mockRegions, mockAmenities, mockPromos, mockTickets } from "../mock-data";
 import { AdminManagedUser, Partner, AdminHotelBooking } from "../../types/admin";
 
 // Simulate network delay
@@ -49,5 +49,51 @@ export const MockApi = {
       totalBookings: mockHotelBookings.length,
       revenue: 15400000,
     };
+  },
+
+  // Finance
+  getWithdrawals: async () => {
+    await delay(600);
+    return mockWithdrawals;
+  },
+  getFinanceReports: async () => {
+    await delay(600);
+    return mockFinanceReports;
+  },
+
+  // CMS
+  getCmsBanners: async () => {
+    await delay(600);
+    return mockCmsBanners;
+  },
+  getCmsNews: async () => {
+    await delay(600);
+    return mockCmsNews;
+  },
+  getCmsPages: async () => {
+    await delay(600);
+    return mockCmsPages;
+  },
+
+  // Catalog
+  getRegions: async () => {
+    await delay(600);
+    return mockRegions;
+  },
+  getAmenities: async () => {
+    await delay(600);
+    return mockAmenities;
+  },
+
+  // Promos
+  getPromos: async () => {
+    await delay(600);
+    return mockPromos;
+  },
+
+  // Support
+  getTickets: async () => {
+    await delay(600);
+    return mockTickets;
   },
 };

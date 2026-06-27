@@ -240,6 +240,85 @@ export const mockPartnerRequests: PartnerRequest[] = [
 ];
 
 /* ────────────────────────────────────────────
+   Finance (V3)
+   ──────────────────────────────────────────── */
+
+export const mockWithdrawals: import("@/types/admin").WithdrawalRequest[] = [
+  { id: "W-1001", partnerId: "P-1005", partnerName: "Hotel Uzbekistan", amount: 12500000, requestDate: new Date(Date.now() - 86400000 * 2).toISOString(), status: "pending", bankAccount: "20208000900123456789" },
+  { id: "W-1002", partnerId: "P-1012", partnerName: "Buxoro Travel Bus", amount: 8400000, requestDate: new Date(Date.now() - 86400000 * 5).toISOString(), status: "approved", bankAccount: "20208000900987654321" },
+  { id: "W-1003", partnerId: "P-1024", partnerName: "Samarqand Darvoza Inn", amount: 4200000, requestDate: new Date(Date.now() - 86400000 * 1).toISOString(), status: "rejected", bankAccount: "20208000900112233445" },
+];
+
+export const mockFinanceReports: import("@/types/admin").FinanceReport[] = [
+  { id: "R-001", title: "Aprel 2026 hisoboti", period: "2026-04", totalRevenue: 240000000, totalCommission: 38000000, dateGenerated: new Date(Date.now() - 86400000 * 60).toISOString() },
+  { id: "R-002", title: "May 2026 hisoboti", period: "2026-05", totalRevenue: 290000000, totalCommission: 45000000, dateGenerated: new Date(Date.now() - 86400000 * 30).toISOString() },
+  { id: "R-003", title: "Iyun 2026 hisoboti", period: "2026-06", totalRevenue: 340000000, totalCommission: 52000000, dateGenerated: new Date().toISOString() },
+];
+
+/* ────────────────────────────────────────────
+   CMS (V3)
+   ──────────────────────────────────────────── */
+
+export const mockCmsBanners: import("@/types/admin").CmsBanner[] = [
+  { id: "B-001", title: "Yozgi ta'til uchun 20% chegirma", imageUrl: "/images/banners/summer.jpg", link: "/offers/summer", isActive: true, order: 1 },
+  { id: "B-002", title: "Samarqandga avtobus qatnovi", imageUrl: "/images/banners/samarkand.jpg", link: "/buses/samarkand", isActive: true, order: 2 },
+  { id: "B-003", title: "Yangi yil aksiyasi", imageUrl: "/images/banners/newyear.jpg", link: "/offers/newyear", isActive: false, order: 3 },
+];
+
+export const mockCmsNews: import("@/types/admin").CmsArticle[] = [
+  { id: "N-001", title: "Yangi mehmonxonalar qo'shildi", type: "news", slug: "yangi-mehmonxonalar-iyun", status: "published", publishedAt: new Date(Date.now() - 86400000 * 2).toISOString() },
+  { id: "N-002", title: "Toshkent-Xiva yangi avtobus yo'nalishi", type: "news", slug: "toshkent-xiva-avtobus", status: "published", publishedAt: new Date(Date.now() - 86400000 * 5).toISOString() },
+  { id: "N-003", title: "Yozgi aksiya shartlari", type: "offer", slug: "yozgi-aksiya-shartlari", status: "draft", publishedAt: "" },
+];
+
+export const mockCmsPages: import("@/types/admin").CmsArticle[] = [
+  { id: "P-001", title: "Biz haqimizda", type: "page", slug: "about", status: "published", publishedAt: new Date(Date.now() - 86400000 * 100).toISOString() },
+  { id: "P-002", title: "Foydalanish shartlari", type: "page", slug: "terms", status: "published", publishedAt: new Date(Date.now() - 86400000 * 100).toISOString() },
+  { id: "P-003", title: "Maxfiylik siyosati", type: "page", slug: "privacy", status: "published", publishedAt: new Date(Date.now() - 86400000 * 100).toISOString() },
+];
+
+/* ────────────────────────────────────────────
+   Catalog (V3)
+   ──────────────────────────────────────────── */
+
+export const mockRegions: import("@/types/admin").CatalogRegion[] = [
+  { id: "R-01", name: "Toshkent", hotelsCount: 145, isActive: true },
+  { id: "R-02", name: "Samarqand", hotelsCount: 89, isActive: true },
+  { id: "R-03", name: "Buxoro", hotelsCount: 112, isActive: true },
+  { id: "R-04", name: "Xorazm", hotelsCount: 45, isActive: true },
+  { id: "R-05", name: "Farg'ona", hotelsCount: 34, isActive: true },
+];
+
+export const mockAmenities: import("@/types/admin").CatalogAmenity[] = [
+  { id: "A-01", name: "Bepul Wi-Fi", icon: "Wifi", type: "hotel", isActive: true },
+  { id: "A-02", name: "Hovuz", icon: "Waves", type: "hotel", isActive: true },
+  { id: "A-03", name: "Avtoturargoh", icon: "Car", type: "hotel", isActive: true },
+  { id: "A-04", name: "Konditsioner", icon: "Wind", type: "room", isActive: true },
+  { id: "A-05", name: "Televizor", icon: "Tv", type: "room", isActive: true },
+];
+
+/* ────────────────────────────────────────────
+   Promos (V3)
+   ──────────────────────────────────────────── */
+
+export const mockPromos: import("@/types/admin").PromoCode[] = [
+  { id: "PR-01", code: "SUMMER20", discountType: "percent", discountValue: 20, usageLimit: 100, usedCount: 45, validUntil: new Date(Date.now() + 86400000 * 30).toISOString(), isActive: true },
+  { id: "PR-02", code: "WELCOME50", discountType: "fixed", discountValue: 50000, usageLimit: 500, usedCount: 480, validUntil: new Date(Date.now() + 86400000 * 10).toISOString(), isActive: true },
+  { id: "PR-03", code: "NEWYEAR26", discountType: "percent", discountValue: 15, usageLimit: 200, usedCount: 200, validUntil: new Date(Date.now() - 86400000 * 150).toISOString(), isActive: false },
+];
+
+/* ────────────────────────────────────────────
+   Support (V3)
+   ──────────────────────────────────────────── */
+
+export const mockTickets: import("@/types/admin").SupportTicket[] = [
+  { id: "T-2001", subject: "To'lov o'tmadi", customerName: "Anvar Karimov", customerType: "user", status: "open", priority: "high", createdAt: new Date(Date.now() - 3600000 * 2).toISOString() },
+  { id: "T-2002", subject: "Yangi xona qo'shishda muammo", customerName: "Hotel Uzbekistan", customerType: "partner", status: "in_progress", priority: "medium", createdAt: new Date(Date.now() - 3600000 * 24).toISOString() },
+  { id: "T-2003", subject: "Bronni bekor qilish", customerName: "Dilnoza Rahimova", customerType: "user", status: "closed", priority: "low", createdAt: new Date(Date.now() - 3600000 * 72).toISOString() },
+  { id: "T-2004", subject: "Komissiya miqdori bo'yicha savol", customerName: "Samarqand Darvoza Inn", customerType: "partner", status: "open", priority: "medium", createdAt: new Date(Date.now() - 3600000 * 4).toISOString() },
+];
+
+/* ────────────────────────────────────────────
    BOOKINGS
    ──────────────────────────────────────────── */
 

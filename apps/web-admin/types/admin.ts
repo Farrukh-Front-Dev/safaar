@@ -236,6 +236,103 @@ export interface BookingDetail {
 }
 
 /* ────────────────────────────────────────────
+   Finance
+   ──────────────────────────────────────────── */
+
+export type WithdrawalStatus = "pending" | "approved" | "rejected";
+
+export interface WithdrawalRequest {
+  id: string;
+  partnerId: string;
+  partnerName: string;
+  amount: number;
+  requestDate: string;
+  status: WithdrawalStatus;
+  bankAccount: string;
+}
+
+export interface FinanceReport {
+  id: string;
+  title: string;
+  period: string;
+  totalRevenue: number;
+  totalCommission: number;
+  dateGenerated: string;
+}
+
+/* ────────────────────────────────────────────
+   CMS
+   ──────────────────────────────────────────── */
+
+export interface CmsBanner {
+  id: string;
+  title: string;
+  imageUrl: string;
+  link: string;
+  isActive: boolean;
+  order: number;
+}
+
+export interface CmsArticle {
+  id: string;
+  title: string;
+  type: "news" | "offer" | "page";
+  slug: string;
+  status: "published" | "draft";
+  publishedAt: string;
+}
+
+/* ────────────────────────────────────────────
+   Catalog
+   ──────────────────────────────────────────── */
+
+export interface CatalogRegion {
+  id: string;
+  name: string;
+  hotelsCount: number;
+  isActive: boolean;
+}
+
+export interface CatalogAmenity {
+  id: string;
+  name: string;
+  icon: string;
+  type: "hotel" | "room";
+  isActive: boolean;
+}
+
+/* ────────────────────────────────────────────
+   Promos
+   ──────────────────────────────────────────── */
+
+export interface PromoCode {
+  id: string;
+  code: string;
+  discountType: "percent" | "fixed";
+  discountValue: number;
+  usageLimit: number;
+  usedCount: number;
+  validUntil: string;
+  isActive: boolean;
+}
+
+/* ────────────────────────────────────────────
+   Support
+   ──────────────────────────────────────────── */
+
+export type TicketStatus = "open" | "in_progress" | "closed";
+
+export interface SupportTicket {
+  id: string;
+  subject: string;
+  customerName: string;
+  customerType: "user" | "partner";
+  status: TicketStatus;
+  priority: "low" | "medium" | "high";
+  createdAt: string;
+}
+
+/* ────────────────────────────────────────────
    Sidebar
    ──────────────────────────────────────────── */
 
