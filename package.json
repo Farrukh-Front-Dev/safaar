@@ -1,0 +1,20 @@
+{
+  "name": "agoda-monorepo",
+  "version": "0.0.1",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev:backend & npm run dev:frontend",
+    "dev:backend": "npm run start:dev -w @agoda/backend",
+    "dev:frontend": "npm run dev -w @agoda/frontend",
+    "build": "npm run build --workspaces --if-present",
+    "build:backend": "npm run build -w @agoda/backend",
+    "build:frontend": "npm run build -w @agoda/frontend",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "test:backend": "npm run test -w @agoda/backend",
+    "format": "npm run format --workspaces --if-present"
+  }
+}
