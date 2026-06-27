@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Search, LogOut, User, Check, Trash2 } from "lucide-react";
+import { Bell, LogOut, User, Check, Trash2 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
@@ -41,17 +41,7 @@ export default function TopBar() {
   const initials = displayName.split(" ").map((n: string) => n[0]).join("").substring(0, 2);
 
   return (
-    <header className="h-16 bg-white border-b border-[var(--border)] flex items-center justify-between px-6 shrink-0 sticky top-0 z-20">
-      {/* Search */}
-      <div className="relative w-80">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-        <input
-          type="text"
-          placeholder="Qidirish... (foydalanuvchi, hamkor, bron)"
-          className="w-full pl-9 pr-4 py-2 text-sm rounded-lg bg-[var(--bg-tertiary)] border border-transparent focus:bg-white focus:border-[var(--border)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/10 transition-all duration-200 placeholder:text-[var(--text-muted)]"
-        />
-      </div>
-
+    <header className="h-16 bg-white border-b border-[var(--border)] flex items-center justify-end px-6 shrink-0 sticky top-0 z-20">
       {/* Right section */}
       <div className="flex items-center gap-2">
         {/* Notifications */}
