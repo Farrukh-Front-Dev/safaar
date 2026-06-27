@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Providers } from "./_providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,8 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "UzBron Hamkor Kabineti",
-  description: "Mehmonxona va avtobus hamkorlari uchun boshqaruv paneli.",
+  title: "UzBron — Hamkor Kabineti",
+  description:
+    "UzBron platformasidagi mehmonxona va avtobus hamkorlari uchun boshqaruv paneli.",
 };
 
 export default function RootLayout({
@@ -25,9 +27,12 @@ export default function RootLayout({
   return (
     <html
       lang="uz"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full bg-[var(--background)] font-sans text-[var(--foreground)] selection:bg-brand-200 selection:text-brand-900">
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }
