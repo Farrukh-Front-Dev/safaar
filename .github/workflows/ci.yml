@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# Bir branch'ga ketma-ket push bo'lsa, eskisini bekor qilib, oxirgisini ishlatadi.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 1) Qaysi paketlar o'zgarganini aniqlaydi — faqat o'shalar tekshiriladi.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      web-user: ${{ steps.filter.outputs.web-user }}
+      web-partner: ${{ steps.filter.outputs.web-partner }}
+      web-admin: ${{ steps.filter.outputs.web-admin }}
+      backend: ${{ steps.filter.outputs.backend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            shared: &shared
+              - 'package.json'
+              - 'package-lock.json'
+              - 'packages/types/**'
+            web-user:
+              - *shared
+              - 'apps/web-user/**'
+            web-partner:
+              - *shared
+              - 'apps/web-partner/**'
+            web-admin:
+              - *shared
+              - 'apps/web-admin/**'
+            backend:
+              - *shared
+              - 'apps/backend/**'
+
+  web-user:
+    needs: changes
+    if: ${{ needs.changes.outputs.web-user == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build:types
+      - run: npm run lint -w @agoda/web-user
+      - run: npm run build:user
+
+  web-partner:
+    needs: changes
+    if: ${{ needs.changes.outputs.web-partner == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build:types
+      - run: npm run lint -w @agoda/web-partner
+      - run: npm run build:partner
+
+  web-admin:
+    needs: changes
+    if: ${{ needs.changes.outputs.web-admin == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build:types
+      - run: npm run lint -w @agoda/web-admin
+      - run: npm run build:admin
+
+  backend:
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build:types
+      - run: npm run test -w @agoda/backend
+      - run: npm run build:backend
+
+  # 2) Yagona "gate" — branch protection shu jobni talab qiladi.
+  # Har doim ishlaydi; o'tkazib yuborilgan (skipped) joblar OK, faqat failure bloklaydi.
+  ci-success:
+    name: CI Success
+    needs: [web-user, web-partner, web-admin, backend]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Natijalarni tekshirish
+        run: |
+          results="${{ needs.web-user.result }} ${{ needs.web-partner.result }} ${{ needs.web-admin.result }} ${{ needs.backend.result }}"
+          echo "Job natijalari: $results"
+          for r in $results; do
+            if [ "$r" = "failure" ] || [ "$r" = "cancelled" ]; then
+              echo "::error::Kamida bitta tekshiruv muvaffaqiyatsiz tugadi."
+              exit 1
+            fi
+          done
+          echo "Barcha tegishli tekshiruvlar muvaffaqiyatli."
