@@ -1,0 +1,204 @@
+"use client";
+
+import { use } from "react";
+import Link from "next/link";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+import StatusBadge from "@/components/ui/StatusBadge";
+import Tabs from "@/components/ui/Tabs";
+import { mockPartners, mockHotelBookings } from "@/lib/mock-data";
+import { formatDate, formatPrice } from "@/lib/utils";
+import { PARTNER_STATUS_MAP, BOOKING_STATUS_MAP } from "@/lib/constants";
+import {
+  ArrowLeft, Ban, CheckCircle, Pause, Mail, MessageSquare, Trash2,
+  Hotel, Bus, Star, CalendarCheck, CreditCard, Pencil, MessageCircle,
+} from "lucide-react";
+
+export default function PartnerDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const partner = mockPartners.find((p) => p.id === id);
+
+  if (!partner) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+        <p className="text-lg text-[var(--text-muted)]">Hamkor topilmadi</p>
+        <Link href="/partners/list" className="text-sm text-[var(--primary)] hover:underline">
+          ← Ro&apos;yxatga qaytish
+        </Link>
+      </div>
+    );
+  }
+
+  const partnerBookings = mockHotelBookings.slice(0, 8);
+
+  return (
+    <div className="max-w-[1200px] mx-auto flex flex-col gap-6">
+      {/* Back */}
+      <Link
+        href="/partners/list"
+        className="inline-flex items-center gap-2 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors w-fit"
+      >
+        <ArrowLeft size={16} />
+        Hamkorlar ro&apos;yxatiga qaytish
+      </Link>
+
+      {/* Profile header */}
+      <Card padding="lg">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-5">
+            <div
+              className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-xl"
+              style={{
+                background: partner.type === "hotel"
+                  ? "linear-gradient(135deg, #1E3A5F, #2B5278)"
+                  : "linear-gradient(135deg, #2ECC71, #25A85C)",
+              }}
+            >
+              {partner.type === "hotel" ? <Hotel size={28} /> : <Bus size={28} />}
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-[var(--text-primary)]">{partner.companyName}</h1>
+              <p className="text-sm text-[var(--text-muted)] mt-0.5">
+                {partner.city} · {partner.contactPerson}
+              </p>
+              <div className="flex items-center gap-3 mt-2">
+                <StatusBadge status={partner.status} statusMap={PARTNER_STATUS_MAP} />
+                <span className="inline-flex items-center gap-1 text-sm font-medium text-[var(--warning)]">
+                  <Star size={14} className="fill-current" /> {partner.rating.toFixed(1)}
+                </span>
+                <span className="text-xs text-[var(--text-muted)]">ID: {partner.id}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {partner.status === "active" ? (
+              <>
+                <Button variant="secondary" size="sm" icon={<Pause size={14} />}>To&apos;xtatish</Button>
+                <Button variant="danger" size="sm" icon={<Ban size={14} />}>Bloklash</Button>
+              </>
+            ) : (
+              <Button variant="accent" size="sm" icon={<CheckCircle size={14} />}>Faollashtirish</Button>
+            )}
+            <Button variant="secondary" size="sm" icon={<Mail size={14} />}>Email</Button>
+            <Button variant="ghost" size="sm" icon={<Trash2 size={14} />}>O&apos;chirish</Button>
+          </div>
+        </div>
+      </Card>
+
+      {/* Info cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        {[
+          { label: "Telefon", value: partner.phone },
+          { label: "Email", value: partner.email },
+          { label: "Komissiya", value: `${partner.commissionPercent}%`, highlight: true },
+          { label: "Ro'yxat sanasi", value: formatDate(partner.createdAt) },
+          { label: "Bank", value: partner.bankName ?? "—" },
+        ].map((info) => (
+          <Card key={info.label} padding="sm">
+            <p className="text-xs text-[var(--text-muted)] mb-1">{info.label}</p>
+            <div className="flex items-center gap-2">
+              <p className={`text-sm font-semibold ${info.highlight ? "text-[var(--accent)]" : "text-[var(--text-primary)]"}`}>
+                {info.value}
+              </p>
+              {info.highlight && (
+                <button className="text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors cursor-pointer">
+                  <Pencil size={12} />
+                </button>
+              )}
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Tabs */}
+      <Tabs
+        tabs={[
+          {
+            id: "bookings",
+            label: "Bronlar",
+            icon: <CalendarCheck size={16} />,
+            count: partner.totalBookings,
+            content: (
+              <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-white">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-[var(--border)] bg-[var(--bg-tertiary)]">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase">Bron ID</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase">Mijoz</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase">Sana</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase">Summa</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase">Holat</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--border-light)]">
+                    {partnerBookings.map((b) => (
+                      <tr key={b.id} className="hover:bg-[var(--bg-tertiary)] transition-colors">
+                        <td className="px-4 py-3 font-mono text-xs text-[var(--text-muted)]">{b.id}</td>
+                        <td className="px-4 py-3 font-medium">{b.customerName}</td>
+                        <td className="px-4 py-3 text-[var(--text-secondary)]">{formatDate(b.createdAt)}</td>
+                        <td className="px-4 py-3 font-medium">{formatPrice(b.amount)}</td>
+                        <td className="px-4 py-3">
+                          <StatusBadge status={String(b.status)} statusMap={BOOKING_STATUS_MAP} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ),
+          },
+          {
+            id: "finance",
+            label: "Moliya",
+            icon: <CreditCard size={16} />,
+            content: (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card padding="md">
+                  <p className="text-xs text-[var(--text-muted)] mb-1">Umumiy daromad</p>
+                  <p className="text-lg font-bold text-[var(--text-primary)]">{formatPrice(partner.totalRevenue)}</p>
+                </Card>
+                <Card padding="md">
+                  <p className="text-xs text-[var(--text-muted)] mb-1">Komissiya ({partner.commissionPercent}%)</p>
+                  <p className="text-lg font-bold text-[var(--accent)]">
+                    {formatPrice(Math.floor(partner.totalRevenue * partner.commissionPercent / 100))}
+                  </p>
+                </Card>
+                <Card padding="md">
+                  <p className="text-xs text-[var(--text-muted)] mb-1">Hamkorga to&apos;langan</p>
+                  <p className="text-lg font-bold text-[var(--text-primary)]">
+                    {formatPrice(Math.floor(partner.totalRevenue * (100 - partner.commissionPercent) / 100))}
+                  </p>
+                </Card>
+              </div>
+            ),
+          },
+          {
+            id: "reviews",
+            label: "Sharhlar",
+            icon: <MessageCircle size={16} />,
+            content: (
+              <div className="text-center py-12 text-[var(--text-muted)]">
+                <MessageCircle size={32} className="mx-auto mb-3 opacity-30" />
+                <p className="text-sm">Sharhlar sahifasi keyingi versiyada qo&apos;shiladi</p>
+              </div>
+            ),
+          },
+        ]}
+      />
+
+      {/* Internal note */}
+      <Card padding="md">
+        <div className="flex items-center gap-2 mb-3">
+          <MessageSquare size={16} className="text-[var(--text-muted)]" />
+          <p className="text-sm font-semibold text-[var(--text-primary)]">Ichki izoh</p>
+        </div>
+        <textarea
+          placeholder="Admin izohi yozing (faqat adminlar ko'radi)..."
+          className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border)] bg-[var(--bg-tertiary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all resize-none h-20"
+        />
+      </Card>
+    </div>
+  );
+}
