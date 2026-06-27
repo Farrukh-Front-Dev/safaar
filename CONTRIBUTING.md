@@ -26,43 +26,51 @@ Har bir dasturchi **faqat o'z papkasida** ishlaydi. To'liq jadval — `CODEOWNER
 
 ## 2. Branch va ish oqimi
 
-Har kim o'z branch'ida ishlaydi. **`main`'ga to'g'ridan-to'g'ri push qilinmaydi** —
-faqat PR (Pull Request) orqali.
+Har bir dasturchining **bitta doimiy shaxsiy branch**i bor. U **o'chirilmaydi** —
+hamma ishingiz shu branch'da davom etadi. **`main`'ga to'g'ridan-to'g'ri push
+qilinmaydi** — shaxsiy branch'dan `main`'ga faqat PR (Pull Request) orqali o'tadi.
+
+### Shaxsiy branch nomlari
+```
+farrukh      → @Farrukh-Front-Dev  (web-user)
+adham        → @adhambek7717        (web-partner)
+scarygun     → @scarygun            (web-admin)
+laziz        → @Lazizdeveloper      (backend)
+```
 
 ### Asosiy qoida
-> **Bitta sahifa / bir o'tirgandagi ishni tugatgach — push qil va PR och.**
-> Hammasini oxirigacha yig'ib qo'yma. Har bir mantiqiy bo'lak alohida PR bo'lsin.
-> Maqsad: PR kichik bo'lsin (1-2 kunlik ishdan oshmasin), review oson bo'lsin.
+> **Bugungi / bir o'tirgandagi ish tugagach — o'z branch'ingga push qil.**
+> Ish biror mantiqiy bosqichga yetganda (masalan, bir sahifa tayyor bo'lганda),
+> `main`'ga PR och. Hammasini oxirigacha yig'ib qo'yma — tez-tez kichik PR yaxshi.
 
-### Branch nomlash
-```
-feature/<qisqa-tavsif>    # yangi funksiya/sahifa, masalan: feature/user-qidiruv
-fix/<qisqa-tavsif>        # xato tuzatish, masalan: fix/checkout-xato
-```
-
-### Qadamlar (bir sahifa/ish uchun)
+### Kundalik qadamlar
 ```bash
-# 1. Eng yangi main'ni ol
-git checkout main && git pull
+# 1. O'z shaxsiy branch'ingda ishla (bir marta yaratilgan, o'chirilmaydi)
+git checkout farrukh
 
-# 2. Yangi branch och
-git checkout -b feature/user-qidiruv
+# 2. main'dagi yangiliklarni o'z branch'ingga ol (backend/types o'zgargan bo'lishi mumkin)
+git merge main
 
 # 3. O'z papkangda ishla (AI'ni shu papkadan ishga tushir)
 cd apps/web-user && claude
 
-# 4. Sahifa/ish tugagach — commit va push
+# 4. Bugungi / bir o'tirgandagi ish tugagach — push
 git add .
 git commit -m "feat(web-user): qidiruv sahifasi"
-git push -u origin feature/user-qidiruv
+git push
 
-# 5. GitHub'da PR och: feature/... -> main
-#    Papka egasi (CODEOWNERS) review qiladi -> tasdiqlaydi -> merge
-#    Merge'dan keyin branch o'chiriladi
+# 5. Ish bosqichi tayyor bo'lganda — GitHub'da PR och: farrukh -> main
+#    Papka egasi review qiladi -> tasdiqlaydi -> main'ga merge.
+#    (Branch o'chirilmaydi — keyingi ishni shu branch'da davom ettirasan.)
 ```
 
+### ⚠️ Muhim — branch'ni yangilab tur
+Shaxsiy branch o'chirilmagani uchun, `main`'ga merge qilingandan keyin ham,
+**har safar ishni boshlashdan oldin `git merge main`** qil. Shunda branch'ing
+`main`'dan uzoqlashib ketmaydi va backend/types o'zgarishlarini o'z vaqtida olasan.
+
 ### Merge qayerga?
-Barcha feature branch'lar **`main`'ga** merge qilinadi (PR + review orqali).
+Shaxsiy branch'lar **`main`'ga** merge qilinadi (PR + review orqali).
 `main` doim toza va ishlaydigan holatda turadi.
 
 ---
