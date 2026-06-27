@@ -1,0 +1,22 @@
+# UzBron — kod egaligi (CODEOWNERS)
+#
+# Har bir papkani kim boshqarishi shu yerda belgilanadi.
+# @username larni jamoa a'zolarining haqiqiy GitHub username'lari bilan almashtiring.
+# Birov boshqa papkaga PR yuborsa, GitHub avtomatik egadan review so'raydi.
+
+# Mijozlar sayti — uzbron.uz
+/apps/web-user/        @web-user-dev
+
+# Hamkor kabineti — partner.uzbron.uz
+/apps/web-partner/     @web-partner-dev
+
+# Super Admin — admin.uzbron.uz
+/apps/web-admin/       @web-admin-dev
+
+# Backend API + umumiy turlar shartnomasi
+/apps/backend/         @backend-dev
+/packages/types/       @backend-dev
+
+# Root konfiguratsiya — barcha lidlar tasdig'i
+/package.json          @backend-dev
+/CODEOWNERS            @backend-dev

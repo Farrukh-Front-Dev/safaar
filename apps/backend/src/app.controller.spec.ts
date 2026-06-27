@@ -14,9 +14,12 @@ describe('AppController', () => {
     appController = app.get<AppController>(AppController);
   });
 
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+  describe('health', () => {
+    it('should return status ok', () => {
+      expect(appController.getHealth()).toEqual({
+        status: 'ok',
+        service: 'uzbron-api',
+      });
     });
   });
 });

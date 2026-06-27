@@ -1,17 +1,23 @@
 {
-  "name": "agoda-monorepo",
+  "name": "uzbron-monorepo",
   "version": "0.0.1",
   "private": true,
   "workspaces": [
+    "packages/*",
     "apps/*"
   ],
   "scripts": {
-    "dev": "npm run dev:backend & npm run dev:frontend",
+    "build:types": "npm run build -w @agoda/types",
+    "dev:types": "npm run dev -w @agoda/types",
     "dev:backend": "npm run start:dev -w @agoda/backend",
-    "dev:frontend": "npm run dev -w @agoda/frontend",
-    "build": "npm run build --workspaces --if-present",
+    "dev:user": "npm run dev -w @agoda/web-user",
+    "dev:partner": "npm run dev -w @agoda/web-partner",
+    "dev:admin": "npm run dev -w @agoda/web-admin",
+    "build": "npm run build:types && npm run build --workspaces --if-present",
     "build:backend": "npm run build -w @agoda/backend",
-    "build:frontend": "npm run build -w @agoda/frontend",
+    "build:user": "npm run build -w @agoda/web-user",
+    "build:partner": "npm run build -w @agoda/web-partner",
+    "build:admin": "npm run build -w @agoda/web-admin",
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "test:backend": "npm run test -w @agoda/backend",
