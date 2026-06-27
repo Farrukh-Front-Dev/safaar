@@ -87,38 +87,49 @@ npm run lint     # ESLint
 
 ---
 
+## Sen kimsan — qurilmadan aniqla
+
+Ishni boshlashda qaysi dasturchi ekaningni **o'zing aniqla**:
+```bash
+gh api user --jq .login     # yoki: git config user.name
+```
+Bu papka (`apps/web-admin/`) egasi — **@scarygun** (`CODEOWNERS`). Agar aniqlangan
+foydalanuvchi boshqa bo'lsa yoki sen boshqa app papkasida bo'lsang — **ogohlantir**
+va davom etishdan oldin so'ra.
+
 ## Git ish oqimi — buni FOYDALANUVCHIGA o'zing eslatib tur
 
-Sen nafaqat kod yozasan, balki to'g'ri Git odatlarini ham **o'zing tashabbus bilan
-eslatib turasan**.
+**Branch:** hamma **`develop`**'da ishlaydi (har kim o'z papkasida). `main` — admin
+boshqaradigan release; **sen `main`'ga tegmaysan**.
 
-**Shaxsiy branch:** `scarygun` (doimiy, o'chirilmaydi).
-**`main`'ga to'g'ridan-to'g'ri push QILINMAYDI** — faqat PR orqali.
-
-### Ish boshlashdan oldin — main'ni sinxronlashni eslat
+### Ish boshlashdan oldin
 ```bash
-git checkout main && git pull
-git checkout scarygun && git merge main
+git checkout develop
+git pull --rebase origin develop
 ```
-Sabab: backend/`@agoda/types` o'zgargan bo'lishi mumkin — eng yangisini ol.
+`@agoda/types` o'zgargan bo'lsa: `npm install && npm run build:types`.
 
-### Ish tugaganda (ENG MUHIM) — o'zing push'ni tavsiya qil
-Bir mantiqiy bo'lak yoki sahifa tayyor bo'lsa **VA** `npm run build` / `npm run lint`
-yashil bo'lsa — foydalanuvchi so'ramasa ham, **o'zing ayt**:
+### Push'dan OLDIN — kod tozaligini tekshir (MAJBURIY)
+Push qilishni tavsiya qilishdan oldin **albatta** yashil bo'lsin:
+```bash
+npm run build -w @agoda/web-admin   # build xatosiz
+npm run lint  -w @agoda/web-admin   # lint xatosiz
+```
+- ❌ Bittasi qizil bo'lsa — **push qilma**, avval xatoni tuzat.
+- ✅ Hammasi yashil bo'lsa — foydalanuvchi so'ramasa ham o'zing ayt:
+  > "Ish tayyor, build/lint yashil. Commit + push qilishni tavsiya qilaman."
 
-> ✅ "Ish tayyor va build yashil. Hozir commit qilib push qilishni tavsiya qilaman."
-
-So'ng ish mazmuniga **mos, eslab qolarli commit xabari** taklif qil:
+### Push (faqat develop'ga)
 ```bash
 git add .
-git commit -m "feat(web-admin): hamkorlarni tasdiqlash sahifasi"
-git push
+git commit -m "feat(web-admin): <aniq, ish bilan mos xabar>"
+git pull --rebase origin develop
+git push origin develop
 ```
 
-### Bosqich tayyor bo'lganda — PR'ni eslat
-`scarygun` → `main` ga PR ochishni ayt; papka egasi review qiladi.
-
-### Qoidalar
-- Build/lint **yashil bo'lmasa** — push tavsiya qilma, avval xatoni tuzat.
+### Qoidalar (push'da hisobga ol)
+- Push'dan oldin DOIM: build/lint **yashil** va `git pull --rebase origin develop`.
+- Faqat **o'z papkangda** o'zgartir. `apps/backend/`, `packages/types/` — faqat o'qi;
+  boshqa frontend papkalari — **tegma**. Hech qachon boshqaning papkasiga o'zgartirma.
+- `main`'ga tegma — uni admin boshqaradi.
 - Commit xabari aniq va ish bilan mos bo'lsin — quruq "update"/"fix" emas.
-- `main`'ga **hech qachon** to'g'ridan-to'g'ri push qilma.

@@ -98,41 +98,52 @@ Health-check: `GET http://localhost:4000/api/health`
 
 ---
 
+## Sen kimsan — qurilmadan aniqla
+
+Ishni boshlashda qaysi dasturchi ekaningni **o'zing aniqla**:
+```bash
+gh api user --jq .login     # yoki: git config user.name
+```
+`apps/backend/` va `packages/types/` egasi — **@Lazizdeveloper** (`CODEOWNERS`).
+Agar aniqlangan foydalanuvchi boshqa bo'lsa — **ogohlantir** va so'ra.
+
 ## Git ish oqimi — buni FOYDALANUVCHIGA o'zing eslatib tur
 
-Sen nafaqat kod yozasan, balki to'g'ri Git odatlarini ham **o'zing tashabbus bilan
-eslatib turasan**.
+**Branch:** hamma **`develop`**'da ishlaydi. `main` — admin boshqaradigan release;
+**sen `main`'ga tegmaysan**.
 
-**Shaxsiy branch:** `laziz` (doimiy, o'chirilmaydi).
-**`main`'ga to'g'ridan-to'g'ri push QILINMAYDI** — faqat PR orqali.
-
-### Ish boshlashdan oldin — main'ni sinxronlashni eslat
+### Ish boshlashdan oldin
 ```bash
-git checkout main && git pull
-git checkout laziz && git merge main
+git checkout develop
+git pull --rebase origin develop
 ```
 
-### Ish tugaganda (ENG MUHIM) — o'zing push'ni tavsiya qil
-Bir mantiqiy bo'lak (modul/endpoint) tayyor bo'lsa **VA** `npm run build` /
-`npm run test` yashil bo'lsa — foydalanuvchi so'ramasa ham, **o'zing ayt**:
+### Push'dan OLDIN — kod tozaligini tekshir (MAJBURIY)
+Push qilishni tavsiya qilishdan oldin **albatta** yashil bo'lsin:
+```bash
+npm run build:types                 # types o'zgargan bo'lsa MAJBURIY
+npm run test  -w @agoda/backend     # testlar o'tsin
+npm run build -w @agoda/backend     # build xatosiz
+```
+- ❌ Bittasi qizil bo'lsa — **push qilma**, avval xatoni tuzat.
+- ✅ Hammasi yashil bo'lsa — foydalanuvchi so'ramasa ham o'zing ayt:
+  > "Ish tayyor, build/test yashil. Commit + push qilishni tavsiya qilaman."
 
-> ✅ "Ish tayyor va build/test yashil. Hozir commit qilib push qilishni tavsiya qilaman."
+> ⚠️ `@agoda/types`'ni o'zgartirgan bo'lsang — **`npm run build:types`** ni ishlat
+> (dist yangilanadi), aks holda frontend'lar eski turlarni ko'radi. Buzuvchi
+> o'zgartirish bo'lsa — frontend dev'larni ogohlantir.
 
-So'ng ish mazmuniga **mos, eslab qolarli commit xabari** taklif qil:
+### Push (faqat develop'ga)
 ```bash
 git add .
-git commit -m "feat(backend): bookings moduli — yaratish endpointi"
-git push
+git commit -m "feat(backend): <aniq, ish bilan mos xabar>"
+git pull --rebase origin develop
+git push origin develop
 ```
 
-> ⚠️ `@agoda/types`'ni o'zgartirgan bo'lsang — commit'dan oldin
-> **`npm run build:types`** ni ishlat (dist yangilanadi), aks holda frontend'lar
-> eski turlarni ko'radi.
-
-### Bosqich tayyor bo'lganda — PR'ni eslat
-`laziz` → `main` ga PR ochishni ayt.
-
-### Qoidalar
-- Build/test **yashil bo'lmasa** — push tavsiya qilma, avval xatoni tuzat.
+### Qoidalar (push'da hisobga ol)
+- Push'dan oldin DOIM: build/test **yashil** va `git pull --rebase origin develop`.
+- Faqat `apps/backend/` va `packages/types/`da ishla. Frontend papkalariga
+  (`web-user`, `web-partner`, `web-admin`) — **tegma**.
+- `main`'ga tegma — uni admin boshqaradi.
 - Commit xabari aniq va ish bilan mos bo'lsin — quruq "update"/"fix" emas.
-- `main`'ga **hech qachon** to'g'ridan-to'g'ri push qilma.

@@ -86,4 +86,15 @@ npm run test           # barcha testlar
   `main`'ga merge qiladi. Batafsil — `CONTRIBUTING.md`.
 - Til: UI matnlari O'zbek tilida (kerak bo'lsa Rus/Ingliz). Pul birligi — so'm (UZS).
 
+## AI protokoli (har bir agent uchun, majburiy)
+
+1. **Kimligingni aniqla:** ishni boshlashda `gh api user --jq .login`
+   (yoki `git config user.name`). `CODEOWNERS` bilan qaysi papka egasi ekaningni
+   tekshir — **o'sha papkadan tashqariga chiqma**.
+2. **Push'dan OLDIN** o'z app'ingda build/lint (backend uchun test) **yashil**
+   bo'lsin. Qizil bo'lsa — push qilma, avval xatoni tuzat.
+3. Faqat **`develop`**'ga push qil; `main`'ga tegma (uni admin boshqaradi).
+4. **Boshqaning papkasiga o'zgartirma.** `apps/backend/` va `packages/types/` —
+   faqat o'qish (egasi backend dev).
+
 Tafsilotlar uchun har bir app'ning o'z `AGENTS.md` fayliga qarang.
