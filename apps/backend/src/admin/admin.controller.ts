@@ -1,5 +1,14 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { Role } from '@agoda/types';
+import { CurrentActor, type RequestActor } from '../common/actor';
 import { Roles } from '../common/roles.decorator';
 import { RolesGuard } from '../common/roles.guard';
 import { AdminService } from './admin.service';
@@ -10,8 +19,538 @@ import { AdminService } from './admin.service';
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
-  @Get('overview')
+  @Get('dashboard/overview')
   overview() {
     return this.adminService.getOverview();
+  }
+
+  @Get('dashboard/revenue-chart')
+  revenueChart() {
+    return this.adminService.chart('revenue');
+  }
+
+  @Get('dashboard/bookings-chart')
+  bookingsChart() {
+    return this.adminService.chart('bookings');
+  }
+
+  @Get('dashboard/activity')
+  activity() {
+    return this.adminService.activity();
+  }
+
+  @Get('users')
+  users() {
+    return this.adminService.users();
+  }
+
+  @Get('users/:id')
+  user(@Param('id') id: string) {
+    return this.adminService.user(id);
+  }
+
+  @Patch('users/:id/status')
+  userStatus(@Param('id') id: string, @Body() body: Record<string, unknown>) {
+    return this.adminService.userStatus(id, body);
+  }
+
+  @Post('users/:id/bonus-adjustment')
+  bonusAdjustment(
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.bonusAdjustment(id, body);
+  }
+
+  @Get('users/:id/bookings')
+  userBookings(@Param('id') id: string) {
+    return this.adminService.userBookings(id);
+  }
+
+  @Get('users/:id/audit')
+  userAudit(@Param('id') id: string) {
+    return this.adminService.userAudit(id);
+  }
+
+  @Post('users/:id/message')
+  userMessage(@Param('id') id: string, @Body() body: Record<string, unknown>) {
+    return this.adminService.userMessage(id, body);
+  }
+
+  @Post('users/export')
+  usersExport(@CurrentActor() actor: RequestActor | undefined) {
+    return this.adminService.exportJob(actor, 'admin-users', 'xlsx');
+  }
+
+  @Get('partners')
+  partners() {
+    return this.adminService.partners();
+  }
+
+  @Get('partners/requests')
+  partnerRequests() {
+    return this.adminService.partnerRequests();
+  }
+
+  @Get('partners/:id')
+  partner(@Param('id') id: string) {
+    return this.adminService.partner(id);
+  }
+
+  @Post('partners/:id/approve')
+  partnerApprove(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.adminService.partnerDecision(actor, id, 'approved');
+  }
+
+  @Post('partners/:id/reject')
+  partnerReject(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.partnerDecision(actor, id, 'rejected', body);
+  }
+
+  @Post('partners/:id/request-information')
+  partnerRequestInfo(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.partnerDecision(
+      actor,
+      id,
+      'more_information_required',
+      body,
+    );
+  }
+
+  @Patch('partners/:id/status')
+  partnerStatus(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.partnerStatus(actor, id, body);
+  }
+
+  @Patch('partners/:id/commission')
+  partnerCommission(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.partnerCommission(actor, id, body);
+  }
+
+  @Get('partners/:id/ledger')
+  partnerLedger(@Param('id') id: string) {
+    return this.adminService.partnerLedger(id);
+  }
+
+  @Post('partners/:id/adjustment')
+  partnerAdjustment(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.partnerAdjustment(actor, id, body);
+  }
+
+  @Post('partners/export')
+  partnersExport(@CurrentActor() actor: RequestActor | undefined) {
+    return this.adminService.exportJob(actor, 'admin-partners', 'xlsx');
+  }
+
+  @Get('hotels')
+  hotels() {
+    return this.adminService.hotels();
+  }
+
+  @Get('hotels/:id')
+  hotel(@Param('id') id: string) {
+    return this.adminService.hotel(id);
+  }
+
+  @Post('hotels/:id/publish')
+  hotelPublish(@Param('id') id: string) {
+    return this.adminService.hotelStatus(id, 'published');
+  }
+
+  @Post('hotels/:id/reject')
+  hotelReject(@Param('id') id: string) {
+    return this.adminService.hotelStatus(id, 'rejected');
+  }
+
+  @Patch('hotels/:id/visibility')
+  hotelVisibility(
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.hotelStatus(
+      id,
+      body.visible === false ? 'hidden' : 'published',
+    );
+  }
+
+  @Get('trips')
+  trips() {
+    return this.adminService.trips();
+  }
+
+  @Get('trips/:id')
+  trip(@Param('id') id: string) {
+    return this.adminService.trip(id);
+  }
+
+  @Post('trips/:id/cancel')
+  tripCancel(@Param('id') id: string) {
+    return this.adminService.tripStatus(id, 'cancelled');
+  }
+
+  @Get('bus-companies')
+  busCompanies() {
+    return this.adminService.busCompanies();
+  }
+
+  @Patch('bus-companies/:id/status')
+  busCompanyStatus(
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.busCompanyStatus(id, body);
+  }
+
+  @Get('bookings')
+  bookings() {
+    return this.adminService.bookings();
+  }
+
+  @Get('bookings/:id')
+  booking(@Param('id') id: string) {
+    return this.adminService.booking(id);
+  }
+
+  @Post('bookings/:id/cancel')
+  bookingCancel(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.bookingCancel(actor, id, body);
+  }
+
+  @Post('bookings/:id/status-action')
+  bookingStatusAction(
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.bookingStatusAction(id, body);
+  }
+
+  @Get('payments')
+  payments() {
+    return this.adminService.payments();
+  }
+
+  @Get('payments/:id')
+  payment(@Param('id') id: string) {
+    return this.adminService.payment(id);
+  }
+
+  @Post('payments/:id/reconcile')
+  paymentReconcile(@Param('id') id: string) {
+    return this.adminService.paymentReconcile(id);
+  }
+
+  @Get('refunds')
+  refunds() {
+    return this.adminService.refunds();
+  }
+
+  @Get('refunds/:id')
+  refund(@Param('id') id: string) {
+    return this.adminService.refund(id);
+  }
+
+  @Post('refunds/:id/approve')
+  refundApprove(@Param('id') id: string) {
+    return this.adminService.refundStatus(id, 'approved');
+  }
+
+  @Post('refunds/:id/reject')
+  refundReject(@Param('id') id: string) {
+    return this.adminService.refundStatus(id, 'rejected');
+  }
+
+  @Post('refunds/:id/retry')
+  refundRetry(@Param('id') id: string) {
+    return this.adminService.refundStatus(id, 'retrying');
+  }
+
+  @Get('finance/overview')
+  financeOverview() {
+    return this.adminService.financeOverview();
+  }
+
+  @Get('finance/revenue-chart')
+  financeRevenueChart() {
+    return this.adminService.chart('finance-revenue');
+  }
+
+  @Get('finance/partners-report')
+  partnersReport() {
+    return this.adminService.partnersReport();
+  }
+
+  @Get('finance/provider-reconciliation')
+  providerReconciliation() {
+    return this.adminService.providerReconciliation();
+  }
+
+  @Post('finance/export')
+  financeExport(@CurrentActor() actor: RequestActor | undefined) {
+    return this.adminService.exportJob(actor, 'admin-finance', 'xlsx');
+  }
+
+  @Post('finance/tax-report-export')
+  taxReportExport(@CurrentActor() actor: RequestActor | undefined) {
+    return this.adminService.exportJob(actor, 'tax-report', 'pdf');
+  }
+
+  @Get('finance/documents')
+  financeDocuments() {
+    return this.adminService.financeDocuments();
+  }
+
+  @Post('finance/documents/:id/regenerate')
+  financeDocumentRegenerate(@Param('id') id: string) {
+    return this.adminService.financeDocumentRegenerate(id);
+  }
+
+  @Get('withdrawals')
+  withdrawals() {
+    return this.adminService.withdrawals();
+  }
+
+  @Get('withdrawals/:id')
+  withdrawal(@Param('id') id: string) {
+    return this.adminService.withdrawal(id);
+  }
+
+  @Post('withdrawals/:id/approve')
+  withdrawalApprove(@Param('id') id: string) {
+    return this.adminService.withdrawalStatus(id, 'approved');
+  }
+
+  @Post('withdrawals/:id/reject')
+  withdrawalReject(@Param('id') id: string) {
+    return this.adminService.withdrawalStatus(id, 'rejected');
+  }
+
+  @Post('withdrawals/:id/mark-paid')
+  withdrawalMarkPaid(@Param('id') id: string) {
+    return this.adminService.withdrawalStatus(id, 'paid');
+  }
+
+  @Get('cms/:resource')
+  cmsList(@Param('resource') resource: string) {
+    return this.adminService.cmsList(resource);
+  }
+
+  @Post('cms/:resource')
+  cmsCreate(
+    @Param('resource') resource: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.cmsCreate(resource, body);
+  }
+
+  @Patch('cms/:resource/:id')
+  cmsUpdate(
+    @Param('resource') resource: string,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.cmsUpdate(resource, id, body);
+  }
+
+  @Post('cms/:resource/:id/publish')
+  cmsPublish(@Param('resource') resource: string, @Param('id') id: string) {
+    return this.adminService.cmsAction(resource, id, 'publish');
+  }
+
+  @Post('cms/:resource/:id/unpublish')
+  cmsUnpublish(@Param('resource') resource: string, @Param('id') id: string) {
+    return this.adminService.cmsAction(resource, id, 'unpublish');
+  }
+
+  @Post('cms/:resource/:id/reorder')
+  cmsReorder(@Param('resource') resource: string, @Param('id') id: string) {
+    return this.adminService.cmsAction(resource, id, 'reorder');
+  }
+
+  @Post('cms/:resource/:id/preview')
+  cmsPreview(@Param('resource') resource: string, @Param('id') id: string) {
+    return this.adminService.cmsAction(resource, id, 'preview');
+  }
+
+  @Post('cms/:resource/:id/test')
+  cmsTest(@Param('resource') resource: string, @Param('id') id: string) {
+    return this.adminService.cmsAction(resource, id, 'test');
+  }
+
+  @Post('cms/:resource/:id/schedule-publish')
+  cmsSchedule(@Param('resource') resource: string, @Param('id') id: string) {
+    return this.adminService.cmsAction(resource, id, 'schedule_publish');
+  }
+
+  @Post('cms/:resource/:id/translations')
+  cmsTranslation(
+    @Param('resource') resource: string,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.cmsTranslation(resource, id, body);
+  }
+
+  @Get('promos')
+  promos() {
+    return this.adminService.promos();
+  }
+
+  @Post('promos')
+  promoCreate(@Body() body: Record<string, unknown>) {
+    return this.adminService.promoCreate(body);
+  }
+
+  @Get('promos/:id/stats')
+  promoStats(@Param('id') id: string) {
+    return this.adminService.promoStats(id);
+  }
+
+  @Get('support/tickets')
+  supportTickets() {
+    return this.adminService.supportTickets();
+  }
+
+  @Get('support/tickets/:id')
+  supportTicket(@Param('id') id: string) {
+    return this.adminService.supportTicket(id);
+  }
+
+  @Post('support/tickets/:id/:action')
+  supportAction(
+    @Param('id') id: string,
+    @Param('action') action: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.supportAction(id, action, body);
+  }
+
+  @Get('support/stats')
+  supportStats() {
+    return this.adminService.supportStats();
+  }
+
+  @Post('notifications/broadcast')
+  notificationBroadcastCreate(@Body() body: Record<string, unknown>) {
+    return this.adminService.notificationBroadcastCreate(body);
+  }
+
+  @Get('notifications/broadcasts')
+  notificationBroadcasts() {
+    return this.adminService.notificationBroadcasts();
+  }
+
+  @Get('notifications/broadcasts/:id')
+  notificationBroadcastOne(@Param('id') id: string) {
+    return this.adminService.notificationBroadcastOne(id);
+  }
+
+  @Post('notifications/broadcasts/:id/:action')
+  notificationBroadcastAction(
+    @Param('id') id: string,
+    @Param('action') action: string,
+  ) {
+    return this.adminService.notificationBroadcastAction(id, action);
+  }
+
+  @Get('admin-users')
+  adminUsers() {
+    return this.adminService.adminUsers();
+  }
+
+  @Post('admin-users')
+  adminUserCreate(@Body() body: Record<string, unknown>) {
+    return this.adminService.adminUserCreate(body);
+  }
+
+  @Patch('admin-users/:id')
+  adminUserUpdate(
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.adminUserUpdate(id, body);
+  }
+
+  @Patch('admin-users/:id/status')
+  adminUserStatus(
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.adminUserStatus(id, body);
+  }
+
+  @Post('admin-users/:id/reset-2fa')
+  adminUserReset2fa(@Param('id') id: string) {
+    return this.adminService.adminUserReset2fa(id);
+  }
+
+  @Get('roles')
+  roles() {
+    return this.adminService.roles();
+  }
+
+  @Patch('roles/:id/permissions')
+  rolePermissions(
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.rolePermissions(id, body);
+  }
+
+  @Get('audit-logs')
+  auditLogs() {
+    return this.adminService.auditLogs();
+  }
+
+  @Get('settings')
+  settings() {
+    return this.adminService.settings();
+  }
+
+  @Patch('settings/:group')
+  settingsGroup(
+    @Param('group') group: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.settingsGroup(group, body);
+  }
+
+  @Patch('settings/providers/:provider')
+  providerSettings(
+    @Param('provider') provider: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.providerSettings(provider, body);
+  }
+
+  @Post('settings/providers/:provider/test')
+  providerTest(@Param('provider') provider: string) {
+    return this.adminService.providerTest(provider);
   }
 }

@@ -1,4 +1,7 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -7,17 +10,61 @@ import { HotelsModule } from './hotels/hotels.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { PartnersModule } from './partners/partners.module';
 import { AdminModule } from './admin/admin.module';
+import { InfrastructureModule } from './infrastructure/infrastructure.module';
+import { CatalogModule } from './catalog/catalog.module';
+import { BusesModule } from './buses/buses.module';
+import { PaymentsModule } from './payments/payments.module';
+import { RefundsModule } from './refunds/refunds.module';
+import { ReviewsModule } from './reviews/reviews.module';
+import { SupportModule } from './support/support.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { ExportsModule } from './exports/exports.module';
+import { UploadsModule } from './uploads/uploads.module';
+import { CmsModule } from './cms/cms.module';
+import { PromosModule } from './promos/promos.module';
+import { PartnerApiModule } from './partner-api/partner-api.module';
+import { validateEnv } from './config/env.validation';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env.local', '.env'],
+      validate: validateEnv,
+    }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60_000,
+        limit: 120,
+      },
+    ]),
+    InfrastructureModule,
     AuthModule,
+    CatalogModule,
     UsersModule,
     HotelsModule,
+    BusesModule,
     BookingsModule,
+    PaymentsModule,
+    RefundsModule,
+    ReviewsModule,
+    SupportModule,
+    NotificationsModule,
+    ExportsModule,
+    UploadsModule,
+    CmsModule,
+    PromosModule,
     PartnersModule,
+    PartnerApiModule,
     AdminModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

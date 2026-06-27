@@ -1,0 +1,83 @@
+import {
+  ArgumentsHost,
+  Catch,
+  ExceptionFilter,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
+
+interface ErrorBody {
+  code?: string;
+  message?: string | string[];
+  error?: string;
+}
+
+function normalizeError(exception: unknown): {
+  status: number;
+  code: string;
+  message: string;
+  fields: unknown;
+} {
+  if (exception instanceof HttpException) {
+    const status = exception.getStatus();
+    const response = exception.getResponse();
+
+    if (typeof response === 'object' && response !== null) {
+      const body = response as ErrorBody;
+      const message = Array.isArray(body.message)
+        ? body.message.join(', ')
+        : (body.message ?? exception.message);
+
+      return {
+        status,
+        code: body.code ?? body.error ?? 'REQUEST_ERROR',
+        message,
+        fields: Array.isArray(body.message) ? body.message : null,
+      };
+    }
+
+    return {
+      status,
+      code: 'REQUEST_ERROR',
+      message: String(response),
+      fields: null,
+    };
+  }
+
+  return {
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    code: 'INTERNAL_ERROR',
+    message: 'Kutilmagan server xatosi',
+    fields: null,
+  };
+}
+
+@Catch()
+export class HttpErrorFilter implements ExceptionFilter {
+  catch(exception: unknown, host: ArgumentsHost) {
+    const context = host.switchToHttp();
+    const response = context.getResponse<{
+      status: (code: number) => { json: (body: unknown) => void };
+    }>();
+    const request = context.getRequest<{
+      headers: Record<string, string | string[] | undefined>;
+    }>();
+    const requestIdHeader = request.headers['x-request-id'];
+    const requestId = Array.isArray(requestIdHeader)
+      ? requestIdHeader[0]
+      : (requestIdHeader ?? 'local-request');
+    const error = normalizeError(exception);
+
+    response.status(error.status).json({
+      success: false,
+      error: {
+        code: error.code,
+        message: error.message,
+        fields: error.fields,
+      },
+      meta: {
+        request_id: requestId,
+      },
+    });
+  }
+}

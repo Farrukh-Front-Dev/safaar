@@ -13,14 +13,14 @@ describe('AppController (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    await app.init();
+    await app.listen(0, '127.0.0.1');
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
+  it('/health (GET)', () => {
+    return request(app.getHttpServer()).get('/health').expect(200).expect({
+      status: 'ok',
+      service: 'uzbron-api',
+    });
   });
 
   afterEach(async () => {

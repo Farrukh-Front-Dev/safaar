@@ -1,0 +1,34 @@
+name: Backend CI
+
+on:
+  pull_request:
+    paths:
+      - "apps/backend/**"
+      - "packages/types/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/backend-ci.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/backend/**"
+      - "packages/types/**"
+      - "package.json"
+      - "package-lock.json"
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build:types
+      - run: npm run prisma:validate -w @agoda/backend
+      - run: npm run lint -w @agoda/backend
+      - run: npm run test:backend
+      - run: npm run build:backend

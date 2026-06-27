@@ -7,14 +7,18 @@ import {
 import { Reflector } from '@nestjs/core';
 import { Role } from '@agoda/types';
 import { ROLES_KEY } from './roles.decorator';
+import {
+  buildActorFromHeaders,
+  type RequestActor,
+  type RequestWithActor,
+} from './actor';
 
 /**
  * Rol asosidagi himoya (RBAC).
  *
- * Hozircha skeleton: foydalanuvchi `request.user` ichida bo'ladi deb taxmin
- * qilinadi (keyinchalik JWT auth guard tomonidan to'ldiriladi).
- * JWT integratsiyasi (@nestjs/jwt) qo'shilgach, bu guard auth guard'dan
- * keyin ishlatiladi.
+ * Vaqtinchalik dev auth: JWT ulanishigacha actor `x-user-role`,
+ * `x-user-id` va `x-organization-id` headerlari orqali olinadi.
+ * Keyingi bosqichda JWT guard shu request.user obyektini to'ldiradi.
  */
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -31,15 +35,33 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    const request = context
-      .switchToHttp()
-      .getRequest<{ user?: { role?: Role } }>();
-    const user = request.user;
+    const request = context.switchToHttp().getRequest<RequestWithActor>();
+    const user = request.user ?? buildActorFromHeaders(request.headers);
 
-    if (!user?.role || !requiredRoles.includes(user.role)) {
+    if (user) {
+      request.user = user;
+    }
+
+    if (!user || !hasRole(user, requiredRoles)) {
       throw new ForbiddenException('Bu amal uchun ruxsatingiz yoq.');
     }
 
     return true;
   }
+}
+
+function hasRole(actor: RequestActor, requiredRoles: Role[]): boolean {
+  if (actor.role === Role.SUPER_ADMIN) {
+    return true;
+  }
+
+  if (requiredRoles.includes(actor.role)) {
+    return true;
+  }
+
+  if (actor.role === Role.ADMIN && requiredRoles.includes(Role.ADMIN)) {
+    return true;
+  }
+
+  return actor.roles.some((role) => requiredRoles.includes(role));
 }
