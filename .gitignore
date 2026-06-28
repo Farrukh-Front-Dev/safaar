@@ -41,6 +41,12 @@ lerna-debug.log*
 !.vscode/launch.json
 !.vscode/extensions.json
 
+# Kiro IDE (lokal sozlamalar/steering — har devda o'zinikki)
+.kiro/
+
+# VSCode — to'liq ignore (yuqoridagi istisnolardan qat'i nazar)
+.vscode/
+
 # dotenv environment variable files
 .env
 .env.development.local
