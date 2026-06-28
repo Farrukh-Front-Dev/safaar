@@ -5,6 +5,12 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  // O'zbek UI matnlarida apostrof ('O'zbekiston', 'so'm') normal — bu qoidani o'chiramiz.
+  {
+    rules: {
+      "react/no-unescaped-entities": "off",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

@@ -1,0 +1,24 @@
+{
+  "title": "Hotels",
+  "resultsCount": "{count} hotels found",
+  "empty": "Nothing found. Try changing the filters.",
+  "error": "Failed to load data. Check that the backend is running.",
+  "perNight": "night",
+  "reviews": "review",
+  "viewDetails": "View details",
+  "filters": {
+    "title": "Filters",
+    "stars": "Stars",
+    "anyStars": "All",
+    "priceMin": "Min price (UZS)",
+    "priceMax": "Max price (UZS)",
+    "apply": "Apply",
+    "reset": "Reset"
+  },
+  "sort": {
+    "label": "Sort",
+    "priceAsc": "Price: low to high",
+    "priceDesc": "Price: high to low",
+    "rating": "By rating"
+  }
+}

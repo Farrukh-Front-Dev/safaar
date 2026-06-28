@@ -1,0 +1,55 @@
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Role } from '@agoda/types';
+import { CurrentActor, type RequestActor } from '../common/actor';
+import { Roles } from '../common/roles.decorator';
+import { RolesGuard } from '../common/roles.guard';
+import { SupportService } from './support.service';
+
+@Controller('support/tickets')
+@UseGuards(RolesGuard)
+export class SupportController {
+  constructor(private readonly supportService: SupportService) {}
+
+  @Post()
+  @Roles(Role.USER)
+  create(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.supportService.create(actor, body);
+  }
+
+  @Get()
+  @Roles(Role.USER)
+  list(@CurrentActor() actor: RequestActor | undefined) {
+    return this.supportService.list(actor);
+  }
+
+  @Get(':id')
+  @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)
+  findOne(@Param('id') id: string) {
+    return this.supportService.findOne(id);
+  }
+
+  @Post(':id/messages')
+  @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)
+  message(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.supportService.message(actor, id, body);
+  }
+
+  @Post(':id/close')
+  @Roles(Role.USER)
+  close(@Param('id') id: string) {
+    return this.supportService.status(id, 'closed');
+  }
+
+  @Post(':id/reopen')
+  @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)
+  reopen(@Param('id') id: string) {
+    return this.supportService.status(id, 'open');
+  }
+}

@@ -1,0 +1,175 @@
+"use client";
+
+import { useState } from "react";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+import StatusBadge from "@/components/ui/StatusBadge";
+import Modal from "@/components/ui/Modal";
+import { mockPartnerRequests } from "@/lib/mock-data";
+import { formatDate } from "@/lib/utils";
+import { PARTNER_REQUEST_STATUS_MAP } from "@/lib/constants";
+import { CheckCircle, XCircle, Phone, MessageSquare, FileText, Hotel, Bus } from "lucide-react";
+import type { PartnerRequest } from "@/types/admin";
+
+export default function PartnerRequestsPage() {
+  const [selectedRequest, setSelectedRequest] = useState<PartnerRequest | null>(null);
+
+  const newCount = mockPartnerRequests.filter((r) => r.status === "new").length;
+
+  return (
+    <div className="max-w-[1400px] mx-auto flex flex-col gap-6">
+      {/* Header */}
+      
+
+      {/* Requests list */}
+      <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-white">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-[var(--border)] bg-[var(--bg-tertiary)]">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">#</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Kompaniya</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Turi</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Telefon</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Ariza sanasi</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Hujjatlar</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Holat</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Amallar</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[var(--border-light)]">
+            {mockPartnerRequests.map((req) => (
+              <tr key={req.id} className="hover:bg-[var(--bg-tertiary)] transition-colors">
+                <td className="px-4 py-3 font-mono text-xs text-[var(--text-muted)]">{req.id}</td>
+                <td className="px-4 py-3">
+                  <div className="flex flex-col">
+                    <span className="font-medium text-[var(--text-primary)]">{req.companyName}</span>
+                    <span className="text-xs text-[var(--text-muted)]">{req.contactPerson}</span>
+                  </div>
+                </td>
+                <td className="px-4 py-3">
+                  <span className="inline-flex items-center gap-1.5 text-sm">
+                    {req.type === "hotel" ? (
+                      <><Hotel size={14} className="text-[var(--primary)]" /> Mehmonxona</>
+                    ) : (
+                      <><Bus size={14} className="text-[var(--accent)]" /> Avtobus</>
+                    )}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-sm">{req.phone}</td>
+                <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">{formatDate(req.createdAt)}</td>
+                <td className="px-4 py-3">
+                  <span className="inline-flex items-center gap-1 text-sm text-[var(--info)]">
+                    <FileText size={14} /> {req.documents.length} ta
+                  </span>
+                </td>
+                <td className="px-4 py-3">
+                  <StatusBadge status={req.status} statusMap={PARTNER_REQUEST_STATUS_MAP} />
+                </td>
+                <td className="px-4 py-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedRequest(req)}
+                  >
+                    Ko&apos;rish
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Detail modal */}
+      <Modal
+        open={!!selectedRequest}
+        onClose={() => setSelectedRequest(null)}
+        title={selectedRequest ? `Ariza: ${selectedRequest.companyName}` : ""}
+        size="lg"
+        footer={
+          selectedRequest && selectedRequest.status === "new" ? (
+            <>
+              <Button variant="danger" size="sm" icon={<XCircle size={14} />} onClick={() => setSelectedRequest(null)}>
+                Rad etish
+              </Button>
+              <Button variant="accent" size="sm" icon={<CheckCircle size={14} />} onClick={() => setSelectedRequest(null)}>
+                Tasdiqlash
+              </Button>
+            </>
+          ) : undefined
+        }
+      >
+        {selectedRequest && (
+          <div className="flex flex-col gap-5">
+            {/* Company info */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-[var(--text-muted)] mb-1">Kompaniya nomi</p>
+                <p className="text-sm font-medium">{selectedRequest.companyName}</p>
+              </div>
+              <div>
+                <p className="text-xs text-[var(--text-muted)] mb-1">Turi</p>
+                <p className="text-sm font-medium flex items-center gap-1.5">
+                  {selectedRequest.type === "hotel" ? (
+                    <><Hotel size={14} className="text-[var(--primary)]" /> Mehmonxona</>
+                  ) : (
+                    <><Bus size={14} className="text-[var(--accent)]" /> Avtobus</>
+                  )}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-[var(--text-muted)] mb-1">Mas&apos;ul shaxs</p>
+                <p className="text-sm font-medium">{selectedRequest.contactPerson}</p>
+              </div>
+              <div>
+                <p className="text-xs text-[var(--text-muted)] mb-1">Telefon</p>
+                <p className="text-sm font-medium">{selectedRequest.phone}</p>
+              </div>
+              <div>
+                <p className="text-xs text-[var(--text-muted)] mb-1">Email</p>
+                <p className="text-sm font-medium">{selectedRequest.email}</p>
+              </div>
+              <div>
+                <p className="text-xs text-[var(--text-muted)] mb-1">Manzil</p>
+                <p className="text-sm font-medium">{selectedRequest.city}, {selectedRequest.address}</p>
+              </div>
+            </div>
+
+            {/* Documents */}
+            <div>
+              <p className="text-xs text-[var(--text-muted)] mb-2 uppercase font-semibold tracking-wider">Hujjatlar</p>
+              <div className="flex flex-col gap-2">
+                {selectedRequest.documents.map((doc) => (
+                  <div key={doc.name} className="flex items-center gap-3 p-3 rounded-lg border border-[var(--border)] hover:bg-[var(--bg-tertiary)] transition-colors">
+                    <FileText size={18} className="text-[var(--info)] shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{doc.name}</p>
+                      <p className="text-xs text-[var(--text-muted)] capitalize">{doc.type.replace("_", " ")}</p>
+                    </div>
+                    <Button variant="ghost" size="sm">Yuklab olish</Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Note */}
+            {selectedRequest.note && (
+              <div>
+                <p className="text-xs text-[var(--text-muted)] mb-2 uppercase font-semibold tracking-wider">Izoh</p>
+                <Card padding="sm" className="bg-[var(--bg-tertiary)]">
+                  <p className="text-sm text-[var(--text-secondary)] italic">&ldquo;{selectedRequest.note}&rdquo;</p>
+                </Card>
+              </div>
+            )}
+
+            {/* Quick actions */}
+            <div className="flex items-center gap-2 pt-2 border-t border-[var(--border)]">
+              <Button variant="secondary" size="sm" icon={<Phone size={14} />}>Qo&apos;ng&apos;iroq</Button>
+              <Button variant="secondary" size="sm" icon={<MessageSquare size={14} />}>Izoh qoldirish</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+    </div>
+  );
+}

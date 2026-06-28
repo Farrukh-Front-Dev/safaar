@@ -1,0 +1,24 @@
+{
+  "title": "Bron qilish",
+  "guestDetails": "Mehmon ma'lumotlari",
+  "fullName": "To'liq ism",
+  "fullNamePlaceholder": "Ism Familiya",
+  "checkIn": "Kirish sanasi",
+  "checkOut": "Chiqish sanasi",
+  "guests": "Mehmonlar",
+  "paymentMethod": "To'lov usuli",
+  "methods": {
+    "click": "Click",
+    "payme": "Payme",
+    "uzcard": "Uzcard",
+    "humo": "Humo",
+    "cash": "Naqd to'lov"
+  },
+  "summary": "Buyurtma xulosasi",
+  "nights": "kecha",
+  "perNight": "kecha",
+  "total": "Jami",
+  "confirm": "Bronni tasdiqlash",
+  "needDates": "Davom etish uchun kirish va chiqish sanasini tanlang.",
+  "error": "Bron qilishda xatolik yuz berdi. Qayta urinib ko'ring."
+}

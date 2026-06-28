@@ -1,0 +1,28 @@
+{
+  "title": "Детали брони",
+  "number": "Номер брони",
+  "status": "Статус",
+  "total": "Итоговая сумма",
+  "payment": "Оплата",
+  "pay": "Перейти к оплате",
+  "voucher": "Скачать ваучер",
+  "backHome": "На главную",
+  "error": "Не удалось загрузить данные брони.",
+  "statuses": {
+    "PENDING": "Ожидание",
+    "AWAITING_PAYMENT": "Ожидает оплаты",
+    "AWAITING_PARTNER_CONFIRMATION": "Ожидает подтверждения партнёра",
+    "CONFIRMED": "Подтверждено",
+    "CANCELLED": "Отменено",
+    "COMPLETED": "Завершено",
+    "EXPIRED": "Истекло"
+  },
+  "paymentStatuses": {
+    "pending": "Ожидание",
+    "awaiting_cash": "Ожидает наличной оплаты",
+    "processing": "В обработке",
+    "paid": "Оплачено",
+    "failed": "Неуспешно",
+    "refunded": "Возвращено"
+  }
+}

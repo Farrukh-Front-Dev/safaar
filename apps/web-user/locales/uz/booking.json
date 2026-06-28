@@ -1,0 +1,28 @@
+{
+  "title": "Bron tafsilotlari",
+  "number": "Bron raqami",
+  "status": "Holat",
+  "total": "Jami summa",
+  "payment": "To'lov",
+  "pay": "To'lovni amalga oshirish",
+  "voucher": "Vaucherni yuklab olish",
+  "backHome": "Bosh sahifaga",
+  "error": "Bron ma'lumotini yuklab bo'lmadi.",
+  "statuses": {
+    "PENDING": "Kutilmoqda",
+    "AWAITING_PAYMENT": "To'lov kutilmoqda",
+    "AWAITING_PARTNER_CONFIRMATION": "Hamkor tasdig'i kutilmoqda",
+    "CONFIRMED": "Tasdiqlangan",
+    "CANCELLED": "Bekor qilingan",
+    "COMPLETED": "Yakunlangan",
+    "EXPIRED": "Muddati o'tgan"
+  },
+  "paymentStatuses": {
+    "pending": "Kutilmoqda",
+    "awaiting_cash": "Naqd to'lov kutilmoqda",
+    "processing": "Jarayonda",
+    "paid": "To'langan",
+    "failed": "Muvaffaqiyatsiz",
+    "refunded": "Qaytarilgan"
+  }
+}

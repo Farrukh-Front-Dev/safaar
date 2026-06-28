@@ -4,6 +4,7 @@ node_modules
 build
 .next
 out
+apps/backend/prisma/generated/
 
 # old standalone frontend repository kept for history/reference
 agoda_frontend_backend/
@@ -39,6 +40,12 @@ lerna-debug.log*
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+
+# Kiro IDE (lokal sozlamalar/steering — har devda o'zinikki)
+.kiro/
+
+# VSCode — to'liq ignore (yuqoridagi istisnolardan qat'i nazar)
+.vscode/
 
 # dotenv environment variable files
 .env

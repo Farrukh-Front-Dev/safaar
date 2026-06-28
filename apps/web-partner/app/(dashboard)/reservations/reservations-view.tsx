@@ -36,10 +36,13 @@ export function ReservationsView() {
     const c: Record<FilterKey, number> = {
       all: data?.length ?? 0,
       [BookingStatus.PENDING]: 0,
+      [BookingStatus.AWAITING_PAYMENT]: 0,
+      [BookingStatus.AWAITING_PARTNER_CONFIRMATION]: 0,
       [BookingStatus.CONFIRMED]: 0,
       IN_HOUSE: 0,
       [BookingStatus.COMPLETED]: 0,
       [BookingStatus.CANCELLED]: 0,
+      [BookingStatus.EXPIRED]: 0,
     };
     for (const r of data ?? []) c[r.status]++;
     return c;

@@ -1,0 +1,76 @@
+"use client";
+
+import { useState } from "react";
+import { History, Search } from "lucide-react";
+import DataTable from "@/components/ui/DataTable";
+import Badge from "@/components/ui/Badge";
+import Pagination from "@/components/ui/Pagination";
+
+const mockLogs = [
+  { id: "1", user: "Super Admin", action: "Partnerni tasdiqlash", target: "Hilton Hotel", date: new Date().toISOString(), ip: "192.168.1.100" },
+  { id: "2", user: "Moderator Ali", action: "Foydalanuvchini bloklash", target: "User #12345", date: new Date(Date.now() - 3600000).toISOString(), ip: "10.0.0.15" },
+  { id: "3", user: "Moliya Admini", action: "Komissiya o'zgartirildi", target: "Global Sozlamalar", date: new Date(Date.now() - 7200000).toISOString(), ip: "192.168.1.102" },
+  { id: "4", user: "Super Admin", action: "Tizimga kirish", target: "Auth", date: new Date(Date.now() - 86400000).toISOString(), ip: "192.168.1.100" },
+];
+
+export default function AuditLogsPage() {
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+
+  const columns = [
+    { key: "user", label: "Foydalanuvchi" },
+    { key: "action", label: "Harakat" },
+    { key: "target", label: "Obyekt" },
+    { key: "ip", label: "IP Manzil", render: (row: any) => <span className="font-mono text-xs">{row.ip}</span> },
+    { key: "date", label: "Sana", render: (row: any) => new Date(row.date).toLocaleString("uz-UZ") },
+  ];
+
+  return (
+    <div className="flex flex-col h-full animate-fade-in">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          
+          <p className="text-[var(--text-secondary)] text-sm mt-1">
+            Tizimdagi barcha admin va moderatorlarning xatti-harakatlari jurnali (Audit Trail)
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Badge color="#F39C12" bg="rgba(243,156,18,0.12)" className="flex items-center gap-1">
+            <History size={14} /> Xavfsizlik jurnali
+          </Badge>
+        </div>
+      </div>
+
+      <div className="bg-white border border-[var(--border)] rounded-xl shadow-sm flex flex-col flex-1 min-h-0">
+        <div className="p-4 border-b border-[var(--border)] flex items-center justify-between gap-4">
+          <div className="relative w-80">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+            <input
+              type="text"
+              placeholder="Foydalanuvchi yoki harakat bo'yicha qidirish..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-[var(--border)] focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] outline-none transition-all"
+            />
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-auto">
+          <DataTable
+            columns={columns as any}
+            data={mockLogs}
+            keyField="id"
+          />
+        </div>
+
+        <div className="p-4 border-t border-[var(--border)]">
+          <Pagination
+            currentPage={page}
+            totalPages={1}
+            onPageChange={setPage}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}

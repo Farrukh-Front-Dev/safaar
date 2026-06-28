@@ -1,0 +1,69 @@
+/**
+ * Tarjima lug'atlarini yuklash.
+ *
+ * Tamoyil: **har bir sahifa (yoki bo'lim) uchun alohida JSON namespace**.
+ * Masalan `common` (umumiy: header/footer), `home` (bosh sahifa). Yangi sahifa
+ * qo'shsangiz: `locales/<lang>/<sahifa>.json` yarating va shu registratsiyaga
+ * qator qo'shing.
+ *
+ * Lug'atlar faqat serverda yuklanadi (`server-only`) — JSON hajmi mijoz
+ * bundle'iga tushmaydi.
+ */
+import "server-only";
+import type { Locale } from "./config";
+
+const loaders = {
+  uz: {
+    common: () => import("@/locales/uz/common.json"),
+    home: () => import("@/locales/uz/home.json"),
+    hotels: () => import("@/locales/uz/hotels.json"),
+    hotelDetail: () => import("@/locales/uz/hotelDetail.json"),
+    auth: () => import("@/locales/uz/auth.json"),
+    checkout: () => import("@/locales/uz/checkout.json"),
+    booking: () => import("@/locales/uz/booking.json"),
+  },
+  ru: {
+    common: () => import("@/locales/ru/common.json"),
+    home: () => import("@/locales/ru/home.json"),
+    hotels: () => import("@/locales/ru/hotels.json"),
+    hotelDetail: () => import("@/locales/ru/hotelDetail.json"),
+    auth: () => import("@/locales/ru/auth.json"),
+    checkout: () => import("@/locales/ru/checkout.json"),
+    booking: () => import("@/locales/ru/booking.json"),
+  },
+  en: {
+    common: () => import("@/locales/en/common.json"),
+    home: () => import("@/locales/en/home.json"),
+    hotels: () => import("@/locales/en/hotels.json"),
+    hotelDetail: () => import("@/locales/en/hotelDetail.json"),
+    auth: () => import("@/locales/en/auth.json"),
+    checkout: () => import("@/locales/en/checkout.json"),
+    booking: () => import("@/locales/en/booking.json"),
+  },
+} as const;
+
+export type Namespace = keyof (typeof loaders)["uz"];
+
+type DictModule<NS extends Namespace> = Awaited<
+  ReturnType<(typeof loaders)["uz"][NS]>
+>;
+type Dict<NS extends Namespace> = DictModule<NS> extends { default: infer D }
+  ? D
+  : DictModule<NS>;
+
+/** Komponent props'larida ishlatish uchun lug'at turlari. */
+export type CommonDict = Dict<"common">;
+export type HomeDict = Dict<"home">;
+export type HotelsDict = Dict<"hotels">;
+export type HotelDetailDict = Dict<"hotelDetail">;
+export type AuthDict = Dict<"auth">;
+export type CheckoutDict = Dict<"checkout">;
+export type BookingDict = Dict<"booking">;
+
+export async function getDictionary<NS extends Namespace>(
+  locale: Locale,
+  namespace: NS,
+): Promise<Dict<NS>> {
+  const mod = await loaders[locale][namespace]();
+  return ("default" in mod ? mod.default : mod) as Dict<NS>;
+}

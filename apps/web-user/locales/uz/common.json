@@ -1,0 +1,29 @@
+{
+  "brand": "UzBron",
+  "nav": {
+    "hotels": "Mehmonxonalar",
+    "buses": "Avtobuslar",
+    "about": "Biz haqimizda",
+    "help": "Yordam"
+  },
+  "actions": {
+    "login": "Kirish",
+    "logout": "Chiqish",
+    "search": "Qidirish"
+  },
+  "language": "Til",
+  "search": {
+    "hotelsTab": "Mehmonxona",
+    "busesTab": "Avtobus",
+    "city": "Shahar",
+    "cityPlaceholder": "Shaharni tanlang",
+    "checkIn": "Kirish sanasi",
+    "checkOut": "Chiqish sanasi",
+    "guests": "Mehmonlar",
+    "submit": "Qidirish"
+  },
+  "footer": {
+    "tagline": "O'zbekiston bo'ylab mehmonxona va avtobus bron qilish.",
+    "rights": "Barcha huquqlar himoyalangan."
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "title": "Checkout",
+  "guestDetails": "Guest details",
+  "fullName": "Full name",
+  "fullNamePlaceholder": "First Last",
+  "checkIn": "Check-in date",
+  "checkOut": "Check-out date",
+  "guests": "Guests",
+  "paymentMethod": "Payment method",
+  "methods": {
+    "click": "Click",
+    "payme": "Payme",
+    "uzcard": "Uzcard",
+    "humo": "Humo",
+    "cash": "Cash"
+  },
+  "summary": "Order summary",
+  "nights": "nights",
+  "perNight": "night",
+  "total": "Total",
+  "confirm": "Confirm booking",
+  "needDates": "Select check-in and check-out dates to continue.",
+  "error": "Booking failed. Please try again."
+}

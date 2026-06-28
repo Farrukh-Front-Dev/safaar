@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: uzbron
+      POSTGRES_USER: uzbron
+      POSTGRES_PASSWORD: uzbron
+    ports:
+      - "5432:5432"
+    volumes:
+      - uzbron-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U uzbron -d uzbron"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:8
+    ports:
+      - "6379:6379"
+    volumes:
+      - uzbron-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    env_file:
+      - apps/backend/.env.example
+    environment:
+      DATABASE_URL: postgresql://uzbron:uzbron@postgres:5432/uzbron
+      REDIS_URL: redis://redis:6379/0
+      QUEUE_REDIS_URL: redis://redis:6379/1
+      PORT: 4000
+      API_PREFIX: v1
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  uzbron-postgres:
+  uzbron-redis:

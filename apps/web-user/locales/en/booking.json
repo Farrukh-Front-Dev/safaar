@@ -1,0 +1,28 @@
+{
+  "title": "Booking details",
+  "number": "Booking number",
+  "status": "Status",
+  "total": "Total amount",
+  "payment": "Payment",
+  "pay": "Proceed to payment",
+  "voucher": "Download voucher",
+  "backHome": "Back home",
+  "error": "Failed to load booking details.",
+  "statuses": {
+    "PENDING": "Pending",
+    "AWAITING_PAYMENT": "Awaiting payment",
+    "AWAITING_PARTNER_CONFIRMATION": "Awaiting partner confirmation",
+    "CONFIRMED": "Confirmed",
+    "CANCELLED": "Cancelled",
+    "COMPLETED": "Completed",
+    "EXPIRED": "Expired"
+  },
+  "paymentStatuses": {
+    "pending": "Pending",
+    "awaiting_cash": "Awaiting cash payment",
+    "processing": "Processing",
+    "paid": "Paid",
+    "failed": "Failed",
+    "refunded": "Refunded"
+  }
+}

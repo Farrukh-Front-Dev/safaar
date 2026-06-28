@@ -1,0 +1,50 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import { Role } from '@agoda/types';
+import { CurrentActor, type RequestActor } from '../common/actor';
+import { Roles } from '../common/roles.decorator';
+import { RolesGuard } from '../common/roles.guard';
+import { NotificationsService } from './notifications.service';
+
+@Controller('notifications')
+@UseGuards(RolesGuard)
+@Roles(Role.USER, Role.PARTNER, Role.ADMIN, Role.SUPER_ADMIN)
+export class NotificationsController {
+  constructor(private readonly notificationsService: NotificationsService) {}
+
+  @Get()
+  list(@CurrentActor() actor: RequestActor | undefined) {
+    return this.notificationsService.list(actor);
+  }
+
+  @Patch(':id/read')
+  read(@Param('id') id: string) {
+    return this.notificationsService.read(id);
+  }
+
+  @Patch('read-all')
+  readAll(@CurrentActor() actor: RequestActor | undefined) {
+    return this.notificationsService.readAll(actor);
+  }
+
+  @Post('push-tokens')
+  pushToken(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.notificationsService.pushToken(actor, body);
+  }
+
+  @Delete('push-tokens/:id')
+  deletePushToken(@Param('id') id: string) {
+    return this.notificationsService.deletePushToken(id);
+  }
+}

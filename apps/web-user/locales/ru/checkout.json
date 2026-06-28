@@ -1,0 +1,24 @@
+{
+  "title": "Бронирование",
+  "guestDetails": "Данные гостя",
+  "fullName": "Полное имя",
+  "fullNamePlaceholder": "Имя Фамилия",
+  "checkIn": "Дата заезда",
+  "checkOut": "Дата выезда",
+  "guests": "Гости",
+  "paymentMethod": "Способ оплаты",
+  "methods": {
+    "click": "Click",
+    "payme": "Payme",
+    "uzcard": "Uzcard",
+    "humo": "Humo",
+    "cash": "Наличные"
+  },
+  "summary": "Итоги заказа",
+  "nights": "ночей",
+  "perNight": "ночь",
+  "total": "Итого",
+  "confirm": "Подтвердить бронь",
+  "needDates": "Выберите даты заезда и выезда, чтобы продолжить.",
+  "error": "Ошибка при бронировании. Попробуйте снова."
+}
