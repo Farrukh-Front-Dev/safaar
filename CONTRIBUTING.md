@@ -115,11 +115,79 @@ Yashil bo'lmasa — PR ochma, avval tuzat.
 git clone git@github.com:Startup-loyihalar/agoda_frontend_backend.git
 cd agoda_frontend_backend
 git checkout develop    # kundalik ish shu branch'da
-npm install
+npm install             # bu git hook'larni ham AVTOMATIK o'rnatadi (pastga qara)
 npm run build:types     # MAJBURIY — birinchi shu
 
 npm run dev:user        # yoki dev:partner / dev:admin / dev:backend
 ```
+
+> `npm install` paytida `prepare` script ishlaydi va `core.hooksPath`ni
+> `.githooks`ga sozlaydi — ya'ni pre-push himoyasi o'zi yoqiladi, qo'lda hech
+> narsa qilish shart emas.
+
+---
+
+## 7. Avtomatik himoya — `pre-push` hook
+
+Repo'da **lokal git hook** bor (`.githooks/pre-push`): u "o'z papkangdan
+tashqariga tegma" qoidasini push paytida avtomatik tekshiradi.
+
+**Qanday ishlaydi:**
+- `git push` qilganingizda, **sizning** muallifligingizdagi (merge bo'lmagan)
+  commitlar `CODEOWNERS` bilan solishtiriladi.
+- Faqat o'z papkangizni o'zgartirgan bo'lsangiz → push jim o'tadi. ✅
+- Adashib boshqa papkaga teккan bo'lsangiz → push **to'xtaydi** va qaysi fayl
+  ekanini ko'rsatadi. ⛔
+
+**Tekshirilmaydi (ataylab):** integratsiya merge'lari, boshqalarning commitlari,
+`package-lock.json` (avto-generatsiya — paket qo'shsangiz o'zi o'zgaradi).
+
+**Zarur bo'lsa chetlab o'tish** (faqat haqiqatan boshqa papkaga tegish kerak
+bo'lsa, papka egasi bilan kelishib):
+```bash
+HOOK_ALLOW_CROSS_FOLDER=1 git push
+```
+
+> ⚠️ Bu **lokal** himoya (server emas). Repo private + Free reja bo'lgani uchun
+> GitHub branch protection mavjud emas. Hook + `CODEOWNERS` + CI birgalikda
+> himoya beradi — lekin u intizomga tayanadi (`--no-verify` bilan chetlab o'tish
+> mumkin, undAY qilmang).
+
+---
+
+## 8. To'liq ssenariy — "sahifa qildim, endi nima qilaman?"
+
+Masalan siz `web-partner` dev'siz va yangi rezervatsiya sahifasi qildingiz:
+
+```bash
+# 1) Eng so'nggi kodni ol
+git checkout develop
+git pull --rebase origin develop
+
+# 2) O'z papkangda ishla: apps/web-partner/... (sahifani yoz)
+
+# 3) Ishlaydiganini tekshir
+npm run lint -w @agoda/web-partner
+npm run build:partner
+
+# 4) Commit qil (faqat o'z fayllaring)
+git add apps/web-partner/
+git commit -m "feat(web-partner): rezervatsiya sahifasi"
+
+# 5) Push'dan oldin yana rebase (kimdir push qilgan bo'lishi mumkin)
+git pull --rebase origin develop
+
+# 6) Push qil
+git push origin develop
+```
+
+**6-qadamda** `pre-push` hook ishlaydi:
+- Faqat `apps/web-partner/` ni o'zgartirgansiz → o'tadi, push muvaffaqiyatli.
+- Push'dan keyin GitHub'da **CI** ishga tushadi (`build:types → lint → build`).
+  Yashil bo'lsa — tamom. ✅
+
+Agar hook to'xtatsa — ko'rsatilgan ruxsatsiz faylni o'z papkangizdan tashqaridan
+olib tashlang (yoki o'z papkangizga ko'chiring), keyin qaytadan push qiling.
 
 ---
 
