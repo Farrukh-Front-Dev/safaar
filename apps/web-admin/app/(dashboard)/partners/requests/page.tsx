@@ -19,14 +19,7 @@ export default function PartnerRequestsPage() {
   return (
     <div className="max-w-[1400px] mx-auto flex flex-col gap-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">
-          Hamkor arizalari
-        </h1>
-        <p className="text-sm text-[var(--text-muted)] mt-1">
-          {newCount} ta yangi ariza kutilmoqda
-        </p>
-      </div>
+      
 
       {/* Requests list */}
       <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-white">

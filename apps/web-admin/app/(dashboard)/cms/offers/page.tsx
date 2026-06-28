@@ -55,10 +55,7 @@ export default function CmsOffersPage() {
   return (
     <div className="max-w-[1200px] mx-auto flex flex-col gap-6 animate-fade-in">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">Maxsus Takliflar</h1>
-          <p className="text-sm text-[var(--text-muted)] mt-1">Aksiya va chegirmalar haqida ma'lumotlar</p>
-        </div>
+        
         <Button size="sm" icon={<Plus size={14} />}>Taklif qo'shish</Button>
       </div>
       <DataTable columns={columns} data={data} keyField="id" emptyMessage="Takliflar topilmadi" />

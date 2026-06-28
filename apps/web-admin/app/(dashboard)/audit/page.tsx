@@ -29,7 +29,7 @@ export default function AuditLogsPage() {
     <div className="flex flex-col h-full animate-fade-in">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Harakatlar tarixi</h1>
+          
           <p className="text-[var(--text-secondary)] text-sm mt-1">
             Tizimdagi barcha admin va moderatorlarning xatti-harakatlari jurnali (Audit Trail)
           </p>

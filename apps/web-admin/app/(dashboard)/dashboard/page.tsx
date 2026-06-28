@@ -48,14 +48,7 @@ export default function DashboardPage() {
   return (
     <div className="max-w-[1400px] mx-auto flex flex-col gap-6 animate-fade-in">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">
-          Bosh panel
-        </h1>
-        <p className="text-sm text-[var(--text-muted)] mt-1">
-          Platformaning umumiy ko'rsatkichlari va statistikasi
-        </p>
-      </div>
+      
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 stagger-children">

@@ -2,7 +2,7 @@
 
 import { Bell, LogOut, User, Check, Trash2 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import { useAuthStore } from "@/lib/store/auth";
 import { useNotificationsStore } from "@/lib/store/notifications";
@@ -40,8 +40,47 @@ export default function TopBar() {
   const displayRole = user?.role === "SUPER_ADMIN" ? "Super Admin" : "Admin";
   const initials = displayName.split(" ").map((n: string) => n[0]).join("").substring(0, 2);
 
+  const pathname = usePathname();
+
+  const getPageInfo = () => {
+    const PAGE_INFO: Record<string, { title: string; desc: string }> = {
+      "/dashboard": { title: "Bosh panel", desc: "Platformaning umumiy ko'rsatkichlari va statistikasi" },
+      "/users": { title: "Foydalanuvchilar", desc: "Mijozlar ro'yxati va ularning ma'lumotlarini boshqarish" },
+      "/partners/list": { title: "Hamkorlar ro'yxati", desc: "Tizimdagi barcha mehmonxona va avtobus hamkorlari" },
+      "/partners/requests": { title: "Yangi so'rovlar", desc: "Hamkorlik uchun kelib tushgan arizalar" },
+      "/support": { title: "Yordam va Murojaatlar", desc: "Foydalanuvchilar va hamkorlardan kelgan xabarlar (Tickets)" },
+      "/finance/overview": { title: "Moliyaviy ko'rsatkichlar", desc: "Kirim, chiqim va umumiy statistika" },
+      "/finance/withdrawals": { title: "To'lov so'rovlari", desc: "Hamkorlar tomonidan mablag' yechish so'rovlari" },
+      "/finance/reports": { title: "Soliq va Hisobotlar", desc: "Soliq hisobotlari va daromad tahlili" },
+      "/cms/banners": { title: "Bannerlar", desc: "Bosh sahifa bannerlarini boshqarish" },
+      "/cms/offers": { title: "Maxsus Takliflar", desc: "Chegirma va aksiyalarni boshqarish" },
+      "/cms/pages": { title: "Sayt Sahifalari", desc: "Statik sahifalar va kontentni boshqarish" },
+      "/cms/news": { title: "Yangiliklar", desc: "Blog va yangiliklar xabarlari" },
+      "/promos": { title: "Promo-kodlar", desc: "Chegirma kodlari va ularni boshqarish" },
+      "/settings": { title: "Global Sozlamalar", desc: "Tizimning umumiy parametrlari" },
+      "/catalog": { title: "Katalog", desc: "Joylashuv va qulayliklar katalogi" },
+      "/audit": { title: "Harakatlar tarixi", desc: "Tizimdagi barcha amallar jurnali" },
+      "/bookings/hotels": { title: "Mehmonxona bronlari", desc: "Barcha mehmonxona buyurtmalari ro'yxati" },
+      "/bookings/buses": { title: "Avtobus chiptalari", desc: "Barcha avtobus qatnovlari bo'yicha buyurtmalar" },
+    };
+    
+    // Sort keys by length descending to match most specific paths first
+    const sortedPaths = Object.keys(PAGE_INFO).sort((a, b) => b.length - a.length);
+    const matchedPath = sortedPaths.find(path => pathname?.startsWith(path));
+    
+    return matchedPath ? PAGE_INFO[matchedPath] : { title: "", desc: "" };
+  };
+
+  const pageInfo = getPageInfo();
+
   return (
-    <header className="h-16 bg-white border-b border-[var(--border)] flex items-center justify-end px-6 shrink-0 sticky top-0 z-20">
+    <header className="h-16 bg-white border-b border-[var(--border)] flex items-center justify-between px-6 shrink-0 sticky top-0 z-20">
+      {/* Left section: Page Title */}
+      <div className="flex flex-col">
+        {pageInfo.title && <h1 className="text-lg font-bold text-[var(--text-primary)] leading-tight tracking-tight">{pageInfo.title}</h1>}
+        {pageInfo.desc && <p className="text-xs text-[var(--text-muted)] mt-0.5">{pageInfo.desc}</p>}
+      </div>
+
       {/* Right section */}
       <div className="flex items-center gap-2">
         {/* Notifications */}

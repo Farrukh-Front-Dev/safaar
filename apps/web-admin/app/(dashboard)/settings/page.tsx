@@ -25,7 +25,7 @@ export default function SettingsPage() {
     <div className="flex flex-col h-full animate-fade-in max-w-4xl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Global Sozlamalar</h1>
+          
           <p className="text-[var(--text-secondary)] text-sm mt-1">
             Platformaning asosiy komissiya foizlari va texnik xizmat sozlamalari
           </p>

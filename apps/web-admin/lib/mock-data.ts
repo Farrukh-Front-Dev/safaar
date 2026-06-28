@@ -312,11 +312,22 @@ export const mockPromos: import("@/types/admin").PromoCode[] = [
    ──────────────────────────────────────────── */
 
 export const mockTickets: import("@/types/admin").SupportTicket[] = [
-  { id: "T-2001", subject: "To'lov o'tmadi", customerName: "Anvar Karimov", customerType: "user", status: "open", priority: "high", createdAt: new Date(Date.now() - 3600000 * 2).toISOString() },
-  { id: "T-2002", subject: "Yangi xona qo'shishda muammo", customerName: "Hotel Uzbekistan", customerType: "partner", status: "in_progress", priority: "medium", createdAt: new Date(Date.now() - 3600000 * 24).toISOString() },
-  { id: "T-2003", subject: "Bronni bekor qilish", customerName: "Dilnoza Rahimova", customerType: "user", status: "closed", priority: "low", createdAt: new Date(Date.now() - 3600000 * 72).toISOString() },
+  { id: "T-2001", subject: "To'lov o'tmadi", customerName: "Anvar Karimov", customerType: "user", status: "open", priority: "high", assignee: "Admin Adminov", createdAt: new Date(Date.now() - 3600000 * 2).toISOString() },
+  { id: "T-2002", subject: "Yangi xona qo'shishda muammo", customerName: "Hotel Uzbekistan", customerType: "partner", status: "in_progress", priority: "medium", assignee: "Nodir T.", createdAt: new Date(Date.now() - 3600000 * 24).toISOString() },
+  { id: "T-2003", subject: "Bronni bekor qilish", customerName: "Dilnoza Rahimova", customerType: "user", status: "closed", priority: "low", assignee: "Admin Adminov", createdAt: new Date(Date.now() - 3600000 * 72).toISOString() },
   { id: "T-2004", subject: "Komissiya miqdori bo'yicha savol", customerName: "Samarqand Darvoza Inn", customerType: "partner", status: "open", priority: "medium", createdAt: new Date(Date.now() - 3600000 * 4).toISOString() },
 ];
+
+export const mockTicketMessages: Record<string, import("@/types/admin").TicketMessage[]> = {
+  "T-2001": [
+    { id: "M-1", ticketId: "T-2001", senderName: "Anvar Karimov", senderRole: "customer", message: "Assalomu aleykum. Payme orqali to'lov qildim, lekin tizimda bron tasdiqlanmadi. Pul yechilgan.", createdAt: new Date(Date.now() - 3600000 * 2).toISOString() },
+    { id: "M-2", ticketId: "T-2001", senderName: "Admin Adminov", senderRole: "admin", message: "Vaaleykum assalom Anvar aka. Keltirilgan noqulayliklar uchun uzr so'raymiz. To'lov ID raqamini yoki chek skrinshotini shu yerga yubora olasizmi?", createdAt: new Date(Date.now() - 3600000 * 1.5).toISOString() },
+  ],
+  "T-2002": [
+    { id: "M-3", ticketId: "T-2002", senderName: "Hotel Uzbekistan", senderRole: "customer", message: "Yangi 'Prezident lyuks' xonalarini qo'shishda rasmlarni yuklab bo'lmayapti. Xatolik beryapti.", createdAt: new Date(Date.now() - 3600000 * 24).toISOString() },
+    { id: "M-4", ticketId: "T-2002", senderName: "Nodir T.", senderRole: "admin", message: "Assalomu aleykum. Rasm hajmi 5MB dan oshmasligi kerak. Rasmlaringiz hajmini tekshirib ko'ring, agar muammo hal bo'lmasa, rasmlarni bizga yuboring, o'zimiz qo'shib qo'yamiz.", createdAt: new Date(Date.now() - 3600000 * 23).toISOString() },
+  ]
+};
 
 /* ────────────────────────────────────────────
    BOOKINGS

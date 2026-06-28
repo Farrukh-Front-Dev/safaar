@@ -322,6 +322,15 @@ export interface PromoCode {
 
 export type TicketStatus = "open" | "in_progress" | "closed";
 
+export interface TicketMessage {
+  id: string;
+  ticketId: string;
+  senderName: string;
+  senderRole: "admin" | "customer";
+  message: string;
+  createdAt: string;
+}
+
 export interface SupportTicket {
   id: string;
   subject: string;
@@ -329,6 +338,7 @@ export interface SupportTicket {
   customerType: "user" | "partner";
   status: TicketStatus;
   priority: "low" | "medium" | "high";
+  assignee?: string;
   createdAt: string;
 }
 

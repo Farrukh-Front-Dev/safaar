@@ -28,10 +28,7 @@ export default function FinanceOverviewPage() {
   return (
     <div className="max-w-[1400px] mx-auto flex flex-col gap-6 animate-fade-in">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">Moliyaviy ko'rsatkichlar</h1>
-          <p className="text-sm text-[var(--text-muted)] mt-1">Umumiy tushumlar va foyda</p>
-        </div>
+        
         <Button variant="secondary" size="sm" icon={<Download size={14} />}>PDF Hisobot</Button>
       </div>
 
