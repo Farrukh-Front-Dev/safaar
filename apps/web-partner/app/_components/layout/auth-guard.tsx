@@ -1,32 +1,46 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
-import { Spinner } from "../ui/spinner";
+import { Role } from "@agoda/types";
 import { useMounted } from "../../_hooks/use-mounted";
 import { useAuthStore } from "../../_stores/auth-store";
 
+const DEMO_USER = {
+  id: "demo-staff",
+  phone: "998901234567",
+  fullName: "Resepsiyon Xodimi",
+  role: Role.PARTNER,
+};
+
+const DEMO_TOKENS = {
+  accessToken: "demo-access-token",
+  refreshToken: "demo-refresh-token",
+};
+
 /**
- * Dashboard route'larini himoyalaydi.
+ * Demo rejim: kirish talab qilinmaydi.
  *
- * Client-side guard: zustand persist hydratsiyasini kutib, session yo'q
- * bo'lsa `/login`'ga yo'naltiradi.
+ * Sessiya yo'q bo'lsa (yangi qurilma, boshqa brauzer, incognito...),
+ * default demo foydalanuvchi avtomatik tayinlanadi va dashboard darrov
+ * ochiladi. `/login` sahifasi hali ham mavjud, lekin ixtiyoriy.
+ *
+ * Real auth (JWT middleware) tayyor bo'lganda bu komponentni
+ * router.replace("/login") chaqirig'iga qaytaramiz.
  */
 export function AuthGuard({ children }: { children: ReactNode }) {
-  const router = useRouter();
   const user = useAuthStore((s) => s.user);
+  const setSession = useAuthStore((s) => s.setSession);
   const hydrated = useMounted();
 
   useEffect(() => {
-    if (hydrated && !user) router.replace("/login");
-  }, [hydrated, user, router]);
+    if (hydrated && !user) {
+      setSession(DEMO_USER, DEMO_TOKENS);
+    }
+  }, [hydrated, user, setSession]);
 
-  if (!hydrated || !user) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Spinner size="lg" label="Sahifa tayyorlanmoqda" />
-      </div>
-    );
+  // SSR yoki birinchi hydration paytida — bo'sh, hech narsa ko'rsatma
+  if (!hydrated) {
+    return null;
   }
 
   return <>{children}</>;

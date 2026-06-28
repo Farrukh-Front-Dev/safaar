@@ -63,7 +63,7 @@ export function useLogout() {
 
   return () => {
     clearSession();
-    toast.success("Tizimdan chiqdingiz");
-    router.replace("/login");
+    toast.success("Demo sessiya yangilandi");
+    router.replace("/");
   };
 }
