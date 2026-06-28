@@ -1,0 +1,29 @@
+{
+  "brand": "UzBron",
+  "nav": {
+    "hotels": "Hotels",
+    "buses": "Buses",
+    "about": "About us",
+    "help": "Help"
+  },
+  "actions": {
+    "login": "Sign in",
+    "logout": "Sign out",
+    "search": "Search"
+  },
+  "language": "Language",
+  "search": {
+    "hotelsTab": "Hotel",
+    "busesTab": "Bus",
+    "city": "City",
+    "cityPlaceholder": "Select a city",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "guests": "Guests",
+    "submit": "Search"
+  },
+  "footer": {
+    "tagline": "Book hotels and buses across Uzbekistan.",
+    "rights": "All rights reserved."
+  }
+}

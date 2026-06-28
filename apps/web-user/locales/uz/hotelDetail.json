@@ -1,0 +1,18 @@
+{
+  "error": "Ma'lumotni yuklab bo'lmadi. Backend ishga tushganini tekshiring.",
+  "about": "Tavsif",
+  "address": "Manzil",
+  "amenities": "Qulayliklar",
+  "checkIn": "Kirish vaqti",
+  "checkOut": "Chiqish vaqti",
+  "rooms": "Xonalar",
+  "perNight": "kecha",
+  "capacity": "Sig'imi",
+  "guests": "mehmon",
+  "available": "ta bo'sh",
+  "soldOut": "Bo'sh xona yo'q",
+  "book": "Bron qilish",
+  "reviews": "Sharhlar",
+  "noReviews": "Hozircha sharhlar yo'q.",
+  "ratingSummary": "{count} ta sharh asosida"
+}

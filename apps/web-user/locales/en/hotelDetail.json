@@ -1,0 +1,18 @@
+{
+  "error": "Failed to load data. Check that the backend is running.",
+  "about": "Description",
+  "address": "Address",
+  "amenities": "Amenities",
+  "checkIn": "Check-in",
+  "checkOut": "Check-out",
+  "rooms": "Rooms",
+  "perNight": "night",
+  "capacity": "Capacity",
+  "guests": "guests",
+  "available": "available",
+  "soldOut": "No rooms available",
+  "book": "Book now",
+  "reviews": "Reviews",
+  "noReviews": "No reviews yet.",
+  "ratingSummary": "Based on {count} reviews"
+}

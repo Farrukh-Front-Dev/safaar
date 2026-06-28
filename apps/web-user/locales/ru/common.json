@@ -1,0 +1,29 @@
+{
+  "brand": "UzBron",
+  "nav": {
+    "hotels": "Отели",
+    "buses": "Автобусы",
+    "about": "О нас",
+    "help": "Помощь"
+  },
+  "actions": {
+    "login": "Войти",
+    "logout": "Выйти",
+    "search": "Поиск"
+  },
+  "language": "Язык",
+  "search": {
+    "hotelsTab": "Отель",
+    "busesTab": "Автобус",
+    "city": "Город",
+    "cityPlaceholder": "Выберите город",
+    "checkIn": "Заезд",
+    "checkOut": "Выезд",
+    "guests": "Гости",
+    "submit": "Поиск"
+  },
+  "footer": {
+    "tagline": "Бронирование отелей и автобусов по всему Узбекистану.",
+    "rights": "Все права защищены."
+  }
+}

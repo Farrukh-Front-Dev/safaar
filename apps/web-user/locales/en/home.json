@@ -1,0 +1,16 @@
+{
+  "hero": {
+    "eyebrow": "UzBron.uz",
+    "title": "Book hotels and buses across Uzbekistan",
+    "subtitle": "Customer site. Search, booking and the personal account will live here."
+  },
+  "featured": {
+    "title": "Featured offers",
+    "empty": "No offers yet.",
+    "perNight": "night",
+    "reviews": "review"
+  },
+  "error": {
+    "loadFailed": "Failed to load data. Check that the backend is running."
+  }
+}

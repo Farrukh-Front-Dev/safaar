@@ -1,0 +1,16 @@
+{
+  "hero": {
+    "eyebrow": "UzBron.uz",
+    "title": "O'zbekiston bo'ylab mehmonxona va avtobus bron qiling",
+    "subtitle": "Mijozlar sayti. Bu yerda qidiruv, bron qilish va shaxsiy kabinet bo'ladi."
+  },
+  "featured": {
+    "title": "Mashhur takliflar",
+    "empty": "Hozircha takliflar yo'q.",
+    "perNight": "kecha",
+    "reviews": "sharh"
+  },
+  "error": {
+    "loadFailed": "Ma'lumotlarni yuklab bo'lmadi. Backend ishga tushganini tekshiring."
+  }
+}
