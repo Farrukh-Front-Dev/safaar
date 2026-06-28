@@ -2,13 +2,8 @@
 
 import { StatCard } from "@/components/ui/Card";
 import Card from "@/components/ui/Card";
-import BookingLineChart from "@/components/charts/LineChart";
-import RevenueBarChart from "@/components/charts/BarChart";
-import DonutChart from "@/components/charts/DonutChart";
 import {
   dashboardStats,
-  bookingTrends,
-  revenueData,
   serviceDistribution,
   recentActivities,
   quickActions,
@@ -17,6 +12,7 @@ import { timeAgo } from "@/lib/utils";
 import {
   Users, Building2, CalendarCheck, Wallet, TrendingUp, XCircle,
   UserPlus, CalendarPlus, Building, AlertTriangle, ArrowRight,
+  Activity
 } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -50,16 +46,9 @@ const ACTIVITY_COLORS: Record<string, string> = {
 
 export default function DashboardPage() {
   return (
-    <div className="max-w-[1400px] mx-auto flex flex-col gap-6">
+    <div className="max-w-[1400px] mx-auto flex flex-col gap-6 animate-fade-in">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">
-          Bosh panel
-        </h1>
-        <p className="text-sm text-[var(--text-muted)] mt-1">
-          Platformaning umumiy ko&apos;rsatkichlari va statistikasi
-        </p>
-      </div>
+      
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 stagger-children">
@@ -75,105 +64,115 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Charts row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Bookings trend */}
-        <Card padding="lg">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-base font-semibold text-[var(--text-primary)]">Bronlar dinamikasi</h3>
-              <p className="text-xs text-[var(--text-muted)] mt-0.5">So&apos;nggi 30 kun</p>
-            </div>
-          </div>
-          <BookingLineChart data={bookingTrends} />
-        </Card>
-
-        {/* Revenue */}
-        <Card padding="lg">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-base font-semibold text-[var(--text-primary)]">Daromad dinamikasi</h3>
-              <p className="text-xs text-[var(--text-muted)] mt-0.5">Oylik</p>
-            </div>
-          </div>
-          <RevenueBarChart data={revenueData} />
-        </Card>
-      </div>
-
-      {/* Bottom row */}
+      {/* Main Content Area without Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Donut chart */}
-        <Card padding="lg">
-          <h3 className="text-base font-semibold text-[var(--text-primary)] mb-4">
-            Xizmat turlari taqsimoti
-          </h3>
-          <DonutChart data={serviceDistribution} />
-        </Card>
-
+        
         {/* Recent activity */}
-        <Card padding="lg" className="lg:col-span-1">
+        <Card padding="lg" className="lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-[var(--text-primary)]">
-              So&apos;nggi harakatlar
-            </h3>
-            <span className="flex items-center gap-1.5 text-xs text-[var(--accent)] font-medium">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-[var(--primary)]/10 flex items-center justify-center text-[var(--primary)]">
+                <Activity size={18} />
+              </div>
+              <h3 className="text-lg font-bold text-[var(--text-primary)]">
+                So'nggi harakatlar
+              </h3>
+            </div>
+            <span className="flex items-center gap-1.5 text-xs text-[var(--accent)] font-medium px-2.5 py-1 bg-[var(--accent)]/10 rounded-full">
               <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
-              Real-time
+              Jonli rejim
             </span>
           </div>
-          <div className="flex flex-col gap-1 max-h-[340px] overflow-y-auto pr-1">
+          
+          <div className="flex flex-col gap-2 max-h-[420px] overflow-y-auto pr-2 custom-scrollbar">
             {recentActivities.map((activity) => (
               <div
                 key={activity.id}
-                className="flex items-start gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors"
+                className="flex items-start gap-4 p-3 rounded-xl border border-[var(--border)] hover:border-[var(--primary)]/20 hover:shadow-md transition-all bg-white"
               >
                 <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
+                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                   style={{
-                    backgroundColor: (ACTIVITY_COLORS[activity.type] ?? "#94A3B8") + "14",
+                    backgroundColor: (ACTIVITY_COLORS[activity.type] ?? "#94A3B8") + "15",
                     color: ACTIVITY_COLORS[activity.type] ?? "#94A3B8",
                   }}
                 >
-                  {ACTIVITY_ICONS[activity.icon] ?? <CalendarPlus size={16} />}
+                  {ACTIVITY_ICONS[activity.icon] ?? <CalendarPlus size={18} />}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-[var(--text-primary)] leading-snug">{activity.message}</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-0.5">{timeAgo(activity.timestamp)}</p>
+                <div className="flex-1 min-w-0 flex flex-col justify-center h-10">
+                  <p className="text-sm font-semibold text-[var(--text-primary)] truncate">{activity.message}</p>
+                  <p className="text-xs text-[var(--text-muted)] font-medium">{timeAgo(activity.timestamp)}</p>
                 </div>
               </div>
             ))}
           </div>
         </Card>
 
-        {/* Quick actions */}
-        <Card padding="lg">
-          <h3 className="text-base font-semibold text-[var(--text-primary)] mb-4">
-            Tezkor harakatlar
-          </h3>
-          <div className="flex flex-col gap-2">
-            {quickActions.map((action) => (
-              <Link
-                key={action.label}
-                href={action.href}
-                className="flex items-center gap-3 p-3 rounded-xl border border-[var(--border)] hover:border-[var(--primary)]/20 hover:bg-[var(--primary-50)] transition-all group"
-              >
-                <span
-                  className="text-xl font-bold min-w-[48px] h-12 flex items-center justify-center rounded-xl"
-                  style={{ color: action.color, backgroundColor: action.color + "12" }}
+        {/* Right Column: Quick Actions & Distribution */}
+        <div className="flex flex-col gap-6">
+          
+          {/* Quick actions */}
+          <Card padding="lg">
+            <h3 className="text-base font-semibold text-[var(--text-primary)] mb-4">
+              Tezkor harakatlar
+            </h3>
+            <div className="flex flex-col gap-3">
+              {quickActions.map((action) => (
+                <Link
+                  key={action.label}
+                  href={action.href}
+                  className="flex items-center gap-3 p-3 rounded-xl border border-[var(--border)] hover:border-[var(--primary)]/30 hover:shadow-sm transition-all group bg-[var(--bg-secondary)] hover:bg-white"
                 >
-                  {action.count}
-                </span>
-                <span className="flex-1 text-sm font-medium text-[var(--text-primary)]">
-                  {action.label}
-                </span>
-                <ArrowRight
-                  size={16}
-                  className="text-[var(--text-muted)] group-hover:text-[var(--primary)] group-hover:translate-x-0.5 transition-all"
-                />
-              </Link>
-            ))}
-          </div>
-        </Card>
+                  <span
+                    className="text-lg font-bold min-w-[40px] h-10 flex items-center justify-center rounded-xl"
+                    style={{ color: action.color, backgroundColor: action.color + "15" }}
+                  >
+                    {action.count}
+                  </span>
+                  <span className="flex-1 text-sm font-medium text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors">
+                    {action.label}
+                  </span>
+                  <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center border border-[var(--border)] group-hover:border-[var(--primary)]/20 group-hover:bg-[var(--primary)]/5 transition-all">
+                    <ArrowRight
+                      size={14}
+                      className="text-[var(--text-muted)] group-hover:text-[var(--primary)] group-hover:translate-x-0.5 transition-all"
+                    />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </Card>
+
+          {/* Service Distribution (Replaced Donut Chart with Progress Bars) */}
+          <Card padding="lg">
+            <h3 className="text-base font-semibold text-[var(--text-primary)] mb-5">
+              Xizmatlar ulushi
+            </h3>
+            <div className="flex flex-col gap-5">
+              {serviceDistribution.map((service) => (
+                <div key={service.name}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-[var(--text-secondary)]">{service.name}</span>
+                    <span className="text-sm font-bold" style={{ color: service.color }}>{service.value}%</span>
+                  </div>
+                  <div className="h-2.5 w-full bg-[var(--border)] rounded-full overflow-hidden">
+                    <div 
+                      className="h-full rounded-full transition-all duration-1000"
+                      style={{ width: `${service.value}%`, backgroundColor: service.color }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="mt-6 pt-4 border-t border-[var(--border)]">
+              <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+                Ushbu ko'rsatkichlar platformadagi barcha faol bronlar va so'rovlar asosida hisoblangan.
+              </p>
+            </div>
+          </Card>
+
+        </div>
       </div>
     </div>
   );

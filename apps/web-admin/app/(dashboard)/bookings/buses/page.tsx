@@ -113,14 +113,7 @@ export default function BusBookingsPage() {
   return (
     <div className="max-w-[1400px] mx-auto flex flex-col gap-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">
-          Avtobus bronlari
-        </h1>
-        <p className="text-sm text-[var(--text-muted)] mt-1">
-          Jami {filtered.length} ta bron
-        </p>
-      </div>
+      
 
       {/* Filters */}
       <div className="flex items-end gap-4 flex-wrap">

@@ -111,14 +111,7 @@ export default function HotelBookingsPage() {
     <div className="max-w-[1400px] mx-auto flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">
-            Mehmonxona bronlari
-          </h1>
-          <p className="text-sm text-[var(--text-muted)] mt-1">
-            Jami {filtered.length} ta bron
-          </p>
-        </div>
+        
         <Button variant="secondary" size="sm" icon={<Download size={14} />} onClick={() => exportToExcel(filtered, "Bronlar")}>
           Eksport
         </Button>

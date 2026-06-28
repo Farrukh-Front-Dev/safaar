@@ -48,10 +48,7 @@ export default function FinanceReportsPage() {
 
   return (
     <div className="max-w-[1200px] mx-auto flex flex-col gap-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">Soliq va Hisobotlar</h1>
-        <p className="text-sm text-[var(--text-muted)] mt-1">Barcha generatsiya qilingan moliyaviy hisobotlar</p>
-      </div>
+      
 
       <DataTable
         columns={columns}

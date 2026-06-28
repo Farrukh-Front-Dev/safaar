@@ -1,4 +1,4 @@
-import { mockUsers, mockPartners, mockHotelBookings, mockWithdrawals, mockFinanceReports, mockCmsBanners, mockCmsNews, mockCmsPages, mockRegions, mockAmenities, mockPromos, mockTickets } from "../mock-data";
+import { mockUsers, mockPartners, mockHotelBookings, mockWithdrawals, mockFinanceReports, mockCmsBanners, mockCmsNews, mockCmsPages, mockRegions, mockAmenities, mockPromos, mockTickets, mockTicketMessages } from "../mock-data";
 import { AdminManagedUser, Partner, AdminHotelBooking } from "../../types/admin";
 
 // Simulate network delay
@@ -95,5 +95,9 @@ export const MockApi = {
   getTickets: async () => {
     await delay(600);
     return mockTickets;
+  },
+  getTicketMessages: async (ticketId: string) => {
+    await delay(600);
+    return mockTicketMessages[ticketId] || [];
   },
 };

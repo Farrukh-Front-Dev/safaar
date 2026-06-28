@@ -85,10 +85,7 @@ export default function CatalogPage() {
   return (
     <div className="max-w-[1200px] mx-auto flex flex-col gap-6 animate-fade-in">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">Katalog</h1>
-          <p className="text-sm text-[var(--text-muted)] mt-1">Platformadagi asosiy ro'yxatlar (Lug'atlar)</p>
-        </div>
+        
         <Button size="sm" icon={<Plus size={14} />}>
           Yangi qo'shish
         </Button>
