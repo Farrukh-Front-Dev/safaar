@@ -7,6 +7,7 @@
     "apps/*"
   ],
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks 2>/dev/null || true",
     "build:types": "npm run build -w @agoda/types",
     "dev:types": "npm run dev -w @agoda/types",
     "dev:backend": "npm run start:dev -w @agoda/backend",
