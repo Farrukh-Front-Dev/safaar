@@ -4,6 +4,7 @@ import { useEffect, type ReactNode } from "react";
 import { Role } from "@agoda/types";
 import { useMounted } from "../../_hooks/use-mounted";
 import { useAuthStore } from "../../_stores/auth-store";
+import { Spinner } from "../ui/spinner";
 
 const DEMO_USER = {
   id: "demo-staff",
@@ -38,9 +39,17 @@ export function AuthGuard({ children }: { children: ReactNode }) {
     }
   }, [hydrated, user, setSession]);
 
-  // SSR yoki birinchi hydration paytida — bo'sh, hech narsa ko'rsatma
-  if (!hydrated) {
-    return null;
+  // Seeding bo'lguncha — toza loader (SSR'da ham server/client mos keladi).
+  if (!hydrated || !user) {
+    return (
+      <div
+        className="flex min-h-screen items-center justify-center bg-[var(--background)]"
+        role="status"
+        aria-label="Sahifa tayyorlanmoqda"
+      >
+        <Spinner size="lg" label="Sahifa tayyorlanmoqda" />
+      </div>
+    );
   }
 
   return <>{children}</>;
