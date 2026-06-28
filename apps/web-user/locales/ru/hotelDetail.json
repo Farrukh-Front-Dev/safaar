@@ -14,5 +14,8 @@
   "book": "Забронировать",
   "reviews": "Отзывы",
   "noReviews": "Пока нет отзывов.",
-  "ratingSummary": "На основе {count} отзывов"
+  "ratingSummary": "На основе {count} отзывов",
+  "from": "от",
+  "selectRoom": "Выбрать номер",
+  "bookingBox": "Бронирование"
 }

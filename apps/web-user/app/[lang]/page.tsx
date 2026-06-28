@@ -1,8 +1,12 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getHotels } from "@/lib/api/hotels";
 import { getCities } from "@/lib/api/catalog";
+import { Hero } from "@/components/home/Hero";
+import { PopularCities } from "@/components/home/PopularCities";
+import { WhyUzBron } from "@/components/home/WhyUzBron";
 import { SearchBar } from "@/components/search/SearchBar";
 import { HotelCard } from "@/components/hotels/HotelCard";
 import type { HotelListItem } from "@/types/view";
@@ -28,48 +32,62 @@ export default async function HomePage({
   const hotels: HotelListItem[] = hotelsResult?.items ?? [];
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-12 px-6 py-12">
-      <section className="flex flex-col gap-6">
-        <div className="flex flex-col gap-3">
-          <span className="text-sm font-semibold uppercase tracking-widest text-blue-600">
-            {dict.hero.eyebrow}
-          </span>
-          <h1 className="max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl">
-            {dict.hero.title}
-          </h1>
-          <p className="max-w-xl text-lg text-zinc-600 dark:text-zinc-400">
-            {dict.hero.subtitle}
-          </p>
-        </div>
+    <main className="flex flex-1 flex-col">
+      <Hero dict={dict.hero} />
 
+      {/* Qidiruv kartasi hero ustiga "suzib" chiqadi. */}
+      <div className="relative z-10 mx-auto -mt-12 w-full max-w-5xl px-6">
         <SearchBar locale={locale} dict={common.search} cities={cities} />
-      </section>
+      </div>
 
-      <section className="flex flex-col gap-4">
-        <h2 className="text-xl font-semibold">{dict.featured.title}</h2>
+      <div className="flex flex-col gap-14 py-14">
+        <PopularCities
+          locale={locale}
+          cities={cities}
+          dict={dict.popularCities}
+        />
 
-        {loadFailed ? (
-          <p className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
-            {dict.error.loadFailed}
-          </p>
-        ) : hotels.length === 0 ? (
-          <p className="text-sm text-zinc-500">{dict.featured.empty}</p>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {hotels.map((hotel) => (
-              <HotelCard
-                key={hotel.id}
-                hotel={hotel}
-                locale={locale}
-                labels={{
-                  perNight: dict.featured.perNight,
-                  reviews: dict.featured.reviews,
-                }}
-              />
-            ))}
+        <section className="mx-auto w-full max-w-6xl px-6">
+          <div className="mb-6 flex items-end justify-between gap-4">
+            <div className="flex flex-col gap-1">
+              <h2 className="text-2xl font-bold tracking-tight">
+                {dict.featured.title}
+              </h2>
+              <p className="text-sm text-slate-500">{dict.featured.subtitle}</p>
+            </div>
+            <Link
+              href={`/${locale}/hotels`}
+              className="shrink-0 text-sm font-semibold text-primary-600 hover:text-primary-700"
+            >
+              {dict.featured.all} →
+            </Link>
           </div>
-        )}
-      </section>
+
+          {loadFailed ? (
+            <p className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
+              {dict.error.loadFailed}
+            </p>
+          ) : hotels.length === 0 ? (
+            <p className="text-sm text-slate-500">{dict.featured.empty}</p>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {hotels.map((hotel) => (
+                <HotelCard
+                  key={hotel.id}
+                  hotel={hotel}
+                  locale={locale}
+                  labels={{
+                    perNight: dict.featured.perNight,
+                    reviews: dict.featured.reviews,
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
+        <WhyUzBron dict={dict.why} />
+      </div>
     </main>
   );
 }

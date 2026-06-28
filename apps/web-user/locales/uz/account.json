@@ -1,0 +1,54 @@
+{
+  "title": "Shaxsiy kabinet",
+  "nav": {
+    "profile": "Profil",
+    "bookings": "Bronlarim",
+    "favorites": "Sevimlilar",
+    "bonuses": "Bonuslar"
+  },
+  "profile": {
+    "title": "Profil ma'lumotlari",
+    "firstName": "Ism",
+    "lastName": "Familiya",
+    "email": "Email",
+    "phone": "Telefon",
+    "phoneHint": "Telefon raqamni o'zgartirib bo'lmaydi.",
+    "memberSince": "Ro'yxatdan o'tgan",
+    "save": "Saqlash",
+    "saved": "Ma'lumotlar saqlandi.",
+    "error": "Saqlashda xatolik yuz berdi."
+  },
+  "bookings": {
+    "title": "Mening bronlarim",
+    "empty": "Hozircha bronlaringiz yo'q.",
+    "number": "Bron raqami",
+    "status": "Holat",
+    "total": "Summa",
+    "type": "Tur",
+    "hotel": "Mehmonxona",
+    "bus": "Avtobus",
+    "view": "Ko'rish",
+    "statuses": {
+      "PENDING": "Kutilmoqda",
+      "AWAITING_PAYMENT": "To'lov kutilmoqda",
+      "AWAITING_PARTNER_CONFIRMATION": "Hamkor tasdig'i kutilmoqda",
+      "CONFIRMED": "Tasdiqlangan",
+      "CANCELLED": "Bekor qilingan",
+      "COMPLETED": "Yakunlangan",
+      "EXPIRED": "Muddati o'tgan"
+    }
+  },
+  "favorites": {
+    "title": "Sevimlilar",
+    "empty": "Sevimlilar ro'yxati bo'sh.",
+    "hotel": "Mehmonxona",
+    "bus": "Avtobus",
+    "view": "Ko'rish"
+  },
+  "bonuses": {
+    "title": "Bonuslar",
+    "balance": "Bonus balansi",
+    "empty": "Bonus tarixi hozircha bo'sh.",
+    "history": "Tarix"
+  }
+}

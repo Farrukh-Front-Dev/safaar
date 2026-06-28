@@ -81,3 +81,94 @@ export interface BookingView {
   createdAt: string;
   payment?: PaymentView;
 }
+
+
+/* ───────────────────────── Avtobus (bus) ───────────────────────── */
+
+/** Avtobus reysi — qidiruv natijalari va detal sarlavhasi uchun. */
+export interface BusTripView {
+  id: string;
+  fromCity: string;
+  toCity: string;
+  /** ISO sana-vaqt (UTC). UI'da lokal vaqtga formatlanadi. */
+  departureAt: string;
+  arrivalAt: string;
+  /** Yo'l davomiyligi — daqiqada (route'dan). */
+  durationMinutes: number;
+  companyName: string;
+  /** Kompaniya identifikatori (sharhlar uchun: `/bus-companies/:id/reviews`). */
+  companyId: string;
+  /** Kompaniya reytingi (0 bo'lishi mumkin). */
+  rating: number;
+  vehicleName: string;
+  /** Eng arzon joy narxi — **so'm**da. */
+  minPriceSum: number;
+  availableSeats: number;
+}
+
+/** Avtobusdagi bitta o'rindiq (joy tanlash uchun). */
+export interface BusSeatView {
+  id: string;
+  /** Ko'rinadigan joy raqami/kodi. */
+  code: string;
+  seatClass: "standard" | "comfort" | "vip";
+  /** Joy narxi — **so'm**da. */
+  priceSum: number;
+  status: "available" | "held" | "booked" | "blocked";
+}
+
+/* ───────────────────────── Kabinet (account) ───────────────────────── */
+
+/** Foydalanuvchi profili — kabinet sahifasi uchun. */
+export interface ProfileView {
+  id: string;
+  phone: string;
+  firstName: string;
+  lastName: string;
+  /** Ism + familiya (bo'shsa telefon). */
+  fullName: string;
+  email: string;
+  /** Bonus balansi — **so'm**da. */
+  bonusBalanceSum: number;
+  preferredLanguage: string;
+  status: string;
+  createdAt: string;
+}
+
+/** Bonus balansi va tarix (kabinet "Bonuslar" sahifasi). */
+export interface BonusView {
+  /** Balans — **so'm**da. */
+  balanceSum: number;
+  currency: "UZS";
+  entries: BonusEntryView[];
+}
+
+/** Bonus tarixidagi bitta yozuv. */
+export interface BonusEntryView {
+  id: string;
+  /** Miqdor — **so'm**da (manfiy bo'lishi mumkin: sarflangan). */
+  amountSum: number;
+  reason: string;
+  createdAt: string;
+}
+
+/** Sevimli (saqlangan) element — mehmonxona yoki avtobus. */
+export interface FavoriteView {
+  id: string;
+  targetType: string;
+  targetId: string;
+  createdAt: string;
+}
+
+
+/* ───────────────────────── Sharhlar (reviews) ───────────────────────── */
+
+/** Bitta sharh — mehmonxona yoki avtobus kompaniyasi detal sahifasida. */
+export interface ReviewView {
+  id: string;
+  /** Reyting 1..5. */
+  rating: number;
+  /** Sharh matni. */
+  body: string;
+  createdAt: string;
+}

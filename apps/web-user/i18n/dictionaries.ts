@@ -21,6 +21,13 @@ const loaders = {
     auth: () => import("@/locales/uz/auth.json"),
     checkout: () => import("@/locales/uz/checkout.json"),
     booking: () => import("@/locales/uz/booking.json"),
+    buses: () => import("@/locales/uz/buses.json"),
+    busDetail: () => import("@/locales/uz/busDetail.json"),
+    account: () => import("@/locales/uz/account.json"),
+    static: () => import("@/locales/uz/static.json"),
+    reviews: () => import("@/locales/uz/reviews.json"),
+    favorites: () => import("@/locales/uz/favorites.json"),
+    errors: () => import("@/locales/uz/errors.json"),
   },
   ru: {
     common: () => import("@/locales/ru/common.json"),
@@ -30,6 +37,13 @@ const loaders = {
     auth: () => import("@/locales/ru/auth.json"),
     checkout: () => import("@/locales/ru/checkout.json"),
     booking: () => import("@/locales/ru/booking.json"),
+    buses: () => import("@/locales/ru/buses.json"),
+    busDetail: () => import("@/locales/ru/busDetail.json"),
+    account: () => import("@/locales/ru/account.json"),
+    static: () => import("@/locales/ru/static.json"),
+    reviews: () => import("@/locales/ru/reviews.json"),
+    favorites: () => import("@/locales/ru/favorites.json"),
+    errors: () => import("@/locales/ru/errors.json"),
   },
   en: {
     common: () => import("@/locales/en/common.json"),
@@ -39,6 +53,13 @@ const loaders = {
     auth: () => import("@/locales/en/auth.json"),
     checkout: () => import("@/locales/en/checkout.json"),
     booking: () => import("@/locales/en/booking.json"),
+    buses: () => import("@/locales/en/buses.json"),
+    busDetail: () => import("@/locales/en/busDetail.json"),
+    account: () => import("@/locales/en/account.json"),
+    static: () => import("@/locales/en/static.json"),
+    reviews: () => import("@/locales/en/reviews.json"),
+    favorites: () => import("@/locales/en/favorites.json"),
+    errors: () => import("@/locales/en/errors.json"),
   },
 } as const;
 
@@ -59,6 +80,13 @@ export type HotelDetailDict = Dict<"hotelDetail">;
 export type AuthDict = Dict<"auth">;
 export type CheckoutDict = Dict<"checkout">;
 export type BookingDict = Dict<"booking">;
+export type BusesDict = Dict<"buses">;
+export type BusDetailDict = Dict<"busDetail">;
+export type AccountDict = Dict<"account">;
+export type StaticDict = Dict<"static">;
+export type ReviewsDict = Dict<"reviews">;
+export type FavoritesDict = Dict<"favorites">;
+export type ErrorsDict = Dict<"errors">;
 
 export async function getDictionary<NS extends Namespace>(
   locale: Locale,

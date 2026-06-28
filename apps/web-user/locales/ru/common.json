@@ -4,12 +4,14 @@
     "hotels": "Отели",
     "buses": "Автобусы",
     "about": "О нас",
-    "help": "Помощь"
+    "help": "Помощь",
+    "terms": "Условия"
   },
   "actions": {
     "login": "Войти",
     "logout": "Выйти",
-    "search": "Поиск"
+    "search": "Поиск",
+    "account": "Кабинет"
   },
   "language": "Язык",
   "search": {

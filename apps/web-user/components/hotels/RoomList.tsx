@@ -44,11 +44,11 @@ export function RoomList({
         return (
           <li
             key={room.id}
-            className="flex flex-col gap-3 rounded-xl border border-black/10 p-4 dark:border-white/15 sm:flex-row sm:items-center sm:justify-between"
+            className="flex flex-col gap-3 rounded-xl border border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between"
           >
             <div>
               <h3 className="font-semibold">{room.name}</h3>
-              <p className="text-sm text-zinc-500">
+              <p className="text-sm text-slate-500">
                 {dict.capacity}: {room.capacity} {dict.guests}
                 {" · "}
                 {soldOut
@@ -60,19 +60,19 @@ export function RoomList({
             <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-end">
               <p className="font-semibold">
                 {formatSum(room.priceSum)}
-                <span className="text-sm font-normal text-zinc-500">
+                <span className="text-sm font-normal text-slate-500">
                   {" "}
                   / {dict.perNight}
                 </span>
               </p>
               {soldOut ? (
-                <span className="text-sm text-zinc-400">{dict.soldOut}</span>
+                <span className="text-sm text-slate-400">{dict.soldOut}</span>
               ) : (
                 <Link
                   href={bookingHref(room.id)}
                   className={cn(
-                    "inline-flex h-10 items-center justify-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-700",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
+                    "inline-flex h-10 items-center justify-center rounded-lg bg-accent-600 px-4 text-sm font-medium text-white transition-colors hover:bg-accent-700",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2",
                   )}
                 >
                   {dict.book}

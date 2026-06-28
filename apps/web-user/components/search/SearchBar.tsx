@@ -52,27 +52,28 @@ export function SearchBar({
   }
 
   return (
-    <div className="rounded-2xl border border-black/10 bg-white p-4 shadow-sm dark:border-white/15 dark:bg-zinc-900">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="mb-4 flex gap-2" role="tablist" aria-label={dict.city}>
         <span
           role="tab"
           aria-selected="true"
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white"
+          className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white"
         >
           {dict.hotelsTab}
         </span>
-        <span
+        <button
+          type="button"
           role="tab"
           aria-selected="false"
-          aria-disabled="true"
+          onClick={() => router.push(`/${locale}/buses`)}
           className={cn(
-            "rounded-lg px-4 py-2 text-sm font-medium text-zinc-400",
-            "cursor-not-allowed",
+            "rounded-lg px-4 py-2 text-sm font-medium text-slate-500",
+            "cursor-pointer transition-colors hover:bg-slate-100 hover:text-slate-900",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500",
           )}
-          title="Tez orada"
         >
           {dict.busesTab}
-        </span>
+        </button>
       </div>
 
       <form
@@ -80,7 +81,7 @@ export function SearchBar({
         className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:items-end"
       >
         <label className="flex flex-col gap-1 lg:col-span-2">
-          <span className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+          <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
             {dict.city}
           </span>
           <Select
@@ -98,7 +99,7 @@ export function SearchBar({
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+          <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
             {dict.checkIn}
           </span>
           <Input
@@ -109,7 +110,7 @@ export function SearchBar({
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+          <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
             {dict.checkOut}
           </span>
           <Input
@@ -123,7 +124,7 @@ export function SearchBar({
         <div className="flex flex-col gap-1">
           <label
             htmlFor="search-guests"
-            className="text-sm font-medium text-zinc-600 dark:text-zinc-400"
+            className="text-sm font-medium text-slate-600 dark:text-slate-400"
           >
             {dict.guests}
           </label>

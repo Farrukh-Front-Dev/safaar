@@ -14,5 +14,8 @@
   "book": "Book now",
   "reviews": "Reviews",
   "noReviews": "No reviews yet.",
-  "ratingSummary": "Based on {count} reviews"
+  "ratingSummary": "Based on {count} reviews",
+  "from": "from",
+  "selectRoom": "Select a room",
+  "bookingBox": "Booking"
 }

@@ -52,7 +52,7 @@ export default async function BookingDetailPage({
       <div className="flex flex-col gap-4 rounded-xl border border-black/10 p-6 dark:border-white/15">
         <Row label={dict.number} value={booking.bookingNumber} />
         <Row label={dict.status}>
-          <span className="rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800 dark:bg-blue-950 dark:text-blue-200">
+          <span className="rounded-full bg-primary-100 px-3 py-1 text-sm font-medium text-primary-800 dark:bg-primary-900 dark:text-primary-200">
             {statusLabel}
           </span>
         </Row>
@@ -69,7 +69,7 @@ export default async function BookingDetailPage({
       <div className="flex flex-wrap gap-3">
         {canPay && (
           <a href={canPay} target="_blank" rel="noopener noreferrer">
-            <Button size="lg">{dict.pay}</Button>
+            <Button variant="accent" size="lg">{dict.pay}</Button>
           </a>
         )}
         <Link href={`/${locale}`}>
@@ -93,7 +93,7 @@ function Row({
 }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <span className="text-sm text-zinc-500">{label}</span>
+      <span className="text-sm text-slate-500">{label}</span>
       {children ?? <span className="font-medium">{value}</span>}
     </div>
   );

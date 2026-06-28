@@ -1,0 +1,21 @@
+{
+  "name": "UzBron — Mehmonxona va avtobus bron qilish",
+  "short_name": "UzBron",
+  "description": "O'zbekiston bo'ylab mehmonxona va avtobuslarni onlayn bron qiling.",
+  "start_url": "/uz",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "lang": "uz",
+  "dir": "ltr",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/globe.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

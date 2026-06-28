@@ -1,0 +1,18 @@
+{
+  "notFound": {
+    "code": "404",
+    "title": "Sahifa topilmadi",
+    "text": "Kechirasiz, siz qidirgan sahifa mavjud emas yoki ko'chirilgan.",
+    "home": "Bosh sahifaga qaytish"
+  },
+  "error": {
+    "title": "Nimadir xato ketdi",
+    "text": "Kutilmagan xatolik yuz berdi. Iltimos, qayta urinib ko'ring.",
+    "retry": "Qayta urinish",
+    "home": "Bosh sahifaga"
+  },
+  "offline": {
+    "title": "Internet aloqasi yo'q",
+    "text": "Tarmoqqa ulanmagansiz. Ulanishni tekshirib, qayta urinib ko'ring."
+  }
+}

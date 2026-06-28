@@ -34,8 +34,8 @@ export function LocaleSwitcher({ current }: { current: Locale }) {
             className={cn(
               "rounded-md px-2 py-1 text-sm uppercase transition-colors",
               active
-                ? "bg-blue-600 text-white"
-                : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800",
+                ? "bg-primary-600 text-white"
+                : "text-slate-600 hover:bg-slate-100",
             )}
           >
             {locale}

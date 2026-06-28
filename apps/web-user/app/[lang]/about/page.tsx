@@ -1,0 +1,97 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { isLocale, type Locale } from "@/i18n/config";
+import { getDictionary } from "@/i18n/dictionaries";
+import { Card, CardBody } from "@/components/ui/Card";
+
+// Stats qiymatlari JSON'da yo'q — chiroyli ko'rsatkichlar bilan hardcode qilamiz.
+const STAT_VALUES = {
+  cities: "14+",
+  partners: "120+",
+  support: "24/7",
+} as const;
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  if (!isLocale(lang)) return {};
+  const dict = await getDictionary(lang as Locale, "static");
+  return { title: dict.about.title };
+}
+
+export default async function AboutPage({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}) {
+  const { lang } = await params;
+  if (!isLocale(lang)) notFound();
+  const locale = lang as Locale;
+
+  const dict = await getDictionary(locale, "static");
+  const { about } = dict;
+
+  const stats = [
+    { value: STAT_VALUES.cities, label: about.stats.cities },
+    { value: STAT_VALUES.partners, label: about.stats.partners },
+    { value: STAT_VALUES.support, label: about.stats.support },
+  ];
+
+  return (
+    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-12 px-6 py-12">
+      {/* Hero */}
+      <section className="flex flex-col gap-3">
+        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+          {about.title}
+        </h1>
+        <p className="max-w-3xl text-lg text-slate-600 dark:text-slate-400">
+          {about.intro}
+        </p>
+      </section>
+
+      {/* Maqsad */}
+      <section className="flex flex-col gap-3">
+        <h2 className="text-2xl font-semibold">{about.missionTitle}</h2>
+        <p className="max-w-3xl text-slate-600 dark:text-slate-400">
+          {about.mission}
+        </p>
+      </section>
+
+      {/* Statistika */}
+      <section className="grid gap-4 sm:grid-cols-3">
+        {stats.map((stat, index) => (
+          <Card key={index} className="text-center">
+            <CardBody className="flex flex-col gap-1">
+              <span className="text-3xl font-bold text-primary-600">
+                {stat.value}
+              </span>
+              <span className="text-sm text-slate-500 dark:text-slate-400">
+                {stat.label}
+              </span>
+            </CardBody>
+          </Card>
+        ))}
+      </section>
+
+      {/* Qadriyatlar */}
+      <section className="flex flex-col gap-4">
+        <h2 className="text-2xl font-semibold">{about.valuesTitle}</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {about.values.map((value, index) => (
+            <Card key={index}>
+              <CardBody className="flex flex-col gap-2">
+                <h3 className="text-lg font-semibold">{value.title}</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  {value.text}
+                </p>
+              </CardBody>
+            </Card>
+          ))}
+        </div>
+      </section>
+    </main>
+  );
+}

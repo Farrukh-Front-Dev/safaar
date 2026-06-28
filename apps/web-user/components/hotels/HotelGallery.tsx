@@ -24,7 +24,7 @@ export function HotelGallery({
       <div
         role="img"
         aria-label={alt}
-        className="flex aspect-video w-full items-center justify-center rounded-2xl bg-gradient-to-br from-blue-100 to-zinc-100 text-2xl font-semibold text-blue-900/60 dark:from-blue-950 dark:to-zinc-900 dark:text-blue-200/50"
+        className="flex aspect-video w-full items-center justify-center rounded-2xl bg-linear-to-br from-primary-100 to-slate-100 text-2xl font-semibold text-primary-900/60"
       >
         {alt}
       </div>
@@ -43,7 +43,7 @@ export function HotelGallery({
           key={src}
           src={src}
           alt={`${alt} — ${i + 1}`}
-          className="aspect-[16/9] h-full w-full object-cover"
+          className="aspect-video h-full w-full object-cover"
         />
       ))}
     </div>

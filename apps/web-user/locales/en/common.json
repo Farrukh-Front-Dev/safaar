@@ -4,12 +4,14 @@
     "hotels": "Hotels",
     "buses": "Buses",
     "about": "About us",
-    "help": "Help"
+    "help": "Help",
+    "terms": "Terms"
   },
   "actions": {
     "login": "Sign in",
     "logout": "Sign out",
-    "search": "Search"
+    "search": "Search",
+    "account": "Account"
   },
   "language": "Language",
   "search": {
