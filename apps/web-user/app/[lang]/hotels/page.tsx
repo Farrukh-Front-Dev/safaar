@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { isLocale, type Locale } from "@/i18n/config";
@@ -6,8 +7,16 @@ import { getHotels } from "@/lib/api/hotels";
 import { getCities } from "@/lib/api/catalog";
 import { SearchBar } from "@/components/search/SearchBar";
 import { HotelFilters } from "@/components/hotels/HotelFilters";
+import { HotelSortSelect } from "@/components/hotels/HotelSortSelect";
+import { ActiveFilters } from "@/components/hotels/ActiveFilters";
+import { HotelsPagination } from "@/components/hotels/HotelsPagination";
 import { HotelCard } from "@/components/hotels/HotelCard";
+import { Button } from "@/components/ui/Button";
 import type { HotelListItem } from "@/types/view";
+
+const PAGE_SIZE = 9;
+const SORTS = ["price_asc", "price_desc", "rating"] as const;
+type Sort = (typeof SORTS)[number];
 
 export async function generateMetadata({
   params,
@@ -26,10 +35,10 @@ function one(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
-function num(value: string | undefined): number | undefined {
-  if (!value) return undefined;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : undefined;
+function int(value: string | undefined): number | undefined {
+  if (value === undefined || value === "") return undefined;
+  const n = Number(value);
+  return Number.isFinite(n) ? Math.trunc(n) : undefined;
 }
 
 export default async function HotelsPage({
@@ -49,34 +58,79 @@ export default async function HotelsPage({
     getDictionary(locale, "hotels"),
   ]);
 
+  // ── searchParams validatsiyasi (xato/zararli qiymatlardan himoya) ──
   const cityId = one(sp.city_id);
-  const stars = num(one(sp.stars));
-  const minPrice = num(one(sp.min_price));
-  const maxPrice = num(one(sp.max_price));
-  const sort = one(sp.sort);
+  const starsRaw = int(one(sp.stars));
+  const stars =
+    starsRaw !== undefined && starsRaw >= 1 && starsRaw <= 5
+      ? starsRaw
+      : undefined;
+  const minRaw = int(one(sp.min_price));
+  const minPrice = minRaw !== undefined && minRaw >= 0 ? minRaw : undefined;
+  const maxRaw = int(one(sp.max_price));
+  const maxPrice = maxRaw !== undefined && maxRaw >= 0 ? maxRaw : undefined;
+  const sortRaw = one(sp.sort);
+  const sort = SORTS.includes(sortRaw as Sort) ? (sortRaw as Sort) : undefined;
+  const page = Math.max(1, int(one(sp.page)) ?? 1);
+  const checkIn = one(sp.check_in);
+  const checkOut = one(sp.check_out);
+  const guests = int(one(sp.guests));
 
-  // Parallel, lekin alohida xato: biri yiqilsa, ikkinchisi baribir ko'rinadi.
-  const citiesPromise = getCities(locale).catch(() => []);
-  const hotelsPromise = getHotels(locale, { cityId, stars }).catch(() => null);
-  const cities = await citiesPromise;
-  const hotelsResult = await hotelsPromise;
+  // ── Ma'lumot (alohida xato + log) ──
+  const cities = await getCities(locale).catch((e: unknown) => {
+    console.error("[hotels] getCities failed:", e);
+    return [];
+  });
+  const hotelsResult = await getHotels(locale, { cityId }).catch(
+    (e: unknown) => {
+      console.error("[hotels] getHotels failed:", e);
+      return null;
+    },
+  );
   const loadFailed = hotelsResult === null;
 
-  // Backend `findAll` narx-filtr va saralashni qo'llamaydi — frontda qo'llaymiz.
-  let items: HotelListItem[] = hotelsResult?.items ?? [];
-  if (minPrice !== undefined) {
-    items = items.filter((h) => h.minPriceSum >= minPrice);
-  }
-  if (maxPrice !== undefined) {
-    items = items.filter((h) => h.minPriceSum <= maxPrice);
-  }
+  // ── Filtr + saralash + pagination — to'liq ro'yxat ustida (izchil) ──
+  // Backend `findAll` narx/saralash/haqiqiy pagination qo'llamaydi, to'liq
+  // ro'yxat qaytaradi; shuning uchun hammasini shu yerda izchil bajaramiz.
+  let all: HotelListItem[] = hotelsResult?.items ?? [];
+  if (stars !== undefined) all = all.filter((h) => h.stars >= stars);
+  if (minPrice !== undefined) all = all.filter((h) => h.minPriceSum >= minPrice);
+  if (maxPrice !== undefined) all = all.filter((h) => h.minPriceSum <= maxPrice);
   if (sort === "price_asc") {
-    items = [...items].sort((a, b) => a.minPriceSum - b.minPriceSum);
+    all = [...all].sort((a, b) => a.minPriceSum - b.minPriceSum);
   } else if (sort === "price_desc") {
-    items = [...items].sort((a, b) => b.minPriceSum - a.minPriceSum);
+    all = [...all].sort((a, b) => b.minPriceSum - a.minPriceSum);
   } else if (sort === "rating") {
-    items = [...items].sort((a, b) => b.rating - a.rating);
+    all = [...all].sort((a, b) => b.rating - a.rating);
   }
+
+  const total = all.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const items = all.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  // Pagination/CTA havolalari uchun joriy parametrlar.
+  const basePath = `/${locale}/hotels`;
+  const currentParams: Record<string, string> = {};
+  if (cityId) currentParams.city_id = cityId;
+  if (stars !== undefined) currentParams.stars = String(stars);
+  if (minPrice !== undefined) currentParams.min_price = String(minPrice);
+  if (maxPrice !== undefined) currentParams.max_price = String(maxPrice);
+  if (sort) currentParams.sort = sort;
+  if (checkIn) currentParams.check_in = checkIn;
+  if (checkOut) currentParams.check_out = checkOut;
+  if (guests) currentParams.guests = String(guests);
+
+  // Bo'sh holatda "Filtrlarni tozalash" — city/sana saqlanadi.
+  const clearedParams: Record<string, string> = {};
+  if (cityId) clearedParams.city_id = cityId;
+  if (checkIn) clearedParams.check_in = checkIn;
+  if (checkOut) clearedParams.check_out = checkOut;
+  if (guests) clearedParams.guests = String(guests);
+  const clearedQuery = new URLSearchParams(clearedParams).toString();
+  const clearedHref = `${basePath}${clearedQuery ? `?${clearedQuery}` : ""}`;
+  const retryQuery = new URLSearchParams(currentParams).toString();
+  const retryHref = `${basePath}${retryQuery ? `?${retryQuery}` : ""}`;
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 py-8">
@@ -84,44 +138,63 @@ export default async function HotelsPage({
         locale={locale}
         dict={common.search}
         cities={cities}
-        defaults={{
-          cityId,
-          checkIn: one(sp.check_in),
-          checkOut: one(sp.check_out),
-          guests: num(one(sp.guests)),
-        }}
+        defaults={{ cityId, checkIn, checkOut, guests }}
       />
 
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold tracking-tight">{dict.title}</h1>
-        {!loadFailed && (
-          <p className="text-sm text-slate-500">
-            {dict.resultsCount.replace("{count}", String(items.length))}
-          </p>
-        )}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">{dict.title}</h1>
+            {!loadFailed && (
+              <p aria-live="polite" className="text-sm text-slate-500">
+                {dict.resultsCount.replace("{count}", String(total))}
+              </p>
+            )}
+          </div>
+          {!loadFailed && total > 0 && <HotelSortSelect dict={dict.sort} />}
+        </div>
+        <ActiveFilters dict={dict} />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr]">
-        <HotelFilters dict={{ filters: dict.filters, sort: dict.sort }} />
+        <HotelFilters dict={{ filters: dict.filters }} />
 
         <section aria-label={dict.title}>
           {loadFailed ? (
-            <p className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
-              {dict.error}
-            </p>
-          ) : items.length === 0 ? (
-            <p className="text-sm text-slate-500">{dict.empty}</p>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {items.map((hotel) => (
-                <HotelCard
-                  key={hotel.id}
-                  hotel={hotel}
-                  locale={locale}
-                  labels={{ perNight: dict.perNight, reviews: dict.reviews }}
-                />
-              ))}
+            <div className="flex flex-col items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-800">
+              <p>{dict.error}</p>
+              <Link href={retryHref}>
+                <Button variant="secondary">{dict.retry}</Button>
+              </Link>
             </div>
+          ) : items.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-white py-16 text-center">
+              <p className="font-medium text-slate-700">{dict.empty}</p>
+              <p className="text-sm text-slate-500">{dict.emptyHint}</p>
+              <Link href={clearedHref}>
+                <Button variant="secondary">{dict.clearFilters}</Button>
+              </Link>
+            </div>
+          ) : (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {items.map((hotel) => (
+                  <HotelCard
+                    key={hotel.id}
+                    hotel={hotel}
+                    locale={locale}
+                    labels={{ perNight: dict.perNight, reviews: dict.reviews }}
+                  />
+                ))}
+              </div>
+              <HotelsPagination
+                basePath={basePath}
+                params={currentParams}
+                page={safePage}
+                totalPages={totalPages}
+                dict={dict.pagination}
+              />
+            </>
           )}
         </section>
       </div>

@@ -45,10 +45,12 @@ export function HotelCard({
               <BuildingIcon />
             </span>
           )}
-          <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-sm font-bold text-amber-600 shadow-sm backdrop-blur">
-            <Star />
-            {hotel.rating.toFixed(1)}
-          </span>
+          {hotel.rating > 0 && (
+            <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-sm font-bold text-amber-600 shadow-sm backdrop-blur">
+              <Star />
+              {hotel.rating.toFixed(1)}
+            </span>
+          )}
         </div>
 
         <div className="flex flex-1 flex-col p-4">
@@ -60,7 +62,7 @@ export function HotelCard({
             </p>
           )}
           <div className="mt-auto pt-3">
-            <p className="text-lg font-bold text-slate-900">
+            <p className="text-lg font-bold tabular-nums text-slate-900">
               {formatSum(hotel.minPriceSum)}
               <span className="text-sm font-normal text-slate-500">
                 {" "}

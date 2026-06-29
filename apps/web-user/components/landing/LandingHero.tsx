@@ -1,10 +1,9 @@
-/* eslint-disable @next/next/no-img-element */
+import Image from "next/image";
 import Link from "next/link";
 import type { Locale } from "@/i18n/config";
 import type { LandingDict } from "@/i18n/dictionaries";
-import { SHOW_PLACEHOLDER_PHOTOS, placeholderPhoto } from "@/lib/images";
 
-/** Marketing landing — to'liq ekran hero: fon rasm + overlay + sarlavha + CTA. */
+/** Marketing landing — to'liq ekran hero: Samarqand Registon foni + overlay + CTA. */
 export function LandingHero({
   locale,
   dict,
@@ -12,21 +11,24 @@ export function LandingHero({
   locale: Locale;
   dict: LandingDict["hero"];
 }) {
-  const bg = SHOW_PLACEHOLDER_PHOTOS
-    ? placeholderPhoto("uzbekistan-hero-landing", 1600, 900)
-    : null;
-
   return (
     <section className="relative isolate overflow-hidden">
-      {bg && (
-        <img
-          src={bg}
-          alt=""
-          aria-hidden
-          className="absolute inset-0 -z-10 h-full w-full object-cover"
-        />
-      )}
-      <div className="absolute inset-0 -z-10 bg-linear-to-br from-primary-900/90 via-primary-800/80 to-slate-900/85" />
+      {/* Fon rasm — Samarqand Registon. next/image fill + object-cover bilan
+          har qanday ekranga (mobil/desktop) moslashadi; priority — LCP uchun. */}
+      <Image
+        src="/samarqand-registan-picture.png"
+        alt=""
+        aria-hidden
+        fill
+        priority
+        sizes="100vw"
+        className="-z-10 object-cover object-center"
+      />
+      {/* Matn kontrasti uchun gradient scrim — chapdan to'q (matn shu yerda),
+          o'ngga ochiladi, shunda Registon ko'rinib turadi. */}
+      <div className="absolute inset-0 -z-10 bg-linear-to-r from-slate-950/85 via-slate-900/60 to-slate-900/30" />
+      {/* Pastdan yengil to'qlashuv — mobilda ham matn o'qiladi. */}
+      <div className="absolute inset-0 -z-10 bg-linear-to-t from-slate-950/70 via-transparent to-transparent" />
 
       <div className="mx-auto w-full max-w-6xl px-6 py-28 text-white sm:py-36">
         <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest backdrop-blur">

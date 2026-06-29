@@ -1,24 +1,37 @@
 {
   "title": "Отели",
   "resultsCount": "Найдено отелей: {count}",
-  "empty": "Ничего не найдено. Попробуйте изменить фильтры.",
+  "empty": "Ничего не найдено.",
+  "emptyHint": "Сбросьте или измените фильтры и попробуйте снова.",
+  "clearFilters": "Сбросить фильтры",
   "error": "Не удалось загрузить данные. Проверьте, запущен ли backend.",
+  "retry": "Повторить",
   "perNight": "ночь",
   "reviews": "отзыв",
   "viewDetails": "Подробнее",
+  "removeFilter": "Убрать фильтр",
   "filters": {
     "title": "Фильтры",
+    "toggle": "Фильтры",
     "stars": "Звёзды",
     "anyStars": "Все",
-    "priceMin": "Цена от (сум)",
-    "priceMax": "Цена до (сум)",
+    "starsValue": "{n}+ звёзд",
+    "priceMin": "Цена от",
+    "priceMax": "Цена до",
+    "currency": "сум",
     "apply": "Применить",
     "reset": "Сбросить"
   },
   "sort": {
     "label": "Сортировка",
+    "default": "Рекомендуемые",
     "priceAsc": "Цена: по возрастанию",
     "priceDesc": "Цена: по убыванию",
     "rating": "По рейтингу"
+  },
+  "pagination": {
+    "prev": "Назад",
+    "next": "Вперёд",
+    "pageOf": "{page} / {total}"
   }
 }

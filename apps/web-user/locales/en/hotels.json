@@ -1,24 +1,37 @@
 {
   "title": "Hotels",
   "resultsCount": "{count} hotels found",
-  "empty": "Nothing found. Try changing the filters.",
+  "empty": "Nothing found.",
+  "emptyHint": "Try clearing or changing the filters.",
+  "clearFilters": "Clear filters",
   "error": "Failed to load data. Check that the backend is running.",
+  "retry": "Try again",
   "perNight": "night",
   "reviews": "review",
   "viewDetails": "View details",
+  "removeFilter": "Remove filter",
   "filters": {
     "title": "Filters",
+    "toggle": "Filters",
     "stars": "Stars",
     "anyStars": "All",
-    "priceMin": "Min price (UZS)",
-    "priceMax": "Max price (UZS)",
+    "starsValue": "{n}+ stars",
+    "priceMin": "Min price",
+    "priceMax": "Max price",
+    "currency": "UZS",
     "apply": "Apply",
     "reset": "Reset"
   },
   "sort": {
     "label": "Sort",
+    "default": "Recommended",
     "priceAsc": "Price: low to high",
     "priceDesc": "Price: high to low",
     "rating": "By rating"
+  },
+  "pagination": {
+    "prev": "Previous",
+    "next": "Next",
+    "pageOf": "{page} / {total}"
   }
 }

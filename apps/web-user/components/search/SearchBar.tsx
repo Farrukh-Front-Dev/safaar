@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import type { Locale } from "@/i18n/config";
 import type { CommonDict } from "@/i18n/dictionaries";
 import type { CityOption } from "@/types/view";
-import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -20,8 +19,7 @@ export interface SearchDefaults {
 /**
  * Qidiruv bloki — bosh sahifa va natijalar sahifasida ishlatiladi.
  * Interaktiv bo'lgani uchun client komponent. Shaharlar serverdan props orqali
- * keladi (komponent o'zi fetch qilmaydi). Submitda `/[lang]/hotels` ga query
- * bilan navigatsiya qiladi — natijalar serverda shu query asosida olinadi.
+ * keladi. Submitda `/[lang]/hotels` ga query bilan navigatsiya qiladi.
  */
 export function SearchBar({
   locale,
@@ -51,13 +49,19 @@ export function SearchBar({
     router.push(`/${locale}/hotels${query ? `?${query}` : ""}`);
   }
 
+  const labelClass = "text-sm font-medium text-slate-600";
+
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-4 flex gap-2" role="tablist" aria-label={dict.city}>
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+      <div
+        className="mb-4 inline-flex gap-1 rounded-full bg-slate-100 p-1"
+        role="tablist"
+        aria-label={dict.city}
+      >
         <span
           role="tab"
           aria-selected="true"
-          className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white"
+          className="rounded-full bg-primary-600 px-4 py-1.5 text-sm font-medium text-white shadow-sm"
         >
           {dict.hotelsTab}
         </span>
@@ -66,11 +70,7 @@ export function SearchBar({
           role="tab"
           aria-selected="false"
           onClick={() => router.push(`/${locale}/buses`)}
-          className={cn(
-            "rounded-lg px-4 py-2 text-sm font-medium text-slate-500",
-            "cursor-pointer transition-colors hover:bg-slate-100 hover:text-slate-900",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500",
-          )}
+          className="rounded-full px-4 py-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
         >
           {dict.busesTab}
         </button>
@@ -81,9 +81,7 @@ export function SearchBar({
         className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:items-end"
       >
         <label className="flex flex-col gap-1 lg:col-span-2">
-          <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-            {dict.city}
-          </span>
+          <span className={labelClass}>{dict.city}</span>
           <Select
             value={cityId}
             onChange={(e) => setCityId(e.target.value)}
@@ -99,9 +97,7 @@ export function SearchBar({
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-            {dict.checkIn}
-          </span>
+          <span className={labelClass}>{dict.checkIn}</span>
           <Input
             type="date"
             value={checkIn}
@@ -110,9 +106,7 @@ export function SearchBar({
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-            {dict.checkOut}
-          </span>
+          <span className={labelClass}>{dict.checkOut}</span>
           <Input
             type="date"
             value={checkOut}
@@ -122,22 +116,21 @@ export function SearchBar({
         </label>
 
         <div className="flex flex-col gap-1">
-          <label
-            htmlFor="search-guests"
-            className="text-sm font-medium text-slate-600 dark:text-slate-400"
-          >
+          <label htmlFor="search-guests" className={labelClass}>
             {dict.guests}
           </label>
           <div className="flex gap-2">
-            <Input
-              id="search-guests"
-              type="number"
-              min={1}
-              max={20}
-              value={guests}
-              onChange={(e) => setGuests(Math.max(1, Number(e.target.value)))}
-              className="w-20"
-            />
+            <div className="w-20 shrink-0">
+              <Input
+                id="search-guests"
+                type="number"
+                min={1}
+                max={20}
+                value={guests}
+                onChange={(e) => setGuests(Math.max(1, Number(e.target.value)))}
+                className="tabular-nums"
+              />
+            </div>
             <Button type="submit" className="flex-1">
               {dict.submit}
             </Button>

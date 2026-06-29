@@ -10,7 +10,7 @@ export function LandingStats({ dict }: { dict: LandingDict["stats"] }) {
   ];
 
   return (
-    <section className="mx-auto -mt-10 w-full max-w-5xl px-6">
+    <section className="relative z-10 mx-auto -mt-10 w-full max-w-5xl px-6">
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-slate-200 bg-slate-200 shadow-sm sm:grid-cols-4">
         {stats.map((s) => (
           <div key={s.label} className="bg-white p-6 text-center">
