@@ -57,7 +57,7 @@ export function CheckoutForm({
       <input type="hidden" name="roomId" value={room.id} />
 
       <div className="flex flex-col gap-6">
-        <section className="flex flex-col gap-4 rounded-xl border border-black/10 p-5 dark:border-white/15">
+        <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold">{dict.guestDetails}</h2>
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium">{dict.fullName}</span>
@@ -103,7 +103,7 @@ export function CheckoutForm({
           </div>
         </section>
 
-        <section className="flex flex-col gap-3 rounded-xl border border-black/10 p-5 dark:border-white/15">
+        <section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold">{dict.paymentMethod}</h2>
           <Select name="paymentMethod" defaultValue="click">
             {PAYMENT_METHODS.map((m) => (
@@ -115,19 +115,19 @@ export function CheckoutForm({
         </section>
       </div>
 
-      <aside className="flex h-fit flex-col gap-3 rounded-xl border border-black/10 p-5 dark:border-white/15">
+      <aside className="flex h-fit flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-24">
         <h2 className="text-lg font-semibold">{dict.summary}</h2>
         <div>
           <p className="font-medium">{hotelName}</p>
-          <p className="text-sm text-zinc-500">{room.name}</p>
+          <p className="text-sm text-slate-500">{room.name}</p>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-zinc-500">
+          <span className="text-slate-500">
             {formatSum(room.priceSum)} × {nights} {dict.nights}
           </span>
           <span>{formatSum(total)}</span>
         </div>
-        <div className="flex justify-between border-t border-black/10 pt-3 font-semibold dark:border-white/15">
+        <div className="flex justify-between border-t border-slate-200 pt-3 font-semibold">
           <span>{dict.total}</span>
           <span>{formatSum(total)}</span>
         </div>
@@ -137,7 +137,13 @@ export function CheckoutForm({
         )}
         {state.error && <p className="text-sm text-red-600">{dict.error}</p>}
 
-        <Button type="submit" size="lg" disabled={pending || nights < 1}>
+        <Button
+          type="submit"
+          variant="accent"
+          size="lg"
+          loading={pending}
+          disabled={nights < 1}
+        >
           {dict.confirm}
         </Button>
       </aside>

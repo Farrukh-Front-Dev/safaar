@@ -1,14 +1,37 @@
 {
   "hero": {
-    "eyebrow": "UzBron.uz",
-    "title": "Book hotels and buses across Uzbekistan",
-    "subtitle": "Customer site. Search, booking and the personal account will live here."
+    "eyebrow": "Travel across Uzbekistan",
+    "title": "Book hotels and buses in one place",
+    "subtitle": "Best prices, instant confirmation and trusted partners — all on UzBron."
+  },
+  "popularCities": {
+    "title": "Popular destinations",
+    "subtitle": "The cities travellers choose most"
   },
   "featured": {
     "title": "Featured offers",
+    "subtitle": "Top-rated hotels",
     "empty": "No offers yet.",
     "perNight": "night",
-    "reviews": "review"
+    "reviews": "review",
+    "all": "View all"
+  },
+  "why": {
+    "title": "Why UzBron?",
+    "items": {
+      "instant": {
+        "title": "Instant confirmation",
+        "text": "Your booking is confirmed instantly — no waiting."
+      },
+      "secure": {
+        "title": "Secure payment",
+        "text": "Click, Payme, Uzcard, Humo — protected payments."
+      },
+      "support": {
+        "title": "24/7 support",
+        "text": "Always-on help in Uzbek."
+      }
+    }
   },
   "error": {
     "loadFailed": "Failed to load data. Check that the backend is running."

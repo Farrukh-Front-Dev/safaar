@@ -1,0 +1,54 @@
+{
+  "title": "My account",
+  "nav": {
+    "profile": "Profile",
+    "bookings": "My bookings",
+    "favorites": "Favorites",
+    "bonuses": "Bonuses"
+  },
+  "profile": {
+    "title": "Profile details",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "email": "Email",
+    "phone": "Phone",
+    "phoneHint": "Phone number cannot be changed.",
+    "memberSince": "Member since",
+    "save": "Save",
+    "saved": "Changes saved.",
+    "error": "Failed to save changes."
+  },
+  "bookings": {
+    "title": "My bookings",
+    "empty": "You have no bookings yet.",
+    "number": "Booking number",
+    "status": "Status",
+    "total": "Total",
+    "type": "Type",
+    "hotel": "Hotel",
+    "bus": "Bus",
+    "view": "View",
+    "statuses": {
+      "PENDING": "Pending",
+      "AWAITING_PAYMENT": "Awaiting payment",
+      "AWAITING_PARTNER_CONFIRMATION": "Awaiting partner confirmation",
+      "CONFIRMED": "Confirmed",
+      "CANCELLED": "Cancelled",
+      "COMPLETED": "Completed",
+      "EXPIRED": "Expired"
+    }
+  },
+  "favorites": {
+    "title": "Favorites",
+    "empty": "Your favorites list is empty.",
+    "hotel": "Hotel",
+    "bus": "Bus",
+    "view": "View"
+  },
+  "bonuses": {
+    "title": "Bonuses",
+    "balance": "Bonus balance",
+    "empty": "No bonus history yet.",
+    "history": "History"
+  }
+}

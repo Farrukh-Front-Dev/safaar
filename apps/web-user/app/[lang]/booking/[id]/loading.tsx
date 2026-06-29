@@ -1,0 +1,22 @@
+/**
+ * Bron tasdiqi yuklanayotganda ko'rinadigan skeleton.
+ */
+export default function BookingDetailLoading() {
+  return (
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 py-12">
+      <div className="h-8 w-48 animate-pulse rounded bg-slate-100" />
+      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div
+            key={i}
+            className="h-6 w-full animate-pulse rounded bg-slate-100"
+          />
+        ))}
+      </div>
+      <div className="flex gap-3">
+        <div className="h-12 w-40 animate-pulse rounded-lg bg-slate-100" />
+        <div className="h-12 w-40 animate-pulse rounded-lg bg-slate-100" />
+      </div>
+    </main>
+  );
+}

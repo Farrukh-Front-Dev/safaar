@@ -1,0 +1,74 @@
+{
+  "about": {
+    "title": "About us",
+    "intro": "UzBron is an online platform for booking hotels and bus tickets across Uzbekistan. Our goal is to make travel easy, reliable and affordable for everyone.",
+    "missionTitle": "Our mission",
+    "mission": "By bringing local hotels and bus companies together on a single platform, we offer customers transparent prices and a convenient booking experience.",
+    "stats": {
+      "cities": "Cities",
+      "partners": "Partners",
+      "support": "Support"
+    },
+    "valuesTitle": "Our values",
+    "values": [
+      {
+        "title": "Trust",
+        "text": "Every booking is safe and guaranteed. Prices are transparent, with no hidden fees."
+      },
+      {
+        "title": "Convenience",
+        "text": "Book a hotel or bus in a few steps — from any device."
+      },
+      {
+        "title": "Local focus",
+        "text": "Built for the Uzbek market: payments in soum, service in Uzbek."
+      }
+    ]
+  },
+  "help": {
+    "title": "Help center",
+    "subtitle": "Frequently asked questions",
+    "faqs": [
+      {
+        "q": "How do I make a booking?",
+        "a": "Search for a hotel or bus, choose the right option and click \"Book\". Confirmation is done via an SMS code sent to your phone number."
+      },
+      {
+        "q": "How do I pay?",
+        "a": "You can pay via Click, Payme, Uzcard, Humo or cash. The payment method is selected during booking."
+      },
+      {
+        "q": "Can I cancel a booking?",
+        "a": "Yes, you can cancel a booking in the \"My bookings\" section of your account. Refund terms depend on the selected fare."
+      },
+      {
+        "q": "How do bonuses work?",
+        "a": "Bonuses are earned for every booking. Accumulated bonuses can be used on future bookings."
+      }
+    ],
+    "contactTitle": "Didn't find an answer to your question?",
+    "contactText": "Contact our support team: support@uzbron.uz"
+  },
+  "terms": {
+    "title": "Terms of use",
+    "updated": "Last updated: 2026",
+    "sections": [
+      {
+        "heading": "1. General terms",
+        "body": "By using the UzBron platform, you agree to these terms. The platform acts as an intermediary for booking hotel and bus services."
+      },
+      {
+        "heading": "2. Booking and payment",
+        "body": "All prices are shown in Uzbek soum (UZS). A booking takes effect once payment is made or confirmed."
+      },
+      {
+        "heading": "3. Cancellation and refunds",
+        "body": "Cancellation terms depend on the service provider's fare. Refund amounts are calculated according to the selected cancellation policy."
+      },
+      {
+        "heading": "4. Privacy",
+        "body": "Your personal data is used only to provide services and is not disclosed to third parties."
+      }
+    ]
+  }
+}

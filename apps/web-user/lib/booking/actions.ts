@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { ApiRequestError } from "@/lib/api";
 import { getSession } from "@/lib/auth/session";
-import { createHotelBooking } from "@/lib/api/bookings";
+import { createBusBooking, createHotelBooking } from "@/lib/api/bookings";
 import { defaultLocale, isLocale } from "@/i18n/config";
 
 export interface CheckoutState {
@@ -34,6 +34,51 @@ export async function createBookingAction(
   let bookingId = "";
   try {
     const booking = await createHotelBooking(session, input);
+    bookingId = booking.id;
+  } catch (error) {
+    return {
+      error: error instanceof ApiRequestError ? error.message : "ERROR",
+    };
+  }
+
+  redirect(`/${locale}/booking/${bookingId}`);
+}
+
+
+export interface BusCheckoutState {
+  error?: string;
+}
+
+export async function createBusBookingAction(
+  _prev: BusCheckoutState,
+  formData: FormData,
+): Promise<BusCheckoutState> {
+  const rawLocale = String(formData.get("locale") ?? defaultLocale);
+  const locale = isLocale(rawLocale) ? rawLocale : defaultLocale;
+
+  const session = await getSession();
+  if (!session) {
+    redirect(`/${locale}/login`);
+  }
+
+  const tripId = String(formData.get("tripId") ?? "");
+  const seats = String(formData.get("seats") ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const paymentMethod = String(formData.get("paymentMethod") ?? "click");
+
+  if (!tripId || seats.length === 0) {
+    return { error: "NO_SEATS" };
+  }
+
+  let bookingId = "";
+  try {
+    const booking = await createBusBooking(session, {
+      tripId,
+      seats,
+      paymentMethod,
+    });
     bookingId = booking.id;
   } catch (error) {
     return {

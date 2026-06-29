@@ -1,0 +1,38 @@
+{
+  "back": "Назад к рейсам",
+  "departure": "Отправление",
+  "arrival": "Прибытие",
+  "duration": "В пути",
+  "company": "Перевозчик",
+  "vehicle": "Автобус",
+  "availableSeats": "Свободные места",
+  "error": "Не удалось загрузить данные рейса.",
+  "hour": "ч",
+  "minute": "мин",
+  "seats": {
+    "title": "Выберите место",
+    "available": "Свободно",
+    "selected": "Выбрано",
+    "occupied": "Занято",
+    "comfort": "Комфорт",
+    "standard": "Стандарт",
+    "vip": "VIP"
+  },
+  "summary": {
+    "title": "Сводка заказа",
+    "selectedSeats": "Выбранные места",
+    "noSeats": "Места не выбраны",
+    "total": "Итого",
+    "paymentMethod": "Способ оплаты",
+    "methods": {
+      "click": "Click",
+      "payme": "Payme",
+      "uzcard": "Uzcard",
+      "humo": "Humo",
+      "cash": "Наличные"
+    },
+    "confirm": "Подтвердить бронь",
+    "needSeats": "Выберите хотя бы одно место, чтобы продолжить.",
+    "error": "Ошибка при бронировании. Попробуйте снова."
+  }
+}

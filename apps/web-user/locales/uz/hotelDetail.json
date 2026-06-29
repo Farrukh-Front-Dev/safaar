@@ -14,5 +14,8 @@
   "book": "Bron qilish",
   "reviews": "Sharhlar",
   "noReviews": "Hozircha sharhlar yo'q.",
-  "ratingSummary": "{count} ta sharh asosida"
+  "ratingSummary": "{count} ta sharh asosida",
+  "from": "dan boshlab",
+  "selectRoom": "Xonani tanlash",
+  "bookingBox": "Bron qilish"
 }

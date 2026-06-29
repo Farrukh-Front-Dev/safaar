@@ -4,9 +4,15 @@ import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getHotel } from "@/lib/api/hotels";
 import { getAmenities } from "@/lib/api/catalog";
+import { getHotelReviews } from "@/lib/api/reviews";
+import { findFavoriteId } from "@/lib/api/users";
+import { getSession } from "@/lib/auth/session";
 import { ApiRequestError } from "@/lib/api";
+import { formatSum } from "@/lib/money";
 import { HotelGallery } from "@/components/hotels/HotelGallery";
 import { RoomList } from "@/components/hotels/RoomList";
+import { ReviewsList } from "@/components/reviews/ReviewsList";
+import { FavoriteButton } from "@/components/favorites/FavoriteButton";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -73,6 +79,15 @@ export default async function HotelDetailPage({
   const amenities = await getAmenities(locale).catch(() => []);
   const amenityName = new Map(amenities.map((a) => [a.id, a.name]));
 
+  const session = await getSession();
+  const favoriteId = session
+    ? await findFavoriteId(session, hotel.id).catch(() => null)
+    : null;
+  const favDict = await getDictionary(locale, "favorites");
+
+  const reviews = await getHotelReviews(hotel.id).catch(() => []);
+  const reviewsDict = await getDictionary(locale, "reviews");
+
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-6 py-8">
       <HotelGallery images={hotel.images} alt={hotel.name} />
@@ -89,8 +104,20 @@ export default async function HotelDetailPage({
           <span aria-hidden className="text-sm text-amber-500">
             {"★".repeat(hotel.stars)}
           </span>
+          <div className="ms-auto">
+            <FavoriteButton
+              targetType="hotel"
+              targetId={hotel.id}
+              initialFavoriteId={favoriteId}
+              authed={!!session}
+              loginHref={`/${locale}/login?next=${encodeURIComponent(
+                `/${locale}/hotels/${slug}`,
+              )}`}
+              dict={favDict}
+            />
+          </div>
         </div>
-        <p className="text-zinc-500">
+        <p className="text-slate-500">
           {hotel.cityName}
           {hotel.address ? ` · ${hotel.address}` : ""}
         </p>
@@ -101,7 +128,7 @@ export default async function HotelDetailPage({
           {hotel.description && (
             <section className="flex flex-col gap-2">
               <h2 className="text-xl font-semibold">{dict.about}</h2>
-              <p className="text-zinc-600 dark:text-zinc-400">
+              <p className="text-slate-600 dark:text-slate-400">
                 {hotel.description}
               </p>
             </section>
@@ -114,7 +141,7 @@ export default async function HotelDetailPage({
                 {hotel.amenities.map((id) => (
                   <li
                     key={id}
-                    className="rounded-full border border-black/10 px-3 py-1 text-sm text-zinc-700 dark:border-white/15 dark:text-zinc-300"
+                    className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-700"
                   >
                     {amenityName.get(id) ?? id}
                   </li>
@@ -123,7 +150,7 @@ export default async function HotelDetailPage({
             </section>
           )}
 
-          <section className="flex flex-col gap-3">
+          <section id="rooms" className="flex scroll-mt-24 flex-col gap-3">
             <h2 className="text-xl font-semibold">{dict.rooms}</h2>
             <RoomList
               rooms={hotel.rooms}
@@ -140,7 +167,7 @@ export default async function HotelDetailPage({
 
           <section className="flex flex-col gap-2">
             <h2 className="text-xl font-semibold">{dict.reviews}</h2>
-            <p className="text-sm text-zinc-500">
+            <p className="text-sm text-slate-500">
               {hotel.reviewsCount > 0
                 ? dict.ratingSummary.replace(
                     "{count}",
@@ -148,18 +175,41 @@ export default async function HotelDetailPage({
                   )
                 : dict.noReviews}
             </p>
+            <ReviewsList
+              reviews={reviews}
+              dict={reviewsDict}
+              locale={locale}
+            />
           </section>
         </div>
 
-        <aside className="flex h-fit flex-col gap-3 rounded-xl border border-black/10 p-4 dark:border-white/15">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-zinc-500">{dict.checkIn}</span>
-            <span className="font-medium">{hotel.checkInTime || "—"}</span>
+        <aside className="flex h-fit flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-24">
+          <div>
+            <span className="text-xs text-slate-400">{dict.from}</span>
+            <p className="text-2xl font-bold text-slate-900">
+              {formatSum(hotel.minPriceSum)}
+              <span className="text-sm font-normal text-slate-500">
+                {" "}
+                / {dict.perNight}
+              </span>
+            </p>
           </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-zinc-500">{dict.checkOut}</span>
-            <span className="font-medium">{hotel.checkOutTime || "—"}</span>
+          <div className="flex flex-col gap-2 border-t border-slate-200 pt-3 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-slate-500">{dict.checkIn}</span>
+              <span className="font-medium">{hotel.checkInTime || "—"}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-500">{dict.checkOut}</span>
+              <span className="font-medium">{hotel.checkOutTime || "—"}</span>
+            </div>
           </div>
+          <a
+            href="#rooms"
+            className="inline-flex h-12 items-center justify-center rounded-full bg-accent-600 px-6 font-bold text-white shadow-sm transition-colors hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+          >
+            {dict.selectRoom}
+          </a>
         </aside>
       </div>
     </main>

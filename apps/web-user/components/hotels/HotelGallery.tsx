@@ -1,14 +1,12 @@
 /* eslint-disable @next/next/no-img-element */
 import { cn } from "@/lib/cn";
+import { SHOW_PLACEHOLDER_PHOTOS, placeholderPhoto } from "@/lib/images";
 
 /**
  * Mehmonxona rasm galereyasi.
  *
- * Hozir backend demo rasmlari mavjud emas (nisbiy fake yo'llar), shuning uchun
- * faqat haqiqiy (http) URL'lar `<img>` sifatida ko'rsatiladi; aks holda neytral
- * placeholder. Dizayn bosqichida `next/image` + storage URL bilan almashtiriladi.
- * (`next/image` hozir ishlatilmadi: remote dom-config va mavjud bo'lmagan
- * fayllar build/runtime shovqinini keltirib chiqarmasligi uchun.)
+ * Real (http) rasmlar bo'lsa — ularni ko'rsatadi. Bo'lmasa, DEV rejimida
+ * deterministik placeholder fotolar; PRODUCTION'da neytral gradient placeholder.
  */
 export function HotelGallery({
   images,
@@ -18,13 +16,21 @@ export function HotelGallery({
   alt: string;
 }) {
   const real = images.filter((src) => src.startsWith("http"));
+  const shots =
+    real.length > 0
+      ? real
+      : SHOW_PLACEHOLDER_PHOTOS
+        ? Array.from({ length: 4 }, (_, i) =>
+            placeholderPhoto(`${alt}-${i}`, 1280, 720),
+          )
+        : [];
 
-  if (real.length === 0) {
+  if (shots.length === 0) {
     return (
       <div
         role="img"
         aria-label={alt}
-        className="flex aspect-video w-full items-center justify-center rounded-2xl bg-gradient-to-br from-blue-100 to-zinc-100 text-2xl font-semibold text-blue-900/60 dark:from-blue-950 dark:to-zinc-900 dark:text-blue-200/50"
+        className="flex aspect-video w-full items-center justify-center rounded-2xl bg-linear-to-br from-primary-100 to-slate-100 text-2xl font-semibold text-primary-900/60"
       >
         {alt}
       </div>
@@ -35,15 +41,16 @@ export function HotelGallery({
     <div
       className={cn(
         "grid gap-2 overflow-hidden rounded-2xl",
-        real.length > 1 ? "grid-cols-2" : "grid-cols-1",
+        shots.length > 1 ? "grid-cols-2" : "grid-cols-1",
       )}
     >
-      {real.slice(0, 4).map((src, i) => (
+      {shots.slice(0, 4).map((src, i) => (
         <img
           key={src}
           src={src}
           alt={`${alt} — ${i + 1}`}
-          className="aspect-[16/9] h-full w-full object-cover"
+          loading={i === 0 ? "eager" : "lazy"}
+          className="aspect-video h-full w-full object-cover"
         />
       ))}
     </div>

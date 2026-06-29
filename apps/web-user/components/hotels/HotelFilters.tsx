@@ -57,12 +57,12 @@ export function HotelFilters({
   return (
     <aside
       aria-label={dict.filters.title}
-      className="flex flex-col gap-4 rounded-xl border border-black/10 bg-white p-4 dark:border-white/15 dark:bg-zinc-900"
+      className="flex h-fit flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
     >
       <h2 className="text-base font-semibold">{dict.filters.title}</h2>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm text-zinc-600 dark:text-zinc-400">
+        <span className="text-sm text-slate-600 dark:text-slate-400">
           {dict.sort.label}
         </span>
         <Select value={sort} onChange={(e) => setSort(e.target.value)}>
@@ -74,7 +74,7 @@ export function HotelFilters({
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm text-zinc-600 dark:text-zinc-400">
+        <span className="text-sm text-slate-600 dark:text-slate-400">
           {dict.filters.stars}
         </span>
         <Select value={stars} onChange={(e) => setStars(e.target.value)}>
@@ -88,7 +88,7 @@ export function HotelFilters({
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm text-zinc-600 dark:text-zinc-400">
+        <span className="text-sm text-slate-600 dark:text-slate-400">
           {dict.filters.priceMin}
         </span>
         <Input
@@ -101,7 +101,7 @@ export function HotelFilters({
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm text-zinc-600 dark:text-zinc-400">
+        <span className="text-sm text-slate-600 dark:text-slate-400">
           {dict.filters.priceMax}
         </span>
         <Input

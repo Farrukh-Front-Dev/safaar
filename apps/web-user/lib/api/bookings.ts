@@ -48,3 +48,27 @@ export async function getBooking(
   });
   return toBookingView(camelizeKeys(raw));
 }
+
+
+export interface CreateBusBookingInput {
+  tripId: string;
+  seats: string[];
+  paymentMethod?: string;
+}
+
+/** `POST /bookings/bus` — avtobus broni yaratish. */
+export async function createBusBooking(
+  session: Session,
+  input: CreateBusBookingInput,
+): Promise<BookingView> {
+  const raw = await api.post<unknown>(
+    "/bookings/bus",
+    {
+      trip_id: input.tripId,
+      seats: input.seats,
+      payment_method: input.paymentMethod ?? "click",
+    },
+    { headers: devAuthHeaders(session) },
+  );
+  return toBookingView(camelizeKeys(raw));
+}

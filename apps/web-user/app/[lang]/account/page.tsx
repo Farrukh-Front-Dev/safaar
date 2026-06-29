@@ -1,0 +1,61 @@
+import { notFound, redirect } from "next/navigation";
+import { isLocale, type Locale } from "@/i18n/config";
+import { getDictionary } from "@/i18n/dictionaries";
+import { getSession } from "@/lib/auth/session";
+import { getProfile } from "@/lib/api/users";
+import { Card, CardBody } from "@/components/ui/Card";
+import { ProfileForm } from "@/components/account/ProfileForm";
+import type { ProfileView } from "@/types/view";
+
+export default async function AccountProfilePage({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}) {
+  const { lang } = await params;
+  if (!isLocale(lang)) notFound();
+  const locale = lang as Locale;
+
+  const session = await getSession();
+  if (!session) {
+    redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/account`)}`);
+  }
+
+  const dict = await getDictionary(locale, "account");
+  const profile: ProfileView | null = await getProfile(session).catch(
+    () => null,
+  );
+
+  if (!profile) {
+    return (
+      <Card>
+        <CardBody>
+          <p className="text-sm text-amber-700 dark:text-amber-300">
+            {dict.profile.error}
+          </p>
+        </CardBody>
+      </Card>
+    );
+  }
+
+  const memberSince = (() => {
+    const ts = Date.parse(profile.createdAt);
+    return Number.isFinite(ts)
+      ? new Date(ts).toLocaleDateString("uz-UZ")
+      : profile.createdAt;
+  })();
+
+  return (
+    <Card>
+      <CardBody className="flex flex-col gap-6">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-lg font-semibold">{dict.profile.title}</h2>
+          <p className="text-sm text-slate-500">
+            {dict.profile.memberSince}: {memberSince}
+          </p>
+        </div>
+        <ProfileForm locale={locale} profile={profile} dict={dict.profile} />
+      </CardBody>
+    </Card>
+  );
+}

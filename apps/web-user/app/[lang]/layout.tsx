@@ -1,27 +1,87 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Inter, Manrope } from "next/font/google";
 import { notFound } from "next/navigation";
 import "../globals.css";
-import { isLocale, locales, type Locale } from "@/i18n/config";
+import {
+  defaultLocale,
+  isLocale,
+  locales,
+  type Locale,
+} from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getSession } from "@/lib/auth/session";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
+import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+// Tana/UI — Inter; sarlavha — Manrope. Ikkalasi uz/ru/en (lotin + lotin-ext +
+// kirill) glyphlarini to'liq qoplaydi.
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin", "latin-ext", "cyrillic"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const manrope = Manrope({
+  variable: "--font-manrope",
+  subsets: ["latin", "latin-ext", "cyrillic"],
+  display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: "UzBron — Mehmonxona va avtobus bron qilish",
-  description:
-    "O'zbekiston bo'ylab mehmonxona va avtobuslarni onlayn bron qiling.",
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://uzbron.uz";
+
+const OG_LOCALE: Record<Locale, string> = {
+  uz: "uz_UZ",
+  ru: "ru_RU",
+  en: "en_US",
+};
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  const locale: Locale = isLocale(lang) ? lang : defaultLocale;
+  const common = await getDictionary(locale, "common");
+
+  const title = `${common.brand} — ${common.footer.tagline}`;
+  const description = common.footer.tagline;
+
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: {
+      default: title,
+      template: `%s — ${common.brand}`,
+    },
+    description,
+    applicationName: "UzBron",
+    manifest: "/manifest.webmanifest",
+    appleWebApp: {
+      capable: true,
+      title: "UzBron",
+      statusBarStyle: "default",
+    },
+    alternates: {
+      canonical: `/${locale}`,
+      languages: Object.fromEntries(
+        locales.map((l) => [l, `/${l}`]),
+      ) as Record<string, string>,
+    },
+    openGraph: {
+      type: "website",
+      siteName: "UzBron",
+      locale: OG_LOCALE[locale],
+      title,
+      description,
+      url: `/${locale}`,
+    },
+    robots: { index: true, follow: true },
+  };
+}
+
+export const viewport: Viewport = {
+  themeColor: "#059669",
 };
 
 /** `/uz`, `/ru`, `/en` — tillarni oldindan generatsiya qilamiz. */
@@ -46,12 +106,13 @@ export default async function LangLayout({
   return (
     <html
       lang={locale}
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${manrope.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+      <body className="flex min-h-full flex-col bg-white text-slate-900">
         <SiteHeader locale={locale} dict={common} authed={!!session} />
         <div className="flex flex-1 flex-col">{children}</div>
         <SiteFooter locale={locale} dict={common} />
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

@@ -1,0 +1,54 @@
+"use server";
+
+import { ApiRequestError } from "@/lib/api";
+import { getSession } from "@/lib/auth/session";
+import { addFavorite, removeFavorite } from "@/lib/api/users";
+
+/**
+ * Sevimli (favorite) server action'lari. Client `FavoriteButton` ularni
+ * to'g'ridan-to'g'ri (event handler ichida) chaqiradi va natijaga qarab
+ * holatini yangilaydi. Sessiya yo'q bo'lsa `ok:false, authRequired:true`
+ * qaytadi — UI login'ga taklif qiladi (redirect emas, optimistik UX uchun).
+ */
+
+export interface FavoriteResult {
+  ok: boolean;
+  /** Qo'shilganda — yangi favorite id (keyin o'chirish uchun). */
+  id?: string;
+  /** Sessiya yo'q — kirish kerak. */
+  authRequired?: boolean;
+}
+
+export async function addFavoriteAction(
+  targetType: "hotel" | "bus",
+  targetId: string,
+): Promise<FavoriteResult> {
+  const session = await getSession();
+  if (!session) return { ok: false, authRequired: true };
+  if (!targetId) return { ok: false };
+
+  try {
+    const favorite = await addFavorite(session, { targetType, targetId });
+    return { ok: true, id: favorite.id };
+  } catch (error) {
+    return {
+      ok: false,
+      authRequired: error instanceof ApiRequestError && error.statusCode === 401,
+    };
+  }
+}
+
+export async function removeFavoriteAction(
+  favoriteId: string,
+): Promise<FavoriteResult> {
+  const session = await getSession();
+  if (!session) return { ok: false, authRequired: true };
+  if (!favoriteId) return { ok: false };
+
+  try {
+    await removeFavorite(session, favoriteId);
+    return { ok: true };
+  } catch {
+    return { ok: false };
+  }
+}

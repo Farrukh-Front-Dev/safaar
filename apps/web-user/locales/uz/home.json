@@ -1,14 +1,37 @@
 {
   "hero": {
-    "eyebrow": "UzBron.uz",
-    "title": "O'zbekiston bo'ylab mehmonxona va avtobus bron qiling",
-    "subtitle": "Mijozlar sayti. Bu yerda qidiruv, bron qilish va shaxsiy kabinet bo'ladi."
+    "eyebrow": "O'zbekiston bo'ylab sayohat",
+    "title": "Mehmonxona va avtobuslarni bir joydan bron qiling",
+    "subtitle": "Eng yaxshi narxlar, soniyalarda tasdiq va ishonchli hamkorlar — barchasi UzBron'da."
+  },
+  "popularCities": {
+    "title": "Mashhur yo'nalishlar",
+    "subtitle": "Sayohatchilar eng ko'p tanlagan shaharlar"
   },
   "featured": {
     "title": "Mashhur takliflar",
+    "subtitle": "Yuqori baholangan mehmonxonalar",
     "empty": "Hozircha takliflar yo'q.",
     "perNight": "kecha",
-    "reviews": "sharh"
+    "reviews": "sharh",
+    "all": "Barchasi"
+  },
+  "why": {
+    "title": "Nega UzBron?",
+    "items": {
+      "instant": {
+        "title": "Soniyalarda tasdiq",
+        "text": "Bron darhol tasdiqlanadi — kutib o'tirmaysiz."
+      },
+      "secure": {
+        "title": "Xavfsiz to'lov",
+        "text": "Click, Payme, Uzcard, Humo — himoyalangan to'lov."
+      },
+      "support": {
+        "title": "24/7 qo'llab-quvvatlash",
+        "text": "O'zbek tilida doimiy yordam xizmati."
+      }
+    }
   },
   "error": {
     "loadFailed": "Ma'lumotlarni yuklab bo'lmadi. Backend ishga tushganini tekshiring."

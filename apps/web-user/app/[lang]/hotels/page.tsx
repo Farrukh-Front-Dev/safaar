@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getHotels } from "@/lib/api/hotels";
@@ -7,6 +8,17 @@ import { SearchBar } from "@/components/search/SearchBar";
 import { HotelFilters } from "@/components/hotels/HotelFilters";
 import { HotelCard } from "@/components/hotels/HotelCard";
 import type { HotelListItem } from "@/types/view";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  if (!isLocale(lang)) return {};
+  const dict = await getDictionary(lang, "hotels");
+  return { title: dict.title };
+}
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -83,7 +95,7 @@ export default async function HotelsPage({
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-bold tracking-tight">{dict.title}</h1>
         {!loadFailed && (
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-slate-500">
             {dict.resultsCount.replace("{count}", String(items.length))}
           </p>
         )}
@@ -98,7 +110,7 @@ export default async function HotelsPage({
               {dict.error}
             </p>
           ) : items.length === 0 ? (
-            <p className="text-sm text-zinc-500">{dict.empty}</p>
+            <p className="text-sm text-slate-500">{dict.empty}</p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {items.map((hotel) => (

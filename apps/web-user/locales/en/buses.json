@@ -1,0 +1,22 @@
+{
+  "search": {
+    "from": "From",
+    "to": "To",
+    "cityPlaceholder": "Select a city",
+    "date": "Date",
+    "submit": "Search"
+  },
+  "title": "Bus trips",
+  "resultsCount": "{count} trips found",
+  "empty": "No trips found. Try another city or date.",
+  "error": "Failed to load data. Make sure the backend is running.",
+  "card": {
+    "from": "Price:",
+    "perSeat": "per seat",
+    "seatsLeft": "seats left",
+    "soldOut": "Sold out",
+    "select": "Select",
+    "hour": "h",
+    "minute": "min"
+  }
+}

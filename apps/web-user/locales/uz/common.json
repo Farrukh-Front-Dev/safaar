@@ -4,12 +4,14 @@
     "hotels": "Mehmonxonalar",
     "buses": "Avtobuslar",
     "about": "Biz haqimizda",
-    "help": "Yordam"
+    "help": "Yordam",
+    "terms": "Shartlar"
   },
   "actions": {
     "login": "Kirish",
     "logout": "Chiqish",
-    "search": "Qidirish"
+    "search": "Qidirish",
+    "account": "Kabinet"
   },
   "language": "Til",
   "search": {

@@ -1,0 +1,38 @@
+{
+  "back": "Back to trips",
+  "departure": "Departure",
+  "arrival": "Arrival",
+  "duration": "Duration",
+  "company": "Operator",
+  "vehicle": "Bus",
+  "availableSeats": "Available seats",
+  "error": "Failed to load trip details.",
+  "hour": "h",
+  "minute": "min",
+  "seats": {
+    "title": "Choose a seat",
+    "available": "Available",
+    "selected": "Selected",
+    "occupied": "Occupied",
+    "comfort": "Comfort",
+    "standard": "Standard",
+    "vip": "VIP"
+  },
+  "summary": {
+    "title": "Order summary",
+    "selectedSeats": "Selected seats",
+    "noSeats": "No seats selected",
+    "total": "Total",
+    "paymentMethod": "Payment method",
+    "methods": {
+      "click": "Click",
+      "payme": "Payme",
+      "uzcard": "Uzcard",
+      "humo": "Humo",
+      "cash": "Cash"
+    },
+    "confirm": "Confirm booking",
+    "needSeats": "Select at least one seat to continue.",
+    "error": "Booking failed. Please try again."
+  }
+}

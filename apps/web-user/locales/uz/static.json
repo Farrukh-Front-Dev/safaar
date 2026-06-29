@@ -1,0 +1,74 @@
+{
+  "about": {
+    "title": "Biz haqimizda",
+    "intro": "UzBron — O'zbekiston bo'ylab mehmonxona va avtobus chiptalarini onlayn bron qilish platformasi. Bizning maqsadimiz — sayohatni har bir inson uchun oson, ishonchli va arzon qilish.",
+    "missionTitle": "Bizning maqsad",
+    "mission": "Mahalliy mehmonxonalar va avtobus kompaniyalarini yagona platformada birlashtirib, mijozlarga shaffof narxlar va qulay bron tajribasini taqdim etamiz.",
+    "stats": {
+      "cities": "Shaharlar",
+      "partners": "Hamkorlar",
+      "support": "Qo'llab-quvvatlash"
+    },
+    "valuesTitle": "Qadriyatlarimiz",
+    "values": [
+      {
+        "title": "Ishonch",
+        "text": "Har bir bron xavfsiz va kafolatlangan. Narxlar shaffof, yashirin to'lovlar yo'q."
+      },
+      {
+        "title": "Qulaylik",
+        "text": "Bir necha bosqichda mehmonxona yoki avtobus bron qiling — istalgan qurilmadan."
+      },
+      {
+        "title": "Mahalliylik",
+        "text": "O'zbekiston bozori uchun yaratilgan: so'mda to'lov, o'zbek tilida xizmat."
+      }
+    ]
+  },
+  "help": {
+    "title": "Yordam markazi",
+    "subtitle": "Ko'p so'raladigan savollar",
+    "faqs": [
+      {
+        "q": "Qanday qilib bron qilaman?",
+        "a": "Mehmonxona yoki avtobusni qidiring, mosini tanlang va \"Bron qilish\" tugmasini bosing. Telefon raqamingiz orqali SMS-kod bilan tasdiqlanadi."
+      },
+      {
+        "q": "To'lovni qanday amalga oshiraman?",
+        "a": "Click, Payme, Uzcard, Humo orqali yoki naqd to'lash mumkin. To'lov usulini bron jarayonida tanlaysiz."
+      },
+      {
+        "q": "Bronni bekor qila olamanmi?",
+        "a": "Ha, shaxsiy kabinetingizdagi \"Bronlarim\" bo'limidan bronni bekor qilish mumkin. Qaytarish shartlari tanlangan tarifga bog'liq."
+      },
+      {
+        "q": "Bonuslar qanday ishlaydi?",
+        "a": "Har bir bron uchun bonus to'planadi. To'plangan bonuslarni keyingi bronlarda ishlatishingiz mumkin."
+      }
+    ],
+    "contactTitle": "Savolingizga javob topmadingizmi?",
+    "contactText": "Qo'llab-quvvatlash xizmatiga murojaat qiling: support@uzbron.uz"
+  },
+  "terms": {
+    "title": "Foydalanish shartlari",
+    "updated": "Oxirgi yangilanish: 2026-yil",
+    "sections": [
+      {
+        "heading": "1. Umumiy qoidalar",
+        "body": "UzBron platformasidan foydalanish orqali siz ushbu shartlarga rozilik bildirasiz. Platforma mehmonxona va avtobus xizmatlarini bron qilish uchun vositachi sifatida xizmat qiladi."
+      },
+      {
+        "heading": "2. Bron va to'lov",
+        "body": "Barcha narxlar O'zbekiston so'mida (UZS) ko'rsatiladi. Bron to'lov amalga oshirilgandan yoki tasdiqlangandan so'ng kuchga kiradi."
+      },
+      {
+        "heading": "3. Bekor qilish va qaytarish",
+        "body": "Bekor qilish shartlari har bir xizmat ko'rsatuvchining tarifiga bog'liq. Qaytariladigan summa tanlangan bekor qilish siyosatiga muvofiq hisoblanadi."
+      },
+      {
+        "heading": "4. Maxfiylik",
+        "body": "Shaxsiy ma'lumotlaringiz faqat xizmat ko'rsatish maqsadida ishlatiladi va uchinchi shaxslarga oshkor qilinmaydi."
+      }
+    ]
+  }
+}
