@@ -1,19 +1,20 @@
 "use client";
 
-import { CalendarRange, Download, Search } from "lucide-react";
-import Link from "next/link";
+import { CalendarPlus, CalendarRange, Download, Search } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { BookingStatus } from "@agoda/types";
 import { Button } from "../../_components/ui/button";
 import { EmptyState } from "../../_components/ui/empty-state";
 import { Input } from "../../_components/ui/input";
-import { Skeleton } from "../../_components/ui/skeleton";
 import { ReservationStatusBadge } from "../../_components/domain/reservation-status-badge";
 import { SourceBadge } from "../../_components/domain/source-badge";
+import { WalkInDialog } from "../../_components/domain/walk-in-dialog";
 import { PageHeader } from "../../_components/layout/page-header";
 import { useReservations } from "../../_hooks/use-reservations";
 import { cn } from "../../_lib/utils/cn";
-import type { ReservationUiStatus } from "../../_lib/domain/types";
+import type { ReservationUiStatus, ReservationView } from "../../_lib/domain/types";
 import { formatDate, formatMoney, formatPhone } from "../../_lib/utils/format";
 
 type FilterKey = "all" | ReservationUiStatus;
@@ -27,14 +28,70 @@ const FILTERS: { key: FilterKey; label: string }[] = [
   { key: BookingStatus.CANCELLED, label: "Bekor qilingan" },
 ];
 
+function exportToCsv(items: ReservationView[]) {
+  const headers = [
+    "ID",
+    "Mijoz",
+    "Telefon",
+    "Xona turi",
+    "Xona",
+    "Kelish",
+    "Ketish",
+    "Kech.",
+    "Summa",
+    "To'langan",
+    "Status",
+    "Manba",
+  ];
+  const rows = items.map((r) => [
+    r.id,
+    r.guest.fullName,
+    `+${r.guest.phone}`,
+    r.roomTypeName,
+    r.roomNumber ?? "",
+    r.checkIn,
+    r.checkOut,
+    r.nights,
+    r.totalPrice,
+    r.paidAmount,
+    r.status,
+    r.source,
+  ]);
+  const csv = [headers, ...rows]
+    .map((row) =>
+      row
+        .map((cell) => {
+          const s = String(cell ?? "");
+          if (s.includes(",") || s.includes('"') || s.includes("\n")) {
+            return `"${s.replace(/"/g, '""')}"`;
+          }
+          return s;
+        })
+        .join(","),
+    )
+    .join("\n");
+
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `bronlar-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 export function ReservationsView() {
-  const { data, isLoading } = useReservations();
+  const { data } = useReservations();
+  const router = useRouter();
   const [filter, setFilter] = useState<FilterKey>("all");
   const [query, setQuery] = useState("");
+  const [walkInOpen, setWalkInOpen] = useState(false);
 
   const counts = useMemo(() => {
     const c: Record<FilterKey, number> = {
-      all: data?.length ?? 0,
+      all: data.length,
       [BookingStatus.PENDING]: 0,
       [BookingStatus.AWAITING_PAYMENT]: 0,
       [BookingStatus.AWAITING_PARTNER_CONFIRMATION]: 0,
@@ -44,12 +101,12 @@ export function ReservationsView() {
       [BookingStatus.CANCELLED]: 0,
       [BookingStatus.EXPIRED]: 0,
     };
-    for (const r of data ?? []) c[r.status]++;
+    for (const r of data) c[r.status]++;
     return c;
   }, [data]);
 
   const filtered = useMemo(() => {
-    let list = data ?? [];
+    let list = data;
     if (filter !== "all") list = list.filter((r) => r.status === filter);
     const q = query.trim().toLowerCase();
     if (q) {
@@ -71,14 +128,29 @@ export function ReservationsView() {
         title="Bronlar"
         description="UzBron'dan kelgan va to'g'ridan-to'g'ri qabul qilingan bronlar."
         actions={
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4" aria-hidden />
-            Eksport
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={filtered.length === 0}
+              onClick={() => {
+                exportToCsv(filtered);
+                toast.success(
+                  `${filtered.length} ta bron eksport qilindi`,
+                );
+              }}
+            >
+              <Download className="h-4 w-4" aria-hidden />
+              Eksport (CSV)
+            </Button>
+            <Button size="sm" onClick={() => setWalkInOpen(true)}>
+              <CalendarPlus className="h-4 w-4" aria-hidden />
+              Walk-in bron
+            </Button>
+          </>
         }
       />
 
-      {/* Filter tab'lari */}
       <div
         role="tablist"
         aria-label="Status bo'yicha filter"
@@ -115,7 +187,6 @@ export function ReservationsView() {
         })}
       </div>
 
-      {/* Qidiruv */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative max-w-sm flex-1">
           <Search
@@ -136,14 +207,7 @@ export function ReservationsView() {
         </span>
       </div>
 
-      {/* Jadval */}
-      {isLoading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-14 w-full" />
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
+      {filtered.length === 0 ? (
         <EmptyState
           icon={<CalendarRange className="h-10 w-10" aria-hidden />}
           title="Bron topilmadi"
@@ -168,25 +232,20 @@ export function ReservationsView() {
               {filtered.map((r) => (
                 <tr
                   key={r.id}
-                  className="border-b border-[var(--border)] transition-colors last:border-0 hover:bg-[var(--surface-muted)]"
+                  onClick={() => router.push(`/reservations/${r.id}`)}
+                  className="cursor-pointer border-b border-[var(--border)] transition-colors last:border-0 hover:bg-[var(--surface-muted)]"
                 >
                   <td className="px-4 py-3">
-                    <Link
-                      href={`/reservations/${r.id}`}
-                      className="font-mono text-xs font-medium text-brand-700 hover:underline dark:text-brand-300"
-                    >
+                    <span className="font-mono text-xs font-medium text-brand-700 dark:text-brand-300">
                       {r.id}
-                    </Link>
+                    </span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-col">
                       <span className="font-medium">{r.guest.fullName}</span>
-                      <a
-                        href={`tel:+${r.guest.phone}`}
-                        className="text-xs text-[var(--muted-foreground)] hover:text-brand-700"
-                      >
+                      <span className="text-xs text-[var(--muted-foreground)]">
                         {formatPhone(r.guest.phone)}
-                      </a>
+                      </span>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-[var(--muted-foreground)]">
@@ -219,6 +278,8 @@ export function ReservationsView() {
           </table>
         </div>
       )}
+
+      <WalkInDialog open={walkInOpen} onClose={() => setWalkInOpen(false)} />
     </div>
   );
 }

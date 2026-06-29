@@ -1,0 +1,153 @@
+"use client";
+
+import { X } from "lucide-react";
+import { useEffect, type ReactNode } from "react";
+import { cn } from "../../_lib/utils/cn";
+
+interface DialogProps {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  description?: string;
+  children: ReactNode;
+  footer?: ReactNode;
+  size?: "sm" | "md" | "lg";
+}
+
+const sizes = {
+  sm: "max-w-sm",
+  md: "max-w-md",
+  lg: "max-w-2xl",
+};
+
+/**
+ * Oddiy dialog. Esc bosish va backdrop klik bilan yopiladi.
+ * Body scroll'ni vaqtincha to'xtatadi.
+ */
+export function Dialog({
+  open,
+  onClose,
+  title,
+  description,
+  children,
+  footer,
+  size = "md",
+}: DialogProps) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="dialog-title"
+    >
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={onClose}
+        aria-hidden
+      />
+      <div
+        className={cn(
+          "relative z-10 flex w-full flex-col overflow-hidden rounded-card border border-[var(--border)] bg-[var(--surface)] shadow-2xl fade-in",
+          sizes[size],
+        )}
+      >
+        <header className="flex items-start justify-between gap-3 border-b border-[var(--border)] px-5 py-4">
+          <div className="flex flex-col gap-1">
+            <h2 id="dialog-title" className="text-lg font-semibold tracking-tight">
+              {title}
+            </h2>
+            {description && (
+              <p className="text-sm text-[var(--muted-foreground)]">
+                {description}
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Yopish"
+            className="-mr-1 rounded-md p-1 text-zinc-500 transition-colors hover:bg-[var(--surface-muted)] hover:text-zinc-900 dark:hover:text-white"
+          >
+            <X className="h-4 w-4" aria-hidden />
+          </button>
+        </header>
+
+        <div className="max-h-[70vh] overflow-y-auto px-5 py-4">{children}</div>
+
+        {footer && (
+          <footer className="flex items-center justify-end gap-2 border-t border-[var(--border)] bg-[var(--surface-muted)]/50 px-5 py-3">
+            {footer}
+          </footer>
+        )}
+      </div>
+    </div>
+  );
+}
+
+interface ConfirmDialogProps {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  description?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  tone?: "danger" | "primary";
+}
+
+/** Tasdiqlash dialogi (Rad etish, Bekor qilish va h.k. uchun). */
+export function ConfirmDialog({
+  open,
+  onClose,
+  onConfirm,
+  title,
+  description,
+  confirmLabel = "Tasdiqlash",
+  cancelLabel = "Bekor qilish",
+  tone = "primary",
+}: ConfirmDialogProps) {
+  return (
+    <Dialog open={open} onClose={onClose} title={title} description={description}>
+      <div className="flex justify-end gap-2 pt-2">
+        <button
+          type="button"
+          onClick={onClose}
+          className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 text-sm font-medium hover:bg-[var(--surface-muted)]"
+        >
+          {cancelLabel}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            onConfirm();
+            onClose();
+          }}
+          className={cn(
+            "inline-flex h-10 items-center justify-center rounded-lg px-4 text-sm font-medium text-white transition-colors",
+            tone === "danger"
+              ? "bg-red-600 hover:bg-red-700"
+              : "bg-brand-700 hover:bg-brand-800",
+          )}
+        >
+          {confirmLabel}
+        </button>
+      </div>
+    </Dialog>
+  );
+}

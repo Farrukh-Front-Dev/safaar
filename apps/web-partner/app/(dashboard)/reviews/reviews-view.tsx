@@ -1,7 +1,8 @@
 "use client";
 
-import { MessageSquare, Send } from "lucide-react";
+import { MessageSquare, Send, X } from "lucide-react";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "../../_components/ui/button";
 import {
   Card,
@@ -10,19 +11,22 @@ import {
   CardTitle,
 } from "../../_components/ui/card";
 import { EmptyState } from "../../_components/ui/empty-state";
-import { Skeleton } from "../../_components/ui/skeleton";
 import { StarRating } from "../../_components/ui/star-rating";
 import { PageHeader } from "../../_components/layout/page-header";
 import { useReviews } from "../../_hooks/use-reviews";
+import { useDataStore } from "../../_stores/data-store";
 import { cn } from "../../_lib/utils/cn";
 import { formatDate } from "../../_lib/utils/format";
 
 export function ReviewsView() {
-  const { data, isLoading } = useReviews();
+  const { data } = useReviews();
+  const replyToReview = useDataStore((s) => s.replyToReview);
   const [filter, setFilter] = useState<"all" | "unanswered" | "low">("all");
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
 
   const stats = useMemo(() => {
-    const list = data ?? [];
+    const list = data;
     const avg =
       list.length === 0
         ? 0
@@ -34,11 +38,22 @@ export function ReviewsView() {
   }, [data]);
 
   const filtered = useMemo(() => {
-    const list = data ?? [];
-    if (filter === "unanswered") return list.filter((r) => !r.reply);
-    if (filter === "low") return list.filter((r) => r.rating <= 2);
-    return list;
+    if (filter === "unanswered") return data.filter((r) => !r.reply);
+    if (filter === "low") return data.filter((r) => r.rating <= 2);
+    return data;
   }, [data, filter]);
+
+  const handleSubmitReply = (reviewId: string) => {
+    const text = replyText.trim();
+    if (text.length < 3) {
+      toast.error("Javob kamida 3 belgi bo'lishi kerak");
+      return;
+    }
+    replyToReview(reviewId, text);
+    toast.success("Javobingiz saqlandi");
+    setReplyingTo(null);
+    setReplyText("");
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -48,17 +63,12 @@ export function ReviewsView() {
         description="Mijozlar fikrlari va reytinglar."
       />
 
-      {/* Reyting ko'rinishi */}
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-1">
           <CardBody className="flex flex-col items-center gap-2 py-8">
-            {isLoading ? (
-              <Skeleton className="h-12 w-24" />
-            ) : (
-              <p className="text-5xl font-bold tracking-tight">
-                {stats.avg.toFixed(1)}
-              </p>
-            )}
+            <p className="text-5xl font-bold tracking-tight">
+              {stats.avg.toFixed(1)}
+            </p>
             <StarRating value={stats.avg} size={20} />
             <p className="text-sm text-[var(--muted-foreground)]">
               {stats.total} ta sharh asosida
@@ -93,7 +103,6 @@ export function ReviewsView() {
         </Card>
       </div>
 
-      {/* Filter */}
       <div
         role="tablist"
         className="flex flex-wrap gap-1 rounded-card border border-[var(--border)] bg-[var(--surface)] p-1"
@@ -139,14 +148,7 @@ export function ReviewsView() {
         })}
       </div>
 
-      {/* Sharhlar ro'yxati */}
-      {isLoading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-32 w-full" />
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
+      {filtered.length === 0 ? (
         <EmptyState
           icon={<MessageSquare className="h-10 w-10" aria-hidden />}
           title="Sharh topilmadi"
@@ -178,8 +180,53 @@ export function ReviewsView() {
                     </p>
                     <p className="mt-1 text-sm">{r.reply}</p>
                   </div>
+                ) : replyingTo === r.id ? (
+                  <div className="flex flex-col gap-2 rounded-lg bg-[var(--surface-muted)] p-3">
+                    <textarea
+                      autoFocus
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      maxLength={250}
+                      rows={3}
+                      placeholder="Mijoz uchun javobingizni yozing..."
+                      className="w-full resize-none rounded-md border border-[var(--border)] bg-[var(--surface)] p-2 text-sm focus:border-brand-600 focus:outline-none"
+                    />
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-[var(--muted-foreground)]">
+                        {replyText.length}/250
+                      </span>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setReplyingTo(null);
+                            setReplyText("");
+                          }}
+                        >
+                          <X className="h-3.5 w-3.5" aria-hidden />
+                          Bekor qilish
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleSubmitReply(r.id)}
+                        >
+                          <Send className="h-3.5 w-3.5" aria-hidden />
+                          Yuborish
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
                 ) : (
-                  <Button size="sm" variant="outline" className="self-start">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="self-start"
+                    onClick={() => {
+                      setReplyingTo(r.id);
+                      setReplyText("");
+                    }}
+                  >
                     <Send className="h-3.5 w-3.5" aria-hidden />
                     Javob yozish
                   </Button>

@@ -2,16 +2,19 @@
 
 import {
   BedDouble,
-  CalendarPlus,
+  Check,
   Clock,
   LogIn,
   LogOut,
   Phone,
+  Plus,
   RefreshCw,
-  TriangleAlert,
   Users,
+  X,
 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+import { toast } from "sonner";
 import { BookingStatus } from "@agoda/types";
 import { Button } from "../../_components/ui/button";
 import {
@@ -21,26 +24,38 @@ import {
   CardTitle,
 } from "../../_components/ui/card";
 import { EmptyState } from "../../_components/ui/empty-state";
-import { Skeleton } from "../../_components/ui/skeleton";
+import { ConfirmDialog } from "../../_components/ui/dialog";
 import { OccupancyMeter } from "../../_components/domain/occupancy-meter";
 import { SourceBadge } from "../../_components/domain/source-badge";
+import { WalkInDialog } from "../../_components/domain/walk-in-dialog";
 import { PageHeader } from "../../_components/layout/page-header";
 import { useFrontDeskStats } from "../../_hooks/use-dashboard";
 import { useReservations } from "../../_hooks/use-reservations";
+import { useDataStore } from "../../_stores/data-store";
+import { TODAY_ISO } from "../../_lib/mocks/data";
 import { formatDate, formatMoney, formatPhone } from "../../_lib/utils/format";
-
-const TODAY = "2026-06-27";
 
 export function FrontDeskView() {
   const stats = useFrontDeskStats();
   const reservations = useReservations();
 
-  const all = reservations.data ?? [];
+  const checkIn = useDataStore((s) => s.checkIn);
+  const checkOut = useDataStore((s) => s.checkOut);
+  const confirmReservation = useDataStore((s) => s.confirmReservation);
+  const rejectReservation = useDataStore((s) => s.rejectReservation);
+
+  const [walkInOpen, setWalkInOpen] = useState(false);
+  const [confirmReject, setConfirmReject] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+
+  const all = reservations.data;
   const arrivals = all.filter(
-    (r) => r.checkIn === TODAY && r.status === BookingStatus.CONFIRMED,
+    (r) => r.checkIn === TODAY_ISO && r.status === BookingStatus.CONFIRMED,
   );
   const departures = all.filter(
-    (r) => r.checkOut === TODAY && r.status === "IN_HOUSE",
+    (r) => r.checkOut === TODAY_ISO && r.status === "IN_HOUSE",
   );
   const pending = all
     .filter((r) => r.status === BookingStatus.PENDING)
@@ -50,8 +65,8 @@ export function FrontDeskView() {
     <div className="flex flex-col gap-6">
       <PageHeader
         eyebrow="Front Desk"
-        title="Salom, Resepsiyon!"
-        description="Bugungi kelishlar, ketishlar va kutilayotgan bronlar."
+        title="Bugun nima ish bor?"
+        description="Bugungi kelishlar, ketishlar va tasdiqlash kerak bo'lgan bronlar."
         actions={
           <>
             <Button
@@ -60,48 +75,52 @@ export function FrontDeskView() {
               onClick={() => {
                 stats.refetch();
                 reservations.refetch();
+                toast.success("Ma'lumotlar yangilandi");
               }}
-              disabled={stats.isFetching || reservations.isFetching}
             >
-              <RefreshCw
-                className={`h-4 w-4 ${stats.isFetching ? "animate-spin" : ""}`}
-                aria-hidden
-              />
+              <RefreshCw className="h-4 w-4" aria-hidden />
               Yangilash
             </Button>
-            <Button size="sm">
-              <CalendarPlus className="h-4 w-4" aria-hidden />
-              Walk-in bron
+            <Button size="sm" onClick={() => setWalkInOpen(true)}>
+              <Plus className="h-4 w-4" aria-hidden />
+              Yangi bron
             </Button>
           </>
         }
       />
 
-      {/* To'liqlik (occupancy) — katta vurg'u kartochkasi */}
+      {/* To'liqlik (occupancy) — katta vurg'u */}
       <Card>
-        <CardBody className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <CardBody className="flex flex-col gap-5 p-6 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-col gap-1">
-            <p className="text-sm text-[var(--muted-foreground)]">
+            <p className="text-sm font-medium text-[var(--muted-foreground)]">
               Bugungi to'liqlik
             </p>
-            {stats.isLoading || !stats.data ? (
-              <Skeleton className="h-10 w-40" />
-            ) : (
-              <p className="text-4xl font-bold tracking-tight">
-                {stats.data.occupancyPercent}
-                <span className="ml-1 text-xl text-[var(--muted-foreground)]">
-                  %
-                </span>
-              </p>
-            )}
-            {stats.data && (
-              <p className="text-xs text-[var(--muted-foreground)]">
-                {stats.data.occupiedRooms} / {stats.data.totalRooms} xona band
-              </p>
-            )}
+            <p className="text-5xl font-bold tracking-tight">
+              {stats.data?.occupancyPercent ?? 0}
+              <span className="ml-1 text-2xl text-[var(--muted-foreground)]">
+                %
+              </span>
+            </p>
+            <p className="text-sm text-[var(--muted-foreground)]">
+              <span className="font-semibold text-[var(--foreground)]">
+                {stats.data?.occupiedRooms}
+              </span>{" "}
+              / {stats.data?.totalRooms} xona band
+            </p>
           </div>
           <div className="md:w-1/2">
-            <OccupancyMeter percent={stats.data?.occupancyPercent ?? 0} />
+            <OccupancyMeter
+              percent={stats.data?.occupancyPercent ?? 0}
+              className="h-3"
+            />
+            <p className="mt-2 text-xs text-[var(--muted-foreground)]">
+              {(stats.data?.occupancyPercent ?? 0) >= 80
+                ? "Ajoyib! Mehmonxona deyarli to'liq band."
+                : (stats.data?.occupancyPercent ?? 0) >= 50
+                  ? "Yaxshi. Bo'sh xonalar bor."
+                  : "Bo'sh xonalar ko'p — promo aktsiya o'tkazing?"}
+            </p>
           </div>
         </CardBody>
       </Card>
@@ -111,56 +130,58 @@ export function FrontDeskView() {
         <StatTile
           label="Bugun keladi"
           value={stats.data?.arrivalsToday ?? 0}
+          hint="Kutilayotgan check-in"
           icon={<LogIn className="h-5 w-5" aria-hidden />}
-          loading={stats.isLoading}
           tone="brand"
         />
         <StatTile
           label="Bugun ketadi"
           value={stats.data?.departuresToday ?? 0}
+          hint="Check-out qilinadi"
           icon={<LogOut className="h-5 w-5" aria-hidden />}
-          loading={stats.isLoading}
           tone="accent"
         />
         <StatTile
           label="Hozir mehmonxonada"
           value={stats.data?.occupiedRooms ?? 0}
+          hint="Band xonalar"
           icon={<Users className="h-5 w-5" aria-hidden />}
-          loading={stats.isLoading}
           tone="neutral"
         />
         <StatTile
-          label="Tasdiq kutmoqda"
+          label="Javob kutilmoqda"
           value={stats.data?.pendingReservations ?? 0}
+          hint="Yangi bronlar"
           icon={<Clock className="h-5 w-5" aria-hidden />}
-          loading={stats.isLoading}
           tone="warning"
         />
       </section>
 
-      {/* Bugungi kelishlar va ketishlar — yonma-yon */}
+      {/* Bugungi kelishlar va ketishlar */}
       <section className="grid gap-4 lg:grid-cols-2">
-        {/* Kelishlar */}
         <Card>
           <CardHeader className="flex-row items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-100 text-brand-700">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-100 text-brand-700">
                 <LogIn className="h-4 w-4" aria-hidden />
               </span>
-              <CardTitle>Bugun keladi</CardTitle>
+              <div className="flex flex-col">
+                <CardTitle>Bugun keladi</CardTitle>
+                <span className="text-xs text-[var(--muted-foreground)]">
+                  Check-in qilish uchun
+                </span>
+              </div>
             </div>
-            <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700">
+            <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-bold text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
               {arrivals.length}
             </span>
           </CardHeader>
           <CardBody className="p-0">
-            {reservations.isLoading ? (
-              <ListSkeleton />
-            ) : arrivals.length === 0 ? (
+            {arrivals.length === 0 ? (
               <EmptyState
                 icon={<LogIn className="h-8 w-8" aria-hidden />}
                 title="Bugun kelish yo'q"
-                description="Ertaga kelishni Kalendarda ko'ring."
+                description="Ertaga keladiganlarni Kalendarda ko'rishingiz mumkin."
               />
             ) : (
               <ul className="divide-y divide-[var(--border)]">
@@ -169,9 +190,14 @@ export function FrontDeskView() {
                     key={r.id}
                     className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-[var(--surface-muted)]"
                   >
-                    <div className="flex flex-col gap-0.5">
-                      <span className="font-medium">{r.guest.fullName}</span>
-                      <span className="flex flex-wrap items-center gap-2 text-xs text-[var(--muted-foreground)]">
+                    <div className="flex min-w-0 flex-col gap-0.5">
+                      <Link
+                        href={`/reservations/${r.id}`}
+                        className="truncate font-medium hover:text-brand-700 dark:hover:text-brand-300"
+                      >
+                        {r.guest.fullName}
+                      </Link>
+                      <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--muted-foreground)]">
                         <span className="inline-flex items-center gap-1">
                           <BedDouble className="h-3 w-3" aria-hidden />
                           {r.roomTypeName}
@@ -193,7 +219,18 @@ export function FrontDeskView() {
                     </div>
                     <div className="flex items-center gap-2">
                       <SourceBadge source={r.source} />
-                      <Button size="sm">Check-in</Button>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          checkIn(r.id);
+                          toast.success(
+                            `Check-in qilindi: ${r.guest.fullName}`,
+                          );
+                        }}
+                      >
+                        <LogIn className="h-3.5 w-3.5" aria-hidden />
+                        Check-in
+                      </Button>
                     </div>
                   </li>
                 ))}
@@ -202,27 +239,29 @@ export function FrontDeskView() {
           </CardBody>
         </Card>
 
-        {/* Ketishlar */}
         <Card>
           <CardHeader className="flex-row items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-100 text-accent-700">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent-100 text-accent-700">
                 <LogOut className="h-4 w-4" aria-hidden />
               </span>
-              <CardTitle>Bugun ketadi</CardTitle>
+              <div className="flex flex-col">
+                <CardTitle>Bugun ketadi</CardTitle>
+                <span className="text-xs text-[var(--muted-foreground)]">
+                  Check-out qilish uchun
+                </span>
+              </div>
             </div>
-            <span className="rounded-full bg-accent-50 px-2 py-0.5 text-xs font-semibold text-accent-700">
+            <span className="rounded-full bg-accent-50 px-2.5 py-0.5 text-xs font-bold text-accent-700 dark:bg-accent-900/40 dark:text-accent-200">
               {departures.length}
             </span>
           </CardHeader>
           <CardBody className="p-0">
-            {reservations.isLoading ? (
-              <ListSkeleton />
-            ) : departures.length === 0 ? (
+            {departures.length === 0 ? (
               <EmptyState
                 icon={<LogOut className="h-8 w-8" aria-hidden />}
                 title="Bugun ketish yo'q"
-                description="Mehmonlar ertaroq check-out qilsa, shu yerda ko'rinadi."
+                description="Hech kim bugun check-out qilmaydi."
               />
             ) : (
               <ul className="divide-y divide-[var(--border)]">
@@ -233,10 +272,15 @@ export function FrontDeskView() {
                       key={r.id}
                       className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-[var(--surface-muted)]"
                     >
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-medium">{r.guest.fullName}</span>
-                        <span className="flex flex-wrap items-center gap-2 text-xs text-[var(--muted-foreground)]">
-                          <span className="inline-flex items-center gap-1">
+                      <div className="flex min-w-0 flex-col gap-0.5">
+                        <Link
+                          href={`/reservations/${r.id}`}
+                          className="truncate font-medium hover:text-brand-700 dark:hover:text-brand-300"
+                        >
+                          {r.guest.fullName}
+                        </Link>
+                        <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
+                          <span className="inline-flex items-center gap-1 text-[var(--muted-foreground)]">
                             <BedDouble className="h-3 w-3" aria-hidden />
                             {r.roomNumber ?? r.roomTypeName}
                           </span>
@@ -245,13 +289,24 @@ export function FrontDeskView() {
                               Qoldiq: {formatMoney(balance)}
                             </span>
                           ) : (
-                            <span className="font-medium text-accent-600">
+                            <span className="inline-flex items-center gap-1 font-medium text-accent-600">
+                              <Check className="h-3 w-3" aria-hidden />
                               To'liq to'langan
                             </span>
                           )}
                         </span>
                       </div>
-                      <Button variant="secondary" size="sm">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          checkOut(r.id);
+                          toast.success(
+                            `Check-out qilindi: ${r.guest.fullName}`,
+                          );
+                        }}
+                      >
+                        <LogOut className="h-3.5 w-3.5" aria-hidden />
                         Check-out
                       </Button>
                     </li>
@@ -267,31 +322,34 @@ export function FrontDeskView() {
       <Card>
         <CardHeader className="flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
-              <TriangleAlert className="h-4 w-4" aria-hidden />
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+              <Clock className="h-4 w-4" aria-hidden />
             </span>
-            <CardTitle>Tasdiq kutayotgan bronlar</CardTitle>
+            <div className="flex flex-col">
+              <CardTitle>Yangi bronlar — javob kerak</CardTitle>
+              <span className="text-xs text-[var(--muted-foreground)]">
+                UzBron orqali kelgan, tasdiq kutilmoqda
+              </span>
+            </div>
           </div>
           <Link
             href="/reservations"
             className="text-sm font-medium text-brand-700 hover:underline dark:text-brand-300"
           >
-            Hammasini ko'rish
+            Hammasini ko'rish →
           </Link>
         </CardHeader>
         <CardBody className="p-0">
-          {reservations.isLoading ? (
-            <ListSkeleton rows={3} />
-          ) : pending.length === 0 ? (
+          {pending.length === 0 ? (
             <EmptyState
-              icon={<TriangleAlert className="h-8 w-8" aria-hidden />}
-              title="Yangi bron yo'q"
-              description="Hammasi javob berilgan!"
+              icon={<Check className="h-8 w-8" aria-hidden />}
+              title="Hammasi javob berilgan!"
+              description="Yangi bronlar yo'q. Yangisi kelganda shu yerda paydo bo'ladi."
             />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="border-b border-[var(--border)] bg-[var(--surface-muted)]/50 text-left text-xs uppercase tracking-wide text-[var(--muted-foreground)]">
+                <thead className="border-b border-[var(--border)] bg-[var(--surface-muted)]/40 text-left text-xs uppercase tracking-wide text-[var(--muted-foreground)]">
                   <tr>
                     <th className="px-5 py-3">ID</th>
                     <th className="px-5 py-3">Mijoz</th>
@@ -307,8 +365,13 @@ export function FrontDeskView() {
                       key={r.id}
                       className="border-b border-[var(--border)] transition-colors last:border-0 hover:bg-[var(--surface-muted)]"
                     >
-                      <td className="px-5 py-3 font-mono text-xs font-medium text-brand-700 dark:text-brand-300">
-                        {r.id}
+                      <td className="px-5 py-3">
+                        <Link
+                          href={`/reservations/${r.id}`}
+                          className="font-mono text-xs font-semibold text-brand-700 hover:underline dark:text-brand-300"
+                        >
+                          {r.id}
+                        </Link>
                       </td>
                       <td className="px-5 py-3">
                         <div className="flex flex-col">
@@ -323,22 +386,45 @@ export function FrontDeskView() {
                       <td className="px-5 py-3 text-[var(--muted-foreground)]">
                         {r.roomTypeName}{" "}
                         <span className="text-xs">
-                          ({r.adults} kat. {r.children > 0 && `+ ${r.children} bola`})
+                          ({r.adults} kat.
+                          {r.children > 0 && ` + ${r.children} bola`})
                         </span>
                       </td>
                       <td className="px-5 py-3 text-[var(--muted-foreground)]">
                         {formatDate(r.checkIn)}
-                        <span className="ml-1 text-xs">({r.nights} kech.)</span>
+                        <span className="ml-1 text-xs">
+                          ({r.nights} kech.)
+                        </span>
                       </td>
                       <td className="px-5 py-3 font-medium">
                         {formatMoney(r.totalPrice)}
                       </td>
                       <td className="px-5 py-3">
                         <div className="flex justify-end gap-2">
-                          <Button size="sm" variant="outline">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              setConfirmReject({
+                                id: r.id,
+                                name: r.guest.fullName,
+                              })
+                            }
+                          >
+                            <X className="h-3.5 w-3.5" aria-hidden />
                             Rad
                           </Button>
-                          <Button size="sm">Tasdiqlash</Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => {
+                              confirmReservation(r.id);
+                              toast.success(`Bron tasdiqlandi: ${r.id}`);
+                            }}
+                          >
+                            <Check className="h-3.5 w-3.5" aria-hidden />
+                            Tasdiqlash
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -349,6 +435,27 @@ export function FrontDeskView() {
           )}
         </CardBody>
       </Card>
+
+      <WalkInDialog open={walkInOpen} onClose={() => setWalkInOpen(false)} />
+
+      <ConfirmDialog
+        open={Boolean(confirmReject)}
+        onClose={() => setConfirmReject(null)}
+        onConfirm={() => {
+          if (!confirmReject) return;
+          rejectReservation(confirmReject.id);
+          toast.success(`Bron rad etildi: ${confirmReject.id}`);
+        }}
+        title="Bron rad etilsinmi?"
+        description={
+          confirmReject
+            ? `${confirmReject.name} ning bronini rad etmoqchimisiz? Mijozga SMS yuboriladi.`
+            : ""
+        }
+        confirmLabel="Ha, rad etish"
+        cancelLabel="Bekor"
+        tone="danger"
+      />
     </div>
   );
 }
@@ -356,14 +463,14 @@ export function FrontDeskView() {
 function StatTile({
   label,
   value,
+  hint,
   icon,
-  loading,
   tone,
 }: {
   label: string;
   value: number;
+  hint?: string;
   icon: React.ReactNode;
-  loading: boolean;
   tone: "brand" | "accent" | "warning" | "neutral";
 }) {
   const toneClasses = {
@@ -374,38 +481,27 @@ function StatTile({
   }[tone];
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardBody className="flex items-center gap-3">
         <span
-          className={`flex h-10 w-10 items-center justify-center rounded-lg ${toneClasses}`}
+          className={`flex h-11 w-11 items-center justify-center rounded-xl ${toneClasses}`}
         >
           {icon}
         </span>
-        <div className="flex flex-col gap-0.5">
-          <span className="text-xs text-[var(--muted-foreground)]">{label}</span>
-          {loading ? (
-            <Skeleton className="h-7 w-12" />
-          ) : (
-            <span className="text-2xl font-bold tracking-tight">{value}</span>
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <span className="text-xs font-medium text-[var(--muted-foreground)]">
+            {label}
+          </span>
+          <span className="text-2xl font-bold tracking-tight leading-none">
+            {value}
+          </span>
+          {hint && (
+            <span className="text-[10px] text-[var(--muted-foreground)]">
+              {hint}
+            </span>
           )}
         </div>
       </CardBody>
     </Card>
-  );
-}
-
-function ListSkeleton({ rows = 3 }: { rows?: number }) {
-  return (
-    <ul className="divide-y divide-[var(--border)]">
-      {Array.from({ length: rows }).map((_, i) => (
-        <li key={i} className="flex items-center justify-between px-5 py-3">
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-3 w-48" />
-          </div>
-          <Skeleton className="h-8 w-20" />
-        </li>
-      ))}
-    </ul>
   );
 }

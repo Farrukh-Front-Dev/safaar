@@ -1,11 +1,8 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { mockDelay, mockRooms } from "../_lib/mocks/data";
+import { useDataStore } from "../_stores/data-store";
 
 export function useRooms() {
-  return useQuery({
-    queryKey: ["rooms"],
-    queryFn: () => mockDelay(mockRooms, 250),
-  });
+  const data = useDataStore((s) => s.rooms);
+  return { data, isLoading: false };
 }

@@ -1,4 +1,7 @@
-import { BarChart3, Download } from "lucide-react";
+"use client";
+
+import { BarChart3, Download, Info } from "lucide-react";
+import { toast } from "sonner";
 import {
   Card,
   CardBody,
@@ -17,9 +20,15 @@ export default function ReportsPage() {
       <PageHeader
         eyebrow="Boshqaruv"
         title="Hisobotlar"
-        description="Daromad, to'liqlik va boshqa biznes ko'rsatkichlari."
+        description="Daromad, to'liqlik va biznes ko'rsatkichlari."
         actions={
-          <Button variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              toast.info("PDF eksport keyingi sprint'da ulanadi")
+            }
+          >
             <Download className="h-4 w-4" aria-hidden />
             PDF eksport
           </Button>
@@ -37,11 +46,15 @@ export default function ReportsPage() {
           value="74%"
           trend={{ value: 5, positive: true }}
         />
-        <StatCard label="ADR" value={formatMoney(485_000)} hint="o'rtacha narx" />
+        <StatCard
+          label="ADR"
+          value={formatMoney(485_000)}
+          hint="o'rtacha kunlik narx"
+        />
         <StatCard
           label="RevPAR"
           value={formatMoney(359_000)}
-          hint="bo'sh xona/sutka"
+          hint="bo'sh xonaga / sutka"
         />
       </section>
 
@@ -60,6 +73,15 @@ export default function ReportsPage() {
           />
         </CardBody>
       </Card>
+
+      <div className="flex items-start gap-2 rounded-card border border-brand-200 bg-brand-50/50 p-4 text-sm text-brand-900 dark:border-brand-900/50 dark:bg-brand-950/30 dark:text-brand-200">
+        <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+        <p>
+          KPI qiymatlari demo. Real backend ulanganda <strong>oylik
+          daromad</strong> va <strong>occupancy</strong> bronlar asosida
+          avtomatik hisoblanadi.
+        </p>
+      </div>
     </div>
   );
 }

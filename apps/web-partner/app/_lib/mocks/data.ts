@@ -152,6 +152,8 @@ const TOMORROW = "2026-06-28";
 const TWO_DAYS = "2026-06-29";
 const NEXT_WEEK = "2026-07-04";
 
+export const TODAY_ISO = TODAY;
+
 export const mockReservations: ReservationView[] = [
   // Bugun keladiganlar (arrivals)
   {

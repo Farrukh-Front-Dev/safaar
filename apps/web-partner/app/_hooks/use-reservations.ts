@@ -1,25 +1,20 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { mockDelay, mockReservations } from "../_lib/mocks/data";
+import { useDataStore } from "../_stores/data-store";
 
-/** Barcha bronlar (filter UI tomonida). */
+/**
+ * Bronlar ro'yxati — store'dan reaktiv.
+ * Backend tayyor bo'lsa, `useQuery` bilan almashtiriladi.
+ */
 export function useReservations() {
-  return useQuery({
-    queryKey: ["reservations"],
-    queryFn: () => mockDelay(mockReservations, 250),
-  });
+  const data = useDataStore((s) => s.reservations);
+  return { data, isLoading: false, refetch: () => {}, isFetching: false };
 }
 
 /** Bitta bron tafsiloti. */
 export function useReservation(id: string) {
-  return useQuery({
-    queryKey: ["reservations", id],
-    queryFn: () =>
-      mockDelay(
-        mockReservations.find((r) => r.id === id) ?? null,
-        200,
-      ),
-    enabled: Boolean(id),
-  });
+  const data = useDataStore((s) =>
+    s.reservations.find((r) => r.id === id) ?? null,
+  );
+  return { data, isLoading: false };
 }

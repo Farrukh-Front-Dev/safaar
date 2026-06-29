@@ -12,6 +12,8 @@ import {
   Wallet,
 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+import { toast } from "sonner";
 import { BookingStatus } from "@agoda/types";
 import { Button } from "../../../_components/ui/button";
 import {
@@ -20,12 +22,13 @@ import {
   CardHeader,
   CardTitle,
 } from "../../../_components/ui/card";
+import { ConfirmDialog } from "../../../_components/ui/dialog";
 import { EmptyState } from "../../../_components/ui/empty-state";
-import { Skeleton } from "../../../_components/ui/skeleton";
 import { ReservationStatusBadge } from "../../../_components/domain/reservation-status-badge";
 import { SourceBadge } from "../../../_components/domain/source-badge";
 import { PageHeader } from "../../../_components/layout/page-header";
 import { useReservation } from "../../../_hooks/use-reservations";
+import { useDataStore } from "../../../_stores/data-store";
 import {
   formatDate,
   formatMoney,
@@ -33,19 +36,15 @@ import {
 } from "../../../_lib/utils/format";
 
 export function ReservationDetailView({ id }: { id: string }) {
-  const { data, isLoading } = useReservation(id);
+  const { data } = useReservation(id);
+  const confirmReservation = useDataStore((s) => s.confirmReservation);
+  const rejectReservation = useDataStore((s) => s.rejectReservation);
+  const checkIn = useDataStore((s) => s.checkIn);
+  const checkOut = useDataStore((s) => s.checkOut);
 
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-64" />
-        <div className="grid gap-4 lg:grid-cols-3">
-          <Skeleton className="h-64 lg:col-span-2" />
-          <Skeleton className="h-64" />
-        </div>
-      </div>
-    );
-  }
+  const [confirmDialog, setConfirmDialog] = useState<
+    "reject" | "cancel" | null
+  >(null);
 
   if (!data) {
     return (
@@ -65,10 +64,11 @@ export function ReservationDetailView({ id }: { id: string }) {
   }
 
   const balance = data.totalPrice - data.paidAmount;
-  const canCheckIn =
-    data.status === BookingStatus.CONFIRMED && balance >= 0;
+  const canCheckIn = data.status === BookingStatus.CONFIRMED;
   const canCheckOut = data.status === "IN_HOUSE";
   const canConfirm = data.status === BookingStatus.PENDING;
+  const canCancel =
+    data.status === BookingStatus.CONFIRMED || data.status === "IN_HOUSE";
 
   return (
     <div className="flex flex-col gap-6">
@@ -86,22 +86,64 @@ export function ReservationDetailView({ id }: { id: string }) {
         description={`${formatDate(data.checkIn)} → ${formatDate(data.checkOut)} · ${data.nights} kech.`}
         actions={
           <>
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.print()}
+            >
               <Printer className="h-4 w-4" aria-hidden />
               Chop etish
             </Button>
             {canConfirm && (
               <>
-                <Button variant="outline" size="sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setConfirmDialog("reject")}
+                >
                   Rad etish
                 </Button>
-                <Button size="sm">Tasdiqlash</Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    confirmReservation(data.id);
+                    toast.success("Bron tasdiqlandi");
+                  }}
+                >
+                  Tasdiqlash
+                </Button>
               </>
             )}
-            {canCheckIn && <Button size="sm">Check-in qilish</Button>}
+            {canCheckIn && (
+              <Button
+                size="sm"
+                onClick={() => {
+                  checkIn(data.id);
+                  toast.success("Check-in qilindi");
+                }}
+              >
+                Check-in qilish
+              </Button>
+            )}
             {canCheckOut && (
-              <Button variant="secondary" size="sm">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  checkOut(data.id);
+                  toast.success("Check-out qilindi");
+                }}
+              >
                 Check-out qilish
+              </Button>
+            )}
+            {canCancel && !canConfirm && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setConfirmDialog("cancel")}
+              >
+                Bekor qilish
               </Button>
             )}
           </>
@@ -109,9 +151,7 @@ export function ReservationDetailView({ id }: { id: string }) {
       />
 
       <div className="grid gap-4 lg:grid-cols-3">
-        {/* Asosiy ma'lumotlar (chap, 2 ustun) */}
         <div className="flex flex-col gap-4 lg:col-span-2">
-          {/* Bron tafsiloti */}
           <Card>
             <CardHeader className="flex-row items-center justify-between">
               <CardTitle>Bron tafsiloti</CardTitle>
@@ -161,7 +201,6 @@ export function ReservationDetailView({ id }: { id: string }) {
             </CardBody>
           </Card>
 
-          {/* Mijoz */}
           <Card>
             <CardHeader>
               <CardTitle>Mijoz</CardTitle>
@@ -202,7 +241,6 @@ export function ReservationDetailView({ id }: { id: string }) {
           </Card>
         </div>
 
-        {/* O'ng ustun: moliya */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -225,13 +263,43 @@ export function ReservationDetailView({ id }: { id: string }) {
               bold
             />
             {balance > 0 && (
-              <Button variant="secondary" className="mt-2">
+              <Button
+                variant="secondary"
+                className="mt-2"
+                onClick={() => toast.info("To'lov modul keyingi sprint'da")}
+              >
                 To'lov qabul qilish
               </Button>
             )}
           </CardBody>
         </Card>
       </div>
+
+      <ConfirmDialog
+        open={confirmDialog === "reject"}
+        onClose={() => setConfirmDialog(null)}
+        onConfirm={() => {
+          rejectReservation(data.id);
+          toast.success("Bron rad etildi");
+        }}
+        title="Bron rad etilsinmi?"
+        description={`${data.guest.fullName} ning bronini rad etmoqchimisiz?`}
+        confirmLabel="Ha, rad etish"
+        tone="danger"
+      />
+
+      <ConfirmDialog
+        open={confirmDialog === "cancel"}
+        onClose={() => setConfirmDialog(null)}
+        onConfirm={() => {
+          rejectReservation(data.id);
+          toast.success("Bron bekor qilindi");
+        }}
+        title="Bron bekor qilinsinmi?"
+        description="Mijozga SMS orqali xabar yuboriladi. Bu amalni qaytarib bo'lmaydi."
+        confirmLabel="Ha, bekor qilish"
+        tone="danger"
+      />
     </div>
   );
 }

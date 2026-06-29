@@ -19,7 +19,7 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        "flex flex-col gap-4 pb-6 sm:flex-row sm:items-end sm:justify-between",
+        "flex flex-col gap-4 pb-2 sm:flex-row sm:items-end sm:justify-between",
         className,
       )}
     >
@@ -33,7 +33,7 @@ export function PageHeader({
           {title}
         </h1>
         {description && (
-          <p className="text-sm text-[var(--muted-foreground)] md:text-base">
+          <p className="max-w-2xl text-sm text-[var(--muted-foreground)]">
             {description}
           </p>
         )}

@@ -1,30 +1,62 @@
+import {
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  House,
+  XCircle,
+} from "lucide-react";
 import { BookingStatus } from "@agoda/types";
 import { Badge } from "../ui/badge";
 import type { ReservationUiStatus } from "../../_lib/domain/types";
 
-const labels: Record<ReservationUiStatus, string> = {
-  [BookingStatus.PENDING]: "Yangi",
-  [BookingStatus.AWAITING_PAYMENT]: "To'lov kutilmoqda",
-  [BookingStatus.AWAITING_PARTNER_CONFIRMATION]: "Tasdiq kutilmoqda",
-  [BookingStatus.CONFIRMED]: "Tasdiqlangan",
-  IN_HOUSE: "Mehmonxonada",
-  [BookingStatus.CANCELLED]: "Bekor qilingan",
-  [BookingStatus.COMPLETED]: "Yakunlangan",
-  [BookingStatus.EXPIRED]: "Muddati o'tgan",
-};
-
-const tones: Record<
+const config: Record<
   ReservationUiStatus,
-  "warning" | "brand" | "accent" | "danger" | "neutral"
+  {
+    label: string;
+    tone: "warning" | "brand" | "accent" | "danger" | "neutral";
+    icon: typeof Clock;
+  }
 > = {
-  [BookingStatus.PENDING]: "warning",
-  [BookingStatus.AWAITING_PAYMENT]: "warning",
-  [BookingStatus.AWAITING_PARTNER_CONFIRMATION]: "warning",
-  [BookingStatus.CONFIRMED]: "brand",
-  IN_HOUSE: "accent",
-  [BookingStatus.CANCELLED]: "danger",
-  [BookingStatus.COMPLETED]: "neutral",
-  [BookingStatus.EXPIRED]: "danger",
+  [BookingStatus.PENDING]: {
+    label: "Javob kutilmoqda",
+    tone: "warning",
+    icon: Clock,
+  },
+  [BookingStatus.AWAITING_PAYMENT]: {
+    label: "To'lov kutilmoqda",
+    tone: "warning",
+    icon: Clock,
+  },
+  [BookingStatus.AWAITING_PARTNER_CONFIRMATION]: {
+    label: "Tasdiq kutilmoqda",
+    tone: "warning",
+    icon: Clock,
+  },
+  [BookingStatus.CONFIRMED]: {
+    label: "Tasdiqlangan",
+    tone: "brand",
+    icon: CheckCircle2,
+  },
+  IN_HOUSE: {
+    label: "Hozir yashayapti",
+    tone: "accent",
+    icon: House,
+  },
+  [BookingStatus.CANCELLED]: {
+    label: "Bekor qilingan",
+    tone: "danger",
+    icon: XCircle,
+  },
+  [BookingStatus.COMPLETED]: {
+    label: "Yakunlangan",
+    tone: "neutral",
+    icon: CheckCircle2,
+  },
+  [BookingStatus.EXPIRED]: {
+    label: "Muddati o'tgan",
+    tone: "danger",
+    icon: AlertCircle,
+  },
 };
 
 export function ReservationStatusBadge({
@@ -32,5 +64,11 @@ export function ReservationStatusBadge({
 }: {
   status: ReservationUiStatus;
 }) {
-  return <Badge tone={tones[status]}>{labels[status]}</Badge>;
+  const c = config[status];
+  const Icon = c.icon;
+  return (
+    <Badge tone={c.tone} icon={<Icon className="h-3 w-3" aria-hidden />}>
+      {c.label}
+    </Badge>
+  );
 }
