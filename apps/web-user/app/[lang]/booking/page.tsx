@@ -1,9 +1,14 @@
 import { notFound, redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getSession } from "@/lib/auth/session";
 import { getHotel } from "@/lib/api/hotels";
 import { CheckoutForm } from "@/components/checkout/CheckoutForm";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 type SearchParams = Record<string, string | string[] | undefined>;
 

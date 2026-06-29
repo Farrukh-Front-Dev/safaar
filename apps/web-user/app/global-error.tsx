@@ -27,7 +27,7 @@ export default function GlobalError({
         <button
           type="button"
           onClick={() => reset()}
-          className="inline-flex h-12 items-center justify-center rounded-lg bg-primary-600 px-6 text-base font-medium text-white transition-colors hover:bg-primary-700"
+          className="inline-flex h-12 items-center justify-center rounded-full bg-primary-600 px-6 text-base font-medium text-white transition-colors hover:bg-primary-700"
         >
           Qayta yuklash
         </button>

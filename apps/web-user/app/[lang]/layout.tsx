@@ -2,7 +2,12 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Manrope } from "next/font/google";
 import { notFound } from "next/navigation";
 import "../globals.css";
-import { isLocale, locales, type Locale } from "@/i18n/config";
+import {
+  defaultLocale,
+  isLocale,
+  locales,
+  type Locale,
+} from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getSession } from "@/lib/auth/session";
 import { SiteHeader } from "@/components/layout/SiteHeader";
@@ -23,21 +28,60 @@ const manrope = Manrope({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: "UzBron — Mehmonxona va avtobus bron qilish",
-  description:
-    "O'zbekiston bo'ylab mehmonxona va avtobuslarni onlayn bron qiling.",
-  manifest: "/manifest.webmanifest",
-  applicationName: "UzBron",
-  appleWebApp: {
-    capable: true,
-    title: "UzBron",
-    statusBarStyle: "default",
-  },
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://uzbron.uz";
+
+const OG_LOCALE: Record<Locale, string> = {
+  uz: "uz_UZ",
+  ru: "ru_RU",
+  en: "en_US",
 };
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  const locale: Locale = isLocale(lang) ? lang : defaultLocale;
+  const common = await getDictionary(locale, "common");
+
+  const title = `${common.brand} — ${common.footer.tagline}`;
+  const description = common.footer.tagline;
+
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: {
+      default: title,
+      template: `%s — ${common.brand}`,
+    },
+    description,
+    applicationName: "UzBron",
+    manifest: "/manifest.webmanifest",
+    appleWebApp: {
+      capable: true,
+      title: "UzBron",
+      statusBarStyle: "default",
+    },
+    alternates: {
+      canonical: `/${locale}`,
+      languages: Object.fromEntries(
+        locales.map((l) => [l, `/${l}`]),
+      ) as Record<string, string>,
+    },
+    openGraph: {
+      type: "website",
+      siteName: "UzBron",
+      locale: OG_LOCALE[locale],
+      title,
+      description,
+      url: `/${locale}`,
+    },
+    robots: { index: true, follow: true },
+  };
+}
+
 export const viewport: Viewport = {
-  themeColor: "#0d9488",
+  themeColor: "#059669",
 };
 
 /** `/uz`, `/ru`, `/en` — tillarni oldindan generatsiya qilamiz. */

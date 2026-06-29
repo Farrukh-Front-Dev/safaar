@@ -1,0 +1,93 @@
+{
+  "hero": {
+    "badge": "O'zbekiston №1 sayohat platformasi",
+    "title": "Sayohatingiz shu yerdan boshlanadi",
+    "subtitle": "Mehmonxona va avtobuslarni bir necha soniyada bron qiling — eng yaxshi narxlar va ishonchli hamkorlar bilan.",
+    "ctaPrimary": "Mehmonxona qidirish",
+    "ctaSecondary": "Avtobus chiptalari"
+  },
+  "stats": {
+    "hotels": "Mehmonxona",
+    "customers": "Mamnun mijoz",
+    "cities": "Shahar",
+    "support": "Qo'llab-quvvatlash"
+  },
+  "how": {
+    "title": "Qanday ishlaydi",
+    "subtitle": "Uch oddiy qadamda bron qiling",
+    "steps": {
+      "search": {
+        "title": "Qidiring",
+        "text": "Shahar va sanani tanlab, sizga mos variantlarni toping."
+      },
+      "choose": {
+        "title": "Tanlang",
+        "text": "Narx, reyting va qulayliklar bo'yicha bemalol solishtiring."
+      },
+      "book": {
+        "title": "Bron qiling",
+        "text": "Xavfsiz to'lov va soniyalarda tasdiq — tayyor!"
+      }
+    }
+  },
+  "destinations": {
+    "title": "Mashhur yo'nalishlar",
+    "subtitle": "O'zbekistonning eng go'zal shaharlari",
+    "cities": [
+      { "name": "Samarqand", "tagline": "Registon va tarix" },
+      { "name": "Buxoro", "tagline": "Muqaddas shahar" },
+      { "name": "Xiva", "tagline": "Ichan-Qal'a" },
+      { "name": "Toshkent", "tagline": "Poytaxt ritmi" },
+      { "name": "Farg'ona", "tagline": "Yashil vodiy" },
+      { "name": "Nukus", "tagline": "Savitskiy muzeyi" }
+    ]
+  },
+  "features": {
+    "title": "Nega UzBron?",
+    "subtitle": "Sayohatchilar bizni tanlashining sabablari",
+    "items": {
+      "price": {
+        "title": "Eng yaxshi narx",
+        "text": "Yashirin to'lovlarsiz shaffof narxlar kafolati."
+      },
+      "instant": {
+        "title": "Soniyalarda tasdiq",
+        "text": "Bron darhol tasdiqlanadi, kutib o'tirmaysiz."
+      },
+      "secure": {
+        "title": "Xavfsiz to'lov",
+        "text": "Click, Payme, Uzcard, Humo — himoyalangan to'lov."
+      },
+      "support": {
+        "title": "24/7 qo'llab-quvvatlash",
+        "text": "O'zbek tilida doimiy yordam xizmati."
+      }
+    }
+  },
+  "testimonials": {
+    "title": "Mijozlar fikri",
+    "subtitle": "Bizga ishongan minglab sayohatchilar qatorida",
+    "items": [
+      {
+        "name": "Aziz Karimov",
+        "city": "Toshkent",
+        "text": "Samarqandga safarni 5 daqiqada bron qildim. Narx ham, xizmat ham a'lo darajada!"
+      },
+      {
+        "name": "Madina Yusupova",
+        "city": "Buxoro",
+        "text": "Avtobus chiptasini telefon orqali oldim, hammasi o'zbekcha va juda qulay."
+      },
+      {
+        "name": "Jasur Rahimov",
+        "city": "Samarqand",
+        "text": "Bonuslar tizimi zo'r — har bron uchun qaytim olib, keyingisida ishlatdim."
+      }
+    ]
+  },
+  "cta": {
+    "title": "Bugun sayohatingizni rejalashtiring",
+    "subtitle": "Minglab mehmonxona va avtobus yo'nalishlari sizni kutmoqda.",
+    "button": "Hoziroq boshlash"
+  }
+}

@@ -32,7 +32,7 @@ export function LocaleSwitcher({ current }: { current: Locale }) {
             href={localizedHref(locale)}
             aria-current={active ? "true" : undefined}
             className={cn(
-              "rounded-md px-2 py-1 text-sm uppercase transition-colors",
+              "rounded-full px-2 py-1 text-sm uppercase transition-colors",
               active
                 ? "bg-primary-600 text-white"
                 : "text-slate-600 hover:bg-slate-100",

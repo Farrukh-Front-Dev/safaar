@@ -16,6 +16,7 @@ const loaders = {
   uz: {
     common: () => import("@/locales/uz/common.json"),
     home: () => import("@/locales/uz/home.json"),
+    landing: () => import("@/locales/uz/landing.json"),
     hotels: () => import("@/locales/uz/hotels.json"),
     hotelDetail: () => import("@/locales/uz/hotelDetail.json"),
     auth: () => import("@/locales/uz/auth.json"),
@@ -32,6 +33,7 @@ const loaders = {
   ru: {
     common: () => import("@/locales/ru/common.json"),
     home: () => import("@/locales/ru/home.json"),
+    landing: () => import("@/locales/ru/landing.json"),
     hotels: () => import("@/locales/ru/hotels.json"),
     hotelDetail: () => import("@/locales/ru/hotelDetail.json"),
     auth: () => import("@/locales/ru/auth.json"),
@@ -48,6 +50,7 @@ const loaders = {
   en: {
     common: () => import("@/locales/en/common.json"),
     home: () => import("@/locales/en/home.json"),
+    landing: () => import("@/locales/en/landing.json"),
     hotels: () => import("@/locales/en/hotels.json"),
     hotelDetail: () => import("@/locales/en/hotelDetail.json"),
     auth: () => import("@/locales/en/auth.json"),
@@ -75,6 +78,7 @@ type Dict<NS extends Namespace> = DictModule<NS> extends { default: infer D }
 /** Komponent props'larida ishlatish uchun lug'at turlari. */
 export type CommonDict = Dict<"common">;
 export type HomeDict = Dict<"home">;
+export type LandingDict = Dict<"landing">;
 export type HotelsDict = Dict<"hotels">;
 export type HotelDetailDict = Dict<"hotelDetail">;
 export type AuthDict = Dict<"auth">;

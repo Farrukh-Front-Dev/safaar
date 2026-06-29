@@ -206,7 +206,7 @@ export default async function HotelDetailPage({
           </div>
           <a
             href="#rooms"
-            className="inline-flex h-12 items-center justify-center rounded-xl bg-accent-600 px-6 font-bold text-white shadow-sm transition-colors hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+            className="inline-flex h-12 items-center justify-center rounded-full bg-accent-600 px-6 font-bold text-white shadow-sm transition-colors hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
           >
             {dict.selectRoom}
           </a>

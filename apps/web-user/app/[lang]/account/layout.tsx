@@ -1,9 +1,15 @@
 import type { ReactNode } from "react";
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getSession } from "@/lib/auth/session";
 import { AccountNav } from "@/components/account/AccountNav";
+
+// Shaxsiy bo'lim — qidiruv tizimlari indekslamasin.
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function AccountLayout({
   children,

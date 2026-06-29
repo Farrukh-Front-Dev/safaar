@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getHotels } from "@/lib/api/hotels";
@@ -7,6 +8,17 @@ import { SearchBar } from "@/components/search/SearchBar";
 import { HotelFilters } from "@/components/hotels/HotelFilters";
 import { HotelCard } from "@/components/hotels/HotelCard";
 import type { HotelListItem } from "@/types/view";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  if (!isLocale(lang)) return {};
+  const dict = await getDictionary(lang, "hotels");
+  return { title: dict.title };
+}
 
 type SearchParams = Record<string, string | string[] | undefined>;
 

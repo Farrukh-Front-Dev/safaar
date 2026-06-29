@@ -71,7 +71,7 @@ export function RoomList({
                 <Link
                   href={bookingHref(room.id)}
                   className={cn(
-                    "inline-flex h-10 items-center justify-center rounded-lg bg-accent-600 px-4 text-sm font-medium text-white transition-colors hover:bg-accent-700",
+                    "inline-flex h-10 items-center justify-center rounded-full bg-accent-600 px-4 text-sm font-medium text-white transition-colors hover:bg-accent-700",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2",
                   )}
                 >

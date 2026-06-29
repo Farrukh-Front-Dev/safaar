@@ -2,6 +2,7 @@
 import Link from "next/link";
 import type { Locale } from "@/i18n/config";
 import { formatSum } from "@/lib/money";
+import { resolveImage } from "@/lib/images";
 import type { HotelListItem } from "@/types/view";
 
 export interface HotelCardLabels {
@@ -12,7 +13,7 @@ export interface HotelCardLabels {
 /**
  * Mehmonxona kartasi — bosh sahifa va qidiruv natijalarida qayta ishlatiladi.
  * Presentational: ma'lumot + label'larni props orqali oladi.
- * Rasm bo'lmasa (backend hali fake yo'llar qaytaradi) — teal gradient placeholder.
+ * Rasm: real (http) → dev placeholder foto → teal gradient (oxirgi chora).
  */
 export function HotelCard({
   hotel,
@@ -23,7 +24,7 @@ export function HotelCard({
   locale: Locale;
   labels: HotelCardLabels;
 }) {
-  const hasImage = hotel.imageUrl?.startsWith("http");
+  const imageUrl = resolveImage(hotel.imageUrl, hotel.id, 600, 450);
 
   return (
     <Link
@@ -32,18 +33,19 @@ export function HotelCard({
     >
       <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all group-hover:-translate-y-1 group-hover:shadow-md">
         <div className="relative aspect-4/3 overflow-hidden bg-linear-to-br from-primary-100 to-primary-300">
-          {hasImage ? (
+          {imageUrl ? (
             <img
-              src={hotel.imageUrl}
+              src={imageUrl}
               alt={hotel.name}
+              loading="lazy"
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
           ) : (
-            <span className="absolute inset-0 grid place-items-center text-3xl font-bold text-primary-700/40">
-              {hotel.name.charAt(0)}
+            <span className="absolute inset-0 grid place-items-center text-primary-700/40">
+              <BuildingIcon />
             </span>
           )}
-          <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-md bg-white/90 px-1.5 py-0.5 text-sm font-bold text-amber-600 shadow-sm backdrop-blur">
+          <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-sm font-bold text-amber-600 shadow-sm backdrop-blur">
             <Star />
             {hotel.rating.toFixed(1)}
           </span>
@@ -81,6 +83,20 @@ function Star() {
   return (
     <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden>
       <path d="M10 1.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L10 15l-5.2 2.6 1-5.8L1.5 7.7l5.9-.9L10 1.5z" />
+    </svg>
+  );
+}
+
+function BuildingIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="h-12 w-12" aria-hidden>
+      <path
+        d="M3 21h18M5 21V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v16M13 21V9a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v12M8 8h2M8 12h2M16 12h1M16 16h1"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }

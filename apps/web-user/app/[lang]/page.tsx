@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
@@ -10,6 +11,17 @@ import { WhyUzBron } from "@/components/home/WhyUzBron";
 import { SearchBar } from "@/components/search/SearchBar";
 import { HotelCard } from "@/components/hotels/HotelCard";
 import type { HotelListItem } from "@/types/view";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  if (!isLocale(lang)) return {};
+  const dict = await getDictionary(lang, "home");
+  return { title: dict.hero.title, description: dict.hero.subtitle };
+}
 
 export default async function HomePage({
   params,
