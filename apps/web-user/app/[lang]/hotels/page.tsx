@@ -133,7 +133,7 @@ export default async function HotelsPage({
   const retryHref = `${basePath}${retryQuery ? `?${retryQuery}` : ""}`;
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 py-8">
+    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 pb-8 pt-14 md:pt-32">
       <SearchBar
         locale={locale}
         dict={common.search}

@@ -1,15 +1,19 @@
 import type { ButtonHTMLAttributes } from "react";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 type Variant = "primary" | "accent" | "secondary" | "ghost";
 type Size = "sm" | "md" | "lg";
 
 const variantClasses: Record<Variant, string> = {
-  primary: "bg-primary-600 text-white hover:bg-primary-700",
-  accent: "bg-accent-600 text-white hover:bg-accent-700 shadow-sm",
+  primary:
+    "bg-primary-600 text-white shadow-sm hover:bg-primary-500 hover:shadow-md active:bg-primary-700 active:shadow-none active:scale-[0.97] transition-all duration-150",
+  accent:
+    "bg-accent-600 text-white shadow-sm hover:bg-accent-500 hover:shadow-md active:bg-accent-700 active:shadow-none active:scale-[0.97] transition-all duration-150",
   secondary:
-    "border border-slate-300 bg-white text-slate-900 hover:bg-slate-50",
-  ghost: "text-slate-700 hover:bg-slate-100",
+    "border border-slate-200 bg-white text-slate-900 shadow-sm hover:bg-slate-50 hover:border-slate-300 active:bg-slate-100 active:scale-[0.97] transition-all duration-150",
+  ghost:
+    "text-slate-700 hover:bg-slate-100 active:bg-slate-200 active:scale-[0.97] transition-all duration-150",
 };
 
 const sizeClasses: Record<Size, string> = {
@@ -37,7 +41,7 @@ export function Button({
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-full font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+        "inline-flex items-center justify-center gap-2 rounded-full font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
         variantClasses[variant],
         sizeClasses[size],
         className,
@@ -47,26 +51,7 @@ export function Button({
       {...props}
     >
       {loading && (
-        <svg
-          className="h-4 w-4 animate-spin"
-          viewBox="0 0 24 24"
-          fill="none"
-          aria-hidden="true"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          />
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 0 1 8-8V0a4 4 0 0 0-4 4H4z"
-          />
-        </svg>
+        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
       )}
       {children}
     </button>

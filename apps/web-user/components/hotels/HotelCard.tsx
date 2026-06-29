@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
+import { Star, Building2 } from "lucide-react";
 import type { Locale } from "@/i18n/config";
 import { formatSum } from "@/lib/money";
 import { resolveImage } from "@/lib/images";
@@ -42,12 +43,12 @@ export function HotelCard({
             />
           ) : (
             <span className="absolute inset-0 grid place-items-center text-primary-700/40">
-              <BuildingIcon />
+              <Building2 className="h-12 w-12" aria-hidden />
             </span>
           )}
           {hotel.rating > 0 && (
             <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-sm font-bold text-amber-600 shadow-sm backdrop-blur">
-              <Star />
+              <Star className="h-4 w-4 fill-current" aria-hidden />
               {hotel.rating.toFixed(1)}
             </span>
           )}
@@ -78,27 +79,5 @@ export function HotelCard({
         </div>
       </article>
     </Link>
-  );
-}
-
-function Star() {
-  return (
-    <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden>
-      <path d="M10 1.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L10 15l-5.2 2.6 1-5.8L1.5 7.7l5.9-.9L10 1.5z" />
-    </svg>
-  );
-}
-
-function BuildingIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className="h-12 w-12" aria-hidden>
-      <path
-        d="M3 21h18M5 21V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v16M13 21V9a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v12M8 8h2M8 12h2M16 12h1M16 16h1"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
   );
 }

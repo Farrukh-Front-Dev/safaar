@@ -17,11 +17,8 @@ export function Hero({ dict }: { dict: HomeDict["hero"] }) {
         }}
         aria-hidden
       />
-      <div className="relative mx-auto w-full max-w-6xl px-6 pb-24 pt-16 text-white sm:pt-20">
-        <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-widest backdrop-blur">
-          {dict.eyebrow}
-        </span>
-        <h1 className="mt-5 max-w-3xl text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
+      <div className="relative mx-auto w-full max-w-6xl px-6 pb-24 pt-28 text-white sm:pt-32 md:pt-36">
+        <h1 className="max-w-3xl text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
           {dict.title}
         </h1>
         <p className="mt-4 max-w-xl text-lg text-white/85">{dict.subtitle}</p>
