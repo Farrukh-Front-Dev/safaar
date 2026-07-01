@@ -1,8 +1,10 @@
 {
   "brand": "UzBron",
+  "promo": "🔥 Yozgi chegirma! Birinchi bron uchun 20% — UZBRON20 promokodi bilan",
   "nav": {
     "hotels": "Mehmonxonalar",
-    "buses": "Avtobuslar",
+    "transport": "Transport",
+    "attractions": "Diqqatga sazovor joylar",
     "about": "Biz haqimizda",
     "help": "Yordam",
     "terms": "Shartlar"

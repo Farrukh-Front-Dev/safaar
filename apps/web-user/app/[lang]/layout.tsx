@@ -11,6 +11,7 @@ import {
 import { getDictionary } from "@/i18n/dictionaries";
 import { getSession } from "@/lib/auth/session";
 import { SiteHeader } from "@/components/layout/SiteHeader";
+import { PromoBar } from "@/components/layout/PromoBar";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 
@@ -109,6 +110,7 @@ export default async function LangLayout({
       className={`${inter.variable} ${manrope.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-white text-slate-900">
+        <PromoBar text={common.promo} />
         <SiteHeader locale={locale} dict={common} authed={!!session} />
         <div className="flex flex-1 flex-col">{children}</div>
         <SiteFooter locale={locale} dict={common} />

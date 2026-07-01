@@ -4,7 +4,7 @@ import { locales } from "@/i18n/config";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://uzbron.uz";
 
 /** Indekslanadigan public yo'llar (har til uchun takrorlanadi). */
-const PUBLIC_PATHS = ["", "/welcome", "/hotels", "/buses", "/about", "/help", "/terms"];
+const PUBLIC_PATHS = ["", "/hotels", "/transport", "/attractions", "/about", "/help", "/terms"];
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();

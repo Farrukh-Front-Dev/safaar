@@ -1,24 +1,37 @@
 {
   "title": "Mehmonxonalar",
   "resultsCount": "{count} ta mehmonxona topildi",
-  "empty": "Hech narsa topilmadi. Filtrlarni o'zgartirib ko'ring.",
+  "empty": "Hech narsa topilmadi.",
+  "emptyHint": "Filtrlarni tozalab yoki o'zgartirib qayta urinib ko'ring.",
+  "clearFilters": "Filtrlarni tozalash",
   "error": "Ma'lumotlarni yuklab bo'lmadi. Backend ishga tushganini tekshiring.",
+  "retry": "Qayta urinish",
   "perNight": "kecha",
   "reviews": "sharh",
   "viewDetails": "Batafsil",
+  "removeFilter": "Filtrni olib tashlash",
   "filters": {
     "title": "Filtrlar",
+    "toggle": "Filtrlar",
     "stars": "Yulduzlar",
     "anyStars": "Barchasi",
-    "priceMin": "Eng kam narx (so'm)",
-    "priceMax": "Eng yuqori narx (so'm)",
+    "starsValue": "{n}+ yulduz",
+    "priceMin": "Eng kam narx",
+    "priceMax": "Eng yuqori narx",
+    "currency": "so'm",
     "apply": "Qo'llash",
     "reset": "Tozalash"
   },
   "sort": {
     "label": "Saralash",
+    "default": "Tavsiya etilgan",
     "priceAsc": "Narx: arzondan qimmatga",
     "priceDesc": "Narx: qimmatdan arzonga",
     "rating": "Reyting bo'yicha"
+  },
+  "pagination": {
+    "prev": "Oldingi",
+    "next": "Keyingi",
+    "pageOf": "{page} / {total}"
   }
 }
