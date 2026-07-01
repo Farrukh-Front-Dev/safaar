@@ -8,6 +8,8 @@ export type ScrollNavItem = {
   label: string;
   href: string;
   icon: React.ReactNode;
+  /** true bo'lsa faqat aniq mos kelganda active (home sahifa uchun). */
+  exact?: boolean;
 };
 
 /**
@@ -17,11 +19,13 @@ export type ScrollNavItem = {
  */
 export function ScrollNav({
   items,
+  mobileItems,
   brand,
   brandHref,
   actions,
 }: {
   items: ScrollNavItem[];
+  mobileItems?: ScrollNavItem[];
   brand: string;
   brandHref: string;
   actions: React.ReactNode;
@@ -87,7 +91,7 @@ export function ScrollNav({
         {/* Logo */}
         <Link
           href={brandHref}
-          className="relative z-10 shrink-0 font-bold tracking-tight text-primary-700 transition-all duration-400 hover:text-primary-600"
+          className="relative z-10 shrink-0 font-bold tracking-tight text-slate-900 transition-all duration-400 hover:text-primary-600"
           style={{ fontSize: `${18 - 2 * progress}px` }}
         >
           {brand}
@@ -99,8 +103,9 @@ export function ScrollNav({
           style={{ gap: `${4 + 4 * (1 - progress)}px`, transition: "gap 0.4s ease-out" }}
         >
           {items.map((item) => {
-            const isActive =
-              pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const isActive = item.exact
+              ? pathname === item.href
+              : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
             return (
               <li key={item.href}>
@@ -111,7 +116,7 @@ export function ScrollNav({
                     ${
                       isActive
                         ? "bg-primary-600 text-white shadow-[0_4px_14px_-2px_var(--brand-500)]"
-                        : "text-slate-700 hover:bg-primary-50 hover:text-primary-700"
+                        : "text-slate-900 hover:bg-primary-50 hover:text-primary-700"
                     }
                   `}
                   style={{
@@ -151,9 +156,10 @@ export function ScrollNav({
           }}
         >
           <ul className="flex items-center justify-around py-2">
-            {items.map((item) => {
-              const isActive =
-                pathname === item.href || pathname.startsWith(`${item.href}/`);
+            {(mobileItems ?? items).map((item) => {
+              const isActive = item.exact
+                ? pathname === item.href
+                : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
               return (
                 <li key={item.href}>
@@ -164,7 +170,7 @@ export function ScrollNav({
                       ${
                         isActive
                           ? "text-primary-700"
-                          : "text-slate-500 hover:text-slate-800"
+                          : "text-slate-800 hover:text-slate-900"
                       }
                     `}
                   >
@@ -173,7 +179,7 @@ export function ScrollNav({
                         ${
                           isActive
                             ? "bg-primary-600 text-white shadow-[0_4px_12px_-2px_var(--brand-500)]"
-                            : "text-slate-500"
+                            : "text-slate-700"
                         }
                       `}
                     >

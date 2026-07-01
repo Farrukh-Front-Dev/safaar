@@ -1,12 +1,22 @@
 {
   "hero": {
-    "eyebrow": "O'zbekiston bo'ylab sayohat",
-    "title": "Mehmonxona va avtobuslarni bir joydan bron qiling",
-    "subtitle": "Eng yaxshi narxlar, soniyalarda tasdiq va ishonchli hamkorlar — barchasi UzBron'da."
+    "title": "O'zbekiston bo'ylab turar joy toping",
+    "subtitle": "Eng yaxshi narxlar, tezkor tasdiq — barchasi UzBron'da."
   },
   "popularCities": {
     "title": "Mashhur yo'nalishlar",
-    "subtitle": "Sayohatchilar eng ko'p tanlagan shaharlar"
+    "subtitle": "Sayohatchilar eng ko'p tanlagan shaharlar",
+    "hotels": "mehmonxona"
+  },
+  "trust": {
+    "hotels": "12,000+",
+    "hotelsLabel": "mehmonxona",
+    "cities": "50+",
+    "citiesLabel": "shahar",
+    "rating": "4.8★",
+    "ratingLabel": "o'rtacha baho",
+    "support": "24/7",
+    "supportLabel": "yordam xizmati"
   },
   "featured": {
     "title": "Mashhur takliflar",

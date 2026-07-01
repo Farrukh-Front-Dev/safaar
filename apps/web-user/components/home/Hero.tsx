@@ -1,35 +1,28 @@
 import type { HomeDict } from "@/i18n/dictionaries";
 
 /**
- * Bosh sahifa hero — minimal, brend emerald gradient fon + yengil nuqta pattern.
- * Pastda yumshoq oq o'tish: floating qidiruv kartasi (SearchBar, `-mt`) hero
- * bilan silliq ulanadi (chok ko'rinmaydi). Responsiv: mobil'da ixcham, katta
- * ekranda kengroq tipografika.
+ * Hero — birinchi ekran sarlavhasi.
+ * Mobile-first: mobilda ixcham padding, desktop'da kengayadi.
  */
 export function Hero({ dict }: { dict: HomeDict["hero"] }) {
   return (
-    <section className="relative overflow-hidden bg-linear-to-br from-primary-700 via-primary-600 to-primary-500">
-      {/* Yengil nuqta patterni — minimal tekstura */}
+    <section className="relative pb-20 pt-28 sm:pb-28 sm:pt-36 md:pb-32 md:pt-44 lg:pt-48">
+      {/* Dot pattern */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-15"
+        className="pointer-events-none absolute inset-0 opacity-[0.04]"
         style={{
           backgroundImage:
-            "radial-gradient(circle at 20% 20%, white 1px, transparent 1px)",
-          backgroundSize: "32px 32px",
+            "radial-gradient(circle, currentColor 1px, transparent 1px)",
+          backgroundSize: "28px 28px",
         }}
         aria-hidden
       />
-      {/* Pastki yumshoq oq o'tish — qidiruv kartasi bilan silliq ulanish */}
-      <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-linear-to-b from-transparent to-white"
-        aria-hidden
-      />
 
-      <div className="relative mx-auto w-full max-w-6xl px-6 pb-28 pt-24 text-white sm:pb-32 sm:pt-32">
-        <h1 className="max-w-3xl text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl md:text-6xl">
+      <div className="relative mx-auto w-full max-w-4xl px-4 text-center sm:px-6">
+        <h1 className="text-2xl font-bold leading-tight tracking-tight text-slate-900 sm:text-3xl md:text-4xl lg:text-5xl">
           {dict.title}
         </h1>
-        <p className="mt-4 max-w-xl text-base text-white/85 sm:text-lg">
+        <p className="mx-auto mt-3 max-w-md text-sm text-slate-600 sm:mt-4 sm:max-w-lg sm:text-base md:text-lg">
           {dict.subtitle}
         </p>
       </div>

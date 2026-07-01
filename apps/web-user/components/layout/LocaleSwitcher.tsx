@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Globe, ChevronDown, Check } from "lucide-react";
+import { Check } from "lucide-react";
 import { locales, localeNames, type Locale } from "@/i18n/config";
 import { cn } from "@/lib/cn";
 
@@ -56,21 +56,13 @@ export function LocaleSwitcher({ current }: { current: Locale }) {
         aria-expanded={open}
         aria-label="Til tanlash"
         className={cn(
-          "inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2",
+          "inline-flex h-8 items-center rounded-full border px-3.5 text-xs font-bold uppercase tracking-wide transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 active:scale-95",
           open
-            ? "border-primary-200 bg-primary-50 text-primary-700"
-            : "border-slate-200 text-slate-700 hover:bg-slate-100",
+            ? "border-primary-200 bg-primary-50 text-primary-700 shadow-sm"
+            : "border-slate-200 bg-white text-slate-700 shadow-[0_2px_4px_rgba(0,0,0,0.08),0_4px_12px_-2px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.9)] hover:shadow-[0_3px_8px_rgba(0,0,0,0.12),0_6px_16px_-3px_rgba(0,0,0,0.16),inset_0_1px_0_rgba(255,255,255,0.9)]",
         )}
       >
-        <Globe className="h-4 w-4" aria-hidden />
-        <span className="uppercase">{current}</span>
-        <ChevronDown
-          className={cn(
-            "h-3.5 w-3.5 text-slate-400 transition-transform duration-200",
-            open && "rotate-180",
-          )}
-          aria-hidden
-        />
+        {current}
       </button>
 
       {open && (

@@ -9,14 +9,8 @@ import {
   type Locale,
 } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
-import { getSession } from "@/lib/auth/session";
-import { SiteHeader } from "@/components/layout/SiteHeader";
-import { PromoBar } from "@/components/layout/PromoBar";
-import { SiteFooter } from "@/components/layout/SiteFooter";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 
-// Tana/UI — Inter; sarlavha — Manrope. Ikkalasi uz/ru/en (lotin + lotin-ext +
-// kirill) glyphlarini to'liq qoplaydi.
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin", "latin-ext", "cyrillic"],
@@ -51,23 +45,14 @@ export async function generateMetadata({
 
   return {
     metadataBase: new URL(SITE_URL),
-    title: {
-      default: title,
-      template: `%s — ${common.brand}`,
-    },
+    title: { default: title, template: `%s — ${common.brand}` },
     description,
     applicationName: "UzBron",
     manifest: "/manifest.webmanifest",
-    appleWebApp: {
-      capable: true,
-      title: "UzBron",
-      statusBarStyle: "default",
-    },
+    appleWebApp: { capable: true, title: "UzBron", statusBarStyle: "default" },
     alternates: {
       canonical: `/${locale}`,
-      languages: Object.fromEntries(
-        locales.map((l) => [l, `/${l}`]),
-      ) as Record<string, string>,
+      languages: Object.fromEntries(locales.map((l) => [l, `/${l}`])) as Record<string, string>,
     },
     openGraph: {
       type: "website",
@@ -81,11 +66,8 @@ export async function generateMetadata({
   };
 }
 
-export const viewport: Viewport = {
-  themeColor: "#059669",
-};
+export const viewport: Viewport = { themeColor: "#059669" };
 
-/** `/uz`, `/ru`, `/en` — tillarni oldindan generatsiya qilamiz. */
 export function generateStaticParams() {
   return locales.map((lang) => ({ lang }));
 }
@@ -99,21 +81,14 @@ export default async function LangLayout({
 }) {
   const { lang } = await params;
   if (!isLocale(lang)) notFound();
-  const locale = lang as Locale;
-
-  const common = await getDictionary(locale, "common");
-  const session = await getSession();
 
   return (
     <html
-      lang={locale}
+      lang={lang}
       className={`${inter.variable} ${manrope.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-white text-slate-900">
-        <PromoBar text={common.promo} />
-        <SiteHeader locale={locale} dict={common} authed={!!session} />
-        <div className="flex flex-1 flex-col">{children}</div>
-        <SiteFooter locale={locale} dict={common} />
+        {children}
         <ServiceWorkerRegister />
       </body>
     </html>

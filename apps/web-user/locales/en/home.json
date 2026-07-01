@@ -1,12 +1,22 @@
 {
   "hero": {
-    "eyebrow": "Travel across Uzbekistan",
-    "title": "Book hotels and buses in one place",
-    "subtitle": "Best prices, instant confirmation and trusted partners — all on UzBron."
+    "title": "Find your perfect stay across Uzbekistan",
+    "subtitle": "Best prices, instant confirmation — all on UzBron."
   },
   "popularCities": {
     "title": "Popular destinations",
-    "subtitle": "The cities travellers choose most"
+    "subtitle": "The cities travellers choose most",
+    "hotels": "hotels"
+  },
+  "trust": {
+    "hotels": "12,000+",
+    "hotelsLabel": "hotels",
+    "cities": "50+",
+    "citiesLabel": "cities",
+    "rating": "4.8★",
+    "ratingLabel": "average rating",
+    "support": "24/7",
+    "supportLabel": "support"
   },
   "featured": {
     "title": "Featured offers",

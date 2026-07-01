@@ -52,7 +52,7 @@ export function SearchBar({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-2 rounded-3xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-900/5 md:flex-row md:items-stretch md:gap-0 md:rounded-full md:p-1.5"
+      className="flex flex-col gap-2 rounded-3xl border border-white/60 bg-white p-2 shadow-[0_4px_12px_rgba(0,0,0,0.08),0_16px_40px_-8px_rgba(0,0,0,0.15),inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_2px_rgba(0,0,0,0.04)] md:flex-row md:items-stretch md:gap-0 md:rounded-full md:p-1.5"
     >
       {/* Shahar — custom pill dropdown */}
       <CityPicker
@@ -122,7 +122,7 @@ export function SearchBar({
       {/* Qidirish tugmasi */}
       <button
         type="submit"
-        className="group inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-primary-600 px-6 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:bg-primary-500 hover:shadow-lg active:scale-95 md:h-auto md:px-7"
+        className="group inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-primary-600 px-6 text-sm font-semibold text-white shadow-[0_2px_6px_rgba(0,0,0,0.1),0_8px_20px_-4px_rgba(22,163,74,0.45),inset_0_1px_0_rgba(255,255,255,0.2),inset_0_-2px_4px_rgba(0,0,0,0.12)] transition-all duration-150 hover:bg-primary-500 hover:shadow-[0_4px_10px_rgba(0,0,0,0.12),0_12px_28px_-4px_rgba(22,163,74,0.55),inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-2px_4px_rgba(0,0,0,0.12)] active:scale-95 active:shadow-[inset_0_2px_6px_rgba(0,0,0,0.25)] md:h-auto md:px-7"
       >
         <SearchIcon />
         <span>{dict.submit}</span>
