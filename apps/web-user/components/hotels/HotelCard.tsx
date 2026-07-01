@@ -32,7 +32,7 @@ export function HotelCard({
       href={`/${locale}/hotels/${hotel.slug}`}
       className="group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
     >
-      <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all group-hover:-translate-y-1 group-hover:shadow-md">
+      <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card transition-all duration-200 group-hover:-translate-y-1 group-hover:shadow-card-hover">
         <div className="relative aspect-4/3 overflow-hidden bg-linear-to-br from-primary-100 to-primary-300">
           {imageUrl ? (
             <img

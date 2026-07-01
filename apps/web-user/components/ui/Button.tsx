@@ -7,11 +7,11 @@ type Size = "sm" | "md" | "lg";
 
 const variantClasses: Record<Variant, string> = {
   primary:
-    "bg-primary-600 text-white shadow-sm hover:bg-primary-500 hover:shadow-md active:bg-primary-700 active:shadow-none active:scale-[0.97] transition-all duration-150",
+    "bg-primary-600 text-white shadow-btn hover:bg-primary-500 hover:shadow-btn-hover active:bg-primary-700 active:shadow-btn-active active:scale-[0.97] transition-all duration-150",
   accent:
-    "bg-accent-600 text-white shadow-sm hover:bg-accent-500 hover:shadow-md active:bg-accent-700 active:shadow-none active:scale-[0.97] transition-all duration-150",
+    "bg-accent-600 text-white shadow-btn hover:bg-accent-500 hover:shadow-btn-hover active:bg-accent-700 active:shadow-btn-active active:scale-[0.97] transition-all duration-150",
   secondary:
-    "border border-slate-200 bg-white text-slate-900 shadow-sm hover:bg-slate-50 hover:border-slate-300 active:bg-slate-100 active:scale-[0.97] transition-all duration-150",
+    "border border-slate-200 bg-white text-slate-900 shadow-btn hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:shadow-btn-active active:scale-[0.97] transition-all duration-150",
   ghost:
     "text-slate-700 hover:bg-slate-100 active:bg-slate-200 active:scale-[0.97] transition-all duration-150",
 };

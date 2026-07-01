@@ -140,7 +140,7 @@ export function ScrollNav({
       {/* Transform yo'q (blur uchun) — markazlashtirish flex container orqali */}
       <div className="pointer-events-none fixed inset-x-0 bottom-3 z-100 flex justify-center px-3 md:hidden">
         <nav
-          className="pointer-events-auto w-full max-w-md rounded-3xl border border-white/50"
+          className="pointer-events-auto w-full max-w-md rounded-full border border-white/50"
           style={{
             background:
               "linear-gradient(135deg, rgba(255,255,255,0.25), rgba(255,255,255,0.12))",
@@ -160,7 +160,7 @@ export function ScrollNav({
                   <Link
                     href={item.href}
                     aria-current={isActive ? "page" : undefined}
-                    className={`flex flex-col items-center gap-0.5 rounded-2xl px-4 py-1.5 text-[11px] font-semibold transition-all duration-300 active:scale-90
+                    className={`flex flex-col items-center gap-0.5 rounded-full px-4 py-1.5 text-[11px] font-semibold transition-all duration-300 active:scale-90
                       ${
                         isActive
                           ? "text-primary-700"

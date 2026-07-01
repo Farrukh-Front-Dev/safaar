@@ -52,7 +52,7 @@ export default async function HomePage({
         <SearchBar locale={locale} dict={common.search} cities={cities} />
       </div>
 
-      <div className="flex flex-col gap-14 py-14">
+      <div className="flex flex-col gap-16 py-16 sm:py-20">
         <PopularCities
           locale={locale}
           cities={cities}

@@ -86,7 +86,7 @@ export function MobileMenu({
           {/* Floating panel (pill uslubiga mos) */}
           <div
             id="mobile-menu"
-            className="fixed inset-x-4 top-19 z-50 max-h-[calc(100vh-6rem)] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-xl"
+            className="fixed inset-x-4 top-19 z-50 max-h-[calc(100vh-6rem)] overflow-y-auto rounded-3xl border border-slate-200 bg-white p-4 shadow-xl"
           >
             <nav aria-label="Mobil menyu" className="flex flex-col gap-1">
               {items.map((item) => (
@@ -94,7 +94,7 @@ export function MobileMenu({
                   key={item.href}
                   href={item.href}
                   onClick={() => setOpen(false)}
-                  className="rounded-lg px-3 py-3 text-base font-medium text-slate-800 transition-colors hover:bg-slate-100"
+                  className="rounded-full px-4 py-3 text-base font-medium text-slate-800 transition-colors hover:bg-primary-50 hover:text-primary-700"
                 >
                   {item.label}
                 </Link>
@@ -109,7 +109,7 @@ export function MobileMenu({
                   <Link
                     href={`/${locale}/account`}
                     onClick={() => setOpen(false)}
-                    className="rounded-lg px-3 py-3 text-base font-medium text-slate-800 transition-colors hover:bg-slate-100"
+                    className="rounded-full px-4 py-3 text-base font-medium text-slate-800 transition-colors hover:bg-primary-50 hover:text-primary-700"
                   >
                     {labels.account}
                   </Link>
