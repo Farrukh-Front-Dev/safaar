@@ -99,17 +99,6 @@ export interface GuestProfile {
   tags: string[];
 }
 
-/** Sharh. */
-export interface Review {
-  id: string;
-  guestName: string;
-  rating: number;
-  title?: string;
-  text: string;
-  createdAt: string;
-  reply?: string;
-}
-
 /** Front Desk dashboard KPI'lari. */
 export interface FrontDeskStats {
   occupancyPercent: number;

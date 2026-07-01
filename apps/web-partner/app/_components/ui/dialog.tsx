@@ -2,6 +2,8 @@
 
 import { X } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import { useMounted } from "../../_hooks/use-mounted";
 import { cn } from "../../_lib/utils/cn";
 
 interface DialogProps {
@@ -21,8 +23,11 @@ const sizes = {
 };
 
 /**
- * Oddiy dialog. Esc bosish va backdrop klik bilan yopiladi.
- * Body scroll'ni vaqtincha to'xtatadi.
+ * Oddiy modal dialog.
+ *
+ * MUHIM: `document.body` ga portal qiladi — ajdod element'lardagi
+ * `transform`/`filter`/`perspective` xususiyatlari fixed positioning'ni
+ * buzmasligi uchun.
  */
 export function Dialog({
   open,
@@ -33,6 +38,8 @@ export function Dialog({
   footer,
   size = "md",
 }: DialogProps) {
+  const mounted = useMounted();
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -47,11 +54,11 @@ export function Dialog({
     };
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="dialog-title"
@@ -63,13 +70,16 @@ export function Dialog({
       />
       <div
         className={cn(
-          "relative z-10 flex w-full flex-col overflow-hidden rounded-card border border-[var(--border)] bg-[var(--surface)] shadow-2xl fade-in",
+          "relative z-10 flex w-full flex-col overflow-hidden rounded-card border border-[var(--border)] bg-[var(--surface)] shadow-2xl",
           sizes[size],
         )}
       >
         <header className="flex items-start justify-between gap-3 border-b border-[var(--border)] px-5 py-4">
           <div className="flex flex-col gap-1">
-            <h2 id="dialog-title" className="text-lg font-semibold tracking-tight">
+            <h2
+              id="dialog-title"
+              className="text-lg font-semibold tracking-tight"
+            >
               {title}
             </h2>
             {description && (
@@ -96,7 +106,8 @@ export function Dialog({
           </footer>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

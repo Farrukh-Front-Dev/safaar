@@ -5,7 +5,6 @@ import {
   type FrontDeskStats,
   type GuestProfile,
   type ReservationView,
-  type Review,
   type Room,
   type RoomType,
 } from "../domain/types";
@@ -537,62 +536,6 @@ export const mockGuests: GuestProfile[] = [
     lastStay: "2026-06-25",
     isVip: true,
     tags: ["VIP", "Uzoq qoladigan"],
-  },
-];
-
-// ─────────────────────────────────────────────────────────────────────────
-// Sharhlar
-// ─────────────────────────────────────────────────────────────────────────
-
-export const mockReviews: Review[] = [
-  {
-    id: "rv-1",
-    guestName: "Karimova Madina",
-    rating: 5,
-    title: "Ajoyib tajriba",
-    text: "Xona toza, staff juda samimiy. Ayniqsa nonushta a'lo darajada.",
-    createdAt: "2026-06-25",
-    reply: "Rahmat, Madina opa! Sizni yana kutib qolamiz.",
-  },
-  {
-    id: "rv-2",
-    guestName: "Aliyev Sherzod",
-    rating: 4,
-    title: "Yaxshi, lekin Wi-Fi sekin",
-    text: "Joylashuv juda yaxshi, lekin xonadagi Wi-Fi sekin edi.",
-    createdAt: "2026-06-22",
-  },
-  {
-    id: "rv-3",
-    guestName: "Yusupova Nigora",
-    rating: 5,
-    text: "Hammasi a'lo. Yana kelaman.",
-    createdAt: "2026-06-20",
-    reply: "Rahmat!",
-  },
-  {
-    id: "rv-4",
-    guestName: "Doniyor B.",
-    rating: 2,
-    title: "Konditsioner ishlamadi",
-    text: "Xonadagi konditsioner birinchi tunda buzilib qoldi. Boshqasiga ko'chirishdi, lekin noqulay edi.",
-    createdAt: "2026-06-18",
-  },
-  {
-    id: "rv-5",
-    guestName: "Olimov Sardor",
-    rating: 5,
-    title: "Mukammal",
-    text: "Toza, jim, professional xizmat.",
-    createdAt: "2026-06-15",
-    reply: "Yuksak baholaganingiz uchun rahmat!",
-  },
-  {
-    id: "rv-6",
-    guestName: "Hamidova Zarina",
-    rating: 4,
-    text: "Umuman olganda yaxshi tajriba.",
-    createdAt: "2026-06-12",
   },
 ];
 

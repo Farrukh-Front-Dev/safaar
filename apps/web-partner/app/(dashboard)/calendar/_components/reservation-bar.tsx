@@ -1,0 +1,119 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { BookingStatus } from "@agoda/types";
+import type { ReservationView } from "../../../_lib/domain/types";
+import { cn } from "../../../_lib/utils/cn";
+import { formatDate, formatMoney, formatPhone } from "../../../_lib/utils/format";
+
+function statusClasses(status: ReservationView["status"]): string {
+  switch (status) {
+    case BookingStatus.PENDING:
+    case BookingStatus.AWAITING_PAYMENT:
+    case BookingStatus.AWAITING_PARTNER_CONFIRMATION:
+      return "bg-amber-400 hover:bg-amber-500 text-amber-950 ring-amber-500";
+    case BookingStatus.CONFIRMED:
+      return "bg-brand-500 hover:bg-brand-600 text-white ring-brand-700";
+    case "IN_HOUSE":
+      return "bg-accent-500 hover:bg-accent-600 text-white ring-accent-700";
+    case BookingStatus.COMPLETED:
+      return "bg-zinc-400 hover:bg-zinc-500 text-white ring-zinc-600";
+    case BookingStatus.CANCELLED:
+    case BookingStatus.EXPIRED:
+      return "bg-red-400 hover:bg-red-500 text-white ring-red-600";
+    default:
+      return "bg-zinc-300";
+  }
+}
+
+interface ReservationBarProps {
+  reservation: ReservationView;
+  gridRow: number;
+  startCol: number;
+  spanCols: number;
+  /** Boshida kesilganmi (bron undan oldin boshlangan) */
+  truncatedStart: boolean;
+  /** Oxirida kesilganmi (bron keyinroq tugaydi) */
+  truncatedEnd: boolean;
+}
+
+export function ReservationBar({
+  reservation,
+  gridRow,
+  startCol,
+  spanCols,
+  truncatedStart,
+  truncatedEnd,
+}: ReservationBarProps) {
+  const router = useRouter();
+  const balance = reservation.totalPrice - reservation.paidAmount;
+
+  return (
+    <div
+      style={{
+        gridRow,
+        gridColumn: `${startCol} / span ${spanCols}`,
+      }}
+      className="group relative my-1 mx-0.5 flex"
+    >
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          router.push(`/reservations/${reservation.id}`);
+        }}
+        title={`${reservation.guest.fullName} · ${formatDate(reservation.checkIn)} → ${formatDate(reservation.checkOut)}`}
+        className={cn(
+          "flex h-full w-full items-center px-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--surface)]",
+          statusClasses(reservation.status),
+          truncatedStart ? "rounded-l-none" : "rounded-l-md",
+          truncatedEnd ? "rounded-r-none" : "rounded-r-md",
+        )}
+      >
+        <span className="truncate">{reservation.guest.fullName}</span>
+      </button>
+
+      {/* Rich tooltip — hover'da */}
+      <div className="pointer-events-none absolute left-1/2 top-full z-40 mt-1 hidden -translate-x-1/2 min-w-[220px] rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 text-left text-xs shadow-xl group-hover:block group-focus-within:block">
+        <p className="font-semibold">{reservation.guest.fullName}</p>
+        <p className="text-[var(--muted-foreground)]">
+          {formatPhone(reservation.guest.phone)}
+        </p>
+        <div className="my-2 h-px bg-[var(--border)]" />
+        <p>
+          <span className="text-[var(--muted-foreground)]">Sanalar: </span>
+          {formatDate(reservation.checkIn)} →{" "}
+          {formatDate(reservation.checkOut)}
+          <span className="text-[var(--muted-foreground)]">
+            {" "}
+            ({reservation.nights} kech.)
+          </span>
+        </p>
+        <p>
+          <span className="text-[var(--muted-foreground)]">Xona: </span>
+          {reservation.roomTypeName}
+          {reservation.roomNumber && (
+            <span className="font-mono text-brand-700 dark:text-brand-300">
+              {" "}
+              · {reservation.roomNumber}
+            </span>
+          )}
+        </p>
+        <p>
+          <span className="text-[var(--muted-foreground)]">Summa: </span>
+          <span className="font-semibold">
+            {formatMoney(reservation.totalPrice)}
+          </span>
+        </p>
+        {balance > 0 && (
+          <p className="text-red-600">
+            Qoldiq: {formatMoney(balance)}
+          </p>
+        )}
+        <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">
+          Tafsilot uchun bosing
+        </p>
+      </div>
+    </div>
+  );
+}

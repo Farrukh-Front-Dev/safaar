@@ -1,39 +1,73 @@
 "use client";
 
 import {
+  AlertCircle,
   BedDouble,
-  Check,
+  CalendarPlus,
   Clock,
+  Inbox,
   LogIn,
   LogOut,
   Phone,
-  Plus,
-  RefreshCw,
-  Users,
-  X,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BookingStatus } from "@agoda/types";
 import { Button } from "../../_components/ui/button";
 import {
   Card,
   CardBody,
-  CardHeader,
-  CardTitle,
 } from "../../_components/ui/card";
 import { EmptyState } from "../../_components/ui/empty-state";
 import { ConfirmDialog } from "../../_components/ui/dialog";
+import { Tooltip } from "../../_components/ui/tooltip";
 import { OccupancyMeter } from "../../_components/domain/occupancy-meter";
 import { SourceBadge } from "../../_components/domain/source-badge";
 import { WalkInDialog } from "../../_components/domain/walk-in-dialog";
-import { PageHeader } from "../../_components/layout/page-header";
 import { useFrontDeskStats } from "../../_hooks/use-dashboard";
 import { useReservations } from "../../_hooks/use-reservations";
 import { useDataStore } from "../../_stores/data-store";
 import { TODAY_ISO } from "../../_lib/mocks/data";
-import { formatDate, formatMoney, formatPhone } from "../../_lib/utils/format";
+import { formatMoney, formatPhone } from "../../_lib/utils/format";
+import { cn } from "../../_lib/utils/cn";
+import type { ReservationView } from "../../_lib/domain/types";
+
+const WEEKDAYS = [
+  "Yakshanba",
+  "Dushanba",
+  "Seshanba",
+  "Chorshanba",
+  "Payshanba",
+  "Juma",
+  "Shanba",
+];
+const MONTHS = [
+  "yanvar",
+  "fevral",
+  "mart",
+  "aprel",
+  "may",
+  "iyun",
+  "iyul",
+  "avgust",
+  "sentyabr",
+  "oktyabr",
+  "noyabr",
+  "dekabr",
+];
+
+function formatTodayUz(iso: string): string {
+  const d = new Date(iso);
+  return `${WEEKDAYS[d.getDay()]}, ${d.getDate()}-${MONTHS[d.getMonth()]}`;
+}
+
+type TaskKind = "pending" | "arrival" | "departure";
+
+interface Task {
+  kind: TaskKind;
+  reservation: ReservationView;
+}
 
 export function FrontDeskView() {
   const stats = useFrontDeskStats();
@@ -49,392 +83,188 @@ export function FrontDeskView() {
     id: string;
     name: string;
   } | null>(null);
+  const [filter, setFilter] = useState<"all" | TaskKind>("all");
 
-  const all = reservations.data;
-  const arrivals = all.filter(
-    (r) => r.checkIn === TODAY_ISO && r.status === BookingStatus.CONFIRMED,
-  );
-  const departures = all.filter(
-    (r) => r.checkOut === TODAY_ISO && r.status === "IN_HOUSE",
-  );
-  const pending = all
-    .filter((r) => r.status === BookingStatus.PENDING)
-    .slice(0, 5);
+  // Hamma vazifalarni bitta ro'yxat sifatida
+  const tasks: Task[] = useMemo(() => {
+    const arr: Task[] = [];
+    for (const r of reservations.data) {
+      if (r.status === BookingStatus.PENDING) {
+        arr.push({ kind: "pending", reservation: r });
+      } else if (
+        r.checkIn === TODAY_ISO &&
+        r.status === BookingStatus.CONFIRMED
+      ) {
+        arr.push({ kind: "arrival", reservation: r });
+      } else if (r.checkOut === TODAY_ISO && r.status === "IN_HOUSE") {
+        arr.push({ kind: "departure", reservation: r });
+      }
+    }
+    // Tartiblash: zudlik birinchi, keyin keladi, keyin ketadi
+    const order: Record<TaskKind, number> = {
+      pending: 0,
+      arrival: 1,
+      departure: 2,
+    };
+    return arr.sort((a, b) => order[a.kind] - order[b.kind]);
+  }, [reservations.data]);
+
+  const counts = useMemo(() => {
+    const c = { all: tasks.length, pending: 0, arrival: 0, departure: 0 };
+    for (const t of tasks) c[t.kind]++;
+    return c;
+  }, [tasks]);
+
+  const filtered = useMemo(() => {
+    if (filter === "all") return tasks;
+    return tasks.filter((t) => t.kind === filter);
+  }, [tasks, filter]);
+
+  const occupancy = stats.data?.occupancyPercent ?? 0;
 
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader
-        eyebrow="Front Desk"
-        title="Bugun nima ish bor?"
-        description="Bugungi kelishlar, ketishlar va tasdiqlash kerak bo'lgan bronlar."
-        actions={
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                stats.refetch();
-                reservations.refetch();
-                toast.success("Ma'lumotlar yangilandi");
-              }}
-            >
-              <RefreshCw className="h-4 w-4" aria-hidden />
-              Yangilash
-            </Button>
-            <Button size="sm" onClick={() => setWalkInOpen(true)}>
-              <Plus className="h-4 w-4" aria-hidden />
-              Yangi bron
-            </Button>
-          </>
-        }
-      />
+    <div className="flex flex-col gap-5">
+      {/* Sarlavha — kompakt */}
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-semibold uppercase tracking-widest text-brand-700 dark:text-brand-300">
+            Front Desk
+          </span>
+          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
+            Bugun, {formatTodayUz(TODAY_ISO)}
+          </h1>
+        </div>
+        <Button onClick={() => setWalkInOpen(true)}>
+          <CalendarPlus className="h-4 w-4" aria-hidden />
+          Yangi bron
+        </Button>
+      </div>
 
-      {/* To'liqlik (occupancy) — katta vurg'u */}
+      {/* KPI yo'lakchasi — bitta yuza karta */}
       <Card>
-        <CardBody className="flex flex-col gap-5 p-6 md:flex-row md:items-center md:justify-between">
-          <div className="flex flex-col gap-1">
-            <p className="text-sm font-medium text-[var(--muted-foreground)]">
-              Bugungi to'liqlik
-            </p>
-            <p className="text-5xl font-bold tracking-tight">
-              {stats.data?.occupancyPercent ?? 0}
-              <span className="ml-1 text-2xl text-[var(--muted-foreground)]">
-                %
-              </span>
-            </p>
-            <p className="text-sm text-[var(--muted-foreground)]">
-              <span className="font-semibold text-[var(--foreground)]">
-                {stats.data?.occupiedRooms}
-              </span>{" "}
-              / {stats.data?.totalRooms} xona band
-            </p>
-          </div>
-          <div className="md:w-1/2">
-            <OccupancyMeter
-              percent={stats.data?.occupancyPercent ?? 0}
-              className="h-3"
-            />
-            <p className="mt-2 text-xs text-[var(--muted-foreground)]">
-              {(stats.data?.occupancyPercent ?? 0) >= 80
-                ? "Ajoyib! Mehmonxona deyarli to'liq band."
-                : (stats.data?.occupancyPercent ?? 0) >= 50
-                  ? "Yaxshi. Bo'sh xonalar bor."
-                  : "Bo'sh xonalar ko'p — promo aktsiya o'tkazing?"}
-            </p>
-          </div>
+        <CardBody className="grid grid-cols-2 gap-px overflow-hidden bg-[var(--border)] p-0 sm:grid-cols-4">
+          <KpiCell
+            tone="brand"
+            icon={<BedDouble className="h-4 w-4" aria-hidden />}
+            label="To'liqlik"
+            value={`${occupancy}%`}
+            hint={`${stats.data?.occupiedRooms ?? 0} / ${stats.data?.totalRooms ?? 0} band`}
+          >
+            <OccupancyMeter percent={occupancy} className="mt-1.5 h-1.5" />
+          </KpiCell>
+          <KpiCell
+            tone="amber"
+            icon={<Clock className="h-4 w-4" aria-hidden />}
+            label="Zudlik kerak"
+            value={counts.pending}
+            hint="javob kutmoqda"
+          />
+          <KpiCell
+            tone="accent"
+            icon={<LogIn className="h-4 w-4" aria-hidden />}
+            label="Bugun keladi"
+            value={counts.arrival}
+            hint="check-in qilinadi"
+          />
+          <KpiCell
+            tone="neutral"
+            icon={<LogOut className="h-4 w-4" aria-hidden />}
+            label="Bugun ketadi"
+            value={counts.departure}
+            hint="check-out qilinadi"
+          />
         </CardBody>
       </Card>
 
-      {/* KPI lentasi */}
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile
-          label="Bugun keladi"
-          value={stats.data?.arrivalsToday ?? 0}
-          hint="Kutilayotgan check-in"
-          icon={<LogIn className="h-5 w-5" aria-hidden />}
-          tone="brand"
-        />
-        <StatTile
-          label="Bugun ketadi"
-          value={stats.data?.departuresToday ?? 0}
-          hint="Check-out qilinadi"
-          icon={<LogOut className="h-5 w-5" aria-hidden />}
-          tone="accent"
-        />
-        <StatTile
-          label="Hozir mehmonxonada"
-          value={stats.data?.occupiedRooms ?? 0}
-          hint="Band xonalar"
-          icon={<Users className="h-5 w-5" aria-hidden />}
-          tone="neutral"
-        />
-        <StatTile
-          label="Javob kutilmoqda"
-          value={stats.data?.pendingReservations ?? 0}
-          hint="Yangi bronlar"
-          icon={<Clock className="h-5 w-5" aria-hidden />}
-          tone="warning"
-        />
-      </section>
+      {/* Vazifalar bloki */}
+      <div className="flex flex-col gap-3">
+        {/* Tab filter */}
+        <div
+          role="tablist"
+          aria-label="Vazifa turi"
+          className="flex flex-wrap gap-1 rounded-card border border-[var(--border)] bg-[var(--surface)] p-1"
+        >
+          <FilterTab
+            active={filter === "all"}
+            count={counts.all}
+            onClick={() => setFilter("all")}
+            label="Hammasi"
+          />
+          <FilterTab
+            active={filter === "pending"}
+            count={counts.pending}
+            onClick={() => setFilter("pending")}
+            label="Zudlik"
+            tone="amber"
+            icon={<Clock className="h-3.5 w-3.5" aria-hidden />}
+          />
+          <FilterTab
+            active={filter === "arrival"}
+            count={counts.arrival}
+            onClick={() => setFilter("arrival")}
+            label="Keladi"
+            tone="brand"
+            icon={<LogIn className="h-3.5 w-3.5" aria-hidden />}
+          />
+          <FilterTab
+            active={filter === "departure"}
+            count={counts.departure}
+            onClick={() => setFilter("departure")}
+            label="Ketadi"
+            tone="accent"
+            icon={<LogOut className="h-3.5 w-3.5" aria-hidden />}
+          />
+        </div>
 
-      {/* Bugungi kelishlar va ketishlar */}
-      <section className="grid gap-4 lg:grid-cols-2">
+        {/* Vazifalar ro'yxati */}
         <Card>
-          <CardHeader className="flex-row items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-100 text-brand-700">
-                <LogIn className="h-4 w-4" aria-hidden />
-              </span>
-              <div className="flex flex-col">
-                <CardTitle>Bugun keladi</CardTitle>
-                <span className="text-xs text-[var(--muted-foreground)]">
-                  Check-in qilish uchun
-                </span>
-              </div>
-            </div>
-            <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-bold text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
-              {arrivals.length}
-            </span>
-          </CardHeader>
           <CardBody className="p-0">
-            {arrivals.length === 0 ? (
+            {filtered.length === 0 ? (
               <EmptyState
-                icon={<LogIn className="h-8 w-8" aria-hidden />}
-                title="Bugun kelish yo'q"
-                description="Ertaga keladiganlarni Kalendarda ko'rishingiz mumkin."
+                icon={<Inbox className="h-10 w-10" aria-hidden />}
+                title="Hammasi joyida!"
+                description={
+                  filter === "all"
+                    ? "Bugun bajariladigan vazifa yo'q."
+                    : "Ushbu filterda vazifa yo'q."
+                }
               />
             ) : (
               <ul className="divide-y divide-[var(--border)]">
-                {arrivals.map((r) => (
-                  <li
-                    key={r.id}
-                    className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-[var(--surface-muted)]"
-                  >
-                    <div className="flex min-w-0 flex-col gap-0.5">
-                      <Link
-                        href={`/reservations/${r.id}`}
-                        className="truncate font-medium hover:text-brand-700 dark:hover:text-brand-300"
-                      >
-                        {r.guest.fullName}
-                      </Link>
-                      <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--muted-foreground)]">
-                        <span className="inline-flex items-center gap-1">
-                          <BedDouble className="h-3 w-3" aria-hidden />
-                          {r.roomTypeName}
-                          {r.roomNumber && (
-                            <span className="font-mono text-brand-700 dark:text-brand-300">
-                              {" "}
-                              · {r.roomNumber}
-                            </span>
-                          )}
-                        </span>
-                        <a
-                          href={`tel:+${r.guest.phone}`}
-                          className="inline-flex items-center gap-1 hover:text-brand-700"
-                        >
-                          <Phone className="h-3 w-3" aria-hidden />
-                          {formatPhone(r.guest.phone)}
-                        </a>
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <SourceBadge source={r.source} />
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          checkIn(r.id);
-                          toast.success(
-                            `Check-in qilindi: ${r.guest.fullName}`,
-                          );
-                        }}
-                      >
-                        <LogIn className="h-3.5 w-3.5" aria-hidden />
-                        Check-in
-                      </Button>
-                    </div>
-                  </li>
+                {filtered.map(({ kind, reservation }) => (
+                  <TaskRow
+                    key={`${kind}-${reservation.id}`}
+                    kind={kind}
+                    reservation={reservation}
+                    onCheckIn={() => {
+                      checkIn(reservation.id);
+                      toast.success(
+                        `Check-in qilindi: ${reservation.guest.fullName}`,
+                      );
+                    }}
+                    onCheckOut={() => {
+                      checkOut(reservation.id);
+                      toast.success(
+                        `Check-out qilindi: ${reservation.guest.fullName}`,
+                      );
+                    }}
+                    onConfirm={() => {
+                      confirmReservation(reservation.id);
+                      toast.success(`Bron tasdiqlandi: ${reservation.id}`);
+                    }}
+                    onReject={() =>
+                      setConfirmReject({
+                        id: reservation.id,
+                        name: reservation.guest.fullName,
+                      })
+                    }
+                  />
                 ))}
               </ul>
             )}
           </CardBody>
         </Card>
-
-        <Card>
-          <CardHeader className="flex-row items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent-100 text-accent-700">
-                <LogOut className="h-4 w-4" aria-hidden />
-              </span>
-              <div className="flex flex-col">
-                <CardTitle>Bugun ketadi</CardTitle>
-                <span className="text-xs text-[var(--muted-foreground)]">
-                  Check-out qilish uchun
-                </span>
-              </div>
-            </div>
-            <span className="rounded-full bg-accent-50 px-2.5 py-0.5 text-xs font-bold text-accent-700 dark:bg-accent-900/40 dark:text-accent-200">
-              {departures.length}
-            </span>
-          </CardHeader>
-          <CardBody className="p-0">
-            {departures.length === 0 ? (
-              <EmptyState
-                icon={<LogOut className="h-8 w-8" aria-hidden />}
-                title="Bugun ketish yo'q"
-                description="Hech kim bugun check-out qilmaydi."
-              />
-            ) : (
-              <ul className="divide-y divide-[var(--border)]">
-                {departures.map((r) => {
-                  const balance = r.totalPrice - r.paidAmount;
-                  return (
-                    <li
-                      key={r.id}
-                      className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-[var(--surface-muted)]"
-                    >
-                      <div className="flex min-w-0 flex-col gap-0.5">
-                        <Link
-                          href={`/reservations/${r.id}`}
-                          className="truncate font-medium hover:text-brand-700 dark:hover:text-brand-300"
-                        >
-                          {r.guest.fullName}
-                        </Link>
-                        <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
-                          <span className="inline-flex items-center gap-1 text-[var(--muted-foreground)]">
-                            <BedDouble className="h-3 w-3" aria-hidden />
-                            {r.roomNumber ?? r.roomTypeName}
-                          </span>
-                          {balance > 0 ? (
-                            <span className="font-semibold text-red-600">
-                              Qoldiq: {formatMoney(balance)}
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 font-medium text-accent-600">
-                              <Check className="h-3 w-3" aria-hidden />
-                              To'liq to'langan
-                            </span>
-                          )}
-                        </span>
-                      </div>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => {
-                          checkOut(r.id);
-                          toast.success(
-                            `Check-out qilindi: ${r.guest.fullName}`,
-                          );
-                        }}
-                      >
-                        <LogOut className="h-3.5 w-3.5" aria-hidden />
-                        Check-out
-                      </Button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </CardBody>
-        </Card>
-      </section>
-
-      {/* Tasdiq kutayotgan bronlar */}
-      <Card>
-        <CardHeader className="flex-row items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
-              <Clock className="h-4 w-4" aria-hidden />
-            </span>
-            <div className="flex flex-col">
-              <CardTitle>Yangi bronlar — javob kerak</CardTitle>
-              <span className="text-xs text-[var(--muted-foreground)]">
-                UzBron orqali kelgan, tasdiq kutilmoqda
-              </span>
-            </div>
-          </div>
-          <Link
-            href="/reservations"
-            className="text-sm font-medium text-brand-700 hover:underline dark:text-brand-300"
-          >
-            Hammasini ko'rish →
-          </Link>
-        </CardHeader>
-        <CardBody className="p-0">
-          {pending.length === 0 ? (
-            <EmptyState
-              icon={<Check className="h-8 w-8" aria-hidden />}
-              title="Hammasi javob berilgan!"
-              description="Yangi bronlar yo'q. Yangisi kelganda shu yerda paydo bo'ladi."
-            />
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="border-b border-[var(--border)] bg-[var(--surface-muted)]/40 text-left text-xs uppercase tracking-wide text-[var(--muted-foreground)]">
-                  <tr>
-                    <th className="px-5 py-3">ID</th>
-                    <th className="px-5 py-3">Mijoz</th>
-                    <th className="px-5 py-3">Xona</th>
-                    <th className="px-5 py-3">Kelish</th>
-                    <th className="px-5 py-3">Summa</th>
-                    <th className="px-5 py-3 text-right">Harakat</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pending.map((r) => (
-                    <tr
-                      key={r.id}
-                      className="border-b border-[var(--border)] transition-colors last:border-0 hover:bg-[var(--surface-muted)]"
-                    >
-                      <td className="px-5 py-3">
-                        <Link
-                          href={`/reservations/${r.id}`}
-                          className="font-mono text-xs font-semibold text-brand-700 hover:underline dark:text-brand-300"
-                        >
-                          {r.id}
-                        </Link>
-                      </td>
-                      <td className="px-5 py-3">
-                        <div className="flex flex-col">
-                          <span className="font-medium">
-                            {r.guest.fullName}
-                          </span>
-                          <span className="text-xs text-[var(--muted-foreground)]">
-                            {formatPhone(r.guest.phone)}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-5 py-3 text-[var(--muted-foreground)]">
-                        {r.roomTypeName}{" "}
-                        <span className="text-xs">
-                          ({r.adults} kat.
-                          {r.children > 0 && ` + ${r.children} bola`})
-                        </span>
-                      </td>
-                      <td className="px-5 py-3 text-[var(--muted-foreground)]">
-                        {formatDate(r.checkIn)}
-                        <span className="ml-1 text-xs">
-                          ({r.nights} kech.)
-                        </span>
-                      </td>
-                      <td className="px-5 py-3 font-medium">
-                        {formatMoney(r.totalPrice)}
-                      </td>
-                      <td className="px-5 py-3">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() =>
-                              setConfirmReject({
-                                id: r.id,
-                                name: r.guest.fullName,
-                              })
-                            }
-                          >
-                            <X className="h-3.5 w-3.5" aria-hidden />
-                            Rad
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => {
-                              confirmReservation(r.id);
-                              toast.success(`Bron tasdiqlandi: ${r.id}`);
-                            }}
-                          >
-                            <Check className="h-3.5 w-3.5" aria-hidden />
-                            Tasdiqlash
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardBody>
-      </Card>
+      </div>
 
       <WalkInDialog open={walkInOpen} onClose={() => setWalkInOpen(false)} />
 
@@ -453,55 +283,251 @@ export function FrontDeskView() {
             : ""
         }
         confirmLabel="Ha, rad etish"
-        cancelLabel="Bekor"
         tone="danger"
       />
     </div>
   );
 }
 
-function StatTile({
-  label,
-  value,
-  hint,
-  icon,
-  tone,
-}: {
+// ─────────────────────────────────────────────────────────────────────────
+// KPI cell
+// ─────────────────────────────────────────────────────────────────────────
+
+interface KpiCellProps {
   label: string;
-  value: number;
+  value: number | string;
   hint?: string;
   icon: React.ReactNode;
-  tone: "brand" | "accent" | "warning" | "neutral";
-}) {
+  tone: "brand" | "accent" | "amber" | "neutral";
+  children?: React.ReactNode;
+}
+
+function KpiCell({ label, value, hint, icon, tone, children }: KpiCellProps) {
   const toneClasses = {
-    brand: "bg-brand-100 text-brand-700",
-    accent: "bg-accent-100 text-accent-700",
-    warning: "bg-amber-100 text-amber-700",
-    neutral: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
+    brand: "text-brand-700",
+    accent: "text-accent-700",
+    amber: "text-amber-700",
+    neutral: "text-zinc-700 dark:text-zinc-300",
   }[tone];
 
   return (
-    <Card className="overflow-hidden">
-      <CardBody className="flex items-center gap-3">
-        <span
-          className={`flex h-11 w-11 items-center justify-center rounded-xl ${toneClasses}`}
-        >
-          {icon}
+    <div className="flex flex-col gap-1.5 bg-[var(--surface)] p-4">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-[var(--muted-foreground)]">
+          {label}
         </span>
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <span className="text-xs font-medium text-[var(--muted-foreground)]">
-            {label}
+        <span className={cn("inline-flex", toneClasses)}>{icon}</span>
+      </div>
+      <div className="flex items-baseline gap-2">
+        <span className={cn("text-2xl font-bold tracking-tight", toneClasses)}>
+          {value}
+        </span>
+        {hint && (
+          <span className="text-[11px] text-[var(--muted-foreground)]">
+            {hint}
           </span>
-          <span className="text-2xl font-bold tracking-tight leading-none">
-            {value}
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Filter tab
+// ─────────────────────────────────────────────────────────────────────────
+
+function FilterTab({
+  active,
+  count,
+  onClick,
+  label,
+  icon,
+  tone,
+}: {
+  active: boolean;
+  count: number;
+  onClick: () => void;
+  label: string;
+  icon?: React.ReactNode;
+  tone?: "brand" | "accent" | "amber";
+}) {
+  const activeClass = {
+    brand: "bg-brand-700",
+    accent: "bg-accent-600",
+    amber: "bg-amber-500",
+    undefined: "bg-zinc-700",
+  }[tone ?? "undefined"];
+
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+        active
+          ? `${activeClass} text-white shadow-sm`
+          : "text-zinc-600 hover:bg-[var(--surface-muted)] dark:text-zinc-300",
+      )}
+    >
+      {icon}
+      {label}
+      <span
+        className={cn(
+          "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
+          active
+            ? "bg-white/20 text-white"
+            : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
+        )}
+      >
+        {count}
+      </span>
+    </button>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Vazifa qatori — yagona format
+// ─────────────────────────────────────────────────────────────────────────
+
+interface TaskRowProps {
+  kind: TaskKind;
+  reservation: ReservationView;
+  onCheckIn: () => void;
+  onCheckOut: () => void;
+  onConfirm: () => void;
+  onReject: () => void;
+}
+
+function TaskRow({
+  kind,
+  reservation: r,
+  onCheckIn,
+  onCheckOut,
+  onConfirm,
+  onReject,
+}: TaskRowProps) {
+  const balance = r.totalPrice - r.paidAmount;
+
+  // Holatga qarab chap belgisi
+  const indicator = {
+    pending: {
+      icon: <AlertCircle className="h-4 w-4" aria-hidden />,
+      bg: "bg-amber-100 text-amber-700",
+      label: "Yangi",
+    },
+    arrival: {
+      icon: <LogIn className="h-4 w-4" aria-hidden />,
+      bg: "bg-brand-100 text-brand-700",
+      label: "Keladi",
+    },
+    departure: {
+      icon: <LogOut className="h-4 w-4" aria-hidden />,
+      bg: "bg-accent-100 text-accent-700",
+      label: "Ketadi",
+    },
+  }[kind];
+
+  return (
+    <li className="flex flex-wrap items-center gap-3 px-4 py-3 transition-colors hover:bg-[var(--surface-muted)] sm:px-5 sm:py-4">
+      {/* Chap belgisi */}
+      <span
+        className={cn(
+          "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
+          indicator.bg,
+        )}
+        aria-label={indicator.label}
+      >
+        {indicator.icon}
+      </span>
+
+      {/* Asosiy ma'lumot */}
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          <Link
+            href={`/reservations/${r.id}`}
+            className="truncate font-semibold hover:text-brand-700 dark:hover:text-brand-300"
+          >
+            {r.guest.fullName}
+          </Link>
+          <SourceBadge source={r.source} />
+        </div>
+        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--muted-foreground)]">
+          <span className="inline-flex items-center gap-1">
+            <BedDouble className="h-3 w-3" aria-hidden />
+            {r.roomTypeName}
+            {r.roomNumber && (
+              <span className="font-mono text-brand-700 dark:text-brand-300">
+                {" "}
+                · {r.roomNumber}
+              </span>
+            )}
           </span>
-          {hint && (
-            <span className="text-[10px] text-[var(--muted-foreground)]">
-              {hint}
-            </span>
+          <span>·</span>
+          <span>{r.nights} kech.</span>
+          {kind === "departure" && (
+            <>
+              <span>·</span>
+              {balance > 0 ? (
+                <span className="font-semibold text-red-600">
+                  Qoldiq: {formatMoney(balance)}
+                </span>
+              ) : (
+                <span className="font-medium text-accent-600">
+                  To'liq to'langan
+                </span>
+              )}
+            </>
+          )}
+          {kind === "pending" && (
+            <>
+              <span>·</span>
+              <span className="font-medium">{formatMoney(r.totalPrice)}</span>
+            </>
           )}
         </div>
-      </CardBody>
-    </Card>
+      </div>
+
+      {/* Tezkor aloqa */}
+      <div className="flex items-center gap-1">
+        <Tooltip content="Qo'ng'iroq">
+          <a
+            href={`tel:+${r.guest.phone}`}
+            aria-label={`Qo'ng'iroq: ${formatPhone(r.guest.phone)}`}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-900/40 dark:hover:text-brand-300"
+          >
+            <Phone className="h-4 w-4" aria-hidden />
+          </a>
+        </Tooltip>
+      </div>
+
+      {/* Asosiy harakat */}
+      <div className="flex shrink-0 gap-2">
+        {kind === "pending" && (
+          <>
+            <Button size="sm" variant="outline" onClick={onReject}>
+              Rad
+            </Button>
+            <Button size="sm" variant="secondary" onClick={onConfirm}>
+              Tasdiqlash
+            </Button>
+          </>
+        )}
+        {kind === "arrival" && (
+          <Button size="sm" onClick={onCheckIn}>
+            <LogIn className="h-3.5 w-3.5" aria-hidden />
+            Check-in
+          </Button>
+        )}
+        {kind === "departure" && (
+          <Button size="sm" variant="secondary" onClick={onCheckOut}>
+            <LogOut className="h-3.5 w-3.5" aria-hidden />
+            Check-out
+          </Button>
+        )}
+      </div>
+    </li>
   );
 }

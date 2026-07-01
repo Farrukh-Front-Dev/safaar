@@ -4,7 +4,6 @@ import {
   CalendarDays,
   CalendarRange,
   ConciergeBell,
-  MessageSquare,
   Settings,
   Users,
   type LucideIcon,
@@ -37,10 +36,7 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     title: "Mijoz",
-    items: [
-      { label: "Mijozlar", href: "/guests", icon: Users },
-      { label: "Sharhlar", href: "/reviews", icon: MessageSquare },
-    ],
+    items: [{ label: "Mijozlar", href: "/guests", icon: Users }],
   },
   {
     title: "Boshqaruv",

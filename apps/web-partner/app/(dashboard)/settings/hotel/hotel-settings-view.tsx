@@ -15,7 +15,6 @@ import {
 import { Input } from "../../../_components/ui/input";
 import { Button } from "../../../_components/ui/button";
 import { Label } from "../../../_components/ui/label";
-import { PageHeader } from "../../../_components/layout/page-header";
 
 const schema = z.object({
   name: z.string().min(2, "Nom kamida 2 belgi"),
@@ -57,12 +56,6 @@ export function HotelSettingsView() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        eyebrow="Sozlamalar"
-        title="Mehmonxona profili"
-        description="Asosiy ma'lumotlar, manzil va aloqa."
-      />
-
       <Card>
         <CardHeader>
           <CardTitle>Asosiy ma'lumotlar</CardTitle>
