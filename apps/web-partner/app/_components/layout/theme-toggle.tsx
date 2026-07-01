@@ -28,7 +28,7 @@ export function ThemeToggle() {
     <div
       role="radiogroup"
       aria-label="Tema tanlash"
-      className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--surface-muted)] p-1"
+      className="inline-flex items-center rounded-md border border-[var(--border)] bg-[var(--surface-muted)] p-1"
     >
       {options.map(({ value, icon: Icon, label }) => {
         const active = theme === value;
@@ -42,7 +42,7 @@ export function ThemeToggle() {
             title={label}
             onClick={() => setTheme(value)}
             className={cn(
-              "flex h-7 w-7 items-center justify-center rounded-full text-zinc-500 transition-colors",
+              "flex h-7 w-7 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-[var(--surface-hover)]",
               active &&
                 "bg-[var(--surface)] text-brand-700 shadow-sm dark:text-brand-300",
             )}

@@ -28,7 +28,7 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  --radius-card: 0.875rem;
+  --radius-card: 0.5rem;
 
   --shadow-card: 0 1px 2px 0 rgba(15, 23, 42, 0.04),
     0 1px 3px 0 rgba(15, 23, 42, 0.04);
@@ -36,32 +36,36 @@
 
 /* CSS o'zgaruvchilari — light theme */
 :root {
-  --background: #f8fafc;
+  --background: #f6f7f9;
   --foreground: #0f172a;
   --surface: #ffffff;
-  --surface-muted: #f1f5f9;
-  --surface-hover: #f8fafc;
-  --border: #e2e8f0;
-  --border-strong: #cbd5e1;
-  --muted-foreground: #64748b;
+  --surface-muted: #f3f5f7;
+  --surface-hover: #eef2f6;
+  --border: #dfe5ec;
+  --border-strong: #c4ceda;
+  --muted-foreground: #5f6f82;
 }
 
 /* Dark theme — next-themes orqali html.dark qo'shiladi */
 .dark {
-  --background: #0a0a0a;
-  --foreground: #fafafa;
-  --surface: #18181b;
-  --surface-muted: #27272a;
-  --surface-hover: #1f1f23;
-  --border: #27272a;
-  --border-strong: #3f3f46;
-  --muted-foreground: #a1a1aa;
+  --background: #0d1117;
+  --foreground: #f4f7fb;
+  --surface: #151b23;
+  --surface-muted: #1f2935;
+  --surface-hover: #263241;
+  --border: #2a3441;
+  --border-strong: #445063;
+  --muted-foreground: #9aa8b8;
 }
 
 html,
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+body {
+  text-rendering: optimizeLegibility;
 }
 
 /* Focus ring (a11y) */

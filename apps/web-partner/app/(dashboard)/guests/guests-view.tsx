@@ -1,6 +1,7 @@
 "use client";
 
 import { Crown, Phone, Search, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Badge } from "../../_components/ui/badge";
 import { EmptyState } from "../../_components/ui/empty-state";
@@ -11,6 +12,7 @@ import { formatDate, formatMoney, formatPhone } from "../../_lib/utils/format";
 
 export function GuestsView() {
   const { data } = useGuests();
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [vipOnly, setVipOnly] = useState(false);
 
@@ -98,7 +100,8 @@ export function GuestsView() {
               {filtered.map((g) => (
                 <tr
                   key={g.id}
-                  className="border-b border-[var(--border)] transition-colors last:border-0 hover:bg-[var(--surface-muted)]"
+                  onClick={() => router.push(`/guests/${g.id}`)}
+                  className="cursor-pointer border-b border-[var(--border)] transition-colors last:border-0 hover:bg-[var(--surface-muted)]"
                 >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">

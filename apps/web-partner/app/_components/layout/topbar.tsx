@@ -4,6 +4,7 @@ import { Menu } from "lucide-react";
 import { useAuthStore } from "../../_stores/auth-store";
 import { useLogout } from "../../_hooks/use-auth";
 import { useUiStore } from "../../_stores/ui-store";
+import { CommandPalette } from "./command-palette";
 import { HealthPill } from "./health-pill";
 import { NotificationsButton } from "./notifications-button";
 import { ThemeToggle } from "./theme-toggle";
@@ -16,9 +17,9 @@ export function Topbar() {
   const openMobileMenu = useUiStore((s) => s.openMobileSidebar);
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface)]/85 px-4 backdrop-blur-md md:px-6">
+    <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface)]/95 px-4 backdrop-blur-md md:px-5">
       <div className="flex items-center gap-2 min-w-0">
-        <Tooltip content="Menyu">
+        <Tooltip content="Menyu" side="bottom">
           <button
             type="button"
             onClick={openMobileMenu}
@@ -29,7 +30,7 @@ export function Topbar() {
           </button>
         </Tooltip>
         <div className="min-w-0">
-          <h1 className="truncate text-base font-semibold tracking-tight md:text-lg">
+          <h1 className="truncate text-sm font-semibold md:text-base">
             Hotel Samarkand Plaza
           </h1>
           <p className="hidden text-xs text-[var(--muted-foreground)] sm:block">
@@ -39,6 +40,7 @@ export function Topbar() {
       </div>
 
       <div className="flex items-center gap-1 md:gap-2">
+        <CommandPalette />
         <HealthPill />
         <ThemeToggle />
         <NotificationsButton />

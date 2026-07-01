@@ -50,11 +50,11 @@ export function UserMenu({ name, phone, onLogout }: UserMenuProps) {
         aria-haspopup="menu"
         aria-expanded={open}
         className={cn(
-          "flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] py-1 pl-1 pr-2.5 text-sm transition-colors hover:bg-[var(--surface-muted)]",
+          "flex items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--surface)] py-1 pl-1 pr-2.5 text-sm transition-colors hover:bg-[var(--surface-hover)]",
           open && "bg-[var(--surface-muted)]",
         )}
       >
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-700 text-xs font-semibold text-white">
+        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-brand-700 text-xs font-semibold text-white">
           {initials || "H"}
         </span>
         <span className="hidden text-left text-xs leading-tight lg:block">

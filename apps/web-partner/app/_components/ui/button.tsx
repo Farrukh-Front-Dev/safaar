@@ -14,23 +14,23 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<Variant, string> = {
   primary:
-    "bg-brand-700 text-white shadow-sm hover:bg-brand-800 active:bg-brand-900 disabled:bg-brand-300 disabled:text-white/80 disabled:shadow-none",
+    "bg-brand-700 text-white shadow-sm shadow-brand-900/10 hover:bg-brand-800 active:bg-brand-900 disabled:bg-brand-300 disabled:text-white/80 disabled:shadow-none",
   secondary:
-    "bg-accent-600 text-white shadow-sm hover:bg-accent-700 active:bg-accent-800 disabled:bg-accent-300",
+    "bg-accent-600 text-white shadow-sm shadow-accent-900/10 hover:bg-accent-700 active:bg-accent-800 disabled:bg-accent-300",
   outline:
-    "border border-[var(--border-strong)] bg-[var(--surface)] text-[var(--foreground)] hover:bg-[var(--surface-muted)] active:bg-[var(--surface-muted)]/80",
+    "border border-[var(--border-strong)] bg-[var(--surface)] text-[var(--foreground)] shadow-sm shadow-slate-950/5 hover:bg-[var(--surface-hover)] active:bg-[var(--surface-muted)]",
   ghost:
-    "bg-transparent text-[var(--foreground)] hover:bg-[var(--surface-muted)] active:bg-[var(--surface-muted)]/80",
+    "bg-transparent text-[var(--foreground)] hover:bg-[var(--surface-hover)] active:bg-[var(--surface-muted)]",
   subtle:
-    "bg-[var(--surface-muted)] text-[var(--foreground)] hover:bg-[var(--border)]",
+    "bg-[var(--surface-muted)] text-[var(--foreground)] hover:bg-[var(--surface-hover)]",
   danger:
     "bg-red-600 text-white shadow-sm hover:bg-red-700 active:bg-red-800 disabled:bg-red-300",
 };
 
 const sizeClasses: Record<Size, string> = {
   sm: "h-8 px-3 text-sm gap-1.5",
-  md: "h-10 px-4 text-sm gap-2",
-  lg: "h-12 px-6 text-base gap-2",
+  md: "h-9 px-3.5 text-sm gap-2",
+  lg: "h-11 px-5 text-base gap-2",
   icon: "h-9 w-9",
 };
 
@@ -53,7 +53,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       type={type}
       disabled={disabled || loading}
       className={cn(
-        "inline-flex items-center justify-center rounded-lg font-medium transition-all duration-150",
+        "inline-flex items-center justify-center rounded-md font-medium transition-colors duration-150",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]",
         "disabled:cursor-not-allowed disabled:opacity-60",
         variantClasses[variant],

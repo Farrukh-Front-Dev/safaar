@@ -4,6 +4,7 @@ import {
   CalendarDays,
   CalendarRange,
   ConciergeBell,
+  Megaphone,
   Settings,
   Users,
   type LucideIcon,
@@ -25,6 +26,10 @@ export interface NavGroup {
 export const NAV_GROUPS: NavGroup[] = [
   {
     items: [{ label: "Front Desk", href: "/", icon: ConciergeBell }],
+  },
+  {
+    title: "Sotuv",
+    items: [{ label: "E'lon", href: "/listing", icon: Megaphone }],
   },
   {
     title: "Operatsion",

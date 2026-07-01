@@ -24,7 +24,9 @@ import {
 } from "../../../_components/ui/card";
 import { ConfirmDialog } from "../../../_components/ui/dialog";
 import { EmptyState } from "../../../_components/ui/empty-state";
+import { AssignRoomDialog } from "../../../_components/domain/assign-room-dialog";
 import { ReservationStatusBadge } from "../../../_components/domain/reservation-status-badge";
+import { ReservationTimeline } from "../../../_components/domain/reservation-timeline";
 import { SourceBadge } from "../../../_components/domain/source-badge";
 import { PageHeader } from "../../../_components/layout/page-header";
 import { useReservation } from "../../../_hooks/use-reservations";
@@ -45,6 +47,7 @@ export function ReservationDetailView({ id }: { id: string }) {
   const [confirmDialog, setConfirmDialog] = useState<
     "reject" | "cancel" | null
   >(null);
+  const [assignOpen, setAssignOpen] = useState(false);
 
   if (!data) {
     return (
@@ -118,11 +121,15 @@ export function ReservationDetailView({ id }: { id: string }) {
               <Button
                 size="sm"
                 onClick={() => {
+                  if (!data.roomNumber) {
+                    setAssignOpen(true);
+                    return;
+                  }
                   checkIn(data.id);
                   toast.success("Check-in qilindi");
                 }}
               >
-                Check-in qilish
+                {data.roomNumber ? "Check-in qilish" : "Xona tayinlash"}
               </Button>
             )}
             {canCheckOut && (
@@ -275,6 +282,16 @@ export function ReservationDetailView({ id }: { id: string }) {
         </Card>
       </div>
 
+      {/* Timeline */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Jarayon</CardTitle>
+        </CardHeader>
+        <CardBody>
+          <ReservationTimeline reservation={data} />
+        </CardBody>
+      </Card>
+
       <ConfirmDialog
         open={confirmDialog === "reject"}
         onClose={() => setConfirmDialog(null)}
@@ -299,6 +316,16 @@ export function ReservationDetailView({ id }: { id: string }) {
         description="Mijozga SMS orqali xabar yuboriladi. Bu amalni qaytarib bo'lmaydi."
         confirmLabel="Ha, bekor qilish"
         tone="danger"
+      />
+
+      <AssignRoomDialog
+        open={assignOpen}
+        onClose={() => setAssignOpen(false)}
+        reservation={data}
+        onAssigned={() => {
+          checkIn(data.id);
+          toast.success("Check-in qilindi");
+        }}
       />
     </div>
   );

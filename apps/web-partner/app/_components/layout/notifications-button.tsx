@@ -48,14 +48,14 @@ export function NotificationsButton() {
 
   return (
     <div ref={ref} className="relative">
-      <Tooltip content="Bildirishnomalar">
+      <Tooltip content="Bildirishnomalar" side="bottom">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
           aria-label={`Bildirishnomalar (${total})`}
           aria-haspopup="menu"
           aria-expanded={open}
-          className="relative inline-flex h-9 w-9 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+          className="relative inline-flex h-9 w-9 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-[var(--surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
         >
           <Bell className="h-5 w-5" aria-hidden />
           {total > 0 && (

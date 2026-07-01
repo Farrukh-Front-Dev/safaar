@@ -1,0 +1,287 @@
+"use client";
+
+import {
+  ArrowDown,
+  ArrowUp,
+  Image as ImageIcon,
+  Plus,
+  Star,
+  Trash2,
+} from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Button } from "../../../_components/ui/button";
+import { Dialog } from "../../../_components/ui/dialog";
+import { Drawer } from "../../../_components/ui/drawer";
+import { EmptyState } from "../../../_components/ui/empty-state";
+import { Input } from "../../../_components/ui/input";
+import { Label } from "../../../_components/ui/label";
+import { Tooltip } from "../../../_components/ui/tooltip";
+import { useListing } from "../../../_hooks/use-listing";
+import { useDataStore } from "../../../_stores/data-store";
+import { PhotoCategory } from "../../../_lib/domain/listing";
+import { cn } from "../../../_lib/utils/cn";
+
+const CATEGORY_LABEL: Record<PhotoCategory, string> = {
+  [PhotoCategory.FACADE]: "Fasad",
+  [PhotoCategory.LOBBY]: "Lobbi",
+  [PhotoCategory.ROOM]: "Xona",
+  [PhotoCategory.BATHROOM]: "Hammom",
+  [PhotoCategory.RESTAURANT]: "Restoran",
+  [PhotoCategory.POOL]: "Hovuz",
+  [PhotoCategory.GYM]: "Fitness",
+  [PhotoCategory.SPA]: "Spa",
+  [PhotoCategory.OTHER]: "Boshqa",
+};
+
+export function PhotosEditor({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  const { data } = useListing();
+  const removePhoto = useDataStore((s) => s.removePhoto);
+  const setCoverPhoto = useDataStore((s) => s.setCoverPhoto);
+  const reorderPhoto = useDataStore((s) => s.reorderPhoto);
+  const [addOpen, setAddOpen] = useState(false);
+
+  const sortedPhotos = [...data.photos].sort((a, b) => a.order - b.order);
+
+  return (
+    <>
+      <Drawer
+        open={open}
+        onClose={onClose}
+        title="Rasmlar"
+        description="Yorug', sifatli rasmlar ko'proq bron olishga yordam beradi."
+        size="xl"
+        footer={
+          <>
+            <Button variant="outline" onClick={onClose}>
+              Yopish
+            </Button>
+            <Button onClick={() => setAddOpen(true)}>
+              <Plus className="h-4 w-4" aria-hidden />
+              Rasm qo'shish
+            </Button>
+          </>
+        }
+      >
+        {sortedPhotos.length === 0 ? (
+          <EmptyState
+            icon={<ImageIcon className="h-10 w-10" aria-hidden />}
+            title="Hozircha rasm yo'q"
+            description="Fasad rasmi bilan boshlang — u asosiy rasm sifatida ishlatiladi."
+            action={
+              <Button onClick={() => setAddOpen(true)}>
+                <Plus className="h-4 w-4" aria-hidden />
+                Birinchi rasmni qo'shish
+              </Button>
+            }
+          />
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {sortedPhotos.map((photo, idx) => (
+              <div
+                key={photo.id}
+                className={cn(
+                  "group relative overflow-hidden rounded-card border bg-[var(--surface)]",
+                  photo.isCover
+                    ? "border-brand-500 ring-2 ring-brand-200 dark:ring-brand-900"
+                    : "border-[var(--border)]",
+                )}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={photo.url}
+                  alt={photo.caption ?? CATEGORY_LABEL[photo.category]}
+                  className="aspect-video w-full object-cover"
+                />
+
+                {photo.isCover && (
+                  <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-brand-700 px-2 py-0.5 text-[10px] font-semibold text-white shadow">
+                    <Star className="h-3 w-3 fill-white" aria-hidden />
+                    Asosiy
+                  </span>
+                )}
+
+                <div className="absolute inset-0 flex items-end justify-between gap-2 bg-gradient-to-t from-black/70 via-transparent to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-xs font-semibold text-white">
+                      {CATEGORY_LABEL[photo.category]}
+                    </span>
+                    {photo.caption && (
+                      <span className="text-[10px] text-white/80">
+                        {photo.caption}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Tooltip content="Yuqoriga">
+                      <button
+                        type="button"
+                        onClick={() => reorderPhoto(photo.id, "up")}
+                        disabled={idx === 0}
+                        aria-label="Yuqoriga"
+                        className="rounded-md bg-white/90 p-1.5 text-zinc-800 backdrop-blur transition-colors hover:bg-white disabled:opacity-40"
+                      >
+                        <ArrowUp className="h-3.5 w-3.5" aria-hidden />
+                      </button>
+                    </Tooltip>
+                    <Tooltip content="Pastga">
+                      <button
+                        type="button"
+                        onClick={() => reorderPhoto(photo.id, "down")}
+                        disabled={idx === sortedPhotos.length - 1}
+                        aria-label="Pastga"
+                        className="rounded-md bg-white/90 p-1.5 text-zinc-800 backdrop-blur transition-colors hover:bg-white disabled:opacity-40"
+                      >
+                        <ArrowDown className="h-3.5 w-3.5" aria-hidden />
+                      </button>
+                    </Tooltip>
+                    {!photo.isCover && (
+                      <Tooltip content="Asosiy qilish">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCoverPhoto(photo.id);
+                            toast.success("Asosiy rasm o'zgartirildi");
+                          }}
+                          aria-label="Asosiy qilish"
+                          className="rounded-md bg-white/90 p-1.5 text-amber-600 backdrop-blur transition-colors hover:bg-white"
+                        >
+                          <Star className="h-3.5 w-3.5" aria-hidden />
+                        </button>
+                      </Tooltip>
+                    )}
+                    <Tooltip content="O'chirish">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          removePhoto(photo.id);
+                          toast.success("Rasm o'chirildi");
+                        }}
+                        aria-label="O'chirish"
+                        className="rounded-md bg-white/90 p-1.5 text-red-600 backdrop-blur transition-colors hover:bg-white"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                      </button>
+                    </Tooltip>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Drawer>
+
+      <AddPhotoDialog open={addOpen} onClose={() => setAddOpen(false)} />
+    </>
+  );
+}
+
+function AddPhotoDialog({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  const addPhoto = useDataStore((s) => s.addPhoto);
+  const [url, setUrl] = useState("");
+  const [caption, setCaption] = useState("");
+  const [category, setCategory] = useState<PhotoCategory>(PhotoCategory.FACADE);
+
+  const reset = () => {
+    setUrl("");
+    setCaption("");
+    setCategory(PhotoCategory.FACADE);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!url.trim()) {
+      toast.error("Rasm URL manzilini kiriting");
+      return;
+    }
+    addPhoto({ url: url.trim(), caption: caption.trim() || undefined, category });
+    toast.success("Rasm qo'shildi");
+    reset();
+    onClose();
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onClose={() => {
+        reset();
+        onClose();
+      }}
+      title="Yangi rasm"
+      description="URL manzil kiriting (Unsplash, S3 va h.k.). Yuklash real backend'da ulanadi."
+      size="lg"
+    >
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="p-url">Rasm URL</Label>
+          <Input
+            id="p-url"
+            type="url"
+            placeholder="https://..."
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            required
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="p-cat">Kategoriya</Label>
+          <select
+            id="p-cat"
+            value={category}
+            onChange={(e) => setCategory(e.target.value as PhotoCategory)}
+            className="h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm focus:border-brand-600 focus:outline-none"
+          >
+            {Object.entries(CATEGORY_LABEL).map(([key, label]) => (
+              <option key={key} value={key}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="p-cap">Izoh (ixtiyoriy)</Label>
+          <Input
+            id="p-cap"
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+          />
+        </div>
+
+        {url && (
+          <div className="rounded-card border border-[var(--border)] p-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={url}
+              alt="preview"
+              className="max-h-40 w-full rounded object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = "none";
+              }}
+            />
+          </div>
+        )}
+
+        <div className="flex justify-end gap-2 border-t border-[var(--border)] pt-4">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Bekor
+          </Button>
+          <Button type="submit">Qo'shish</Button>
+        </div>
+      </form>
+    </Dialog>
+  );
+}

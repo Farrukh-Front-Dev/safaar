@@ -18,6 +18,16 @@ import {
   type Room,
   type RoomType,
 } from "../_lib/domain/types";
+import {
+  ListingStatus,
+  PhotoCategory,
+  type Listing,
+  type ListingPhoto,
+  type ExtraFee,
+  type NearbyPlace,
+  type CancellationPolicy,
+} from "../_lib/domain/listing";
+import { mockListing } from "../_lib/mocks/listing-mock";
 
 export interface WalkInDraft {
   fullName: string;
@@ -52,11 +62,34 @@ export interface BulkRoomsDraft {
   roomTypeId: string;
 }
 
+export interface ListingGeneralDraft {
+  name: string;
+  shortDescription: string;
+  fullDescription: string;
+  stars: number;
+}
+
+export interface ListingRulesDraft {
+  checkInTime: string;
+  checkOutTime: string;
+  cancellationPolicy: CancellationPolicy;
+  smokingAllowed: boolean;
+  petsAllowed: boolean;
+  childrenAllowed: boolean;
+}
+
+export interface PhotoDraft {
+  url: string;
+  caption?: string;
+  category: PhotoCategory;
+}
+
 interface DataState {
   reservations: ReservationView[];
   rooms: Room[];
   roomTypes: RoomType[];
   guests: GuestProfile[];
+  listing: Listing;
 
   // Reservation mutations
   confirmReservation: (id: string) => void;
@@ -64,6 +97,8 @@ interface DataState {
   checkIn: (id: string) => void;
   checkOut: (id: string) => void;
   addReservation: (draft: WalkInDraft) => ReservationView;
+
+  assignRoom: (reservationId: string, roomNumber: string) => void;
 
   // Room status (housekeeping)
   setRoomStatus: (roomId: string, status: RoomStatus) => void;
@@ -83,8 +118,26 @@ interface DataState {
     added: number;
   };
 
+  // Listing (e'lon) mutations
+  updateListingGeneral: (draft: ListingGeneralDraft) => void;
+  updateListingRules: (draft: ListingRulesDraft) => void;
+  setListingStatus: (status: ListingStatus) => void;
+  toggleAmenity: (amenityId: string) => void;
+  addPhoto: (draft: PhotoDraft) => ListingPhoto;
+  removePhoto: (photoId: string) => void;
+  setCoverPhoto: (photoId: string) => void;
+  reorderPhoto: (photoId: string, direction: "up" | "down") => void;
+  addNearby: (name: string, distance: string) => void;
+  removeNearby: (id: string) => void;
+  addExtraFee: (fee: Omit<ExtraFee, "id">) => void;
+  removeExtraFee: (id: string) => void;
+
   // Computed
   getStats: () => FrontDeskStats;
+  isListingComplete: () => {
+    complete: boolean;
+    missing: string[];
+  };
 }
 
 /**
@@ -99,6 +152,7 @@ export const useDataStore = create<DataState>((set, get) => ({
   rooms: mockRooms,
   roomTypes: mockRoomTypes,
   guests: mockGuests,
+  listing: mockListing,
 
   confirmReservation: (id) =>
     set((state) => ({
@@ -137,6 +191,13 @@ export const useDataStore = create<DataState>((set, get) => ({
         : state.rooms;
       return { reservations, rooms };
     }),
+
+  assignRoom: (reservationId: string, roomNumber: string) =>
+    set((state) => ({
+      reservations: state.reservations.map((r) =>
+        r.id === reservationId ? { ...r, roomNumber } : r,
+      ),
+    })),
 
   checkOut: (id) =>
     set((state) => {
@@ -346,6 +407,151 @@ export const useDataStore = create<DataState>((set, get) => ({
         ? { reason: `O'tkazib yuborilgan (mavjud): ${conflicts.join(", ")}` }
         : {}),
     };
+  },
+
+  // ─── Listing (e'lon) mutations ───────────────────────────────────
+
+  updateListingGeneral: (draft) =>
+    set((state) => ({
+      listing: { ...state.listing, ...draft },
+    })),
+
+  updateListingRules: (draft) =>
+    set((state) => ({
+      listing: { ...state.listing, ...draft },
+    })),
+
+  setListingStatus: (status) =>
+    set((state) => ({
+      listing: { ...state.listing, status },
+    })),
+
+  toggleAmenity: (amenityId) =>
+    set((state) => {
+      const has = state.listing.amenities.includes(amenityId);
+      return {
+        listing: {
+          ...state.listing,
+          amenities: has
+            ? state.listing.amenities.filter((a) => a !== amenityId)
+            : [...state.listing.amenities, amenityId],
+        },
+      };
+    }),
+
+  addPhoto: (draft) => {
+    const id = `ph-${Date.now().toString(36)}`;
+    const state = get();
+    const isFirstPhoto = state.listing.photos.length === 0;
+    const photo: ListingPhoto = {
+      id,
+      url: draft.url,
+      caption: draft.caption,
+      category: draft.category,
+      isCover: isFirstPhoto,
+      order: state.listing.photos.length,
+    };
+    set({
+      listing: {
+        ...state.listing,
+        photos: [...state.listing.photos, photo],
+      },
+    });
+    return photo;
+  },
+
+  removePhoto: (photoId) =>
+    set((state) => {
+      const photos = state.listing.photos.filter((p) => p.id !== photoId);
+      const wasCover = state.listing.photos.find((p) => p.id === photoId)?.isCover;
+      // Agar cover o'chirilsa, birinchini yangi cover qilamiz
+      if (wasCover && photos.length > 0) {
+        photos[0] = { ...photos[0], isCover: true };
+      }
+      // order'ni qayta hisoblash
+      const reordered = photos.map((p, i) => ({ ...p, order: i }));
+      return { listing: { ...state.listing, photos: reordered } };
+    }),
+
+  setCoverPhoto: (photoId) =>
+    set((state) => ({
+      listing: {
+        ...state.listing,
+        photos: state.listing.photos.map((p) => ({
+          ...p,
+          isCover: p.id === photoId,
+        })),
+      },
+    })),
+
+  reorderPhoto: (photoId, direction) =>
+    set((state) => {
+      const photos = [...state.listing.photos].sort(
+        (a, b) => a.order - b.order,
+      );
+      const idx = photos.findIndex((p) => p.id === photoId);
+      if (idx === -1) return state;
+      const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+      if (swapIdx < 0 || swapIdx >= photos.length) return state;
+      [photos[idx], photos[swapIdx]] = [photos[swapIdx], photos[idx]];
+      const reordered = photos.map((p, i) => ({ ...p, order: i }));
+      return { listing: { ...state.listing, photos: reordered } };
+    }),
+
+  addNearby: (name, distance) =>
+    set((state) => {
+      const place: NearbyPlace = {
+        id: `n-${Date.now().toString(36)}`,
+        name,
+        distance,
+      };
+      return {
+        listing: {
+          ...state.listing,
+          nearby: [...state.listing.nearby, place],
+        },
+      };
+    }),
+
+  removeNearby: (id) =>
+    set((state) => ({
+      listing: {
+        ...state.listing,
+        nearby: state.listing.nearby.filter((n) => n.id !== id),
+      },
+    })),
+
+  addExtraFee: (fee) =>
+    set((state) => {
+      const newFee: ExtraFee = { ...fee, id: `fee-${Date.now().toString(36)}` };
+      return {
+        listing: {
+          ...state.listing,
+          extraFees: [...state.listing.extraFees, newFee],
+        },
+      };
+    }),
+
+  removeExtraFee: (id) =>
+    set((state) => ({
+      listing: {
+        ...state.listing,
+        extraFees: state.listing.extraFees.filter((f) => f.id !== id),
+      },
+    })),
+
+  isListingComplete: () => {
+    const l = get().listing;
+    const missing: string[] = [];
+    if (l.name.trim().length < 3) missing.push("Nomi juda qisqa");
+    if (l.shortDescription.trim().length < 20)
+      missing.push("Qisqa tavsif to'ldirilmagan (min 20 belgi)");
+    if (l.fullDescription.trim().length < 100)
+      missing.push("Batafsil tavsif juda qisqa (min 100 belgi)");
+    if (l.photos.length < 3) missing.push("Kamida 3 ta rasm kerak");
+    if (l.amenities.length < 3) missing.push("Kamida 3 ta qulaylik belgilash");
+    if (!l.address.trim()) missing.push("Manzil kiritilmagan");
+    return { complete: missing.length === 0, missing };
   },
 
   getStats: () => {

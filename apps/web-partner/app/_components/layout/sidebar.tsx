@@ -53,7 +53,7 @@ export function Sidebar() {
           "z-50 flex h-screen shrink-0 flex-col border-r border-[var(--border)] bg-[var(--surface)] transition-all duration-200",
           // Desktop
           "md:sticky md:top-0",
-          collapsed ? "md:w-16" : "md:w-64",
+          collapsed ? "md:w-16" : "md:w-60",
           // Mobile
           "fixed left-0 top-0 w-64",
           mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
@@ -61,13 +61,13 @@ export function Sidebar() {
         aria-label="Asosiy navigatsiya"
       >
         {/* Header */}
-        <div className="flex h-16 items-center justify-between border-b border-[var(--border)] px-3">
+        <div className="flex h-14 items-center justify-between border-b border-[var(--border)] px-3">
           <Link
             href="/"
             className="flex items-center gap-2 overflow-hidden"
             aria-label="UzBron bosh sahifa"
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-600 to-brand-800 text-white shadow-sm">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-brand-700 text-white shadow-sm">
               <Hotel className="h-4 w-4" aria-hidden />
             </span>
             {(!collapsed || mobileOpen) && (
@@ -131,7 +131,7 @@ export function Sidebar() {
                             href={item.href}
                             aria-current={active ? "page" : undefined}
                             className={cn(
-                              "group relative flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                              "group relative flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                               active
                                 ? "bg-brand-50 text-brand-800 dark:bg-brand-900/40 dark:text-brand-200"
                                 : "text-zinc-600 hover:bg-[var(--surface-muted)] hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white",

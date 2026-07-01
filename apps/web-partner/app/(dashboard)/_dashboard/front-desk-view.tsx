@@ -22,6 +22,7 @@ import {
 import { EmptyState } from "../../_components/ui/empty-state";
 import { ConfirmDialog } from "../../_components/ui/dialog";
 import { Tooltip } from "../../_components/ui/tooltip";
+import { AssignRoomDialog } from "../../_components/domain/assign-room-dialog";
 import { OccupancyMeter } from "../../_components/domain/occupancy-meter";
 import { SourceBadge } from "../../_components/domain/source-badge";
 import { WalkInDialog } from "../../_components/domain/walk-in-dialog";
@@ -84,6 +85,8 @@ export function FrontDeskView() {
     name: string;
   } | null>(null);
   const [filter, setFilter] = useState<"all" | TaskKind>("all");
+  const [assignReservation, setAssignReservation] =
+    useState<ReservationView | null>(null);
 
   // Hamma vazifalarni bitta ro'yxat sifatida
   const tasks: Task[] = useMemo(() => {
@@ -237,6 +240,10 @@ export function FrontDeskView() {
                     kind={kind}
                     reservation={reservation}
                     onCheckIn={() => {
+                      if (!reservation.roomNumber) {
+                        setAssignReservation(reservation);
+                        return;
+                      }
                       checkIn(reservation.id);
                       toast.success(
                         `Check-in qilindi: ${reservation.guest.fullName}`,
@@ -267,6 +274,20 @@ export function FrontDeskView() {
       </div>
 
       <WalkInDialog open={walkInOpen} onClose={() => setWalkInOpen(false)} />
+
+      <AssignRoomDialog
+        open={Boolean(assignReservation)}
+        onClose={() => setAssignReservation(null)}
+        reservation={assignReservation}
+        onAssigned={() => {
+          if (assignReservation) {
+            checkIn(assignReservation.id);
+            toast.success(
+              `Check-in qilindi: ${assignReservation.guest.fullName}`,
+            );
+          }
+        }}
+      />
 
       <ConfirmDialog
         open={Boolean(confirmReject)}
@@ -311,19 +332,19 @@ function KpiCell({ label, value, hint, icon, tone, children }: KpiCellProps) {
   }[tone];
 
   return (
-    <div className="flex flex-col gap-1.5 bg-[var(--surface)] p-4">
+    <div className="flex min-w-0 flex-col gap-1.5 bg-[var(--surface)] p-3.5 transition-colors hover:bg-[var(--surface-hover)] sm:p-4">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-[var(--muted-foreground)]">
           {label}
         </span>
         <span className={cn("inline-flex", toneClasses)}>{icon}</span>
       </div>
-      <div className="flex items-baseline gap-2">
-        <span className={cn("text-2xl font-bold tracking-tight", toneClasses)}>
+      <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+        <span className={cn("text-2xl font-semibold", toneClasses)}>
           {value}
         </span>
         {hint && (
-          <span className="text-[11px] text-[var(--muted-foreground)]">
+          <span className="min-w-0 text-[11px] text-[var(--muted-foreground)]">
             {hint}
           </span>
         )}
@@ -366,10 +387,10 @@ function FilterTab({
       aria-selected={active}
       onClick={onClick}
       className={cn(
-        "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+        "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors duration-150",
         active
           ? `${activeClass} text-white shadow-sm`
-          : "text-zinc-600 hover:bg-[var(--surface-muted)] dark:text-zinc-300",
+          : "text-zinc-600 hover:bg-[var(--surface-hover)] dark:text-zinc-300",
       )}
     >
       {icon}
@@ -431,11 +452,11 @@ function TaskRow({
   }[kind];
 
   return (
-    <li className="flex flex-wrap items-center gap-3 px-4 py-3 transition-colors hover:bg-[var(--surface-muted)] sm:px-5 sm:py-4">
+    <li className="grid gap-3 px-3 py-3 transition-colors duration-150 hover:bg-[var(--surface-hover)] sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center sm:px-4">
       {/* Chap belgisi */}
       <span
         className={cn(
-          "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
+          "flex h-10 w-10 shrink-0 items-center justify-center rounded-md",
           indicator.bg,
         )}
         aria-label={indicator.label}
@@ -444,7 +465,7 @@ function TaskRow({
       </span>
 
       {/* Asosiy ma'lumot */}
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
           <Link
             href={`/reservations/${r.id}`}
@@ -491,20 +512,19 @@ function TaskRow({
       </div>
 
       {/* Tezkor aloqa */}
-      <div className="flex items-center gap-1">
-        <Tooltip content="Qo'ng'iroq">
+      <div className="flex items-center gap-2 sm:justify-end">
+        <Tooltip content="Qo'ng'iroq" side="bottom">
           <a
             href={`tel:+${r.guest.phone}`}
             aria-label={`Qo'ng'iroq: ${formatPhone(r.guest.phone)}`}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-900/40 dark:hover:text-brand-300"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-900/40 dark:hover:text-brand-300"
           >
             <Phone className="h-4 w-4" aria-hidden />
           </a>
         </Tooltip>
-      </div>
 
-      {/* Asosiy harakat */}
-      <div className="flex shrink-0 gap-2">
+        {/* Asosiy harakat */}
+        <div className="flex min-w-0 flex-1 flex-wrap justify-end gap-2 sm:flex-none">
         {kind === "pending" && (
           <>
             <Button size="sm" variant="outline" onClick={onReject}>
@@ -527,6 +547,7 @@ function TaskRow({
             Check-out
           </Button>
         )}
+        </div>
       </div>
     </li>
   );

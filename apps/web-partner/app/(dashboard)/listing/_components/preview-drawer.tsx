@@ -1,0 +1,214 @@
+"use client";
+
+import { Calendar, MapPin, Star } from "lucide-react";
+import { Button } from "../../../_components/ui/button";
+import { Drawer } from "../../../_components/ui/drawer";
+import { AMENITY_GROUPS } from "../../../_lib/domain/listing";
+import { useListing } from "../../../_hooks/use-listing";
+import { cn } from "../../../_lib/utils/cn";
+
+// Amenities'ni label'ga aylantirish uchun map
+const AMENITY_LABEL = new Map<string, string>();
+for (const g of AMENITY_GROUPS) {
+  for (const it of g.items) AMENITY_LABEL.set(it.id, it.label);
+}
+
+export function PreviewDrawer({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  const { data: l } = useListing();
+  const cover = l.photos.find((p) => p.isCover) ?? l.photos[0];
+  const otherPhotos = l.photos.filter((p) => !p.isCover).slice(0, 4);
+
+  return (
+    <Drawer
+      open={open}
+      onClose={onClose}
+      title="Mijoz nima ko'radi"
+      description="Web-user saytida sizning e'loningiz shu tarzda ko'rinadi."
+      size="xl"
+      footer={<Button onClick={onClose}>Yopish</Button>}
+    >
+      <div className="flex flex-col gap-4">
+        {/* Cover + gallery */}
+        <div className="grid gap-2 sm:grid-cols-[2fr_1fr]">
+          <div className="aspect-video overflow-hidden rounded-card bg-zinc-100 dark:bg-zinc-800">
+            {cover ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={cover.url}
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-zinc-400">
+                Rasm yo'q
+              </div>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {otherPhotos.map((p) => (
+              <div
+                key={p.id}
+                className="aspect-square overflow-hidden rounded-card bg-zinc-100 dark:bg-zinc-800"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={p.url}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            ))}
+            {Array.from({
+              length: Math.max(0, 4 - otherPhotos.length),
+            }).map((_, i) => (
+              <div
+                key={`ph-${i}`}
+                className="aspect-square rounded-card border border-dashed border-[var(--border)]"
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Header info */}
+        <div className="flex flex-col gap-1.5">
+          <h1 className="text-2xl font-bold tracking-tight">
+            {l.name || "Nomi kiritilmagan"}
+          </h1>
+          <div className="flex items-center gap-2">
+            <div className="inline-flex">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <Star
+                  key={n}
+                  className={cn(
+                    "h-4 w-4",
+                    n <= l.stars
+                      ? "fill-amber-400 stroke-amber-500"
+                      : "fill-transparent stroke-zinc-300",
+                  )}
+                  aria-hidden
+                />
+              ))}
+            </div>
+            <span className="text-sm text-[var(--muted-foreground)]">·</span>
+            <span className="inline-flex items-center gap-1 text-sm text-[var(--muted-foreground)]">
+              <MapPin className="h-3.5 w-3.5" aria-hidden />
+              {l.city} · {l.address}
+            </span>
+          </div>
+        </div>
+
+        {/* Description */}
+        {l.shortDescription && (
+          <p className="rounded-card bg-brand-50/50 p-4 text-sm dark:bg-brand-900/20">
+            {l.shortDescription}
+          </p>
+        )}
+
+        {l.fullDescription && (
+          <div className="flex flex-col gap-1.5">
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-[var(--muted-foreground)]">
+              Haqida
+            </h2>
+            <p className="whitespace-pre-line text-sm leading-relaxed">
+              {l.fullDescription}
+            </p>
+          </div>
+        )}
+
+        {/* Amenities */}
+        {l.amenities.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-[var(--muted-foreground)]">
+              Qulayliklar
+            </h2>
+            <div className="flex flex-wrap gap-1.5">
+              {l.amenities.slice(0, 15).map((a) => (
+                <span
+                  key={a}
+                  className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1 text-xs"
+                >
+                  {AMENITY_LABEL.get(a) ?? a}
+                </span>
+              ))}
+              {l.amenities.length > 15 && (
+                <span className="rounded-full bg-[var(--surface-muted)] px-2.5 py-1 text-xs text-[var(--muted-foreground)]">
+                  +{l.amenities.length - 15}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Nearby */}
+        {l.nearby.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-[var(--muted-foreground)]">
+              Atrofda
+            </h2>
+            <ul className="flex flex-col divide-y divide-[var(--border)] rounded-card border border-[var(--border)]">
+              {l.nearby.map((n) => (
+                <li
+                  key={n.id}
+                  className="flex items-center justify-between px-4 py-2 text-sm"
+                >
+                  <span className="inline-flex items-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5 text-brand-600" aria-hidden />
+                    {n.name}
+                  </span>
+                  <span className="text-[var(--muted-foreground)]">
+                    {n.distance}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* House rules */}
+        <div className="flex flex-col gap-2">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-[var(--muted-foreground)]">
+            Uy qoidalari
+          </h2>
+          <div className="rounded-card border border-[var(--border)] p-4 text-sm">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <span className="inline-flex items-center gap-1.5">
+                <Calendar className="h-4 w-4 text-brand-600" aria-hidden />
+                Check-in: <strong>{l.checkInTime}</strong>
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Calendar className="h-4 w-4 text-brand-600" aria-hidden />
+                Check-out: <strong>{l.checkOutTime}</strong>
+              </span>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              <RuleChip on={l.childrenAllowed} label="Bolalar bilan mos" />
+              <RuleChip on={l.petsAllowed} label="Uy hayvonlari" />
+              <RuleChip on={l.smokingAllowed} label="Chekish" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </Drawer>
+  );
+}
+
+function RuleChip({ on, label }: { on: boolean; label: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs",
+        on
+          ? "bg-accent-50 text-accent-700 dark:bg-accent-900/40 dark:text-accent-200"
+          : "bg-zinc-100 text-zinc-500 line-through dark:bg-zinc-800 dark:text-zinc-500",
+      )}
+    >
+      {label}
+    </span>
+  );
+}

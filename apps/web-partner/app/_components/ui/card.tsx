@@ -10,8 +10,8 @@ export function Card({ className, interactive, ...props }: CardProps) {
   return (
     <div
       className={cn(
-        "rounded-card border border-[var(--border)] bg-[var(--surface)] shadow-sm transition-shadow duration-200",
-        interactive && "hover:shadow-md hover:-translate-y-0.5 transition-transform",
+        "rounded-card border border-[var(--border)] bg-[var(--surface)] shadow-card transition-shadow duration-200",
+        interactive && "hover:border-[var(--border-strong)] hover:shadow-md",
         className,
       )}
       {...props}
@@ -26,7 +26,7 @@ export function CardHeader({
   return (
     <div
       className={cn(
-        "flex flex-col gap-1 border-b border-[var(--border)] px-5 py-4",
+        "flex flex-col gap-1 border-b border-[var(--border)] px-4 py-3.5",
         className,
       )}
       {...props}
@@ -40,7 +40,7 @@ export function CardTitle({
 }: HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h3
-      className={cn("text-base font-semibold tracking-tight", className)}
+      className={cn("text-sm font-semibold md:text-base", className)}
       {...props}
     />
   );
@@ -62,7 +62,7 @@ export function CardBody({
   className,
   ...props
 }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("p-5", className)} {...props} />;
+  return <div className={cn("p-4", className)} {...props} />;
 }
 
 export function CardFooter({
@@ -72,7 +72,7 @@ export function CardFooter({
   return (
     <div
       className={cn(
-        "flex items-center justify-end gap-2 border-t border-[var(--border)] px-5 py-3",
+        "flex items-center justify-end gap-2 border-t border-[var(--border)] px-4 py-3",
         className,
       )}
       {...props}
