@@ -72,7 +72,7 @@ export default async function HomePage({
       />
 
       {/* ═══ EKRAN 1: Hero + SearchBar + Featured Hotels ═══ */}
-      <div className="flex flex-col">
+      <div className="flex min-h-svh flex-col justify-between">
         <Hero dict={dict.hero} />
 
         {/* SearchBar */}
@@ -95,7 +95,7 @@ export default async function HomePage({
           )}
         </div>
 
-        {/* Tanlangan mehmonxonalar — SearchBar tagida, gorizontal scroll */}
+        {/* Tanlangan mehmonxonalar — gorizontal scroll */}
         {hotels.length > 0 && (
           <section className="mx-auto mt-6 w-full max-w-6xl px-4 sm:mt-8 sm:px-6">
             <div className="mb-3 flex items-center justify-between gap-4">
@@ -122,8 +122,8 @@ export default async function HomePage({
           </section>
         )}
 
-        {/* Scroll ishora — birinchi ekran pastida */}
-        <div className="flex justify-center pb-4 pt-6 sm:pb-6 sm:pt-8">
+        {/* Scroll ishora — birinchi ekran eng pastida */}
+        <div className="flex justify-center pb-4 pt-4 sm:pb-6 sm:pt-6">
           <div className="flex animate-bounce flex-col items-center gap-0.5 text-slate-400">
             <span className="text-[10px] font-medium sm:text-xs">
               {dict.popularCities.title}
