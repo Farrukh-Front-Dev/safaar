@@ -6,7 +6,7 @@ import type { HomeDict } from "@/i18n/dictionaries";
  */
 export function Hero({ dict }: { dict: HomeDict["hero"] }) {
   return (
-    <section className="relative pb-20 pt-28 sm:pb-28 sm:pt-36 md:pb-32 md:pt-44 lg:pt-48">
+    <section className="relative pb-6 pt-28 sm:pb-8 sm:pt-36 md:pt-40 lg:pt-44">
       {/* Dot pattern */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.04]"

@@ -145,7 +145,11 @@ function Field({
 }) {
   return (
     <div
-      className={`group flex flex-1 items-center gap-3 rounded-2xl px-4 py-2.5 transition-colors hover:bg-slate-50 md:rounded-full ${className}`}
+      className={`group flex flex-1 items-center gap-3 rounded-full border border-slate-200 px-4 py-2.5 transition-all hover:border-primary-300 hover:bg-slate-50 ${className}`}
+      style={{
+        boxShadow:
+          "0 1px 3px rgba(15,23,42,0.08), 0 4px 10px -2px rgba(15,23,42,0.1), inset 0 1px 0 rgba(255,255,255,0.6)",
+      }}
     >
       <span className="shrink-0 text-slate-400 transition-colors group-hover:text-primary-600">
         {icon}
@@ -208,7 +212,11 @@ function CityPicker({
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className="group flex w-full items-center gap-3 rounded-2xl px-4 py-2.5 text-left transition-colors hover:bg-slate-50 md:rounded-full"
+        className="group flex w-full items-center gap-3 rounded-full border border-slate-200 px-4 py-2.5 text-left transition-all hover:border-primary-300 hover:bg-slate-50"
+        style={{
+          boxShadow:
+            "0 1px 3px rgba(15,23,42,0.08), 0 4px 10px -2px rgba(15,23,42,0.1), inset 0 1px 0 rgba(255,255,255,0.6)",
+        }}
       >
         <span className="shrink-0 text-slate-400 transition-colors group-hover:text-primary-600">
           <PinIcon />
