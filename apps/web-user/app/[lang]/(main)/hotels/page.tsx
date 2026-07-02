@@ -133,7 +133,13 @@ export default async function HotelsPage({
   const retryHref = `${basePath}${retryQuery ? `?${retryQuery}` : ""}`;
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-6 pb-8 pt-14 md:pt-32">
+    <main className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 pb-8 pt-20 sm:px-6 md:pt-28">
+      {/* Fixed gradient — home page bilan izchil */}
+      <div
+        className="fixed inset-0 -z-10 bg-linear-to-b from-primary-50 via-white via-30% to-white"
+        aria-hidden
+      />
+
       <SearchBar
         locale={locale}
         dict={common.search}
@@ -144,9 +150,9 @@ export default async function HotelsPage({
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">{dict.title}</h1>
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{dict.title}</h1>
             {!loadFailed && (
-              <p aria-live="polite" className="text-sm text-slate-500">
+              <p aria-live="polite" className="text-xs text-slate-500 sm:text-sm">
                 {dict.resultsCount.replace("{count}", String(total))}
               </p>
             )}
@@ -168,7 +174,7 @@ export default async function HotelsPage({
               </Link>
             </div>
           ) : items.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-white py-16 text-center">
+            <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-white py-16 text-center shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
               <p className="font-medium text-slate-700">{dict.empty}</p>
               <p className="text-sm text-slate-500">{dict.emptyHint}</p>
               <Link href={clearedHref}>
