@@ -24,7 +24,14 @@ export function FeaturedHotelCard({
       href={`/${locale}/hotels/${hotel.slug}`}
       className="group block overflow-hidden rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
     >
-      <article className="flex h-full flex-col overflow-hidden rounded-xl border border-slate-100 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.8)] transition-all duration-200 group-hover:shadow-[0_4px_16px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.8)]">
+      <article
+        className="flex h-full flex-col overflow-hidden rounded-xl border border-slate-100 bg-white transition-all duration-300 group-hover:-translate-y-1 group-active:translate-y-0 group-active:scale-[0.97]"
+        style={{
+          transform: "perspective(800px) rotateX(2deg)",
+          boxShadow:
+            "0 8px 16px -4px rgba(15,23,42,0.12), 0 20px 40px -8px rgba(15,23,42,0.16), inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -2px 4px rgba(15,23,42,0.04)",
+        }}
+      >
         {/* Rasm */}
         <div className="relative aspect-[4/3] overflow-hidden bg-primary-50">
           {imageUrl ? (

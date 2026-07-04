@@ -65,11 +65,6 @@ export default async function HomePage({
 
   return (
     <main className="relative flex flex-1 flex-col">
-      {/* Fixed gradient — butun sahifa foni */}
-      <div
-        className="fixed inset-0 -z-10 bg-linear-to-b from-primary-50 via-white via-45% to-primary-800"
-        aria-hidden
-      />
 
       {/* ═══ EKRAN 1: Hero + SearchBar + Featured Hotels ═══ */}
       <div className="flex min-h-svh flex-col justify-between">
@@ -110,8 +105,8 @@ export default async function HomePage({
               </Link>
             </div>
             <div className="scrollbar-none flex gap-3 overflow-x-auto pb-2">
-              {hotels.slice(0, 6).map((hotel) => (
-                <div key={hotel.id} className="min-w-[160px] flex-1">
+              {hotels.slice(0, 4).map((hotel) => (
+                <div key={hotel.id} className="min-w-[220px] flex-1">
                   <FeaturedHotelCard
                     hotel={hotel}
                     locale={locale}

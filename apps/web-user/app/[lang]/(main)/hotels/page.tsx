@@ -134,11 +134,6 @@ export default async function HotelsPage({
 
   return (
     <main className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 pb-8 pt-20 sm:px-6 md:pt-28">
-      {/* Fixed gradient — home page bilan izchil */}
-      <div
-        className="fixed inset-0 -z-10 bg-linear-to-b from-primary-50 via-white via-30% to-white"
-        aria-hidden
-      />
 
       <SearchBar
         locale={locale}
@@ -174,7 +169,7 @@ export default async function HotelsPage({
               </Link>
             </div>
           ) : items.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-white py-16 text-center shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+            <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200/80 bg-white py-16 text-center" style={{ boxShadow: "0 2px 8px rgba(15,23,42,0.06), inset 0 1px 0 rgba(255,255,255,0.7)" }}>
               <p className="font-medium text-slate-700">{dict.empty}</p>
               <p className="text-sm text-slate-500">{dict.emptyHint}</p>
               <Link href={clearedHref}>

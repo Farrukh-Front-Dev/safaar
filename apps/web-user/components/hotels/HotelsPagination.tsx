@@ -59,7 +59,7 @@ function PageLink({
   disabled: boolean;
   children: React.ReactNode;
 }) {
-  const base = "rounded-lg border px-4 py-2 text-sm font-medium";
+  const base = "rounded-full border px-4 py-2 text-sm font-medium transition-all duration-150";
   if (disabled) {
     return (
       <span
@@ -73,7 +73,7 @@ function PageLink({
   return (
     <Link
       href={href}
-      className={`${base} border-slate-200 text-slate-700 transition-colors hover:bg-slate-50`}
+      className={`${base} border-slate-200 text-slate-700 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700 active:scale-95`}
     >
       {children}
     </Link>

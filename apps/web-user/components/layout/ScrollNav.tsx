@@ -72,35 +72,28 @@ export function ScrollNav({
       <div className="pointer-events-none fixed inset-x-0 top-11 z-100 hidden justify-center md:flex">
         <nav
           ref={navRef}
-          className="pointer-events-auto flex items-center justify-between rounded-full border border-white/50"
+          className="pointer-events-auto flex items-center justify-between rounded-full border border-slate-200"
           style={{
-            width: `min(${currentW}px, 88vw)`,
+            width: "min(860px, 88vw)",
             maxWidth: "calc(100vw - 2rem)",
-            padding: `${padY}px ${padX}px`,
-            gap: `${gap}px`,
-            background:
-              "linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.08))",
-            backdropFilter: "blur(28px) saturate(200%)",
-            WebkitBackdropFilter: "blur(28px) saturate(200%)",
+            padding: "14px 32px",
+            gap: "24px",
+            background: "white",
             boxShadow:
-              "0 8px 32px rgba(0,0,0,0.1), inset 0 1px 1px rgba(255,255,255,0.7)",
-            transition:
-              "width 0.4s ease-out, padding 0.4s ease-out, gap 0.4s ease-out",
+              "0 2px 4px rgba(15,23,42,0.06), 0 8px 24px -4px rgba(15,23,42,0.12), inset 0 1px 0 rgba(255,255,255,1)",
           }}
         >
         {/* Logo */}
         <Link
           href={brandHref}
-          className="relative z-10 shrink-0 font-bold tracking-tight text-slate-900 transition-all duration-400 hover:text-primary-600"
-          style={{ fontSize: `${18 - 2 * progress}px` }}
+          className="relative z-10 shrink-0 text-lg font-bold tracking-tight text-slate-900 transition-colors duration-200 hover:text-primary-600"
         >
           {brand}
         </Link>
 
         {/* Nav links */}
         <ul
-          className="relative z-10 flex items-center"
-          style={{ gap: `${4 + 4 * (1 - progress)}px`, transition: "gap 0.4s ease-out" }}
+          className="relative z-10 flex items-center gap-2"
         >
           {items.map((item) => {
             const isActive = item.exact
@@ -120,9 +113,7 @@ export function ScrollNav({
                     }
                   `}
                   style={{
-                    padding: `${6 - 2 * progress}px ${16 - 6 * progress}px`,
-                    transition:
-                      "padding 0.4s ease-out, background-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease, transform 0.15s ease",
+                    padding: "6px 16px",
                   }}
                 >
                   {item.label}
@@ -145,14 +136,11 @@ export function ScrollNav({
       {/* Transform yo'q (blur uchun) — markazlashtirish flex container orqali */}
       <div className="pointer-events-none fixed inset-x-0 bottom-3 z-100 flex justify-center px-3 md:hidden">
         <nav
-          className="pointer-events-auto w-full max-w-md rounded-full border border-white/50"
+          className="pointer-events-auto w-full max-w-md rounded-full border border-slate-200"
           style={{
-            background:
-              "linear-gradient(135deg, rgba(255,255,255,0.25), rgba(255,255,255,0.12))",
-            backdropFilter: "blur(28px) saturate(200%)",
-            WebkitBackdropFilter: "blur(28px) saturate(200%)",
+            background: "white",
             boxShadow:
-              "0 8px 32px rgba(0,0,0,0.12), inset 0 1px 1px rgba(255,255,255,0.7)",
+              "0 2px 4px rgba(15,23,42,0.06), 0 8px 24px -4px rgba(15,23,42,0.12), inset 0 1px 0 rgba(255,255,255,1)",
           }}
         >
           <ul className="flex items-center justify-around py-2">
