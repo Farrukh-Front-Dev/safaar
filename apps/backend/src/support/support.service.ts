@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Role } from '@agoda/types';
 import type { RequestActor } from '../common/actor';
 import { InMemoryDbService } from '../infrastructure/in-memory-db.service';
 
@@ -28,8 +33,8 @@ export class SupportService {
     );
   }
 
-  findOne(id: string) {
-    const ticket = this.assertTicket(id);
+  findOne(actor: RequestActor | undefined, id: string) {
+    const ticket = this.assertTicket(actor, id);
     return {
       ...ticket,
       messages: this.db.supportMessages.filter(
@@ -43,7 +48,7 @@ export class SupportService {
     id: string,
     body: Record<string, unknown>,
   ) {
-    this.assertTicket(id);
+    this.assertTicket(actor, id);
     const currentActor = this.db.actorOrDemo(actor);
     const message = {
       id: this.db.id('support_msg'),
@@ -57,19 +62,35 @@ export class SupportService {
     return message;
   }
 
-  status(id: string, status: 'open' | 'closed') {
-    const ticket = this.assertTicket(id);
+  status(
+    actor: RequestActor | undefined,
+    id: string,
+    status: 'open' | 'closed',
+  ) {
+    const ticket = this.assertTicket(actor, id);
     ticket['status'] = status;
     ticket['updated_at'] = this.db.now();
     return ticket;
   }
 
-  private assertTicket(id: string) {
+  private assertTicket(actor: RequestActor | undefined, id: string) {
+    const currentActor = this.db.actorOrDemo(actor);
     const ticket = this.db.supportTickets.find((item) => item['id'] === id);
     if (!ticket) {
       throw new NotFoundException({
         code: 'VALIDATION_ERROR',
         message: 'Ticket topilmadi',
+      });
+    }
+
+    if (
+      currentActor.role !== Role.SUPER_ADMIN &&
+      currentActor.actorType !== 'admin' &&
+      ticket['user_id'] !== currentActor.id
+    ) {
+      throw new ForbiddenException({
+        code: 'SUPPORT_FORBIDDEN',
+        message: 'Bu ticket sizga tegishli emas',
       });
     }
 

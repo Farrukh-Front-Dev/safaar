@@ -68,6 +68,24 @@ export class HttpErrorFilter implements ExceptionFilter {
       : (requestIdHeader ?? 'local-request');
     const error = normalizeError(exception);
 
+    if (
+      request.headers['x-legacy-api-prefix'] === 'true' ||
+      (request as { legacyApiPrefix?: boolean; originalUrl?: string })
+        .legacyApiPrefix ||
+      (request as { originalUrl?: string }).originalUrl?.startsWith('/api')
+    ) {
+      response.status(error.status).json({
+        statusCode: error.status,
+        code: error.code,
+        message: error.message,
+        fields: error.fields,
+        meta: {
+          request_id: requestId,
+        },
+      });
+      return;
+    }
+
     response.status(error.status).json({
       success: false,
       error: {

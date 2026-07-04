@@ -1,7 +1,18 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { BookingStatus } from '@agoda/types';
 import type { RequestActor } from '../common/actor';
+import {
+  paginateArray,
+  parsePagination,
+  type QueryLike,
+} from '../common/pagination';
 import { InMemoryDbService } from '../infrastructure/in-memory-db.service';
+import { JobQueueService } from '../infrastructure/job-queue.service';
+import { hashSecret, partnerApiPepper, randomToken } from '../auth/security';
 
 /**
  * Hamkor (mehmonxona/avtobus kompaniyasi) kabineti xizmati.
@@ -15,7 +26,49 @@ export class PartnersService {
   private readonly withdrawalsStore: Array<Record<string, unknown>> = [];
   private readonly financeDocumentsStore: Array<Record<string, unknown>> = [];
 
-  constructor(private readonly db: InMemoryDbService) {}
+  constructor(
+    private readonly db: InMemoryDbService,
+    private readonly jobs: JobQueueService,
+  ) {}
+
+  dashboard(actor: RequestActor | undefined) {
+    const organizationId = this.organizationId(actor);
+    const bookings = this.bookingsForOrganization(organizationId);
+    const hotelIds = new Set(
+      this.db.hotels
+        .filter((hotel) => hotel.partner_organization_id === organizationId)
+        .map((hotel) => hotel.id),
+    );
+    const today = new Date().toISOString().slice(0, 10);
+    const todayBookings = bookings.filter((booking) =>
+      booking.created_at.startsWith(today),
+    ).length;
+    const monthRevenue = bookings.reduce(
+      (sum, booking) => sum + booking.partner_payable,
+      0,
+    );
+    const totalCustomers = new Set(bookings.map((booking) => booking.user_id))
+      .size;
+    const hotelRatings = this.db.hotels
+      .filter((hotel) => hotelIds.has(hotel.id))
+      .map((hotel) => hotel.rating_average)
+      .filter((rating) => Number.isFinite(rating));
+    const rating = hotelRatings.length
+      ? Number(
+          (
+            hotelRatings.reduce((sum, value) => sum + value, 0) /
+            hotelRatings.length
+          ).toFixed(1),
+        )
+      : 0;
+
+    return {
+      todayBookings,
+      monthRevenue,
+      totalCustomers,
+      rating,
+    };
+  }
 
   profile(actor: RequestActor | undefined) {
     const organizationId = this.organizationId(actor);
@@ -120,10 +173,13 @@ export class PartnersService {
     return organization;
   }
 
-  hotels(actor: RequestActor | undefined) {
+  hotels(actor: RequestActor | undefined, query: QueryLike = {}) {
     const organizationId = this.organizationId(actor);
-    return this.db.hotels.filter(
-      (hotel) => hotel.partner_organization_id === organizationId,
+    return this.paginatePartner(
+      this.db.hotels.filter(
+        (hotel) => hotel.partner_organization_id === organizationId,
+      ),
+      query,
     );
   }
 
@@ -155,12 +211,16 @@ export class PartnersService {
     return hotel;
   }
 
-  hotel(id: string) {
-    return this.assertHotel(id);
+  hotel(actor: RequestActor | undefined, id: string) {
+    return this.assertHotel(id, actor);
   }
 
-  updateHotel(id: string, body: Record<string, unknown>) {
-    const hotel = this.assertHotel(id);
+  updateHotel(
+    actor: RequestActor | undefined,
+    id: string,
+    body: Record<string, unknown>,
+  ) {
+    const hotel = this.assertHotel(id, actor);
     hotel.address = body.address ? String(body.address) : hotel.address;
     hotel.stars = body.stars ? Number(body.stars) : hotel.stars;
     hotel.status = body.status
@@ -169,14 +229,18 @@ export class PartnersService {
     return hotel;
   }
 
-  submitHotelReview(id: string) {
-    const hotel = this.assertHotel(id);
+  submitHotelReview(actor: RequestActor | undefined, id: string) {
+    const hotel = this.assertHotel(id, actor);
     hotel.status = 'pending_review';
     return hotel;
   }
 
-  addHotelImage(id: string, body: Record<string, unknown>) {
-    const hotel = this.assertHotel(id);
+  addHotelImage(
+    actor: RequestActor | undefined,
+    id: string,
+    body: Record<string, unknown>,
+  ) {
+    const hotel = this.assertHotel(id, actor);
     const image = String(
       body.url ?? body.image_url ?? `/mock/${this.db.id('image')}`,
     );
@@ -184,18 +248,26 @@ export class PartnersService {
     return { hotel_id: id, image_url: image };
   }
 
-  deleteHotelImage(id: string, imageId: string) {
-    this.assertHotel(id);
+  deleteHotelImage(
+    actor: RequestActor | undefined,
+    id: string,
+    imageId: string,
+  ) {
+    this.assertHotel(id, actor);
     return { hotel_id: id, image_id: imageId, deleted: true };
   }
 
-  rooms(id: string) {
-    this.assertHotel(id);
+  rooms(actor: RequestActor | undefined, id: string) {
+    this.assertHotel(id, actor);
     return this.db.rooms.filter((room) => room.hotel_id === id);
   }
 
-  createRoom(id: string, body: Record<string, unknown>) {
-    this.assertHotel(id);
+  createRoom(
+    actor: RequestActor | undefined,
+    id: string,
+    body: Record<string, unknown>,
+  ) {
+    this.assertHotel(id, actor);
     const room = {
       id: this.db.id('room'),
       hotel_id: id,
@@ -217,9 +289,16 @@ export class PartnersService {
     return room;
   }
 
-  updateRoom(id: string, roomId: string, body: Record<string, unknown>) {
-    this.assertHotel(id);
-    const room = this.db.rooms.find((item) => item.id === roomId);
+  updateRoom(
+    actor: RequestActor | undefined,
+    id: string,
+    roomId: string,
+    body: Record<string, unknown>,
+  ) {
+    this.assertHotel(id, actor);
+    const room = this.db.rooms.find(
+      (item) => item.id === roomId && item.hotel_id === id,
+    );
     if (!room) {
       throw new NotFoundException({
         code: 'ROOM_NOT_AVAILABLE',
@@ -235,18 +314,20 @@ export class PartnersService {
     return room;
   }
 
-  deleteRoom(id: string, roomId: string) {
-    this.assertHotel(id);
-    const room = this.db.rooms.find((item) => item.id === roomId);
+  deleteRoom(actor: RequestActor | undefined, id: string, roomId: string) {
+    this.assertHotel(id, actor);
+    const room = this.db.rooms.find(
+      (item) => item.id === roomId && item.hotel_id === id,
+    );
     if (room) {
       room.status = 'inactive';
     }
     return { hotel_id: id, room_id: roomId, deleted: true };
   }
 
-  inventory(id: string) {
-    this.assertHotel(id);
-    return this.rooms(id).map((room) => ({
+  inventory(actor: RequestActor | undefined, id: string) {
+    this.assertHotel(id, actor);
+    return this.rooms(actor, id).map((room) => ({
       room_id: room.id,
       date: new Date().toISOString().slice(0, 10),
       total_count: room.total_inventory,
@@ -256,8 +337,12 @@ export class PartnersService {
     }));
   }
 
-  updateInventory(id: string, body: Record<string, unknown>) {
-    this.assertHotel(id);
+  updateInventory(
+    actor: RequestActor | undefined,
+    id: string,
+    body: Record<string, unknown>,
+  ) {
+    this.assertHotel(id, actor);
     return {
       hotel_id: id,
       updated: true,
@@ -265,8 +350,12 @@ export class PartnersService {
     };
   }
 
-  blackoutDates(id: string, body: Record<string, unknown>) {
-    this.assertHotel(id);
+  blackoutDates(
+    actor: RequestActor | undefined,
+    id: string,
+    body: Record<string, unknown>,
+  ) {
+    this.assertHotel(id, actor);
     return {
       hotel_id: id,
       dates: body.dates ?? [],
@@ -321,8 +410,8 @@ export class PartnersService {
     return { id, ...body, updated_at: this.db.now() };
   }
 
-  trips() {
-    return this.db.trips;
+  trips(query: QueryLike = {}) {
+    return this.paginatePartner(this.db.trips, query);
   }
 
   createTrip(body: Record<string, unknown>) {
@@ -374,14 +463,16 @@ export class PartnersService {
     return this.db.tripSeats.filter((seat) => seat.trip_id === id);
   }
 
-  bookings(actor: RequestActor | undefined) {
+  bookings(actor: RequestActor | undefined, query: QueryLike = {}) {
     const organizationId = this.organizationId(actor);
-    return this.db.bookings.filter(
-      (booking) => booking.partner_organization_id === organizationId,
+    return this.paginatePartner(
+      this.bookingsForOrganization(organizationId),
+      query,
     );
   }
 
-  booking(id: string) {
+  booking(actor: RequestActor | undefined, id: string) {
+    const organizationId = this.organizationId(actor);
     const booking = this.db.findBooking(id);
     if (!booking) {
       throw new NotFoundException({
@@ -389,11 +480,17 @@ export class PartnersService {
         message: 'Bron topilmadi',
       });
     }
+    if (booking.partner_organization_id !== organizationId) {
+      throw new ForbiddenException({
+        code: 'BOOKING_FORBIDDEN',
+        message: 'Bu bron sizning tashkilotingizga tegishli emas',
+      });
+    }
     return booking;
   }
 
-  bookingStatus(id: string, status: string) {
-    const booking = this.booking(id);
+  bookingStatus(actor: RequestActor | undefined, id: string, status: string) {
+    const booking = this.booking(actor, id);
     if (status === 'confirmed') {
       booking.status = BookingStatus.CONFIRMED;
       booking.confirmed_at = this.db.now();
@@ -405,15 +502,24 @@ export class PartnersService {
     return booking;
   }
 
-  rejectBooking(id: string, body: Record<string, unknown>) {
-    const booking = this.booking(id);
+  rejectBooking(
+    actor: RequestActor | undefined,
+    id: string,
+    body: Record<string, unknown>,
+  ) {
+    const booking = this.booking(actor, id);
     booking.status = BookingStatus.CANCELLED;
     booking.cancel_reason_text = String(body.reason ?? 'Partner rad etdi');
     booking.cancelled_at = this.db.now();
     return booking;
   }
 
-  cashStatus(id: string, status: 'collected' | 'reversed') {
+  cashStatus(
+    actor: RequestActor | undefined,
+    id: string,
+    status: 'collected' | 'reversed',
+  ) {
+    this.booking(actor, id);
     const payment = this.db.findPaymentByBooking(id);
     if (payment) {
       payment.status = status === 'collected' ? 'paid' : 'awaiting_cash';
@@ -423,7 +529,7 @@ export class PartnersService {
   }
 
   financeOverview(actor: RequestActor | undefined) {
-    const bookings = this.bookings(actor);
+    const bookings = this.bookingsForOrganization(this.organizationId(actor));
     const gross = bookings.reduce(
       (sum, booking) => sum + booking.total_amount,
       0,
@@ -436,15 +542,20 @@ export class PartnersService {
     };
   }
 
-  ledger(actor: RequestActor | undefined) {
-    return this.bookings(actor).map((booking) => ({
-      id: this.db.id('ledger'),
-      booking_id: booking.id,
-      amount: booking.partner_payable,
-      currency: booking.currency,
-      type: 'booking_payable',
-      created_at: booking.created_at,
-    }));
+  ledger(actor: RequestActor | undefined, query: QueryLike = {}) {
+    return this.paginatePartner(
+      this.bookingsForOrganization(this.organizationId(actor)).map(
+        (booking) => ({
+          id: this.db.id('ledger'),
+          booking_id: booking.id,
+          amount: booking.partner_payable,
+          currency: booking.currency,
+          type: 'booking_payable',
+          created_at: booking.created_at,
+        }),
+      ),
+      query,
+    );
   }
 
   financeChart(actor: RequestActor | undefined) {
@@ -470,14 +581,17 @@ export class PartnersService {
     return request;
   }
 
-  withdrawals(actor: RequestActor | undefined) {
+  withdrawals(actor: RequestActor | undefined, query: QueryLike = {}) {
     const organizationId = this.organizationId(actor);
-    return this.withdrawalsStore.filter(
-      (withdrawal) => withdrawal['organization_id'] === organizationId,
+    return this.paginatePartner(
+      this.withdrawalsStore.filter(
+        (withdrawal) => withdrawal['organization_id'] === organizationId,
+      ),
+      query,
     );
   }
 
-  createExport(
+  async createExport(
     actor: RequestActor | undefined,
     type: string,
     body: Record<string, unknown>,
@@ -496,6 +610,18 @@ export class PartnersService {
       updated_at: this.db.now(),
     };
     this.db.exportJobs.unshift(job);
+    await this.jobs.add(
+      'partner-export',
+      {
+        export_id: job.id,
+        owner_id: currentActor.id,
+        type,
+        format,
+      },
+      {
+        idempotencyKey: `partner-export:${currentActor.id}:${type}:${format}`,
+      },
+    );
     return job;
   }
 
@@ -515,29 +641,35 @@ export class PartnersService {
 
   apiKeys(actor: RequestActor | undefined) {
     const organizationId = this.organizationId(actor);
-    return this.db.partnerApiKeys.filter(
-      (key) => key['organization_id'] === organizationId,
-    );
+    return this.db.partnerApiKeys
+      .filter((key) => key['organization_id'] === organizationId)
+      .map((key) => this.publicApiKey(key));
   }
 
   createApiKey(actor: RequestActor | undefined, body: Record<string, unknown>) {
-    const secret = `uzb_${this.db.id('secret')}`;
+    const prefix = `uzb_live_${randomToken(5)}`;
+    const fullKey = `${prefix}_${randomToken(24)}`;
     const apiKey = {
       id: this.db.id('api_key'),
       organization_id: this.organizationId(actor),
       name: String(body.name ?? 'Default API key'),
-      key_prefix: secret.slice(0, 12),
+      key_prefix: prefix,
       scopes: Array.isArray(body.scopes) ? body.scopes : ['bookings:read'],
       status: 'active',
       created_at: this.db.now(),
-      secret,
+      updated_at: this.db.now(),
+      secret_hash: hashSecret(fullKey, partnerApiPepper()),
     };
     this.db.partnerApiKeys.unshift(apiKey);
-    return apiKey;
+    return { ...this.publicApiKey(apiKey), api_key: fullKey };
   }
 
-  revokeApiKey(id: string) {
-    return { id, revoked_at: this.db.now() };
+  revokeApiKey(actor: RequestActor | undefined, id: string) {
+    const apiKey = this.assertApiKey(actor, id);
+    apiKey['status'] = 'revoked';
+    apiKey['revoked_at'] = this.db.now();
+    apiKey['updated_at'] = this.db.now();
+    return this.publicApiKey(apiKey);
   }
 
   webhooks(actor: RequestActor | undefined) {
@@ -563,15 +695,29 @@ export class PartnersService {
     return webhook;
   }
 
-  updateWebhook(id: string, body: Record<string, unknown>) {
-    return { id, ...body, updated_at: this.db.now() };
+  updateWebhook(
+    actor: RequestActor | undefined,
+    id: string,
+    body: Record<string, unknown>,
+  ) {
+    const webhook = this.assertWebhook(actor, id);
+    webhook['url'] = body.url ? String(body.url) : webhook['url'];
+    webhook['events'] = Array.isArray(body.events)
+      ? body.events
+      : webhook['events'];
+    webhook['updated_at'] = this.db.now();
+    return webhook;
   }
 
-  deleteWebhook(id: string) {
+  deleteWebhook(actor: RequestActor | undefined, id: string) {
+    const webhook = this.assertWebhook(actor, id);
+    webhook['status'] = 'deleted';
+    webhook['deleted_at'] = this.db.now();
     return { id, deleted: true };
   }
 
-  testWebhook(id: string) {
+  testWebhook(actor: RequestActor | undefined, id: string) {
+    this.assertWebhook(actor, id);
     return {
       webhook_id: id,
       delivery_id: this.db.id('delivery'),
@@ -579,7 +725,8 @@ export class PartnersService {
     };
   }
 
-  webhookDeliveries(id: string) {
+  webhookDeliveries(actor: RequestActor | undefined, id: string) {
+    this.assertWebhook(actor, id);
     return [
       { id: this.db.id('delivery'), webhook_id: id, status: 'delivered' },
     ];
@@ -591,6 +738,28 @@ export class PartnersService {
 
   private organizationId(actor: RequestActor | undefined) {
     return this.db.actorOrDemo(actor).organizationId ?? 'demo-partner-org-id';
+  }
+
+  private bookingsForOrganization(organizationId: string) {
+    return this.db.bookings.filter(
+      (booking) => booking.partner_organization_id === organizationId,
+    );
+  }
+
+  private paginatePartner<T extends object>(
+    items: readonly T[],
+    query: QueryLike,
+  ) {
+    const pagination = parsePagination(query, 'partner', {
+      defaultLimit: 50,
+      allowedSortBy: ['created_at', 'updated_at', 'status', 'total_amount'],
+    });
+    return paginateArray(items, pagination, {
+      created_at: (item) => field(item, 'created_at'),
+      updated_at: (item) => field(item, 'updated_at'),
+      status: (item) => field(item, 'status'),
+      total_amount: (item) => field(item, 'total_amount'),
+    });
   }
 
   private assertOrganization(id: string) {
@@ -607,7 +776,7 @@ export class PartnersService {
     return organization;
   }
 
-  private assertHotel(id: string) {
+  private assertHotel(id: string, actor?: RequestActor) {
     const hotel = this.db.hotels.find((item) => item.id === id);
     if (!hotel) {
       throw new NotFoundException({
@@ -616,6 +785,59 @@ export class PartnersService {
       });
     }
 
+    if (actor && hotel.partner_organization_id !== this.organizationId(actor)) {
+      throw new ForbiddenException({
+        code: 'HOTEL_FORBIDDEN',
+        message: 'Bu hotel sizning tashkilotingizga tegishli emas',
+      });
+    }
+
     return hotel;
   }
+
+  private assertApiKey(actor: RequestActor | undefined, id: string) {
+    const organizationId = this.organizationId(actor);
+    const apiKey = this.db.partnerApiKeys.find(
+      (key) => key['id'] === id && key['organization_id'] === organizationId,
+    );
+    if (!apiKey) {
+      throw new NotFoundException({
+        code: 'API_KEY_INVALID',
+        message: 'API key topilmadi',
+      });
+    }
+    return apiKey;
+  }
+
+  private assertWebhook(actor: RequestActor | undefined, id: string) {
+    const organizationId = this.organizationId(actor);
+    const webhook = this.db.partnerWebhooks.find(
+      (item) => item['id'] === id && item['organization_id'] === organizationId,
+    );
+    if (!webhook) {
+      throw new NotFoundException({
+        code: 'WEBHOOK_NOT_FOUND',
+        message: 'Webhook topilmadi',
+      });
+    }
+    return webhook;
+  }
+
+  private publicApiKey(apiKey: Record<string, unknown>) {
+    return {
+      id: apiKey['id'],
+      organization_id: apiKey['organization_id'],
+      name: apiKey['name'],
+      key_prefix: apiKey['key_prefix'],
+      scopes: apiKey['scopes'],
+      status: apiKey['status'],
+      created_at: apiKey['created_at'],
+      updated_at: apiKey['updated_at'],
+      revoked_at: apiKey['revoked_at'],
+    };
+  }
+}
+
+function field(item: object, key: string): unknown {
+  return (item as Record<string, unknown>)[key];
 }

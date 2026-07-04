@@ -16,7 +16,17 @@ export class SendOtpDto {
 }
 
 export class VerifyOtpRequestDto extends SendOtpDto {
-  @ApiProperty({ example: '111111' })
+  @ApiPropertyOptional({ example: 'otp-challenge-id' })
+  @IsOptional()
+  @IsString()
+  challenge_id?: string;
+
+  @ApiPropertyOptional({ example: 'challenge-id' })
+  @IsOptional()
+  @IsString()
+  chalenge_id?: string;
+
+  @ApiProperty({ example: '482913' })
   @IsString()
   @Length(6, 6)
   code!: string;
@@ -67,6 +77,24 @@ export class LoginDto {
   password!: string;
 }
 
+export class AdminLoginDto {
+  @ApiPropertyOptional({ example: 'admin' })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  username?: string;
+
+  @ApiPropertyOptional({ example: 'admin@uzbron.uz' })
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @ApiProperty({ example: 'admin' })
+  @IsString()
+  @IsNotEmpty()
+  password!: string;
+}
+
 export class ForgotPasswordDto {
   @ApiProperty({ example: 'partner@uzbron.uz' })
   @IsEmail()
@@ -86,7 +114,12 @@ export class ResetPasswordDto {
 }
 
 export class Verify2faDto {
-  @ApiProperty({ example: '000000' })
+  @ApiPropertyOptional({ example: 'challenge-id' })
+  @IsOptional()
+  @IsString()
+  challenge_id?: string;
+
+  @ApiProperty({ example: '482913' })
   @IsString()
   @Length(6, 6)
   code!: string;
@@ -94,7 +127,24 @@ export class Verify2faDto {
 
 export class RefreshTokenDto {
   @ApiProperty()
+  @IsOptional()
+  @IsString()
+  refresh_token?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  refreshToken?: string;
+}
+
+export class TotpSetupConfirmDto {
+  @ApiProperty({ example: 'setup-id' })
   @IsString()
   @IsNotEmpty()
-  refresh_token!: string;
+  setup_id!: string;
+
+  @ApiProperty({ example: '482913' })
+  @IsString()
+  @Length(6, 6)
+  code!: string;
 }

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { BookingStatus, Role } from '@agoda/types';
 import type { RequestActor } from '../common/actor';
+import { inMemoryDataEnabled } from '../auth/security';
 
 export type Language = 'uz' | 'ru' | 'en';
 export type MoneyCurrency = 'UZS';
@@ -51,6 +52,33 @@ export interface PartnerOrganizationRecord {
   rejection_reason?: string;
   approved_by?: string;
   approved_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PartnerUserRecord {
+  id: string;
+  organization_id: string;
+  email: string;
+  password_hash: string;
+  full_name?: string;
+  status: 'active' | 'invited' | 'blocked' | 'deleted';
+  role: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminUserRecord {
+  id: string;
+  email: string;
+  username: string;
+  password_hash: string;
+  full_name?: string;
+  role: Role;
+  roles: Role[];
+  status: 'active' | 'blocked' | 'deleted';
+  totp_secret?: string;
+  recovery_code_hashes?: string[];
   created_at: string;
   updated_at: string;
 }
@@ -151,6 +179,17 @@ export interface PaymentRecord {
   provider_reference?: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface PaymentEventRecord {
+  id: string;
+  provider: string;
+  event_key: string;
+  event_type: string;
+  payload_hash: string;
+  booking_id?: string;
+  payment_id?: string;
+  processed_at: string;
 }
 
 export interface ExportJobRecord {
@@ -258,6 +297,37 @@ export class InMemoryDbService {
       address: 'Samarqand, Registon maydoni',
       status: 'approved',
       default_commission_rate: 12,
+      created_at: this.now(),
+      updated_at: this.now(),
+    },
+  ];
+
+  readonly partnerUsers: PartnerUserRecord[] = [
+    {
+      id: 'demo-partner-user-id',
+      organization_id: 'demo-partner-org-id',
+      email: 'partner@uzbron.uz',
+      password_hash:
+        '$argon2id$v=19$m=65536,t=3,p=4$Aol2VmKu0hxEbDZxxCP1wg$AQu6m+LFd2KuTND4KPY98nhpRUV9SyU+lrBdDzFpr6c',
+      full_name: 'Demo Partner',
+      status: 'active',
+      role: 'owner',
+      created_at: this.now(),
+      updated_at: this.now(),
+    },
+  ];
+
+  readonly adminUsers: AdminUserRecord[] = [
+    {
+      id: 'demo-admin-id',
+      email: 'admin@uzbron.uz',
+      username: 'admin',
+      password_hash:
+        '$argon2id$v=19$m=65536,t=3,p=4$Ew1E5R0QIy52QBsBY9rSFA$AokIMmdK2yGytTgwq1I4iKXrgkWxNWRTAS5NhSmRkxY',
+      full_name: 'Super Admin',
+      role: Role.SUPER_ADMIN,
+      roles: [Role.SUPER_ADMIN],
+      status: 'active',
       created_at: this.now(),
       updated_at: this.now(),
     },
@@ -376,6 +446,7 @@ export class InMemoryDbService {
   readonly bookingStatusHistory: Array<Record<string, unknown>> = [];
   readonly bookingMessages: Array<Record<string, unknown>> = [];
   readonly payments: PaymentRecord[] = [];
+  readonly paymentEvents: PaymentEventRecord[] = [];
   readonly refunds: Array<Record<string, unknown>> = [];
   readonly reviews: Array<Record<string, unknown>> = [];
   readonly supportTickets: Array<Record<string, unknown>> = [];
@@ -400,15 +471,21 @@ export class InMemoryDbService {
   }
 
   actorOrDemo(actor?: RequestActor): RequestActor {
-    return (
-      actor ?? {
-        id: 'demo-user-id',
-        actorType: 'user',
-        role: Role.USER,
-        roles: [Role.USER],
-        sessionId: 'demo-session-id',
-      }
-    );
+    if (actor) {
+      return actor;
+    }
+
+    if (!inMemoryDataEnabled()) {
+      throw new Error('AUTH_REQUIRED');
+    }
+
+    return {
+      id: 'demo-user-id',
+      actorType: 'user',
+      role: Role.USER,
+      roles: [Role.USER],
+      sessionId: 'demo-session-id',
+    };
   }
 
   audit(action: string, actor: RequestActor | undefined, metadata: unknown) {
@@ -427,6 +504,22 @@ export class InMemoryDbService {
 
   findUser(id: string): UserRecord | undefined {
     return this.users.find((user) => user.id === id);
+  }
+
+  findAdminByLogin(login: string): AdminUserRecord | undefined {
+    const normalized = login.trim().toLowerCase();
+    return this.adminUsers.find(
+      (admin) =>
+        admin.email.toLowerCase() === normalized ||
+        admin.username.toLowerCase() === normalized,
+    );
+  }
+
+  findPartnerUserByEmail(email: string): PartnerUserRecord | undefined {
+    const normalized = email.trim().toLowerCase();
+    return this.partnerUsers.find(
+      (partnerUser) => partnerUser.email.toLowerCase() === normalized,
+    );
   }
 
   findBooking(id: string): BookingRecord | undefined {

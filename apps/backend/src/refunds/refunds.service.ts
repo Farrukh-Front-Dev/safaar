@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import type { RequestActor } from '../common/actor';
 import { InMemoryDbService } from '../infrastructure/in-memory-db.service';
 
@@ -18,6 +22,23 @@ export class RefundsService {
       });
     }
 
+    if (booking.user_id !== currentActor.id) {
+      throw new ForbiddenException({
+        code: 'BOOKING_FORBIDDEN',
+        message: 'Bu bron sizga tegishli emas',
+      });
+    }
+
+    const existing = this.db.refunds.find(
+      (item) =>
+        item['booking_id'] === bookingId &&
+        item['user_id'] === currentActor.id &&
+        item['status'] !== 'rejected',
+    );
+    if (existing) {
+      return existing;
+    }
+
     const refund = {
       id: this.db.id('refund'),
       booking_id: bookingId,
@@ -33,12 +54,23 @@ export class RefundsService {
     return refund;
   }
 
-  findOne(id: string) {
+  findOne(actor: RequestActor | undefined, id: string) {
+    const currentActor = this.db.actorOrDemo(actor);
     const refund = this.db.refunds.find((item) => item['id'] === id);
     if (!refund) {
       throw new NotFoundException({
         code: 'REFUND_NOT_ALLOWED',
         message: 'Refund topilmadi',
+      });
+    }
+
+    if (
+      currentActor.actorType === 'user' &&
+      refund['user_id'] !== currentActor.id
+    ) {
+      throw new ForbiddenException({
+        code: 'REFUND_FORBIDDEN',
+        message: 'Bu refund sizga tegishli emas',
       });
     }
 

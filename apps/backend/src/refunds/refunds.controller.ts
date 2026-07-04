@@ -21,8 +21,11 @@ export class RefundsController {
 
   @Get('refunds/:id')
   @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)
-  findOne(@Param('id') id: string) {
-    return this.refundsService.findOne(id);
+  findOne(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.refundsService.findOne(actor, id);
   }
 
   @Get('me/refunds')

@@ -78,7 +78,7 @@ set first_name = excluded.first_name,
 
 insert into admin_users (id, email, password_hash, full_name, role, status, created_at, updated_at)
 values
-  ('00000000-0000-1006-0000-000000000001', 'admin@uzbron.uz', '$argon2id$v=19$m=65536,t=3,p=4$kbm7j4EfsP00pB5iE1cnNg$+5/F42A64FJ0hSJTq2Zc8sZPSOAGaSu5x37PMjMAC9g', 'Demo Super Admin', 'super_admin', 'active', now(), now()),
+  ('00000000-0000-1006-0000-000000000001', 'admin@uzbron.uz', '$argon2id$v=19$m=65536,t=3,p=4$AokIMdarb3TjMvuuUgnv/g$E87tg32l3gKGSwB5THe/B9g257xCIKBBKcx0SfzkQqs', 'Demo Super Admin', 'super_admin', 'active', now(), now()),
   ('00000000-0000-1006-0000-000000000002', 'finance@uzbron.uz', '$argon2id$v=19$m=65536,t=3,p=4$kbm7j4EfsP00pB5iE1cnNg$+5/F42A64FJ0hSJTq2Zc8sZPSOAGaSu5x37PMjMAC9g', 'Demo Finance Admin', 'finance_admin', 'active', now(), now()),
   ('00000000-0000-1006-0000-000000000003', 'content@uzbron.uz', '$argon2id$v=19$m=65536,t=3,p=4$kbm7j4EfsP00pB5iE1cnNg$+5/F42A64FJ0hSJTq2Zc8sZPSOAGaSu5x37PMjMAC9g', 'Demo Content Admin', 'content_admin', 'active', now(), now())
 on conflict (email) do update

@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsOptional, IsString } from 'class-validator';
+import { IsIn, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreatePaymentDto {
   @ApiProperty({ enum: ['click', 'payme', 'uzcard', 'humo', 'cash'] })
@@ -17,4 +17,19 @@ export class ProviderWebhookDto {
   @IsOptional()
   @IsString()
   transaction_id?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  event_id?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  amount?: number;
+
+  @ApiPropertyOptional({ example: 'UZS' })
+  @IsOptional()
+  @IsString()
+  currency?: string;
 }

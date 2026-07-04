@@ -14,6 +14,7 @@ import { Roles } from '../common/roles.decorator';
 import { RolesGuard } from '../common/roles.guard';
 import { AuthService } from './auth.service';
 import {
+  AdminLoginDto,
   CompleteProfileDto,
   ForgotPasswordDto,
   LoginDto,
@@ -21,6 +22,7 @@ import {
   RefreshTokenDto,
   ResetPasswordDto,
   SendOtpDto,
+  TotpSetupConfirmDto,
   Verify2faDto,
   VerifyOtpRequestDto,
 } from './dto/auth.dto';
@@ -38,6 +40,16 @@ export class AuthController {
   @Post('user/verify-otp')
   verifyOtp(@Body() dto: VerifyOtpRequestDto) {
     return this.authService.verifyUserOtp(dto);
+  }
+
+  @Post('otp/request')
+  requestOtpAlias(@Body() dto: SendOtpDto) {
+    return this.authService.sendPartnerOtp(dto.phone);
+  }
+
+  @Post('otp/verify')
+  verifyOtpAlias(@Body() dto: VerifyOtpRequestDto) {
+    return this.authService.verifyPartnerOtp(dto);
   }
 
   @Post('user/complete-profile')
@@ -130,7 +142,7 @@ export class AuthController {
   }
 
   @Post('admin/login')
-  adminLogin(@Body() body: LoginDto) {
+  adminLogin(@Body() body: AdminLoginDto) {
     return this.authService.adminLogin(
       body as unknown as Record<string, unknown>,
     );
@@ -143,15 +155,78 @@ export class AuthController {
     );
   }
 
+  @Post('admin/2fa/setup')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  admin2faSetup(@CurrentActor() actor: RequestActor | undefined) {
+    return this.authService.admin2faSetup(actor);
+  }
+
+  @Post('admin/2fa/confirm')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  admin2faConfirm(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Body() body: TotpSetupConfirmDto,
+  ) {
+    return this.authService.admin2faConfirm(
+      actor,
+      body as unknown as Record<string, unknown>,
+    );
+  }
+
+  @Post('admin/2fa/disable')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  admin2faDisable(@CurrentActor() actor: RequestActor | undefined) {
+    return this.authService.admin2faDisable(actor);
+  }
+
   @Post('refresh')
   refresh(@Body() body: RefreshTokenDto) {
     return this.authService.refresh(body as unknown as Record<string, unknown>);
+  }
+
+  @Post('user/refresh')
+  userRefresh(@Body() body: RefreshTokenDto) {
+    return this.refresh(body);
+  }
+
+  @Post('partner/refresh')
+  partnerRefresh(@Body() body: RefreshTokenDto) {
+    return this.refresh(body);
+  }
+
+  @Post('admin/refresh')
+  adminRefresh(@Body() body: RefreshTokenDto) {
+    return this.refresh(body);
   }
 
   @Post('logout')
   @UseGuards(RolesGuard)
   @Roles(Role.USER, Role.PARTNER, Role.ADMIN, Role.SUPER_ADMIN)
   logout(@CurrentActor() actor: RequestActor | undefined) {
+    return this.authService.logout(actor);
+  }
+
+  @Post('user/logout')
+  @UseGuards(RolesGuard)
+  @Roles(Role.USER)
+  userLogout(@CurrentActor() actor: RequestActor | undefined) {
+    return this.authService.logout(actor);
+  }
+
+  @Post('partner/logout')
+  @UseGuards(RolesGuard)
+  @Roles(Role.PARTNER)
+  partnerLogout(@CurrentActor() actor: RequestActor | undefined) {
+    return this.authService.logout(actor);
+  }
+
+  @Post('admin/logout')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  adminLogout(@CurrentActor() actor: RequestActor | undefined) {
     return this.authService.logout(actor);
   }
 

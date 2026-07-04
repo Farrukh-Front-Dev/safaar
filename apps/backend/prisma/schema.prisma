@@ -137,6 +137,8 @@ model User {
   notifications  Notification[]
   supportTickets SupportTicket[]
 
+  @@index([status, createdAt])
+  @@index([deletedAt, createdAt])
   @@map("users")
 }
 
@@ -163,11 +165,14 @@ model AuthSession {
   actorType    String    @map("actor_type") @db.VarChar(32)
   actorId      String    @map("actor_id") @db.Uuid
   refreshHash  String    @map("refresh_hash") @db.VarChar(255)
+  refreshJti   String?   @map("refresh_jti") @db.VarChar(128)
   familyId     String    @map("family_id") @db.Uuid
+  replacedByJti String?  @map("replaced_by_jti") @db.VarChar(128)
   ipAddress    String?   @map("ip_address") @db.VarChar(64)
   userAgent    String?   @map("user_agent")
   expiresAt    DateTime  @map("expires_at") @db.Timestamptz
   revokedAt    DateTime? @map("revoked_at") @db.Timestamptz
+  lastUsedAt   DateTime? @map("last_used_at") @db.Timestamptz
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -176,6 +181,20 @@ model AuthSession {
   @@index([actorType, actorId])
   @@index([familyId])
   @@map("auth_sessions")
+}
+
+model OtpChallenge {
+  id           String    @id @default(uuid()) @db.Uuid
+  phone        String    @db.VarChar(20)
+  purpose      String    @db.VarChar(40)
+  codeHash     String    @map("code_hash") @db.VarChar(255)
+  attempts     Int       @default(0)
+  expiresAt    DateTime  @map("expires_at") @db.Timestamptz
+  consumedAt   DateTime? @map("consumed_at") @db.Timestamptz
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([phone, purpose, expiresAt])
+  @@map("otp_challenges")
 }
 
 model PartnerOrganization {
@@ -206,6 +225,8 @@ model PartnerOrganization {
   ledgerEntries PartnerLedgerEntry[]
 
   @@index([status])
+  @@index([cityId, status])
+  @@index([status, createdAt])
   @@map("partner_organizations")
 }
 
@@ -223,6 +244,7 @@ model PartnerUser {
   organization PartnerOrganization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, email])
+  @@index([email])
   @@map("partner_users")
 }
 
@@ -238,7 +260,23 @@ model AdminUser {
   updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz
   deletedAt    DateTime? @map("deleted_at") @db.Timestamptz
 
+  recoveryCodes AdminRecoveryCode[]
+
+  @@index([deletedAt, createdAt])
   @@map("admin_users")
+}
+
+model AdminRecoveryCode {
+  id        String    @id @default(uuid()) @db.Uuid
+  adminId   String    @map("admin_id") @db.Uuid
+  codeHash  String    @map("code_hash") @db.VarChar(255)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  admin AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId, usedAt])
+  @@map("admin_recovery_codes")
 }
 
 model Region {
@@ -355,6 +393,10 @@ model Hotel {
 
   @@index([cityId, status])
   @@index([ratingAverage])
+  @@index([partnerOrganizationId, status])
+  @@index([status, createdAt])
+  @@index([status, ratingAverage])
+  @@index([status, stars])
   @@map("hotels")
 }
 
@@ -448,6 +490,7 @@ model RoomInventory {
   room HotelRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
 
   @@unique([roomId, date])
+  @@index([date])
   @@map("room_inventory")
 }
 
@@ -465,6 +508,8 @@ model BusCompany {
   vehicles Vehicle[]
   trips    Trip[]
 
+  @@index([partnerOrganizationId, status])
+  @@index([status, createdAt])
   @@map("bus_companies")
 }
 
@@ -482,6 +527,7 @@ model Vehicle {
   company BusCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
   trips   Trip[]
 
+  @@index([companyId, status])
   @@map("vehicles")
 }
 
@@ -525,6 +571,9 @@ model Trip {
   bookings Booking[]
 
   @@index([fromCityId, toCityId, departureAt])
+  @@index([status, departureAt])
+  @@index([routeId, departureAt, status])
+  @@index([companyId, status, departureAt])
   @@map("trips")
 }
 
@@ -542,6 +591,7 @@ model TripSeat {
 
   @@unique([tripId, seatCode])
   @@index([status])
+  @@index([tripId, status])
   @@map("trip_seats")
 }
 
@@ -586,7 +636,12 @@ model Booking {
 
   @@index([userId, createdAt])
   @@index([partnerOrganizationId, status])
+  @@index([partnerOrganizationId, createdAt])
+  @@index([status, createdAt])
   @@index([status, expiresAt])
+  @@index([type, status, createdAt])
+  @@index([hotelId, createdAt])
+  @@index([tripId, createdAt])
   @@map("bookings")
 }
 
@@ -639,6 +694,8 @@ model Payment {
   events  PaymentEvent[]
 
   @@index([bookingId, status])
+  @@index([status, createdAt])
+  @@index([provider, providerReference])
   @@map("payments")
 }
 
@@ -649,12 +706,28 @@ model PaymentEvent {
   eventType   String   @map("event_type") @db.VarChar(80)
   eventKey    String   @unique @map("event_key") @db.VarChar(255)
   payload     Json
+  payloadHash String?  @map("payload_hash") @db.VarChar(128)
   processedAt DateTime? @map("processed_at") @db.Timestamptz
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   payment Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
 
   @@map("payment_events")
+}
+
+model IdempotencyRecord {
+  id             String    @id @default(uuid()) @db.Uuid
+  scope          String    @db.VarChar(80)
+  key            String    @db.VarChar(255)
+  requestHash    String    @map("request_hash") @db.VarChar(128)
+  responseStatus Int?      @map("response_status")
+  responseBody   Json?     @map("response_body")
+  lockedUntil    DateTime? @map("locked_until") @db.Timestamptz
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@unique([scope, key])
+  @@map("idempotency_records")
 }
 
 model Refund {
@@ -672,6 +745,8 @@ model Refund {
   booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
+  @@index([bookingId])
+  @@index([status, createdAt])
   @@map("refunds")
 }
 
@@ -701,6 +776,7 @@ model WithdrawalRequest {
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   @@index([organizationId, status])
+  @@index([status, createdAt])
   @@map("withdrawal_requests")
 }
 
@@ -748,6 +824,7 @@ model Notification {
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([ownerType, ownerId, readAt])
+  @@index([ownerType, ownerId, readAt, createdAt])
   @@map("notifications")
 }
 
@@ -764,6 +841,8 @@ model SupportTicket {
   messages SupportMessage[]
 
   @@index([userId, status])
+  @@index([userId, status, createdAt])
+  @@index([status, createdAt])
   @@map("support_tickets")
 }
 
@@ -833,6 +912,7 @@ model AuditLog {
 
   @@index([actorType, actorId, createdAt])
   @@index([action, createdAt])
+  @@index([entityType, entityId])
   @@map("audit_logs")
 }
 
@@ -850,6 +930,8 @@ model ExportJob {
   expiresAt   DateTime? @map("expires_at") @db.Timestamptz
 
   @@index([ownerType, ownerId, status])
+  @@index([ownerType, ownerId, createdAt])
+  @@index([status, createdAt])
   @@map("export_jobs")
 }
 
@@ -867,6 +949,8 @@ model CmsEntry {
 
   @@unique([type, slug])
   @@index([type, status])
+  @@index([type, status, createdAt])
+  @@index([publishedAt])
   @@map("cms_entries")
 }
 

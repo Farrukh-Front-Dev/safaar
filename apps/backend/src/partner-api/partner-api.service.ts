@@ -1,6 +1,11 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { BookingStatus } from '@agoda/types';
 import { InMemoryDbService } from '../infrastructure/in-memory-db.service';
+import {
+  hashSecret,
+  partnerApiPepper,
+  timingSafeEqualString,
+} from '../auth/security';
 
 @Injectable()
 export class PartnerApiService {
@@ -14,7 +19,14 @@ export class PartnerApiService {
   }
 
   booking(apiKey: string | undefined, id: string) {
-    return this.bookings(apiKey).find((booking) => booking.id === id) ?? { id };
+    const booking = this.bookings(apiKey).find((item) => item.id === id);
+    if (!booking) {
+      throw new ForbiddenException({
+        code: 'BOOKING_FORBIDDEN',
+        message: 'Bu bron API key tashkilotiga tegishli emas',
+      });
+    }
+    return booking;
   }
 
   bookingStatus(
@@ -22,15 +34,21 @@ export class PartnerApiService {
     id: string,
     body: Record<string, unknown>,
   ) {
+    const organizationId = this.organizationId(apiKey);
     const booking = this.db.findBooking(id);
-    this.organizationId(apiKey);
+    if (!booking || booking.partner_organization_id !== organizationId) {
+      throw new ForbiddenException({
+        code: 'BOOKING_FORBIDDEN',
+        message: 'Bu bron API key tashkilotiga tegishli emas',
+      });
+    }
 
-    if (booking && body.status === 'completed') {
+    if (body.status === 'completed') {
       booking.status = BookingStatus.COMPLETED;
       booking.updated_at = this.db.now();
     }
 
-    return booking ?? { id, status: body.status };
+    return booking;
   }
 
   hotels(apiKey: string | undefined) {
@@ -41,8 +59,13 @@ export class PartnerApiService {
   }
 
   trips(apiKey: string | undefined) {
-    this.organizationId(apiKey);
-    return this.db.trips;
+    const organizationId = this.organizationId(apiKey);
+    const companyIds = new Set(
+      this.db.busCompanies
+        .filter((company) => company.partner_organization_id === organizationId)
+        .map((company) => company.id),
+    );
+    return this.db.trips.filter((trip) => companyIds.has(trip.company_id));
   }
 
   webhookTest(apiKey: string | undefined, body: Record<string, unknown>) {
@@ -63,10 +86,27 @@ export class PartnerApiService {
       });
     }
 
-    const key = this.db.partnerApiKeys.find(
-      (item) => item['secret'] === apiKey || item['key_prefix'] === apiKey,
-    );
+    const key = this.db.partnerApiKeys.find((item) => {
+      const prefix = String(item['key_prefix'] ?? '');
+      const secretHash = String(item['secret_hash'] ?? '');
+      return (
+        prefix &&
+        apiKey.startsWith(`${prefix}_`) &&
+        timingSafeEqualString(secretHash, this.hashApiKey(apiKey))
+      );
+    });
 
-    return String(key?.['organization_id'] ?? 'demo-partner-org-id');
+    if (!key || key['status'] !== 'active') {
+      throw new ForbiddenException({
+        code: 'API_KEY_INVALID',
+        message: 'Partner API key yaroqsiz',
+      });
+    }
+
+    return String(key['organization_id']);
+  }
+
+  private hashApiKey(apiKey: string): string {
+    return hashSecret(apiKey, partnerApiPepper());
   }
 }

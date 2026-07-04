@@ -10,6 +10,14 @@ export enum Role {
   PARTNER = "PARTNER",
   /** Platforma administratori — admin.uzbron.uz */
   ADMIN = "ADMIN",
+  /** Moliya bo'limi administratori */
+  FINANCE_ADMIN = "FINANCE_ADMIN",
+  /** Kontent/CMS administratori */
+  CONTENT_ADMIN = "CONTENT_ADMIN",
+  /** Support/operator administratori */
+  SUPPORT_ADMIN = "SUPPORT_ADMIN",
+  /** Moderatsiya administratori */
+  MODERATOR = "MODERATOR",
   /** Super administrator — to'liq nazorat */
   SUPER_ADMIN = "SUPER_ADMIN",
 }

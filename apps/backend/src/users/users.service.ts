@@ -1,6 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import type { RequestActor } from '../common/actor';
+import {
+  paginateArray,
+  parsePagination,
+  type QueryLike,
+} from '../common/pagination';
 import { InMemoryDbService } from '../infrastructure/in-memory-db.service';
+import { JobQueueService } from '../infrastructure/job-queue.service';
 
 @Injectable()
 export class UsersService {
@@ -10,7 +20,10 @@ export class UsersService {
     Record<string, boolean>
   >();
 
-  constructor(private readonly db: InMemoryDbService) {}
+  constructor(
+    private readonly db: InMemoryDbService,
+    private readonly jobs: JobQueueService,
+  ) {}
 
   profile(actor: RequestActor | undefined) {
     const currentActor = this.db.actorOrDemo(actor);
@@ -45,19 +58,28 @@ export class UsersService {
     return { user_id: user.id, deleted: true };
   }
 
-  bookings(actor: RequestActor | undefined) {
+  bookings(actor: RequestActor | undefined, query: QueryLike = {}) {
     const currentActor = this.db.actorOrDemo(actor);
-    return this.db.bookings.filter(
-      (booking) => booking.user_id === currentActor.id,
+    return this.paginate(
+      this.db.bookings.filter((booking) => booking.user_id === currentActor.id),
+      query,
     );
   }
 
-  booking(id: string) {
+  booking(actor: RequestActor | undefined, id: string) {
+    const currentActor = this.db.actorOrDemo(actor);
     const booking = this.db.findBooking(id);
     if (!booking) {
       throw new NotFoundException({
         code: 'BOOKING_EXPIRED',
         message: 'Bron topilmadi',
+      });
+    }
+
+    if (booking.user_id !== currentActor.id) {
+      throw new ForbiddenException({
+        code: 'BOOKING_FORBIDDEN',
+        message: 'Bu bron sizga tegishli emas',
       });
     }
 
@@ -73,10 +95,13 @@ export class UsersService {
     };
   }
 
-  favorites(actor: RequestActor | undefined) {
+  favorites(actor: RequestActor | undefined, query: QueryLike = {}) {
     const currentActor = this.db.actorOrDemo(actor);
-    return this.favoritesStore.filter(
-      (favorite) => favorite['user_id'] === currentActor.id,
+    return this.paginate(
+      this.favoritesStore.filter(
+        (favorite) => favorite['user_id'] === currentActor.id,
+      ),
+      query,
     );
   }
 
@@ -129,7 +154,7 @@ export class UsersService {
     return preferences;
   }
 
-  dataExport(actor: RequestActor | undefined) {
+  async dataExport(actor: RequestActor | undefined) {
     const currentActor = this.db.actorOrDemo(actor);
     const job = {
       id: this.db.id('export'),
@@ -139,6 +164,11 @@ export class UsersService {
       status: 'queued',
       created_at: this.db.now(),
     };
+    await this.jobs.add(
+      'user-data-export',
+      { export_id: job.id, user_id: currentActor.id },
+      { idempotencyKey: `user-data-export:${currentActor.id}` },
+    );
     return job;
   }
 
@@ -162,4 +192,20 @@ export class UsersService {
 
     return user;
   }
+
+  private paginate<T extends object>(items: readonly T[], query: QueryLike) {
+    const pagination = parsePagination(query, 'public', {
+      defaultLimit: 20,
+      allowedSortBy: ['created_at', 'updated_at', 'status'],
+    });
+    return paginateArray(items, pagination, {
+      created_at: (item) => field(item, 'created_at'),
+      updated_at: (item) => field(item, 'updated_at'),
+      status: (item) => field(item, 'status'),
+    });
+  }
+}
+
+function field(item: object, key: string): unknown {
+  return (item as Record<string, unknown>)[key];
 }

@@ -1,0 +1,2414 @@
+UZBRON BACKEND LOGIKASI - BATAFSIL TUSHUNTIRISH
+================================================
+
+Fayl maqsadi
+------------
+
+Bu fayl UzBron backend qanday ishlashini oddiy tilda tushuntiradi.
+Uni dasturchi bo'lmagan odam ham o'qib, "foydalanuvchi tugmani bosganda
+backend ichida nima bo'ladi?" degan savolga javob olishi kerak.
+
+Backend texnik nomi:
+  @agoda/backend
+
+Texnologiya:
+  NestJS + TypeScript + PostgreSQL/Prisma + vaqtinchalik in-memory demo data.
+
+Backend porti:
+  localhost:4000
+
+Asosiy API prefix:
+  /v1
+
+Eski frontendlar uchun moslashgan prefix:
+  /api
+
+Misol:
+  http://localhost:4000/v1/health
+  http://localhost:4000/api/health
+
+
+1. KATTA RASM: BACKEND NIMA QILADI?
+-----------------------------------
+
+UzBron loyihasida uchta frontend bor:
+
+1. web-user
+   Oddiy mijozlar uchun sayt.
+   Mijoz mehmonxona yoki avtobus qidiradi, bron qiladi, to'laydi,
+   profilini ko'radi, supportga yozadi.
+
+2. web-partner
+   Hamkorlar uchun kabinet.
+   Mehmonxona egasi yoki avtobus kompaniyasi o'z xonalari, reyslari,
+   bronlari va moliyasini boshqaradi.
+
+3. web-admin
+   Super admin panel.
+   Admin foydalanuvchilarni, hamkorlarni, bronlarni, to'lovlarni,
+   refundlarni, kontentni, supportni va sozlamalarni boshqaradi.
+
+Uchala frontend bitta backendga ulanadi.
+Ya'ni user, partner, admin uchun alohida backend yo'q.
+Bitta NestJS API hammasiga javob beradi.
+
+Oddiy hayotiy o'xshatish:
+  Frontend - mijoz ko'radigan oyna.
+  Backend - oynaning ortidagi ofis.
+  Database - ofisdagi daftar yoki arxiv.
+  Controller - resepshndagi xodim, so'rovni qabul qiladi.
+  Service - ichkaridagi mutaxassis, haqiqiy ishni qiladi.
+  Module - bitta bo'lim: auth bo'limi, booking bo'limi, admin bo'limi.
+
+
+2. REQUEST QANDAY O'TADI?
+-------------------------
+
+Masalan, web-admin login qiladi.
+
+1. Brauzerdagi frontend so'rov yuboradi:
+   POST /api/auth/admin/login
+
+2. main.ts so'rovni ko'radi.
+   Agar URL /api bilan boshlangan bo'lsa, uni ichkarida /v1 ga aylantiradi.
+   Ya'ni:
+     /api/auth/admin/login
+   ichkarida:
+     /v1/auth/admin/login
+   bo'lib ishlaydi.
+
+3. NestJS route topadi.
+   Bu so'rov auth.controller.ts ichidagi adminLogin methodiga tushadi.
+
+4. ValidationPipe body ni tekshiradi.
+   Body degani frontend yuborgan JSON.
+   Masalan:
+     {
+       "username": "admin",
+       "email": "admin@uzbron.uz",
+       "password": "admin"
+     }
+
+   DTO ichida ruxsat berilmagan field bo'lsa, backend xato qaytaradi.
+   Shuning uchun oldin "property username should not exist" chiqqan edi.
+   Keyin AdminLoginDto ichiga username qo'shildi.
+
+5. Controller service ni chaqiradi.
+   Controller o'zi biznes qaror qilmaydi.
+   U faqat:
+     "AuthService, mana data, login qilib ber"
+   deydi.
+
+6. AuthService tekshiradi.
+   Admin uchun login:
+     admin
+   parol:
+     admin
+   bo'lishi kerak.
+
+7. Backend birinchi bosqichda 2FA challenge qaytaradi.
+   Ya'ni:
+     "Login to'g'ri, endi 2FA kod kirit"
+   Hozir demo 2FA kodi:
+     000000
+
+8. Frontend avtomatik yoki foydalanuvchi orqali ikkinchi so'rov yuboradi:
+   POST /api/auth/admin/verify-2fa
+
+   Body:
+     {
+       "challenge_id": "...",
+       "code": "000000"
+     }
+
+9. AuthService code 000000 ekanini tekshiradi.
+
+10. To'g'ri bo'lsa token beradi.
+    Token - keyingi so'rovlarda "men adminman" deb isbotlash uchun kerak.
+
+
+3. NESTJS FAYLLARINI QANDAY O'QISH KERAK?
+-----------------------------------------
+
+NestJS odatda har bir bo'limni 3 ta asosiy faylga ajratadi.
+
+1. *.module.ts
+   Modul fayli.
+   Bu fayl NestJSga:
+     "mana shu controller va service bir bo'limga tegishli"
+   deb aytadi.
+
+2. *.controller.ts
+   Endpointlar ro'yxati.
+   Masalan:
+     @Get('users')
+   degani:
+     GET /users so'rovini qabul qil.
+
+   @Post('login')
+   degani:
+     POST /login so'rovini qabul qil.
+
+   Controller vazifasi:
+     - so'rovni qabul qilish;
+     - URL param, query, body ni olish;
+     - service methodini chaqirish;
+     - natijani qaytarish.
+
+3. *.service.ts
+   Asosiy biznes logika.
+   Masalan:
+     - parolni tekshirish;
+     - bron yaratish;
+     - narx hisoblash;
+     - statusni o'zgartirish;
+     - database yoki demo data bilan ishlash.
+
+4. dto/*.dto.ts
+   DTO - frontend yuboradigan data shakli.
+   Masalan login uchun:
+     email, username, password.
+
+   DTO kerak, chunki backend noto'g'ri fieldlarni ushlab qoladi.
+
+5. common/*
+   Barcha modullar ishlatadigan umumiy kod.
+   Masalan:
+     roles.guard.ts - kimga ruxsat borligini tekshiradi.
+     actor.ts - requestdagi user/admin/partner kimligini aniqlaydi.
+     api-response.interceptor.ts - javob formatini bir xil qiladi.
+     http-error.filter.ts - xatolarni bir xil formatda qaytaradi.
+
+
+4. KODDAGI BELGILARNI ODDIY TILDA TUSHUNISH
+-------------------------------------------
+
+@Controller('auth')
+  Bu class auth yo'nalishidagi endpointlarni boshqaradi.
+  To'liq URL odatda:
+    /v1/auth/...
+
+@Get('health')
+  Brauzer/server GET so'rov yuborsa ishlaydi.
+
+@Post('admin/login')
+  Login kabi ma'lumot yuboriladigan so'rov.
+
+@Patch('profile')
+  Bor ma'lumotning bir qismini yangilaydi.
+
+@Delete(':id')
+  Biror obyektni o'chirish yoki o'chirilgan deb belgilash.
+
+:id
+  URL ichidagi o'zgaruvchi qism.
+  Masalan:
+    /bookings/abc123
+  bu yerda id = abc123.
+
+@Body()
+  Frontend yuborgan JSON body ni oladi.
+
+@Query()
+  URL oxiridagi filterlarni oladi.
+  Masalan:
+    /hotels?city_id=city-tashkent
+
+@Param('id')
+  URL ichidagi id ni oladi.
+
+constructor(private readonly service: Service)
+  Bu class ichiga boshqa service ni ulash.
+  Oddiy tilda:
+    "menga shu yordamchini ber, men undan foydalanaman".
+
+return
+  Method frontendga javob qaytarayotgan joy.
+
+throw new NotFoundException(...)
+  Backend xato qaytaradi.
+  Masalan "topilmadi".
+
+async / await
+  Database kabi kutish kerak bo'lgan ishlarni tartib bilan bajarish.
+
+{}
+  Obyekt.
+  Masalan:
+    { id: '1', name: 'Ali' }
+
+[]
+  Ro'yxat.
+  Masalan:
+    [hotel1, hotel2, hotel3]
+
+;
+  TypeScriptda buyruq tugaganini bildiradi.
+  Odam tili bilan "shu gap tugadi" degani.
+
+
+5. SERVER QANDAY START BO'LADI? main.ts
+---------------------------------------
+
+Fayl:
+  apps/backend/src/main.ts
+
+Bu backendning kirish eshigi.
+Server ishga tushganda birinchi shu fayl ishlaydi.
+
+main.ts qiladigan ishlar:
+
+1. NestFactory.create(AppModule)
+   NestJS ilovasini yaratadi.
+
+2. ConfigService orqali .env ni o'qiydi.
+   Masalan:
+     PORT
+     API_PREFIX
+     CORS_ORIGINS
+     DATABASE_URL
+     SWAGGER_ENABLED
+
+3. API prefixni oladi.
+   Default:
+     v1
+
+4. helmet() yoqiladi.
+   Bu HTTP xavfsizlik headerlarini qo'shadi.
+
+5. JSON body limiti qo'yiladi.
+   Hozir limit:
+     1mb
+
+6. CORS yoqiladi.
+   CORS degani:
+     qaysi frontendlar backendga murojaat qila oladi.
+
+7. /api prefix moslashuvi bor.
+   Eski frontend /api ishlatsa ham backend /v1 ichida qabul qiladi.
+
+8. app.setGlobalPrefix(apiPrefix)
+   Barcha endpointlar /v1 bilan boshlanadi.
+
+9. ValidationPipe yoqiladi.
+   Muhim sozlamalar:
+     whitelist: true
+       DTO ichida yo'q fieldlarni olib tashlaydi.
+
+     forbidNonWhitelisted: true
+       DTO ichida yo'q field bo'lsa xato beradi.
+       Masalan oldingi xato:
+         property username should not exist
+
+     transform: true
+       Query/body qiymatlarini kerakli tipga aylantirishga yordam beradi.
+
+10. ApiResponseInterceptor yoqiladi.
+    /v1 javoblarini:
+      { success: true, data: ..., meta: ... }
+    ko'rinishiga keltiradi.
+
+11. HttpErrorFilter yoqiladi.
+    Xatolarni:
+      { success: false, error: ..., meta: ... }
+    ko'rinishiga keltiradi.
+
+12. Swagger yoqiladi.
+    API hujjati:
+      /v1/docs
+
+13. app.listen(PORT)
+    Serverni 4000 portda ishga tushiradi.
+
+
+6. APP MODULE: BARCHA BO'LIMLAR RO'YXATI
+----------------------------------------
+
+Fayl:
+  apps/backend/src/app.module.ts
+
+Bu fayl backenddagi barcha bo'limlarni bir joyga yig'adi.
+
+Ulangan modullar:
+
+1. ConfigModule
+   .env ni o'qiydi.
+
+2. ThrottlerModule
+   Bir daqiqada juda ko'p so'rov yuborishni cheklaydi.
+   Hozir:
+     60 sekundda 120 ta so'rov.
+
+3. InfrastructureModule
+   In-memory data va Postgres service ni beradi.
+
+4. AuthModule
+   Login, OTP, token, session.
+
+5. CatalogModule
+   Viloyat, shahar, amenity, room type.
+
+6. UsersModule
+   Mijoz profili, bronlari, bonuslari, favorite, notification sozlamalari.
+
+7. HotelsModule
+   Public mehmonxona qidirish, xona ko'rish, quote olish.
+
+8. BusesModule
+   Public avtobus route, trip, seat, quote.
+
+9. BookingsModule
+   Hotel/bus bron yaratish, bekor qilish, message, voucher.
+
+10. PaymentsModule
+    To'lov yaratish va payment webhooklar.
+
+11. RefundsModule
+    Refund so'rovlari.
+
+12. ReviewsModule
+    Sharh yaratish, yangilash, yashirish, reply.
+
+13. SupportModule
+    Ticket va ticket message.
+
+14. NotificationsModule
+    Notification ko'rish, read qilish, push token.
+
+15. ExportsModule
+    Export job va download.
+
+16. UploadsModule
+    Rasm/document upload uchun mock URL.
+
+17. CmsModule
+    Public banner, offer, news, page, FAQ.
+
+18. PromosModule
+    Promo code tekshirish.
+
+19. PartnersModule
+    Partner kabineti.
+
+20. PartnerApiModule
+    Hamkorlar tashqi API orqali ulanishi uchun.
+
+21. AdminModule
+    Super admin panel.
+
+
+7. JAVOB FORMATLARI
+-------------------
+
+Yangi standart /v1 endpointlarda javob shunday:
+
+Muvaffaqiyat:
+  {
+    "success": true,
+    "data": ...,
+    "meta": {
+      "request_id": "local-request"
+    }
+  }
+
+Xato:
+  {
+    "success": false,
+    "error": {
+      "code": "REQUEST_ERROR",
+      "message": "...",
+      "fields": null
+    },
+    "meta": {
+      "request_id": "local-request"
+    }
+  }
+
+Legacy /api endpointlarda frontendga mos bo'lishi uchun javob ko'pincha
+to'g'ridan-to'g'ri data sifatida qaytadi.
+
+Maxsus holat:
+  /api/hotels
+  Agar service { items: [...] } qaytarsa, legacy frontendga faqat [...]
+  qaytariladi.
+
+
+8. AUTH LOGIKASI
+----------------
+
+Papka:
+  apps/backend/src/auth
+
+Asosiy fayllar:
+  auth.controller.ts
+  auth.service.ts
+  dto/auth.dto.ts
+
+Auth degani:
+  kim kiryapti, kim ekanini isbotlayaptimi, qaysi rolga ega.
+
+8.1. User OTP login
+
+Endpointlar:
+  POST /v1/auth/user/send-otp
+  POST /v1/auth/user/verify-otp
+
+Oqim:
+
+1. User telefon raqamini yuboradi.
+2. Backend telefonni normalize qiladi.
+   Masalan:
+     901234567
+   bo'lsa:
+     +998901234567
+3. Development muhitida OTP doim:
+     111111
+4. Production muhitida random 6 xonali kod bo'ladi.
+5. Backend OTP kodni ochiq saqlamaydi.
+   SHA-256 hash qilib Map ichida saqlaydi.
+6. OTP muddati:
+     5 daqiqa
+7. User code yuboradi.
+8. Code hash bilan solishtiriladi.
+9. To'g'ri bo'lsa user topiladi yoki yangi user yaratiladi.
+10. Access token va refresh token qaytariladi.
+
+8.2. Partner OTP alias
+
+Endpointlar:
+  POST /v1/auth/otp/request
+  POST /v1/auth/otp/verify
+
+Bu endpointlar partner frontend moslashuvi uchun qo'shilgan.
+OTP logic user OTP bilan bir xil, lekin verify bo'lganda PARTNER token beradi.
+
+8.3. Partner email login
+
+Endpoint:
+  POST /v1/auth/partner/login
+
+Hozir demo logika:
+  parol = password
+
+To'g'ri bo'lsa:
+  role = PARTNER
+  organization_id = demo-partner-org-id
+  partner_role = owner
+
+Muhim:
+  Bu hozir to'liq real DB password tekshiruvi emas.
+  Keyingi real bosqichda partner_users.password_hash bilan tekshiriladi.
+
+8.4. Admin login
+
+Endpointlar:
+  POST /v1/auth/admin/login
+  POST /v1/auth/admin/verify-2fa
+
+Hozirgi demo login:
+  login = admin
+  parol = admin
+  email sifatida = admin@uzbron.uz ham qabul qilinadi.
+
+Login to'g'ri bo'lsa backend 2FA challenge qaytaradi.
+
+2FA demo kodi:
+  000000
+
+2FA to'g'ri bo'lsa:
+  role = SUPER_ADMIN
+  actorId = demo-admin-id
+
+Admin frontend login body yuboradi:
+  username
+  email
+  password
+
+Shuning uchun AdminLoginDto ichida username ham, email ham ruxsat qilingan.
+
+2FA body yuboradi:
+  challenge_id
+  code
+
+Shuning uchun Verify2faDto ichida challenge_id ham ruxsat qilingan.
+
+8.5. Token formati
+
+Hozir token real JWT emas, development mock token:
+
+  mock-access.<actorId>.<role>.<sessionId>
+  mock-refresh.<actorId>.<sessionId>
+
+Masalan:
+  mock-access.demo-admin-id.SUPER_ADMIN.abc...
+
+CurrentActor shu tokenni o'qib:
+  id
+  role
+  actorType
+  organizationId
+  sessionId
+aniqlaydi.
+
+8.6. Session
+
+AuthService ichida sessionsStore bor.
+Token berilganda session shu ro'yxatga yoziladi.
+
+Refresh:
+  refresh token sessionsStore ichida topilsa yangi token beradi.
+
+Logout:
+  hozir demo javob qaytaradi.
+
+Logout-all:
+  hozir demo javob qaytaradi.
+
+Sessions:
+  actor uchun sessionlar ro'yxatini qaytaradi.
+
+
+9. ROLE VA RUXSAT LOGIKASI
+--------------------------
+
+Papka:
+  apps/backend/src/common
+
+Asosiy fayllar:
+  roles.decorator.ts
+  roles.guard.ts
+  actor.ts
+
+Roller:
+  USER
+  PARTNER
+  ADMIN
+  SUPER_ADMIN
+
+RolesGuard qanday ishlaydi:
+
+1. Endpoint ustida @Roles(...) bor-yo'qligini tekshiradi.
+2. Agar role talab qilinmasa, endpoint ochiq.
+3. Agar role kerak bo'lsa, requestdan actor topadi.
+4. Actor token yoki headerdan olinadi.
+5. Actor role endpoint talab qilgan role ichida bo'lsa, ruxsat beradi.
+6. SUPER_ADMIN hammasiga ruxsat oladi.
+7. Role mos kelmasa:
+   403 Forbidden
+
+Development headerlar:
+  x-user-role
+  x-user-id
+  x-organization-id
+
+Authorization header:
+  Authorization: Bearer mock-access....
+
+Maxsus demo token:
+  demo-access-token
+  Bu PARTNER sifatida o'qiladi.
+
+
+10. DATA QAYERDAN KELADI?
+-------------------------
+
+Backendda hozir ikki tur data manbasi bor.
+
+10.1. PostgreSQL / Neon
+
+DATABASE_URL bo'lsa PostgresService ulanadi.
+
+PostgresService:
+  apps/backend/src/infrastructure/postgres.service.ts
+
+Qanday ishlaydi:
+
+1. .env ichidan DATABASE_URL ni oladi.
+2. pg Pool yaratadi.
+3. tryQuery(sql, params) methodi query bajaradi.
+4. Query 3 marta urinadi.
+5. Ishlamasa null qaytaradi.
+6. null qaytsa service in-memory fallback ishlatadi.
+
+Bu nima uchun kerak?
+  Agar Neon yoki local Postgres ishlamasa, backend butunlay yiqilib qolmaydi.
+  Demo ma'lumot bilan ishlashda davom etadi.
+
+10.2. InMemoryDbService
+
+Fayl:
+  apps/backend/src/infrastructure/in-memory-db.service.ts
+
+Bu RAM ichidagi demo database.
+Server restart bo'lsa, o'zgarishlar yo'qoladi.
+
+Ichida bor demo ma'lumotlar:
+  regions
+  cities
+  amenities
+  roomTypes
+  busTypes
+  cancellationPolicies
+  users
+  partnerOrganizations
+  hotels
+  rooms
+  busCompanies
+  routes
+  trips
+  tripSeats
+  bookings
+  payments
+  refunds
+  reviews
+  supportTickets
+  supportMessages
+  notifications
+  auditLogs
+  exportJobs
+  partnerApiKeys
+  partnerWebhooks
+  uploads
+
+10.3. Seed SQL
+
+Fayl:
+  apps/backend/prisma/admin-demo-seed.sql
+
+Bu fayl haqiqiy Postgres bazaga demo data qo'shadi.
+
+Ichiga qo'shiladigan asosiy narsalar:
+  regions
+  cities
+  amenities
+  room_types
+  cancellation_policies
+  users
+  admin_users
+  partner_organizations
+  partner_users
+  hotels
+  hotel_translations
+  hotel_rooms
+  room_inventory
+  bus_companies
+  vehicles
+  routes
+  trips
+  trip_seats
+  bookings
+  booking_status_history
+  payments
+  refunds
+  partner_ledger_entries
+  withdrawal_requests
+  reviews
+  support_tickets
+  support_messages
+  cms_entries
+  audit_logs
+  notifications
+
+Admin seed:
+  email: admin@uzbron.uz
+  role: super_admin
+  status: active
+  password_hash: Argon2id hash
+
+Muhim:
+  Password DB ichida ochiq ko'rinishda saqlanmaydi.
+  Password hash sifatida saqlanadi.
+
+Hozirgi backend auth admin loginni demo tekshiradi:
+  admin / admin
+
+Seeddagi hash esa keyinchalik real DB login qilinadigan bo'lsa kerak bo'ladi.
+
+
+11. PRISMA SCHEMA
+-----------------
+
+Fayl:
+  apps/backend/prisma/schema.prisma
+
+Prisma schema database jadval va aloqalarini tasvirlaydi.
+
+Asosiy enumlar:
+
+Language:
+  uz, ru, en
+
+UserStatus:
+  unverified, active, blocked, deleted
+
+PartnerStatus:
+  draft, submitted, under_review, more_information_required,
+  approved, suspended, rejected, blocked
+
+HotelStatus:
+  draft, pending_review, published, hidden, rejected
+
+TripStatus:
+  scheduled, cancelled, completed
+
+BookingStatus:
+  pending, awaiting_payment, awaiting_partner_confirmation,
+  confirmed, cancelled, completed, expired
+
+PaymentStatus:
+  pending, awaiting_cash, processing, paid, failed, refunded
+
+RefundStatus:
+  requested, approved, rejected, processing, paid
+
+Asosiy jadvallar:
+
+User
+  Oddiy mijoz.
+  Telefon, email, status, til, session, booking, favorite, reviewlar bilan bog'langan.
+
+AdminUser
+  Admin panel foydalanuvchisi.
+  email, password_hash, full_name, role, status.
+
+PartnerOrganization
+  Hamkor kompaniya.
+  Mehmonxona yoki avtobus kompaniyasi egasi.
+
+PartnerUser
+  Hamkor kabinetiga kiradigan odam.
+
+Region, City
+  Hudud va shahar katalogi.
+
+Amenity
+  Mehmonxona qulayliklari.
+  Masalan Wi-Fi, parking, pool.
+
+RoomType
+  Xona turi.
+  Masalan standard, deluxe, suite.
+
+Hotel
+  Mehmonxona asosiy jadvali.
+
+HotelTranslation
+  Mehmonxona nomi va tavsifi tillar bo'yicha.
+
+HotelRoom
+  Mehmonxona xonalari.
+
+RoomInventory
+  Sana bo'yicha necha xona bor, nechtasi band.
+
+BusCompany
+  Avtobus kompaniyasi.
+
+Vehicle
+  Avtobus transporti.
+
+Route
+  Qayerdan qayerga yo'nalish.
+
+Trip
+  Aniq reys: sana, vaqt, narx.
+
+TripSeat
+  Reysdagi o'rindiqlar.
+
+Booking
+  Bron.
+  Hotel booking ham, bus booking ham shu jadvalda.
+
+BookingStatusHistory
+  Bron status tarixi.
+
+BookingMessage
+  Bron bo'yicha user-partner chat.
+
+Payment
+  To'lov.
+
+PaymentEvent
+  Payment provider webhook tarixi.
+
+Refund
+  Pul qaytarish so'rovi.
+
+PartnerLedgerEntry
+  Hamkor moliyaviy hisob-kitoblari.
+
+WithdrawalRequest
+  Hamkor pul yechib olish so'rovi.
+
+Favorite
+  User saqlab qo'ygan hotel yoki boshqa obyekt.
+
+Review
+  Sharh.
+
+Notification
+  Bildirishnoma.
+
+SupportTicket
+  Yordam murojaati.
+
+SupportMessage
+  Support ichidagi xabar.
+
+PartnerApiKey
+  Hamkor tashqi API kaliti.
+
+PartnerWebhookEndpoint
+  Hamkor webhook URLlari.
+
+AuditLog
+  Admin yoki system qilgan muhim amallar tarixi.
+
+ExportJob
+  CSV/XLSX/PDF eksport ishlari.
+
+CmsEntry
+  Banner, news, page, promo kabi kontent.
+
+OutboxEvent
+  Keyinchalik async eventlar uchun jadval.
+
+
+12. CATALOG MODULI
+------------------
+
+Papka:
+  apps/backend/src/catalog
+
+Endpointlar:
+  GET /v1/catalog/regions
+  GET /v1/catalog/cities
+  GET /v1/catalog/amenities
+  GET /v1/catalog/room-types
+  GET /v1/catalog/bus-types
+  GET /v1/catalog/cancellation-policies
+
+Vazifasi:
+  Frontendlarga umumiy ma'lumotlar berish.
+
+Masalan:
+  - shahar tanlash dropdowni;
+  - mehmonxona qulayliklari filteri;
+  - xona turi;
+  - bekor qilish siyosati.
+
+Data logikasi:
+  regions, cities, amenities, room-types Postgresdan o'qishga harakat qiladi.
+  Agar Postgres ishlamasa, InMemoryDbService ichidagi demo data qaytadi.
+
+
+13. HOTELS MODULI
+-----------------
+
+Papka:
+  apps/backend/src/hotels
+
+Endpointlar:
+  GET /v1/hotels
+  GET /v1/hotels/map
+  GET /v1/hotels/:slugOrId
+  GET /v1/hotels/:id/rooms
+  POST /v1/hotels/:id/quote
+  GET /v1/hotels/:id/reviews
+
+13.1. Mehmonxona ro'yxati
+
+GET /v1/hotels
+
+Service faqat statusi:
+  published
+bo'lgan mehmonxonalarni qaytaradi.
+
+Filterlar:
+  city_id
+  stars
+  page
+  limit
+
+Har bir hotelga qo'shiladi:
+  city
+  min_price
+
+min_price qanday hisoblanadi?
+  Shu hotel xonalari orasidagi eng arzon base_price olinadi.
+
+13.2. Hotel detail
+
+GET /v1/hotels/:slugOrId
+
+Hotel id yoki slug orqali topiladi.
+Published bo'lmasa topilmagan deb qaytariladi.
+
+Javob:
+  hotel ma'lumotlari
+  rooms
+
+13.3. Rooms
+
+GET /v1/hotels/:id/rooms
+
+Faqat active roomlar qaytadi.
+Har roomda available qiymati total_inventoryga teng.
+
+13.4. Quote
+
+POST /v1/hotels/:id/quote
+
+Quote degani:
+  "bron qilishdan oldingi taxminiy narx".
+
+Backend:
+  1. hotel borligini tekshiradi;
+  2. room borligini tekshiradi;
+  3. check_in va check_out bo'yicha tunlar sonini hisoblaydi;
+  4. room.base_price * nights * roomsCount qiladi;
+  5. total_amount qaytaradi;
+  6. quote 10 daqiqaga amal qiladi deb expires_at beradi.
+
+13.5. Reviews
+
+GET /v1/hotels/:id/reviews
+
+Shu hotel target_id bo'lgan reviewlar qaytariladi.
+
+
+14. BUSES MODULI
+----------------
+
+Papka:
+  apps/backend/src/buses
+
+Endpointlar:
+  GET /v1/bus-routes
+  GET /v1/bus-trips
+  GET /v1/bus-trips/:id
+  GET /v1/bus-trips/:id/seats
+  POST /v1/bus-trips/:id/quote
+  GET /v1/bus-companies/:id/reviews
+
+14.1. Routes
+
+Route:
+  Toshkent -> Samarqand kabi yo'nalish.
+
+Backend routega from_city va to_city obyektlarini qo'shib qaytaradi.
+
+14.2. Trips
+
+Trip:
+  Aniq reys.
+  Masalan 2026-07-05 09:00 Toshkent -> Samarqand.
+
+Filterlar:
+  from_city_id
+  to_city_id
+
+Faqat status:
+  scheduled
+bo'lgan triplar qaytadi.
+
+Trip summary ichida:
+  route
+  company
+  from_city
+  to_city
+  available_seats
+
+14.3. Seats
+
+GET /v1/bus-trips/:id/seats
+
+Shu reysdagi o'rindiqlar qaytadi.
+Seat statuslari:
+  available
+  held
+  booked
+  blocked
+
+14.4. Bus quote
+
+POST /v1/bus-trips/:id/quote
+
+Frontend seats yuborsa, shu seatlar olinadi.
+Yubormasa, birinchi available seat olinadi.
+
+Subtotal:
+  tanlangan seat narxlari yig'indisi.
+
+
+15. BOOKINGS MODULI
+-------------------
+
+Papka:
+  apps/backend/src/bookings
+
+Endpointlar:
+  POST /v1/bookings/hotel
+  POST /v1/bookings/bus
+  GET /v1/bookings/:id
+  POST /v1/bookings/:id/retry-payment
+  POST /v1/bookings/:id/cancel-preview
+  POST /v1/bookings/:id/cancel
+  GET /v1/bookings/:id/voucher
+  GET /v1/bookings/:id/status-history
+  GET /v1/bookings/:id/conversation
+  GET /v1/bookings/:id/messages
+  POST /v1/bookings/:id/messages
+  POST /v1/bookings/:id/messages/:messageId/read
+
+15.1. Hotel booking yaratish
+
+POST /v1/bookings/hotel
+
+Oqim:
+
+1. Actor aniqlanadi.
+   Ya'ni bookingni qaysi user yaratmoqda.
+
+2. hotel_id olinadi.
+
+3. room_id olinadi.
+
+4. Hotel va room borligi tekshiriladi.
+
+5. check_in va check_out sanalaridan nights hisoblanadi.
+   Agar sana noto'g'ri bo'lsa, default 1 tun.
+
+6. rooms soni olinadi.
+   Default 1.
+
+7. Narx:
+   subtotal = room.base_price * nights * rooms
+
+8. createBooking chaqiriladi.
+
+9. createBooking ichida:
+   id yaratiladi;
+   booking_number yaratiladi;
+   status = pending;
+   currency = UZS;
+   commission_amount = subtotal * 12%;
+   partner_payable = subtotal - commission;
+   expires_at = 15 daqiqadan keyin;
+   item ichiga hotel, room, sana, guestlar yoziladi.
+
+10. Booking ro'yxat boshiga qo'shiladi.
+
+11. Status historyga "created" yoziladi.
+
+12. Payment yaratiladi.
+
+13. Frontendga:
+    booking
+    payment
+    qaytadi.
+
+15.2. Bus booking yaratish
+
+POST /v1/bookings/bus
+
+Oqim:
+
+1. trip_id olinadi.
+2. Trip borligi tekshiriladi.
+3. Frontend seats yuborgan bo'lsa, ular olinadi.
+4. Seats yuborilmasa, birinchi available seat olinadi.
+5. Seatlar mavjud va available ekanligi tekshiriladi.
+6. Agar seat band bo'lsa:
+   SEAT_NOT_AVAILABLE
+7. subtotal seat narxlari yig'indisi.
+8. Booking yaratiladi.
+9. Tanlangan seatlar held qilinadi.
+10. held_by_booking_id yoziladi.
+11. held_until booking.expires_at bo'ladi.
+12. Payment yaratiladi.
+
+15.3. Booking cancel
+
+POST /v1/bookings/:id/cancel
+
+Oqim:
+  booking topiladi;
+  agar allaqachon cancelled bo'lsa xato;
+  status = cancelled;
+  cancelled_at yoziladi;
+  reason yoziladi;
+  audit log yoziladi;
+  status historyga yoziladi.
+
+15.4. Cancel preview
+
+POST /v1/bookings/:id/cancel-preview
+
+Hozir oddiy formula:
+  refund_amount = total_amount * 80%
+  penalty_amount = qolgan 20%
+
+15.5. Voucher
+
+GET /v1/bookings/:id/voucher
+
+Hozir mock PDF download URL qaytaradi.
+
+15.6. Booking chat
+
+Conversation:
+  user va partner o'rtasidagi bron bo'yicha suhbat.
+
+Messages:
+  bookingMessages ro'yxatidan olinadi.
+
+Send message:
+  actorType, actorId, body yoziladi.
+
+Read message:
+  message read_at bilan belgilaydi.
+
+
+16. PAYMENTS MODULI
+-------------------
+
+Papka:
+  apps/backend/src/payments
+
+Endpointlar:
+  GET /v1/payments/:bookingId
+  POST /v1/payments/:bookingId/create
+  POST /v1/webhooks/click/prepare
+  POST /v1/webhooks/click/complete
+  POST /v1/webhooks/payme
+  POST /v1/webhooks/uzcard
+  POST /v1/webhooks/humo
+  POST /v1/webhooks/payment/:provider
+
+16.1. Payment ko'rish
+
+Booking ID bo'yicha payment topiladi.
+Topilmasa PAYMENT_PROVIDER_ERROR qaytadi.
+
+16.2. Payment yaratish
+
+Booking borligi tekshiriladi.
+Provider tanlanadi:
+  click
+  payme
+  uzcard
+  humo
+  cash
+
+Noto'g'ri provider bo'lsa default:
+  click
+
+16.3. Webhook
+
+Payment provider backendga xabar yuboradi.
+
+Masalan:
+  Click prepare
+  Click complete
+  Payme callback
+
+Hozirgi demo logic:
+  event = prepare bo'lsa payment.status = processing
+  boshqa holatda payment.status = paid
+  provider_reference yoziladi.
+
+
+17. REFUNDS MODULI
+------------------
+
+Papka:
+  apps/backend/src/refunds
+
+Endpointlar:
+  POST /v1/refunds
+  GET /v1/refunds/:id
+  GET /v1/me/refunds
+
+Refund yaratish:
+
+1. Actor user aniqlanadi.
+2. booking_id olinadi.
+3. Booking topiladi.
+4. requested_amount = booking.total_amount * 80%
+5. status = requested
+6. reason yoziladi.
+7. refunds ro'yxatiga qo'shiladi.
+
+
+18. USERS MODULI
+----------------
+
+Papka:
+  apps/backend/src/users
+
+Base controller:
+  /v1/me
+
+Endpointlar:
+  GET /v1/me
+  PATCH /v1/me
+  POST /v1/me/avatar
+  DELETE /v1/me/avatar
+  GET /v1/me/bookings
+  GET /v1/me/bookings/:id
+  GET /v1/me/bonuses
+  GET /v1/me/favorites
+  POST /v1/me/favorites
+  DELETE /v1/me/favorites/:id
+  GET /v1/me/notifications/preferences
+  PATCH /v1/me/notifications/preferences
+  POST /v1/me/data-export
+  POST /v1/me/delete-request
+
+Vazifasi:
+  Oddiy user kabineti.
+
+Profile:
+  actor id bo'yicha userni topadi.
+
+Update profile:
+  first_name, last_name, email yangilanadi.
+
+Avatar:
+  Hozir real file emas, media_id qaytaradi.
+
+Bookings:
+  user_id actor id ga teng bookinglarni qaytaradi.
+
+Bonuses:
+  user.bonus_balance qaytadi.
+
+Favorites:
+  favoritesStore ichida saqlanadi.
+  Server restart bo'lsa yo'qoladi.
+
+Notification preferences:
+  user uchun sms/email/push/in_app sozlamalari.
+
+Data export:
+  personal-data export job yaratadi.
+
+Delete request:
+  account delete so'rovi yaratildi deb javob beradi.
+
+
+19. PARTNERS MODULI
+-------------------
+
+Papka:
+  apps/backend/src/partners
+
+Controller prefix:
+  /v1/partner
+  /v1/partners
+
+Ikkalasi ham ishlaydi.
+Bu frontendlar turlicha URL ishlatgani uchun moslashuv.
+
+19.1. Dashboard
+
+GET /v1/partner/dashboard
+
+Hisoblanadi:
+  todayBookings
+  monthRevenue
+  totalCustomers
+  rating
+
+Hammasi actor.organizationId bo'yicha filterlanadi.
+
+19.2. Profile
+
+GET/PATCH /v1/partner/profile
+
+Hamkor tashkilot ma'lumotlarini ko'rish va yangilash.
+
+19.3. Team
+
+GET /team
+POST /team
+PATCH /team/:id
+DELETE /team/:id
+
+Hamkor xodimlarini taklif qilish va boshqarish.
+
+19.4. Documents
+
+Hamkor hujjatlarini yuklash.
+Hozir documentsStore ichida demo saqlanadi.
+
+19.5. Application
+
+POST /application/submit
+GET /application/status
+POST /application/resubmit
+
+Hamkor arizasi statusini submitted qilish.
+
+19.6. Partner hotels
+
+GET /hotels
+POST /hotels
+GET /hotels/:id
+PATCH /hotels/:id
+POST /hotels/:id/submit-review
+POST /hotels/:id/images
+DELETE /hotels/:id/images/:imageId
+
+Hamkor o'z mehmonxonasini yaratadi, tahrirlaydi, reviewga yuboradi,
+rasm qo'shadi.
+
+19.7. Rooms
+
+GET /hotels/:id/rooms
+POST /hotels/:id/rooms
+PATCH /hotels/:id/rooms/:roomId
+DELETE /hotels/:id/rooms/:roomId
+
+Xona yaratish, narx va inventory tahrirlash, inactive qilish.
+
+19.8. Inventory
+
+GET /hotels/:id/inventory
+PUT /hotels/:id/inventory
+POST /hotels/:id/blackout-dates
+
+Xonalar mavjudligi, yopiq sanalar.
+
+19.9. Bus side
+
+Vehicles:
+  avtobuslar.
+
+Routes:
+  yo'nalishlar.
+
+Trips:
+  reyslar.
+
+Trip cancel:
+  status = cancelled.
+
+Trip seats:
+  seatlar ro'yxati.
+
+19.10. Partner bookings
+
+GET /bookings
+GET /bookings/:id
+POST /bookings/:id/confirm
+POST /bookings/:id/reject
+POST /bookings/:id/check-in
+POST /bookings/:id/board
+POST /bookings/:id/complete
+POST /bookings/:id/cash-collected
+POST /bookings/:id/cash-reversal
+
+Confirm:
+  booking.status = confirmed
+
+Complete:
+  booking.status = completed
+
+Reject:
+  booking.status = cancelled
+
+Cash collected:
+  payment.status = paid
+
+Cash reversal:
+  payment.status = awaiting_cash
+
+19.11. Partner finance
+
+GET /finance/overview
+GET /finance/ledger
+GET /finance/chart
+POST /withdrawals
+GET /withdrawals
+GET /finance/documents
+GET /finance/documents/:id/download
+
+Finance overview:
+  gross_amount
+  pending_balance
+  available_balance
+
+Ledger:
+  booking asosida hamkor oladigan summa.
+
+Withdrawal:
+  hamkor pul yechish so'rovi.
+
+19.12. API keys va webhooks
+
+API keys:
+  GET /api-keys
+  POST /api-keys
+  DELETE /api-keys/:id
+
+Webhook:
+  GET /webhooks
+  POST /webhooks
+  PATCH /webhooks/:id
+  DELETE /webhooks/:id
+  POST /webhooks/:id/test
+  GET /webhooks/:id/deliveries
+  POST /webhooks/deliveries/:deliveryId/retry
+
+API key yaratilganda secret qaytariladi.
+Keyinchalik partner-api endpointlar shu kalit bilan ishlaydi.
+
+
+20. PARTNER-API MODULI
+----------------------
+
+Papka:
+  apps/backend/src/partner-api
+
+Bu hamkorlar tashqi tizimdan ulanadigan API.
+
+Endpointlar:
+  GET /v1/partner-api/bookings
+  GET /v1/partner-api/bookings/:id
+  POST /v1/partner-api/bookings/:id/status
+  GET /v1/partner-api/hotels
+  GET /v1/partner-api/trips
+  POST /v1/partner-api/webhooks/test
+
+Header:
+  x-api-key
+
+Logic:
+  x-api-key bo'lmasa API_KEY_INVALID.
+  key secret yoki key_prefix bo'yicha tekshiriladi.
+  Key topilsa organizationId olinadi.
+  Shu organizationga tegishli booking/hotel qaytadi.
+
+
+21. ADMIN MODULI
+----------------
+
+Papka:
+  apps/backend/src/admin
+
+Controller prefix:
+  /v1/admin
+
+Admin panel backenddagi eng katta modul.
+Ko'p sahifalar shu modul orqali ishlaydi.
+
+Ruxsat:
+  ADMIN yoki SUPER_ADMIN.
+  SUPER_ADMIN barcha admin endpointlarga kira oladi.
+
+21.1. Dashboard
+
+Endpointlar:
+  GET /admin/dashboard/overview
+  GET /admin/dashboard/revenue-chart
+  GET /admin/dashboard/bookings-chart
+  GET /admin/dashboard/activity
+
+Overview:
+  totalUsers
+  activePartners
+  todayBookings
+  monthlyRevenue
+
+Postgres ishlasa DBdan hisoblashga harakat qiladi.
+Ishlamasa in-memory demo data hisoblanadi.
+
+Activity:
+  audit_logs yoki demo auditLogs.
+
+21.2. Users
+
+Endpointlar:
+  GET /admin/users
+  GET /admin/users/:id
+  PATCH /admin/users/:id/status
+  POST /admin/users/:id/bonus-adjustment
+  GET /admin/users/:id/bookings
+  GET /admin/users/:id/audit
+  POST /admin/users/:id/message
+  POST /admin/users/export
+
+Vazifalar:
+  mijozlar ro'yxati;
+  bitta mijoz detail;
+  statusni active/blocked/unverified qilish;
+  bonus sozlash;
+  user bookinglarini ko'rish;
+  user audit tarixini ko'rish;
+  userga notification yuborish;
+  export job yaratish.
+
+21.3. Partners
+
+Endpointlar:
+  GET /admin/partners
+  GET /admin/partners/requests
+  GET /admin/partners/:id
+  POST /admin/partners/:id/approve
+  POST /admin/partners/:id/reject
+  POST /admin/partners/:id/request-information
+  PATCH /admin/partners/:id/status
+  PATCH /admin/partners/:id/commission
+  GET /admin/partners/:id/ledger
+  POST /admin/partners/:id/adjustment
+  POST /admin/partners/export
+
+Vazifalar:
+  hamkorlar ro'yxati;
+  yangi arizalar;
+  approve/reject;
+  qo'shimcha ma'lumot so'rash;
+  status o'zgartirish;
+  komissiya foizini o'zgartirish;
+  ledger;
+  adjustment;
+  export.
+
+21.4. Hotels admin
+
+Endpointlar:
+  GET /admin/hotels
+  GET /admin/hotels/:id
+  POST /admin/hotels/:id/publish
+  POST /admin/hotels/:id/reject
+  PATCH /admin/hotels/:id/visibility
+
+Vazifalar:
+  barcha hotelni ko'rish;
+  hotel detail;
+  publish;
+  reject;
+  hidden/published visibility.
+
+21.5. Bus admin
+
+Endpointlar:
+  GET /admin/trips
+  GET /admin/trips/:id
+  POST /admin/trips/:id/cancel
+  GET /admin/bus-companies
+  PATCH /admin/bus-companies/:id/status
+
+Vazifalar:
+  reyslarni ko'rish;
+  reys detail;
+  cancel;
+  bus company status o'zgartirish.
+
+21.6. Bookings admin
+
+Endpointlar:
+  GET /admin/bookings
+  GET /admin/bookings/:id
+  POST /admin/bookings/:id/cancel
+  POST /admin/bookings/:id/status-action
+
+Vazifalar:
+  barcha bookinglar;
+  booking detail;
+  admin cancel;
+  status-action.
+
+21.7. Payments admin
+
+Endpointlar:
+  GET /admin/payments
+  GET /admin/payments/:id
+  POST /admin/payments/:id/reconcile
+
+Vazifalar:
+  payment ro'yxati;
+  payment detail;
+  provider bilan solishtirish/reconcile.
+
+21.8. Refunds admin
+
+Endpointlar:
+  GET /admin/refunds
+  GET /admin/refunds/:id
+  POST /admin/refunds/:id/approve
+  POST /admin/refunds/:id/reject
+  POST /admin/refunds/:id/retry
+
+Vazifalar:
+  refundlarni ko'rish;
+  approve;
+  reject;
+  retry.
+
+21.9. Finance admin
+
+Endpointlar:
+  GET /admin/finance/overview
+  GET /admin/finance/revenue-chart
+  GET /admin/finance/partners-report
+  GET /admin/finance/provider-reconciliation
+  POST /admin/finance/export
+  POST /admin/finance/tax-report-export
+  GET /admin/finance/documents
+  POST /admin/finance/documents/:id/regenerate
+
+Vazifalar:
+  umumiy tushum;
+  chart;
+  partner report;
+  provider reconciliation;
+  export;
+  tax report;
+  finance hujjatlari.
+
+21.10. Withdrawals admin
+
+Endpointlar:
+  GET /admin/withdrawals
+  GET /admin/withdrawals/:id
+  POST /admin/withdrawals/:id/approve
+  POST /admin/withdrawals/:id/reject
+  POST /admin/withdrawals/:id/mark-paid
+
+Hamkor pul yechib olish so'rovlarini boshqaradi.
+
+21.11. CMS admin
+
+Endpointlar:
+  GET /admin/cms/:resource
+  POST /admin/cms/:resource
+  PATCH /admin/cms/:resource/:id
+  POST /admin/cms/:resource/:id/publish
+  POST /admin/cms/:resource/:id/unpublish
+  POST /admin/cms/:resource/:id/reorder
+  POST /admin/cms/:resource/:id/preview
+  POST /admin/cms/:resource/:id/test
+  POST /admin/cms/:resource/:id/schedule-publish
+  POST /admin/cms/:resource/:id/translations
+
+Resource misollari:
+  banners
+  offers
+  news
+  pages
+
+CMS public frontendda ko'rinadigan kontentni boshqaradi.
+
+21.12. Promos admin
+
+Endpointlar:
+  GET /admin/promos
+  POST /admin/promos
+  GET /admin/promos/:id/stats
+
+Promo kodlar va statistikalar.
+
+21.13. Support admin
+
+Endpointlar:
+  GET /admin/support/tickets
+  GET /admin/support/tickets/:id
+  POST /admin/support/tickets/:id/:action
+  GET /admin/support/stats
+
+Ticketlarni ko'rish, action qilish, statistika.
+
+21.14. Notifications admin
+
+Endpointlar:
+  POST /admin/notifications/broadcast
+  GET /admin/notifications/broadcasts
+  GET /admin/notifications/broadcasts/:id
+  POST /admin/notifications/broadcasts/:id/:action
+
+Ommaviy bildirishnoma yuborish.
+
+21.15. Admin users
+
+Endpointlar:
+  GET /admin/admin-users
+  POST /admin/admin-users
+  PATCH /admin/admin-users/:id
+  PATCH /admin/admin-users/:id/status
+  POST /admin/admin-users/:id/reset-2fa
+
+Admin panel ichidagi admin xodimlarni boshqarish.
+
+21.16. Roles
+
+Endpointlar:
+  GET /admin/roles
+  PATCH /admin/roles/:id/permissions
+
+Admin rollari va permissionlari.
+
+21.17. Audit logs
+
+Endpoint:
+  GET /admin/audit-logs
+
+Kim nima qildi degan tarix.
+
+21.18. Settings
+
+Endpointlar:
+  GET /admin/settings
+  PATCH /admin/settings/:group
+  PATCH /admin/settings/providers/:provider
+  POST /admin/settings/providers/:provider/test
+
+Umumiy sozlamalar va provider testlari.
+
+
+22. CMS PUBLIC MODULI
+---------------------
+
+Papka:
+  apps/backend/src/cms
+
+Endpointlar:
+  GET /v1/cms/banners
+  GET /v1/cms/offers
+  GET /v1/cms/news
+  GET /v1/cms/news/:slug
+  GET /v1/cms/pages/:slug
+  GET /v1/cms/faqs
+  GET /v1/settings/public
+
+Vazifasi:
+  Public saytga banner, offer, news, page, FAQ va public sozlamalarni berish.
+
+Hozir data service ichidagi oddiy obyektlardan keladi.
+
+
+23. PROMOS MODULI
+-----------------
+
+Papka:
+  apps/backend/src/promos
+
+Endpoint:
+  POST /v1/promos/validate
+
+Hozir faqat bitta promo kod valid:
+  UZBRON10
+
+Natija:
+  valid = true
+  discount_type = percent
+  discount_value = 10
+
+Boshqa kod:
+  valid = false
+
+
+24. REVIEWS MODULI
+------------------
+
+Papka:
+  apps/backend/src/reviews
+
+Endpointlar:
+  POST /v1/reviews
+  PATCH /v1/reviews/:id
+  DELETE /v1/reviews/:id
+  POST /v1/reviews/:id/reply
+
+Review yaratish:
+  user_id actor id dan olinadi.
+  booking_id, target_type, target_id, rating, body yoziladi.
+  status = published.
+
+Review delete:
+  real o'chirmaydi.
+  status = hidden qiladi.
+
+Reply:
+  partner javobi sifatida qaytadi.
+
+
+25. SUPPORT MODULI
+------------------
+
+Papka:
+  apps/backend/src/support
+
+Endpointlar:
+  POST /v1/support/tickets
+  GET /v1/support/tickets
+  GET /v1/support/tickets/:id
+  POST /v1/support/tickets/:id/messages
+  POST /v1/support/tickets/:id/close
+  POST /v1/support/tickets/:id/reopen
+
+Ticket yaratish:
+  user_id actor id;
+  subject;
+  priority;
+  status = open.
+
+Message:
+  sender_type actorType;
+  sender_id actor id;
+  body.
+
+Close:
+  status = closed.
+
+Reopen:
+  status = open.
+
+
+26. NOTIFICATIONS MODULI
+------------------------
+
+Papka:
+  apps/backend/src/notifications
+
+Endpointlar:
+  GET /v1/notifications
+  PATCH /v1/notifications/:id/read
+  PATCH /v1/notifications/read-all
+  POST /v1/notifications/push-tokens
+  DELETE /v1/notifications/push-tokens/:id
+
+List:
+  actor id bo'yicha notifications.
+
+Read:
+  read_at yoziladi.
+
+Read all:
+  shu user notificationlari read qilinadi.
+
+Push token:
+  web push/mobile push uchun token saqlash.
+  Hozir in-memory.
+
+
+27. UPLOADS MODULI
+------------------
+
+Papka:
+  apps/backend/src/uploads
+
+Endpointlar:
+  POST /v1/uploads/images
+  POST /v1/uploads/documents
+  POST /v1/uploads/presign
+  DELETE /v1/uploads/:id
+
+Hozir real fayl storage yo'q.
+Backend mock URL qaytaradi.
+
+Create:
+  file id;
+  owner_id;
+  type;
+  filename;
+  mime_type;
+  size;
+  mock cdn url.
+
+Presign:
+  storagega to'g'ridan-to'g'ri upload qilish uchun mock PUT URL.
+
+
+28. EXPORTS MODULI
+------------------
+
+Papka:
+  apps/backend/src/exports
+
+Endpointlar:
+  GET /v1/exports/:id
+  GET /v1/exports/:id/download
+  DELETE /v1/exports/:id
+
+Export job:
+  CSV/XLSX/PDF tayyorlash jarayonini ifodalaydi.
+
+Hozir:
+  download chaqirilsa status ready bo'ladi;
+  mock download_url qaytadi.
+
+
+29. HEALTH CHECK
+----------------
+
+Fayl:
+  apps/backend/src/app.controller.ts
+
+Endpointlar:
+  GET /v1/health
+  GET /v1/health/live
+  GET /v1/health/ready
+
+Vazifasi:
+  Server tirikmi, ishlayaptimi, deploy health check uchun.
+
+Natija:
+  status = ok
+  service = uzbron-api
+
+
+30. ENV VA CONFIG
+-----------------
+
+Fayl:
+  apps/backend/src/config/env.validation.ts
+
+Asosiy envlar:
+
+NODE_ENV
+  development yoki production.
+
+APP_NAME
+  default: uzbron-api
+
+PORT
+  default: 4000
+
+API_PREFIX
+  default: v1
+
+BUSINESS_TIMEZONE
+  default: Asia/Tashkent
+
+DATABASE_URL
+  Postgres yoki Neon ulanish URL.
+
+REDIS_URL
+  Queue/cache uchun Redis.
+
+JWT_ACCESS_SECRET
+  Productionda majburiy.
+
+JWT_REFRESH_SECRET
+  Productionda majburiy.
+
+CORS_ORIGINS
+  Qaysi frontend domainlari backendga murojaat qila oladi.
+  "*" bo'lsa hammasiga ruxsat.
+  Bir nechta origin vergul bilan yoziladi.
+
+SWAGGER_ENABLED
+  false bo'lsa Swagger o'chadi.
+
+Productionda majburiy envlar:
+  DATABASE_URL
+  REDIS_URL
+  JWT_ACCESS_SECRET
+  JWT_REFRESH_SECRET
+
+
+31. DOCKER
+----------
+
+Root fayl:
+  docker-compose.backend.yml
+
+Servislar:
+
+postgres
+  Local Postgres.
+  Port: 5432
+  DB: uzbron
+  User: uzbron
+  Password: uzbron
+
+redis
+  Local Redis.
+  Port: 6379
+
+api
+  Backend Docker container.
+  Port: 4000
+  postgres va redis healthy bo'lgandan keyin ishga tushadi.
+
+Dockerfile:
+  apps/backend/Dockerfile
+
+Build bosqichlari:
+
+1. deps
+   npm package o'rnatadi.
+
+2. build
+   packages/types va backend build qiladi.
+
+3. runner
+   production uchun tayyor backendni start qiladi.
+
+
+32. ISHGA TUSHIRISH BUYRUQLARI
+------------------------------
+
+Backend papkasidan:
+
+  cd apps/backend
+  npm run dev:backend
+
+Yoki rootdan:
+
+  npm run dev:backend
+
+Build:
+
+  npm run build -w @agoda/backend
+
+Test:
+
+  npm run test -w @agoda/backend
+
+Lint:
+
+  npm run lint -w @agoda/backend
+
+Prisma schema tekshirish:
+
+  npm run prisma:validate -w @agoda/backend
+
+Seed yuritish:
+
+  npm run prisma:seed -w @agoda/backend
+
+Seed nima qiladi?
+  prisma/seed.ts fayli prisma db execute orqali admin-demo-seed.sql ni
+  databasega bajaradi.
+
+
+33. HOZIRGI DEMO CHEKLOVLAR
+---------------------------
+
+Bu backendning ayrim joylari hali demo/skeleton holatda.
+
+1. Auth token real JWT emas.
+   Hozir mock-access format ishlaydi.
+
+2. Admin login DB password_hash bilan tekshirilmayapti.
+   Hozir demo:
+     admin / admin
+     2FA: 000000
+
+3. Partner email login DB password_hash bilan tekshirilmayapti.
+   Hozir demo:
+     parol: password
+
+4. OTP real SMSga yuborilmayapti.
+   Developmentda code:
+     111111
+
+5. Upload real storagega yozmaydi.
+   Mock URL qaytaradi.
+
+6. Payment providerlar real Click/Payme protokolini to'liq bajarmaydi.
+   Webhook demo status update qiladi.
+
+7. Ko'p service in-memory data bilan ishlaydi.
+   Server restart bo'lsa in-memory o'zgarishlar yo'qoladi.
+
+8. AdminService ayrim sahifalarda Postgresdan o'qiydi,
+   Postgres bo'lmasa fallback data ishlatadi.
+
+9. Real production uchun kerak bo'ladigan narsalar:
+   real JWT;
+   refresh token hash;
+   Argon2 password verify;
+   SMS provider;
+   payment provider signature verify;
+   file storage;
+   audit logni DBga doimiy yozish;
+   transactionlar;
+   permission matrix.
+
+
+34. ENG KO'P UCHRAYDIGAN XATOLAR
+--------------------------------
+
+1. "property username should not exist"
+
+Sabab:
+  Frontend username yuboryapti, backend DTO ichida username yo'q.
+
+Yechim:
+  DTOga username qo'shish yoki frontend yubormasligi kerak.
+
+Bu admin login uchun tuzatildi.
+
+2. "property challenge_id should not exist"
+
+Sabab:
+  Frontend verify-2fa body ichida challenge_id yuboryapti,
+  backend Verify2faDto ichida challenge_id yo'q.
+
+Bu ham tuzatildi.
+
+3. 403 Forbidden
+
+Sabab:
+  Endpoint role talab qiladi, token/headerda mos role yo'q.
+
+Yechim:
+  To'g'ri token yuborish.
+  Admin uchun SUPER_ADMIN token.
+  Partner uchun PARTNER token.
+
+4. Bron topilmadi
+
+Sabab:
+  booking id noto'g'ri yoki in-memory server restart bo'lgan.
+
+5. DB data ko'rinmayapti, lekin mock data ko'rinyapti
+
+Sabab:
+  DATABASE_URL yo'q yoki Postgres ulanmayapti.
+  PostgresService null qaytarganda fallback ishlaydi.
+
+6. DBda data bor, frontda bo'sh
+
+Tekshirish kerak:
+  backend DATABASE_URL to'g'rimi;
+  seed shu DBga yurganmi;
+  endpoint Postgresdan o'qiyaptimi yoki in-memorymi;
+  frontend /api yoki /v1 URLga to'g'ri uryaptimi;
+  auth token bormi.
+
+
+35. MUHIM FAYLLAR XARITASI
+--------------------------
+
+apps/backend/src/main.ts
+  Server start, CORS, prefix, validation, swagger, response/error format.
+
+apps/backend/src/app.module.ts
+  Barcha modullarni ulaydi.
+
+apps/backend/src/auth/auth.controller.ts
+  Auth endpointlari.
+
+apps/backend/src/auth/auth.service.ts
+  OTP, login, token, session logic.
+
+apps/backend/src/auth/dto/auth.dto.ts
+  Auth request body shakllari.
+
+apps/backend/src/common/actor.ts
+  Requestdan user/partner/admin actorni chiqaradi.
+
+apps/backend/src/common/roles.guard.ts
+  Role bo'yicha ruxsat tekshiradi.
+
+apps/backend/src/common/api-response.interceptor.ts
+  Javobni success/data/meta formatiga keltiradi.
+
+apps/backend/src/common/http-error.filter.ts
+  Xatoni error/meta formatiga keltiradi.
+
+apps/backend/src/infrastructure/in-memory-db.service.ts
+  Demo data va yordamchi DB methodlar.
+
+apps/backend/src/infrastructure/postgres.service.ts
+  Postgresga ulanish va query bajarish.
+
+apps/backend/src/catalog/catalog.service.ts
+  Katalog data: region, city, amenity, room type.
+
+apps/backend/src/hotels/hotels.service.ts
+  Public hotel qidirish, detail, rooms, quote.
+
+apps/backend/src/buses/buses.service.ts
+  Public bus route, trip, seat, quote.
+
+apps/backend/src/bookings/bookings.service.ts
+  Bron yaratish, cancel, voucher, message.
+
+apps/backend/src/payments/payments.service.ts
+  Payment yaratish va webhook.
+
+apps/backend/src/users/users.service.ts
+  User kabineti.
+
+apps/backend/src/partners/partners.service.ts
+  Partner kabineti.
+
+apps/backend/src/admin/admin.service.ts
+  Admin panel data va actionlari.
+
+apps/backend/prisma/schema.prisma
+  Database struktura.
+
+apps/backend/prisma/admin-demo-seed.sql
+  Demo data.
+
+apps/backend/prisma/seed.ts
+  Seed SQLni ishga tushiradi.
+
+docker-compose.backend.yml
+  Local Postgres, Redis, API container.
+
+apps/backend/Dockerfile
+  Backend Docker build.
+
+
+36. ODDIY MISOL: MIJOZ HOTEL BRON QILADI
+----------------------------------------
+
+1. Mijoz saytga kiradi.
+2. Frontend /api/hotels ga so'rov yuboradi.
+3. Backend published hotellarni qaytaradi.
+4. Mijoz hotelni bosadi.
+5. Frontend /api/hotels/:id ga so'rov yuboradi.
+6. Backend hotel detail va xonalarni qaytaradi.
+7. Mijoz sana tanlaydi.
+8. Frontend /api/hotels/:id/quote yuboradi.
+9. Backend tunlar soni va narxni hisoblaydi.
+10. Mijoz bron qilishni bosadi.
+11. Frontend /api/bookings/hotel yuboradi.
+12. Backend:
+    userni aniqlaydi;
+    hotel va roomni tekshiradi;
+    narxni hisoblaydi;
+    booking yaratadi;
+    commission hisoblaydi;
+    payment yaratadi.
+13. Frontend to'lov sahifasini ochadi.
+14. Payment provider webhook yuborsa, backend payment statusni paid qiladi.
+15. Admin panelda booking va payment ko'rinadi.
+16. Partner panelda hamkor shu bookingni ko'radi.
+
+
+37. ODDIY MISOL: ADMIN WEB-ADMINGA KIRADI
+-----------------------------------------
+
+1. Login oynasida:
+   Login: admin
+   Parol: admin
+
+2. Frontend yuboradi:
+   POST /api/auth/admin/login
+
+3. Backend:
+   username adminmi;
+   email admin@uzbron.uzmi yoki username adminmi;
+   password adminmi;
+   tekshiradi.
+
+4. To'g'ri bo'lsa challenge qaytaradi.
+
+5. Frontend verify yuboradi:
+   code: 000000
+
+6. Backend code to'g'ri bo'lsa SUPER_ADMIN token beradi.
+
+7. Frontend tokenni saqlaydi.
+
+8. Keyingi admin so'rovlarda token yuboriladi.
+
+9. RolesGuard tokenni o'qiydi.
+
+10. SUPER_ADMIN bo'lgani uchun admin endpointlar ochiladi.
+
+
+38. ODDIY MISOL: PARTNER BRONNI CONFIRM QILADI
+----------------------------------------------
+
+1. Partner login qiladi.
+2. PARTNER token oladi.
+3. Partner panel /api/partner/bookings ni chaqiradi.
+4. Backend actor.organizationId bo'yicha bookinglarni filterlaydi.
+5. Partner bitta bookingni confirm qiladi.
+6. Frontend:
+   POST /api/partner/bookings/:id/confirm
+7. Backend bookingni topadi.
+8. status = confirmed qiladi.
+9. confirmed_at yozadi.
+10. Frontend yangilangan bookingni ko'radi.
+
+
+39. NIMA REAL, NIMA DEMO?
+-------------------------
+
+Realga yaqin qismlar:
+  modul tuzilmasi;
+  endpointlar;
+  DTO validation;
+  role guard;
+  response/error format;
+  Prisma schema;
+  seed SQL;
+  Postgres query fallback;
+  admin panel uchun ko'p endpointlar.
+
+Demo/skeleton qismlar:
+  JWT;
+  password verify;
+  SMS OTP;
+  to'lov provider imzo tekshiruvi;
+  upload storage;
+  background job;
+  email;
+  websocket/realtime;
+  ayrim admin actionlar faqat mock javob qaytaradi.
+
+
+40. KEYINGI RIVOJLANTIRISH YO'LI
+--------------------------------
+
+1. Authni real qilish.
+   AdminUser va PartnerUser password_hashni Argon2 verify bilan tekshirish.
+   Access/refresh tokenni JWT qilish.
+   Refresh tokenni DBda hash qilib saqlash.
+
+2. In-memory logikani Postgresga o'tkazish.
+   Booking, payment, refund, support, notificationlar DBda doimiy saqlansin.
+
+3. Payment providerlarni real qilish.
+   Click, Payme, Uzcard, Humo callback signature tekshiruvi.
+
+4. File uploadni real storagega ulash.
+   S3/MinIO/CDN.
+
+5. SMS provider ulash.
+   Eskiz.uz yoki boshqa provider.
+
+6. Admin permission matrix.
+   Finance admin faqat finance ko'rsin,
+   content admin faqat CMS ko'rsin.
+
+7. Testlarni kengaytirish.
+   Auth, booking, payment, admin uchun alohida unit/e2e testlar.
+
+
+QISQA XULOSA
+------------
+
+UzBron backend - bitta NestJS API.
+U user, partner va admin frontendlariga xizmat qiladi.
+
+Request oqimi:
+  Frontend -> Controller -> Service -> Data source -> Response
+
+Ruxsat oqimi:
+  Token/header -> Actor -> RolesGuard -> Endpoint
+
+Data oqimi:
+  Postgres ishlasa Postgres,
+  ishlamasa InMemory fallback.
+
+Hozir admin login:
+  admin / admin
+  2FA: 000000
+
+Backend hali qisman demo, lekin arxitektura real production loyihaga
+mos qilib bo'lingan: modul, controller, service, DTO, guard, interceptor,
+filter, Prisma schema va seed alohida tartibda joylashgan.

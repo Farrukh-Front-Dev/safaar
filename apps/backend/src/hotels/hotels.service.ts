@@ -1,33 +1,97 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  paginatedObject,
+  parsePagination,
+  type QueryLike,
+} from '../common/pagination';
+import { AppCacheService } from '../infrastructure/cache.service';
 import { InMemoryDbService } from '../infrastructure/in-memory-db.service';
 
 @Injectable()
 export class HotelsService {
-  constructor(private readonly db: InMemoryDbService) {}
+  constructor(
+    private readonly cache: AppCacheService,
+    private readonly db: InMemoryDbService,
+  ) {}
 
-  findAll(query: Record<string, string | undefined>) {
+  findAll(query: QueryLike) {
+    return this.cache.getOrSet(`hotels:list:${cacheKey(query)}`, 60, () => {
+      return this.findAllFresh(query);
+    });
+  }
+
+  private findAllFresh(query: QueryLike) {
+    const pagination = parsePagination(query, 'public', {
+      allowedSortBy: ['created_at', 'rating_average', 'stars', 'min_price'],
+      defaultSortBy: 'rating_average',
+    });
+    const roomsByHotel = new Map<
+      string,
+      Array<(typeof this.db.rooms)[number]>
+    >();
+    for (const room of this.db.rooms) {
+      const hotelRooms = roomsByHotel.get(room.hotel_id) ?? [];
+      hotelRooms.push(room);
+      roomsByHotel.set(room.hotel_id, hotelRooms);
+    }
+    const citiesById = new Map(this.db.cities.map((city) => [city.id, city]));
+
     const hotels = this.db.hotels.filter((hotel) => {
       if (hotel.status !== 'published') {
         return false;
       }
 
-      if (query.city_id && hotel.city_id !== query.city_id) {
+      if (query.city_id && hotel.city_id !== first(query.city_id)) {
         return false;
       }
 
-      if (query.stars && hotel.stars !== Number(query.stars)) {
+      if (query.stars && hotel.stars !== Number(first(query.stars))) {
+        return false;
+      }
+
+      if (
+        query.rating &&
+        hotel.rating_average < Number(first(query.rating) ?? 0)
+      ) {
+        return false;
+      }
+
+      const rooms = roomsByHotel.get(hotel.id) ?? [];
+      const minPrice = minRoomPrice(rooms);
+      if (
+        query.min_price &&
+        Number.isFinite(minPrice) &&
+        minPrice < Number(first(query.min_price))
+      ) {
+        return false;
+      }
+      if (
+        query.max_price &&
+        Number.isFinite(minPrice) &&
+        minPrice > Number(first(query.max_price))
+      ) {
         return false;
       }
 
       return true;
     });
 
-    return {
-      items: hotels.map((hotel) => this.toPublicHotel(hotel.id)),
-      total: hotels.length,
-      page: Number(query.page ?? 1),
-      limit: Number(query.limit ?? 20),
-    };
+    const mapped = hotels.map((hotel) => {
+      const minPrice = minRoomPrice(roomsByHotel.get(hotel.id) ?? []);
+      return {
+        ...hotel,
+        city: citiesById.get(hotel.city_id),
+        min_price: Number.isFinite(minPrice) ? minPrice : 0,
+      };
+    });
+    const sorted = mapped.sort((left, right) => {
+      const leftValue = valueForSort(left, pagination.sortBy);
+      const rightValue = valueForSort(right, pagination.sortBy);
+      const direction = pagination.order === 'asc' ? 1 : -1;
+      return (leftValue - rightValue) * direction;
+    });
+
+    return paginatedObject(sorted, pagination);
   }
 
   findOne(slugOrId: string) {
@@ -98,8 +162,9 @@ export class HotelsService {
     return this.db.reviews.filter((review) => review['target_id'] === id);
   }
 
-  map(query: Record<string, string | undefined>) {
-    return this.findAll(query).items.map((hotel) => ({
+  async map(query: QueryLike) {
+    const hotels = await this.findAll(query);
+    return hotels.items.map((hotel) => ({
       id: hotel.id,
       slug: hotel.slug,
       name: hotel.name,
@@ -145,4 +210,37 @@ export class HotelsService {
 
     return Math.max(1, Math.ceil((end - start) / 86_400_000));
   }
+}
+
+function first(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function minRoomPrice(rooms: Array<{ base_price: number }>): number {
+  return Math.min(...rooms.map((room) => room.base_price));
+}
+
+function valueForSort(
+  hotel: {
+    created_at?: string;
+    rating_average?: number;
+    stars?: number;
+    min_price?: number;
+  },
+  sortBy: string,
+): number {
+  if (sortBy === 'created_at') {
+    return Date.parse(hotel.created_at ?? '') || 0;
+  }
+
+  return Number(hotel[sortBy as 'rating_average' | 'stars' | 'min_price'] ?? 0);
+}
+
+function cacheKey(query: QueryLike): string {
+  return Object.keys(query)
+    .sort()
+    .map(
+      (key) => `${key}=${encodeURIComponent(String(first(query[key]) ?? ''))}`,
+    )
+    .join('&');
 }

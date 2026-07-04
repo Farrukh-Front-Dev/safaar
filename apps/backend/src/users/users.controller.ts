@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { Role } from '@agoda/types';
@@ -47,13 +48,19 @@ export class UsersController {
   }
 
   @Get('bookings')
-  bookings(@CurrentActor() actor: RequestActor | undefined) {
-    return this.usersService.bookings(actor);
+  bookings(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Query() query: Record<string, string | undefined>,
+  ) {
+    return this.usersService.bookings(actor, query);
   }
 
   @Get('bookings/:id')
-  booking(@Param('id') id: string) {
-    return this.usersService.booking(id);
+  booking(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.usersService.booking(actor, id);
   }
 
   @Get('bonuses')
@@ -62,8 +69,11 @@ export class UsersController {
   }
 
   @Get('favorites')
-  favorites(@CurrentActor() actor: RequestActor | undefined) {
-    return this.usersService.favorites(actor);
+  favorites(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Query() query: Record<string, string | undefined>,
+  ) {
+    return this.usersService.favorites(actor, query);
   }
 
   @Post('favorites')

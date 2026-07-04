@@ -26,8 +26,11 @@ export class NotificationsController {
   }
 
   @Patch(':id/read')
-  read(@Param('id') id: string) {
-    return this.notificationsService.read(id);
+  read(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.notificationsService.read(actor, id);
   }
 
   @Patch('read-all')
@@ -44,7 +47,10 @@ export class NotificationsController {
   }
 
   @Delete('push-tokens/:id')
-  deletePushToken(@Param('id') id: string) {
-    return this.notificationsService.deletePushToken(id);
+  deletePushToken(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.notificationsService.deletePushToken(actor, id);
   }
 }

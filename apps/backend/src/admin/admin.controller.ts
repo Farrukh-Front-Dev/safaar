@@ -5,10 +5,13 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { Role } from '@agoda/types';
 import { CurrentActor, type RequestActor } from '../common/actor';
+import { Permissions } from '../common/permissions.decorator';
+import { Permission } from '../common/permissions';
 import { Roles } from '../common/roles.decorator';
 import { RolesGuard } from '../common/roles.guard';
 import { AdminService } from './admin.service';
@@ -40,8 +43,8 @@ export class AdminController {
   }
 
   @Get('users')
-  users() {
-    return this.adminService.users();
+  users(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.users(query);
   }
 
   @Get('users/:id')
@@ -50,11 +53,13 @@ export class AdminController {
   }
 
   @Patch('users/:id/status')
+  @Permissions(Permission.UsersWrite)
   userStatus(@Param('id') id: string, @Body() body: Record<string, unknown>) {
     return this.adminService.userStatus(id, body);
   }
 
   @Post('users/:id/bonus-adjustment')
+  @Permissions(Permission.FinanceWrite)
   bonusAdjustment(
     @Param('id') id: string,
     @Body() body: Record<string, unknown>,
@@ -63,13 +68,19 @@ export class AdminController {
   }
 
   @Get('users/:id/bookings')
-  userBookings(@Param('id') id: string) {
-    return this.adminService.userBookings(id);
+  userBookings(
+    @Param('id') id: string,
+    @Query() query: Record<string, string | undefined>,
+  ) {
+    return this.adminService.userBookings(id, query);
   }
 
   @Get('users/:id/audit')
-  userAudit(@Param('id') id: string) {
-    return this.adminService.userAudit(id);
+  userAudit(
+    @Param('id') id: string,
+    @Query() query: Record<string, string | undefined>,
+  ) {
+    return this.adminService.userAudit(id, query);
   }
 
   @Post('users/:id/message')
@@ -83,13 +94,13 @@ export class AdminController {
   }
 
   @Get('partners')
-  partners() {
-    return this.adminService.partners();
+  partners(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.partners(query);
   }
 
   @Get('partners/requests')
-  partnerRequests() {
-    return this.adminService.partnerRequests();
+  partnerRequests(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.partnerRequests(query);
   }
 
   @Get('partners/:id')
@@ -98,6 +109,7 @@ export class AdminController {
   }
 
   @Post('partners/:id/approve')
+  @Permissions(Permission.PartnersWrite)
   partnerApprove(
     @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
@@ -106,6 +118,7 @@ export class AdminController {
   }
 
   @Post('partners/:id/reject')
+  @Permissions(Permission.PartnersWrite)
   partnerReject(
     @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
@@ -115,6 +128,7 @@ export class AdminController {
   }
 
   @Post('partners/:id/request-information')
+  @Permissions(Permission.PartnersWrite)
   partnerRequestInfo(
     @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
@@ -129,6 +143,7 @@ export class AdminController {
   }
 
   @Patch('partners/:id/status')
+  @Permissions(Permission.PartnersWrite)
   partnerStatus(
     @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
@@ -138,6 +153,7 @@ export class AdminController {
   }
 
   @Patch('partners/:id/commission')
+  @Permissions(Permission.FinanceWrite)
   partnerCommission(
     @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
@@ -152,6 +168,7 @@ export class AdminController {
   }
 
   @Post('partners/:id/adjustment')
+  @Permissions(Permission.FinanceWrite)
   partnerAdjustment(
     @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
@@ -166,8 +183,8 @@ export class AdminController {
   }
 
   @Get('hotels')
-  hotels() {
-    return this.adminService.hotels();
+  hotels(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.hotels(query);
   }
 
   @Get('hotels/:id')
@@ -176,16 +193,19 @@ export class AdminController {
   }
 
   @Post('hotels/:id/publish')
+  @Permissions(Permission.PartnersWrite)
   hotelPublish(@Param('id') id: string) {
     return this.adminService.hotelStatus(id, 'published');
   }
 
   @Post('hotels/:id/reject')
+  @Permissions(Permission.PartnersWrite)
   hotelReject(@Param('id') id: string) {
     return this.adminService.hotelStatus(id, 'rejected');
   }
 
   @Patch('hotels/:id/visibility')
+  @Permissions(Permission.PartnersWrite)
   hotelVisibility(
     @Param('id') id: string,
     @Body() body: Record<string, unknown>,
@@ -197,8 +217,8 @@ export class AdminController {
   }
 
   @Get('trips')
-  trips() {
-    return this.adminService.trips();
+  trips(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.trips(query);
   }
 
   @Get('trips/:id')
@@ -225,8 +245,8 @@ export class AdminController {
   }
 
   @Get('bookings')
-  bookings() {
-    return this.adminService.bookings();
+  bookings(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.bookings(query);
   }
 
   @Get('bookings/:id')
@@ -235,6 +255,7 @@ export class AdminController {
   }
 
   @Post('bookings/:id/cancel')
+  @Permissions(Permission.BookingsWrite)
   bookingCancel(
     @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
@@ -252,8 +273,8 @@ export class AdminController {
   }
 
   @Get('payments')
-  payments() {
-    return this.adminService.payments();
+  payments(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.payments(query);
   }
 
   @Get('payments/:id')
@@ -262,13 +283,14 @@ export class AdminController {
   }
 
   @Post('payments/:id/reconcile')
+  @Permissions(Permission.FinanceWrite)
   paymentReconcile(@Param('id') id: string) {
     return this.adminService.paymentReconcile(id);
   }
 
   @Get('refunds')
-  refunds() {
-    return this.adminService.refunds();
+  refunds(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.refunds(query);
   }
 
   @Get('refunds/:id')
@@ -277,16 +299,19 @@ export class AdminController {
   }
 
   @Post('refunds/:id/approve')
+  @Permissions(Permission.FinanceWrite)
   refundApprove(@Param('id') id: string) {
     return this.adminService.refundStatus(id, 'approved');
   }
 
   @Post('refunds/:id/reject')
+  @Permissions(Permission.FinanceWrite)
   refundReject(@Param('id') id: string) {
     return this.adminService.refundStatus(id, 'rejected');
   }
 
   @Post('refunds/:id/retry')
+  @Permissions(Permission.FinanceWrite)
   refundRetry(@Param('id') id: string) {
     return this.adminService.refundStatus(id, 'retrying');
   }
@@ -312,6 +337,7 @@ export class AdminController {
   }
 
   @Post('finance/export')
+  @Permissions(Permission.FinanceRead)
   financeExport(@CurrentActor() actor: RequestActor | undefined) {
     return this.adminService.exportJob(actor, 'admin-finance', 'xlsx');
   }
@@ -332,8 +358,8 @@ export class AdminController {
   }
 
   @Get('withdrawals')
-  withdrawals() {
-    return this.adminService.withdrawals();
+  withdrawals(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.withdrawals(query);
   }
 
   @Get('withdrawals/:id')
@@ -342,26 +368,33 @@ export class AdminController {
   }
 
   @Post('withdrawals/:id/approve')
+  @Permissions(Permission.FinanceWrite)
   withdrawalApprove(@Param('id') id: string) {
     return this.adminService.withdrawalStatus(id, 'approved');
   }
 
   @Post('withdrawals/:id/reject')
+  @Permissions(Permission.FinanceWrite)
   withdrawalReject(@Param('id') id: string) {
     return this.adminService.withdrawalStatus(id, 'rejected');
   }
 
   @Post('withdrawals/:id/mark-paid')
+  @Permissions(Permission.FinanceWrite)
   withdrawalMarkPaid(@Param('id') id: string) {
     return this.adminService.withdrawalStatus(id, 'paid');
   }
 
   @Get('cms/:resource')
-  cmsList(@Param('resource') resource: string) {
-    return this.adminService.cmsList(resource);
+  cmsList(
+    @Param('resource') resource: string,
+    @Query() query: Record<string, string | undefined>,
+  ) {
+    return this.adminService.cmsList(resource, query);
   }
 
   @Post('cms/:resource')
+  @Permissions(Permission.CmsWrite)
   cmsCreate(
     @Param('resource') resource: string,
     @Body() body: Record<string, unknown>,
@@ -370,6 +403,7 @@ export class AdminController {
   }
 
   @Patch('cms/:resource/:id')
+  @Permissions(Permission.CmsWrite)
   cmsUpdate(
     @Param('resource') resource: string,
     @Param('id') id: string,
@@ -379,6 +413,7 @@ export class AdminController {
   }
 
   @Post('cms/:resource/:id/publish')
+  @Permissions(Permission.CmsWrite)
   cmsPublish(@Param('resource') resource: string, @Param('id') id: string) {
     return this.adminService.cmsAction(resource, id, 'publish');
   }
@@ -418,11 +453,12 @@ export class AdminController {
   }
 
   @Get('promos')
-  promos() {
-    return this.adminService.promos();
+  promos(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.promos(query);
   }
 
   @Post('promos')
+  @Permissions(Permission.CmsWrite)
   promoCreate(@Body() body: Record<string, unknown>) {
     return this.adminService.promoCreate(body);
   }
@@ -433,8 +469,8 @@ export class AdminController {
   }
 
   @Get('support/tickets')
-  supportTickets() {
-    return this.adminService.supportTickets();
+  supportTickets(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.supportTickets(query);
   }
 
   @Get('support/tickets/:id')
@@ -443,6 +479,7 @@ export class AdminController {
   }
 
   @Post('support/tickets/:id/:action')
+  @Permissions(Permission.SupportWrite)
   supportAction(
     @Param('id') id: string,
     @Param('action') action: string,
@@ -457,13 +494,14 @@ export class AdminController {
   }
 
   @Post('notifications/broadcast')
+  @Permissions(Permission.SupportWrite)
   notificationBroadcastCreate(@Body() body: Record<string, unknown>) {
     return this.adminService.notificationBroadcastCreate(body);
   }
 
   @Get('notifications/broadcasts')
-  notificationBroadcasts() {
-    return this.adminService.notificationBroadcasts();
+  notificationBroadcasts(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.notificationBroadcasts(query);
   }
 
   @Get('notifications/broadcasts/:id')
@@ -480,16 +518,18 @@ export class AdminController {
   }
 
   @Get('admin-users')
-  adminUsers() {
-    return this.adminService.adminUsers();
+  adminUsers(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.adminUsers(query);
   }
 
   @Post('admin-users')
+  @Permissions(Permission.AdminUsersWrite)
   adminUserCreate(@Body() body: Record<string, unknown>) {
     return this.adminService.adminUserCreate(body);
   }
 
   @Patch('admin-users/:id')
+  @Permissions(Permission.AdminUsersWrite)
   adminUserUpdate(
     @Param('id') id: string,
     @Body() body: Record<string, unknown>,
@@ -498,6 +538,7 @@ export class AdminController {
   }
 
   @Patch('admin-users/:id/status')
+  @Permissions(Permission.AdminUsersWrite)
   adminUserStatus(
     @Param('id') id: string,
     @Body() body: Record<string, unknown>,
@@ -506,6 +547,7 @@ export class AdminController {
   }
 
   @Post('admin-users/:id/reset-2fa')
+  @Permissions(Permission.AdminUsersWrite)
   adminUserReset2fa(@Param('id') id: string) {
     return this.adminService.adminUserReset2fa(id);
   }
@@ -516,6 +558,7 @@ export class AdminController {
   }
 
   @Patch('roles/:id/permissions')
+  @Permissions(Permission.AdminUsersWrite)
   rolePermissions(
     @Param('id') id: string,
     @Body() body: Record<string, unknown>,
@@ -524,8 +567,8 @@ export class AdminController {
   }
 
   @Get('audit-logs')
-  auditLogs() {
-    return this.adminService.auditLogs();
+  auditLogs(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.auditLogs(query);
   }
 
   @Get('settings')
@@ -534,6 +577,7 @@ export class AdminController {
   }
 
   @Patch('settings/:group')
+  @Permissions(Permission.SettingsWrite)
   settingsGroup(
     @Param('group') group: string,
     @Body() body: Record<string, unknown>,
@@ -542,6 +586,7 @@ export class AdminController {
   }
 
   @Patch('settings/providers/:provider')
+  @Permissions(Permission.SettingsWrite)
   providerSettings(
     @Param('provider') provider: string,
     @Body() body: Record<string, unknown>,

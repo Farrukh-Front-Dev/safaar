@@ -22,6 +22,41 @@ function requestIdFromContext(context: ExecutionContext): string {
   return Array.isArray(header) ? header[0] : (header ?? 'local-request');
 }
 
+function requestFromContext(context: ExecutionContext): {
+  headers: Record<string, string | string[] | undefined>;
+  originalUrl?: string;
+  url?: string;
+  legacyApiPrefix?: boolean;
+} {
+  return context.switchToHttp().getRequest();
+}
+
+function isLegacyApiRequest(context: ExecutionContext): boolean {
+  const request = requestFromContext(context);
+  return Boolean(
+    request.legacyApiPrefix ||
+    request.originalUrl?.startsWith('/api') ||
+    request.url?.startsWith('/api'),
+  );
+}
+
+function legacyResponse(data: unknown, context: ExecutionContext): unknown {
+  const request = requestFromContext(context);
+  const originalUrl = request.originalUrl ?? request.url ?? '';
+
+  if (
+    /^\/api\/hotels(?:\?|$)/.test(originalUrl) &&
+    typeof data === 'object' &&
+    data !== null &&
+    'items' in data &&
+    Array.isArray((data as { items?: unknown }).items)
+  ) {
+    return (data as { items: unknown[] }).items;
+  }
+
+  return data;
+}
+
 function isAlreadyEnveloped(value: unknown): boolean {
   return (
     typeof value === 'object' &&
@@ -42,6 +77,10 @@ export class ApiResponseInterceptor<T> implements NestInterceptor<
   ): Observable<T | ApiEnvelope<T>> {
     return next.handle().pipe(
       map((data) => {
+        if (isLegacyApiRequest(context)) {
+          return legacyResponse(data, context) as T;
+        }
+
         if (isAlreadyEnveloped(data)) {
           return data;
         }

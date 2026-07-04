@@ -1,0 +1,2212 @@
+UZBRON FRONTEND LOGIKASI TUSHUNTIRISH
+=====================================
+
+Bu fayl 3 ta frontend panel qanday ishlashini oddiy tilda tushuntiradi:
+
+1. web-user    - mijozlar sayti, port 3000.
+2. web-partner - hamkor/mehmonxona egasi paneli, port 3001.
+3. web-admin   - super admin paneli, port 3002.
+
+Asosiy fikr:
+
+- Uchala frontend alohida Next.js app.
+- Backend bitta: NestJS API, odatda port 4000.
+- Frontend tugmalari ikki xil ish qiladi:
+  1. Faqat sahifa almashtiradi yoki ekrandagi holatni o'zgartiradi.
+  2. Backendga HTTP so'rov yuboradi.
+- Har bir panelda "page" sahifani chizadi, "component" tugma/input/modalni chizadi,
+  "api client" backendga boradigan so'rovni yuboradi, "store" esa vaqtinchalik
+  frontend xotirasini saqlaydi.
+
+
+UMUMIY FRONTEND TUZILISHI
+=========================
+
+Monorepoda frontendlar shu joylarda turadi:
+
+- apps/web-user
+- apps/web-partner
+- apps/web-admin
+
+Har bir app ichida Next.js App Router ishlatiladi. Ya'ni sahifa fayllari `app`
+papkasida turadi. Masalan:
+
+- apps/web-user/app/[lang]/(main)/hotels/page.tsx
+- apps/web-partner/app/(dashboard)/reservations/page.tsx
+- apps/web-admin/app/(dashboard)/users/page.tsx
+
+Oddiy tushuntirish:
+
+- `page.tsx` - brauzerda ko'rinadigan asosiy sahifa.
+- `layout.tsx` - sahifaning umumiy qobig'i, masalan sidebar/topbar.
+- `components` yoki `_components` - tugma, jadval, modal, forma kabi mayda qismlar.
+- `lib/api` yoki `_lib/api` - backend bilan gaplashadigan kod.
+- `store` - frontend xotirasi. Masalan login bo'lgan user yoki demo reservationlar.
+- `actions.ts` - Next.js server action. Forma submit bo'lganda server tomonda ishlaydi.
+
+
+API URL QAYERDAN OLINADI
+========================
+
+web-user:
+
+- Fayl: apps/web-user/lib/api.ts
+- API manzil:
+  - `NEXT_PUBLIC_API_URL` bo'lsa shuni oladi.
+  - Bo'lmasa `http://localhost:4000/v1` ishlatiladi.
+
+web-admin:
+
+- Fayl: apps/web-admin/lib/api/client.ts
+- API manzil:
+  - `NEXT_PUBLIC_API_URL` bo'lsa shuni oladi.
+  - Bo'lmasa `http://localhost:4000/v1` ishlatiladi.
+
+web-partner:
+
+- Fayl: apps/web-partner/app/_lib/api/client.ts
+- API manzil:
+  - `NEXT_PUBLIC_API_URL` bo'lsa shuni oladi.
+  - Bo'lmasa `http://localhost:4000/api` ishlatiladi.
+
+Muhim farq:
+
+- web-user va web-admin ko'proq `/v1` API bilan ishlaydi.
+- web-partner api clienti `/api` bilan ishlashga yozilgan, lekin hozir paneldagi
+  ko'p amallar backendga ulanmagan, lokal Zustand store orqali yuradi.
+
+
+BACKEND JAVOBINI FRONTEND QANDAY O'QIYDI
+========================================
+
+web-user:
+
+- `apiFetch` degan umumiy funksiya bor.
+- Backenddan kelgan javob agar `{ data: ... }` ko'rinishida bo'lsa, ichidagi
+  `data` ni olib beradi.
+- Xato bo'lsa `ApiRequestError` chiqaradi.
+- Token kerak bo'lsa `Authorization: Bearer <token>` qo'shadi.
+
+web-admin:
+
+- `axios` ishlatiladi.
+- Request ketishidan oldin cookie ichidagi `admin_token` olinadi.
+- Token bo'lsa `Authorization: Bearer <token>` header qo'shiladi.
+- Har doim demo header ham qo'shiladi:
+  - `x-user-role: SUPER_ADMIN`
+  - `x-user-id: demo-admin-id`
+- Agar backend 401 qaytarsa:
+  - `admin_token` cookie o'chiriladi.
+  - Browser `/login` sahifasiga yuboriladi.
+
+web-partner:
+
+- `fetch` ustidan `request<T>` wrapper bor.
+- Token bo'lsa `Authorization: Bearer <token>` qo'shadi.
+- Lekin partner paneldagi asosiy amallar hozir `data-store` ichida lokal yuradi.
+
+
+1-PANEL: WEB-USER, MIJOZLAR SAYTI
+=================================
+
+Joylashuvi:
+
+- apps/web-user
+
+Maqsadi:
+
+- Oddiy foydalanuvchi mehmonxona ko'radi.
+- Avtobus qatnovini ko'radi.
+- Bron qiladi.
+- Profilini ko'radi.
+- Sevimlilarini boshqaradi.
+
+URL tuzilishi:
+
+- `/:lang`
+- `/:lang/login`
+- `/:lang/hotels`
+- `/:lang/hotels/:slug`
+- `/:lang/buses`
+- `/:lang/buses/:id`
+- `/:lang/checkout`
+- `/:lang/booking/:id`
+- `/:lang/account`
+
+Bu yerda `:lang` - til. Masalan:
+
+- `/uz`
+- `/ru`
+- `/en`
+
+
+WEB-USER LOGIN OQIMI
+====================
+
+Asosiy fayllar:
+
+- apps/web-user/components/auth/LoginForm.tsx
+- apps/web-user/lib/auth/actions.ts
+- apps/web-user/lib/api/auth.ts
+- apps/web-user/lib/auth/session.ts
+
+Login ikki bosqichli:
+
+1. Telefon raqam kiritiladi.
+2. OTP kod kiritiladi.
+
+"Kod yuborish" tugmasi bosilganda:
+
+- LoginForm formani `requestOtpAction` ga yuboradi.
+- `requestOtpAction` telefon raqam borligini tekshiradi.
+- Keyin `sendOtp(phone)` chaqiriladi.
+- `sendOtp` backendga boradi:
+  - Method: POST
+  - URL: `/auth/user/send-otp`
+  - Body: `{ phone }`
+- Backend OTP yuboradi yoki demo kod qaytaradi.
+- Forma ikkinchi bosqichga o'tadi.
+
+"Tasdiqlash" tugmasi bosilganda:
+
+- LoginForm formani `verifyOtpAction` ga yuboradi.
+- `verifyOtpAction` telefon va kodni oladi.
+- `verifyOtp(phone, code)` chaqiriladi.
+- Backendga so'rov ketadi:
+  - Method: POST
+  - URL: `/auth/user/verify-otp`
+  - Body: `{ phone, code }`
+- Backend access token, refresh token va user ma'lumotini qaytaradi.
+- `setSession` cookie saqlaydi.
+- Cookie nomi: `uzbron_session`
+- Keyin foydalanuvchi kerakli sahifaga redirect qilinadi.
+
+"Chiqish" tugmasi bosilganda:
+
+- `logoutAction(locale)` ishlaydi.
+- `uzbron_session` cookie o'chiriladi.
+- User `/${locale}` bosh sahifaga yuboriladi.
+
+Oddiy tilda:
+
+- User telefon kiritadi.
+- Backend telefonni tekshiradi va kod yuboradi.
+- User kod kiritadi.
+- Backend "ha, bu shu user" deydi.
+- Frontend cookie saqlaydi.
+- Keyingi bron, profil, sevimli kabi so'rovlarda shu cookie ichidagi token ishlatiladi.
+
+
+WEB-USER HOTEL QIDIRISH OQIMI
+=============================
+
+Asosiy fayllar:
+
+- apps/web-user/components/search/SearchBar.tsx
+- apps/web-user/app/[lang]/(main)/hotels/page.tsx
+- apps/web-user/lib/api/hotels.ts
+- apps/web-user/lib/api/catalog.ts
+
+Hotel qidirish formasidagi elementlar:
+
+- Shahar tanlash dropdown.
+- Kirish sanasi.
+- Chiqish sanasi.
+- Mehmonlar soni.
+- Qidirish tugmasi.
+
+Shahar dropdown bosilganda:
+
+- Backendga so'rov ketmaydi.
+- Faqat frontend ichida dropdown ochiladi/yopiladi.
+- Shaharlar ro'yxati sahifa yuklanganda oldin `getCities` orqali olingan bo'ladi.
+
+"-" va "+" tugmalari bosilganda:
+
+- Backendga so'rov ketmaydi.
+- Faqat mehmonlar soni local state ichida kamayadi yoki ko'payadi.
+
+"Qidirish" tugmasi bosilganda:
+
+- Backendga darhol so'rov ketmaydi.
+- Frontend URL query yaratadi.
+- Masalan:
+  - `/uz/hotels?city_id=...&check_in=2026-07-03&check_out=2026-07-04&guests=2`
+- `router.push` shu URLga o'tkazadi.
+- Keyin `hotels/page.tsx` yangi query bilan qayta ishlaydi.
+- Sahifa backenddan hotel ro'yxatini oladi.
+
+Hotel ro'yxati sahifasi ochilganda:
+
+- `getCities(locale)` ishlaydi:
+  - Method: GET
+  - URL: `/catalog/cities`
+- `getHotels(locale, filters)` ishlaydi:
+  - Method: GET
+  - URL: `/hotels`
+  - Query:
+    - `city_id`
+    - `stars`
+    - `page`
+    - `limit`
+
+Muhim:
+
+- Ba'zi filtrlar frontendda lokal ishlaydi.
+- Masalan narx bo'yicha filter, sort, pagination qismi sahifada olingan ro'yxat
+  ustida frontendda hisoblanadi.
+
+Hotel kartasi bosilganda:
+
+- User hotel detail sahifasiga o'tadi.
+- URL:
+  - `/${locale}/hotels/${hotel.slug}`
+- Masalan:
+  - `/uz/hotels/hilton-tashkent`
+
+
+WEB-USER HOTEL DETAIL OQIMI
+===========================
+
+Asosiy fayllar:
+
+- apps/web-user/app/[lang]/(main)/hotels/[slug]/page.tsx
+- apps/web-user/components/favorites/FavoriteButton.tsx
+- apps/web-user/lib/api/hotels.ts
+- apps/web-user/lib/api/reviews.ts
+- apps/web-user/lib/api/catalog.ts
+- apps/web-user/lib/api/users.ts
+
+Hotel detail sahifasi ochilganda:
+
+- `getHotel(locale, slugOrId)` ishlaydi:
+  - Method: GET
+  - URL: `/hotels/:slugOrId`
+- `getAmenities(locale)` ishlaydi:
+  - Method: GET
+  - URL: `/catalog/amenities`
+- `getHotelReviews(hotelId)` ishlaydi:
+  - Method: GET
+  - URL: `/hotels/:id/reviews`
+- Agar user login bo'lgan bo'lsa, favorite tekshiriladi:
+  - Method: GET
+  - URL: `/me/favorites`
+
+"Sevimliga qo'shish" yurak tugmasi bosilganda:
+
+- Agar user login bo'lmagan bo'lsa:
+  - Frontend login sahifasiga yuboradi.
+- Agar user login bo'lgan va hotel hali favorite emas bo'lsa:
+  - Method: POST
+  - URL: `/me/favorites`
+  - Body: `{ target_type, target_id }`
+- Agar user login bo'lgan va hotel favorite bo'lsa:
+  - Method: DELETE
+  - URL: `/me/favorites/:favoriteId`
+
+"Xona tanlash" yoki room booking tugmasi bosilganda:
+
+- Odatda sahifadagi rooms bo'limiga olib tushadi yoki checkout sahifasiga link qiladi.
+- Room tanlanganda checkout URLga kerakli hotel/room ma'lumotlari bilan o'tadi.
+
+
+WEB-USER HOTEL BRON QILISH OQIMI
+================================
+
+Asosiy fayllar:
+
+- apps/web-user/components/checkout/CheckoutForm.tsx
+- apps/web-user/lib/booking/actions.ts
+- apps/web-user/lib/api/bookings.ts
+
+Checkout sahifasida user quyidagilarni kiritadi:
+
+- Ism familiya.
+- Kirish sanasi.
+- Chiqish sanasi.
+- Mehmonlar soni.
+- To'lov usuli.
+
+Formadagi narx:
+
+- Frontendda taxminiy hisoblanadi.
+- Kechalar soni check-in va check-out orasidan chiqadi.
+- Total = xona narxi * kechalar soni.
+
+"Bronni tasdiqlash" tugmasi bosilganda:
+
+- Forma `createBookingAction` ga submit bo'ladi.
+- Agar user login bo'lmagan bo'lsa:
+  - `/${locale}/login` sahifasiga redirect bo'ladi.
+- Agar login bo'lgan bo'lsa:
+  - `createHotelBooking` chaqiriladi.
+- Backendga so'rov:
+  - Method: POST
+  - URL: `/bookings/hotel`
+  - Body:
+    - `hotel_id`
+    - `room_id`
+    - `check_in`
+    - `check_out`
+    - `rooms`
+    - `adults`
+    - `payment_method`
+- Backend bron yaratadi.
+- Frontend booking detail sahifasiga o'tadi:
+  - `/${locale}/booking/${bookingId}`
+
+Booking detail sahifasi:
+
+- `getBooking(session, id)` ishlaydi.
+- Backendga so'rov:
+  - Method: GET
+  - URL: `/bookings/:id`
+
+
+WEB-USER AVTOBUS QIDIRISH OQIMI
+===============================
+
+Asosiy fayllar:
+
+- apps/web-user/components/bus/BusSearchBar.tsx
+- apps/web-user/app/[lang]/(main)/buses/page.tsx
+- apps/web-user/lib/api/buses.ts
+- apps/web-user/lib/api/catalog.ts
+
+Bus qidirish formasida:
+
+- Qayerdan.
+- Qayerga.
+- Sana.
+- Qidirish tugmasi.
+
+Qayerdan/qayerga tanlanganda:
+
+- Backendga darhol so'rov ketmaydi.
+- Faqat frontend state o'zgaradi.
+
+"Qidirish" bosilganda:
+
+- Frontend URL query yasaydi.
+- Masalan:
+  - `/uz/buses?from_city_id=...&to_city_id=...&date=2026-07-03`
+- Keyin buses page qayta yuklanadi.
+
+Buses page ochilganda:
+
+- Shaharlar olinadi:
+  - Method: GET
+  - URL: `/catalog/cities`
+- Qatnovlar olinadi:
+  - Method: GET
+  - URL: `/bus-trips`
+  - Query:
+    - `from_city_id`
+    - `to_city_id`
+
+Muhim:
+
+- `date` URLda turadi, lekin hozir API so'rovida asosiy filter sifatida
+  ishlatilmayapti.
+
+Avtobus kartasi bosilganda:
+
+- User bus detail sahifasiga o'tadi.
+- URL:
+  - `/${locale}/buses/${trip.id}`
+
+
+WEB-USER AVTOBUS DETAIL VA O'RINDIQ TANLASH
+===========================================
+
+Asosiy fayllar:
+
+- apps/web-user/app/[lang]/(main)/buses/[id]/page.tsx
+- apps/web-user/components/bus/SeatPicker.tsx
+- apps/web-user/lib/api/buses.ts
+- apps/web-user/lib/booking/actions.ts
+
+Bus detail sahifasi ochilganda:
+
+- Qatnov ma'lumoti olinadi:
+  - Method: GET
+  - URL: `/bus-trips/:id`
+- O'rindiqlar olinadi:
+  - Method: GET
+  - URL: `/bus-trips/:id/seats`
+- Avtobus kompaniyasi reviewlari olinadi:
+  - Method: GET
+  - URL: `/bus-companies/:companyId/reviews`
+
+O'rindiq bosilganda:
+
+- Agar o'rindiq band bo'lsa, tanlanmaydi.
+- Agar bo'sh bo'lsa, frontend ichida selected ro'yxatiga qo'shiladi.
+- Yana bossa selected ro'yxatdan chiqariladi.
+- Backendga bu paytda so'rov ketmaydi.
+
+To'lov usuli select o'zgartirilganda:
+
+- Faqat frontend form qiymati o'zgaradi.
+
+"Bron qilish" tugmasi bosilganda:
+
+- Forma `createBusBookingAction` ga submit bo'ladi.
+- Agar user login bo'lmagan bo'lsa:
+  - Login sahifasiga redirect bo'ladi.
+- Agar login bo'lgan bo'lsa:
+  - `createBusBooking` ishlaydi.
+- Backendga so'rov:
+  - Method: POST
+  - URL: `/bookings/bus`
+  - Body:
+    - `trip_id`
+    - `seats`
+    - `payment_method`
+- Backend bron yaratadi.
+- Frontend booking detailga o'tadi:
+  - `/${locale}/booking/${bookingId}`
+
+
+WEB-USER PROFIL, BRONLAR, BONUS, FAVORITE
+=========================================
+
+Asosiy fayllar:
+
+- apps/web-user/lib/api/users.ts
+- apps/web-user/lib/account/actions.ts
+- apps/web-user/lib/account/favorites-actions.ts
+
+Profil sahifasi ochilganda:
+
+- Backendga so'rov:
+  - Method: GET
+  - URL: `/me`
+
+"Profilni saqlash" tugmasi bosilganda:
+
+- `updateProfileAction` ishlaydi.
+- Backendga so'rov:
+  - Method: PATCH
+  - URL: `/me`
+  - Body:
+    - `first_name`
+    - `last_name`
+    - `email`
+
+Mening bronlarim sahifasi:
+
+- Backendga so'rov:
+  - Method: GET
+  - URL: `/me/bookings`
+
+Sevimlilar sahifasi:
+
+- Backendga so'rov:
+  - Method: GET
+  - URL: `/me/favorites`
+
+Bonuslar sahifasi:
+
+- Backendga so'rov:
+  - Method: GET
+  - URL: `/me/bonuses`
+
+Sevimliga qo'shish:
+
+- Method: POST
+- URL: `/me/favorites`
+
+Sevimlidan olib tashlash:
+
+- Method: DELETE
+- URL: `/me/favorites/:id`
+
+
+WEB-USER QISQA TUGMA XARITASI
+=============================
+
+- Login sahifasi, "Kod yuborish":
+  - `/auth/user/send-otp` ga POST.
+
+- Login sahifasi, "Tasdiqlash":
+  - `/auth/user/verify-otp` ga POST.
+  - Cookie saqlaydi.
+  - Bosh sahifa yoki oldingi sahifaga redirect qiladi.
+
+- Header, "Chiqish":
+  - Cookie o'chiradi.
+  - `/${locale}` ga redirect qiladi.
+
+- Hotel search, "Qidirish":
+  - URL query o'zgartiradi.
+  - Keyin hotels sahifasi `/hotels` dan ma'lumot oladi.
+
+- Hotel kartasi:
+  - `/${locale}/hotels/:slug` sahifasiga o'tadi.
+
+- Yurak/favorite tugmasi:
+  - Login bo'lmasa login sahifasiga o'tadi.
+  - Login bo'lsa `/me/favorites` ga POST yoki DELETE qiladi.
+
+- Room bron tugmasi:
+  - Checkout sahifasiga o'tadi.
+
+- Checkout, "Bronni tasdiqlash":
+  - `/bookings/hotel` ga POST qiladi.
+  - `/${locale}/booking/:id` ga o'tadi.
+
+- Bus search, "Qidirish":
+  - URL query o'zgartiradi.
+  - Keyin buses sahifasi `/bus-trips` dan ma'lumot oladi.
+
+- Bus kartasi:
+  - `/${locale}/buses/:id` sahifasiga o'tadi.
+
+- Bus o'rindiq:
+  - Faqat selected state o'zgaradi.
+
+- Bus bron:
+  - `/bookings/bus` ga POST qiladi.
+  - Booking detailga o'tadi.
+
+- Profil saqlash:
+  - `/me` ga PATCH qiladi.
+
+
+2-PANEL: WEB-PARTNER, HAMKOR PANELI
+===================================
+
+Joylashuvi:
+
+- apps/web-partner
+
+Maqsadi:
+
+- Mehmonxona hamkori o'z bronlarini ko'radi.
+- Check-in/check-out qiladi.
+- Xonalarni boshqaradi.
+- Listing ma'lumotlarini to'ldiradi.
+- Mehmonlarni va hisobotlarni ko'radi.
+
+Muhim holat:
+
+- Bu panelda ko'p ma'lumotlar hozir backenddan emas, frontend ichidagi
+  Zustand demo store dan keladi.
+- Ya'ni tugma bosilganda ma'lumot databasega yozilmaydi, brauzer xotirasidagi
+  store o'zgaradi.
+- Backendga ulanadigan api client bor, lekin hozir asosiy ekranlar demo store
+  bilan ishlayapti.
+
+Asosiy fayllar:
+
+- apps/web-partner/app/_stores/auth-store.ts
+- apps/web-partner/app/_stores/data-store.ts
+- apps/web-partner/app/_hooks/use-auth.ts
+- apps/web-partner/app/_hooks/use-reservations.ts
+- apps/web-partner/app/_hooks/use-rooms.ts
+- apps/web-partner/app/_hooks/use-listing.ts
+- apps/web-partner/app/_lib/api/client.ts
+
+
+WEB-PARTNER LOGIN OQIMI
+=======================
+
+Asosiy fayllar:
+
+- apps/web-partner/app/(auth)/login/login-form.tsx
+- apps/web-partner/app/_hooks/use-auth.ts
+- apps/web-partner/app/_stores/auth-store.ts
+
+Login form ikki bosqichli:
+
+1. Telefon raqam kiritish.
+2. OTP kod kiritish.
+
+"Kod yuborish" bosilganda:
+
+- Telefon validatsiya qilinadi.
+- `useRequestOtp` mutation ishlaydi.
+- Hozir backendga haqiqiy so'rov ketmaydi.
+- `mockDelay` ishlaydi.
+- Toast chiqadi:
+  - Demo rejimda istalgan 6 raqamli kod ishlaydi.
+- Forma OTP bosqichiga o'tadi.
+
+"Tasdiqlash va kirish" bosilganda:
+
+- Kod 6 raqam ekanligi tekshiriladi.
+- `useVerifyOtp` mutation ishlaydi.
+- Hozir backendga haqiqiy so'rov ketmaydi.
+- Demo token yaratiladi:
+  - `demo-access-token`
+  - `demo-refresh-token`
+- Demo partner user storega yoziladi.
+- Zustand persist uni localStoragega saqlaydi.
+- User `/` dashboardga yuboriladi.
+
+"Raqamni o'zgartirish" bosilganda:
+
+- Forma telefon bosqichiga qaytadi.
+- Backendga so'rov ketmaydi.
+
+"Kodni qayta yuborish" bosilganda:
+
+- Timer 0 bo'lsa yana demo OTP request ishlaydi.
+- Backendga so'rov ketmaydi.
+
+"Chiqish" bosilganda:
+
+- `useLogout` ishlaydi.
+- Auth store tozalanadi.
+- User `/login` sahifasiga yuboriladi.
+
+
+WEB-PARTNER DATA STORE
+======================
+
+Asosiy fayl:
+
+- apps/web-partner/app/_stores/data-store.ts
+
+Bu fayl partner panel uchun vaqtinchalik databasega o'xshaydi.
+
+Ichida quyidagilar bor:
+
+- Reservations - bronlar.
+- Rooms - xonalar.
+- RoomTypes - xona turlari.
+- Guests - mehmonlar.
+- Listing - mehmonxona sahifasi ma'lumotlari.
+
+Tugmalar bosilganda ko'pincha shu store funksiyalari ishlaydi:
+
+- `confirmReservation`
+- `rejectReservation`
+- `checkIn`
+- `checkOut`
+- `addReservation`
+- `assignRoom`
+- `setRoomStatus`
+- `addRoomType`
+- `updateRoomType`
+- `deleteRoomType`
+- `addRoom`
+- `updateRoom`
+- `deleteRoom`
+- `bulkAddRooms`
+- `updateListingGeneral`
+- `updateListingRules`
+- `setListingStatus`
+- `toggleAmenity`
+- `addPhoto`
+- `removePhoto`
+- `setCoverPhoto`
+- `reorderPhoto`
+- `addNearby`
+- `removeNearby`
+- `addExtraFee`
+- `removeExtraFee`
+
+Oddiy tilda:
+
+- Bu amallar hozir databasega yozmaydi.
+- Sahifadagi ro'yxatni local o'zgartiradi.
+- Refresh yoki localStorage holatiga qarab ma'lumot qayta tiklanishi mumkin.
+
+
+WEB-PARTNER DASHBOARD VA FRONT DESK
+===================================
+
+Asosiy fayllar:
+
+- apps/web-partner/app/_hooks/use-dashboard.ts
+- apps/web-partner/app/_stores/data-store.ts
+- front desk view komponentlari
+
+Dashboard ochilganda:
+
+- Store ichidagi statistikalar hisoblanadi.
+- `getStats` ishlaydi.
+- Masalan:
+  - Bandlik foizi.
+  - Bugungi kelishlar.
+  - Bugungi ketishlar.
+  - Pending bronlar.
+  - Oylik revenue.
+
+Front deskdagi filter tugmalari:
+
+- "Barchasi", "Kutilmoqda", "Kelish", "Ketish" kabi filterlar faqat ekran
+  ro'yxatini filter qiladi.
+- Backendga so'rov ketmaydi.
+
+"Walk-in" yoki "Bron qo'shish" tugmasi:
+
+- WalkInDialog modalini ochadi.
+- Forma to'ldirilganda `addReservation` ishlaydi.
+- Yangi reservation storega qo'shiladi.
+- Backendga so'rov ketmaydi.
+
+"Tasdiqlash" tugmasi:
+
+- `confirmReservation(id)` ishlaydi.
+- Reservation status `CONFIRMED` bo'ladi.
+- Backendga so'rov ketmaydi.
+
+"Rad etish" tugmasi:
+
+- `rejectReservation(id)` ishlaydi.
+- Reservation status `CANCELLED` bo'ladi.
+- Backendga so'rov ketmaydi.
+
+"Check-in" tugmasi:
+
+- Agar reservationda xona raqami yo'q bo'lsa:
+  - AssignRoomDialog ochiladi.
+  - Xona tanlash kerak bo'ladi.
+- Agar xona raqami bor bo'lsa:
+  - `checkIn(id)` ishlaydi.
+  - Reservation status `IN_HOUSE` bo'ladi.
+  - Xona statusi `OCCUPIED` bo'ladi.
+  - Backendga so'rov ketmaydi.
+
+"Check-out" tugmasi:
+
+- `checkOut(id)` ishlaydi.
+- Reservation status `COMPLETED` bo'ladi.
+- Xona statusi `VACANT_DIRTY` bo'ladi.
+- Backendga so'rov ketmaydi.
+
+
+WEB-PARTNER RESERVATIONS SAHIFASI
+=================================
+
+Asosiy fayllar:
+
+- apps/web-partner/app/(dashboard)/reservations/reservations-view.tsx
+- apps/web-partner/app/(dashboard)/reservations/[id]/detail-view.tsx
+- apps/web-partner/app/_hooks/use-reservations.ts
+
+Reservations ro'yxati ochilganda:
+
+- `useReservations()` store ichidagi reservationsni oladi.
+- Backendga so'rov ketmaydi.
+
+Search input:
+
+- Mijoz ismi, telefon yoki bron raqami bo'yicha local filter qiladi.
+- Backendga so'rov ketmaydi.
+
+Status tabs:
+
+- Faqat local ro'yxatni filter qiladi.
+
+"Eksport" tugmasi:
+
+- Frontend CSV file yaratadi.
+- Brauzer orqali download qiladi.
+- Backendga so'rov ketmaydi.
+
+"Walk-in bron" tugmasi:
+
+- WalkInDialog ochadi.
+- Submit bo'lsa `addReservation` ishlaydi.
+
+Jadval qatori bosilganda:
+
+- User reservation detailga o'tadi.
+- URL:
+  - `/reservations/:id`
+
+
+WEB-PARTNER RESERVATION DETAIL
+==============================
+
+Detail sahifada bitta bron ko'rsatiladi.
+
+"Orqaga" linki:
+
+- `/reservations` sahifasiga qaytaradi.
+
+"Chop etish" tugmasi:
+
+- `window.print()` ishlaydi.
+- Brauzer print oynasi ochiladi.
+- Backendga so'rov ketmaydi.
+
+"Rad etish" tugmasi:
+
+- Confirm dialog ochiladi.
+- Tasdiqlansa `rejectReservation(id)` ishlaydi.
+- Backendga so'rov ketmaydi.
+
+"Tasdiqlash" tugmasi:
+
+- `confirmReservation(id)` ishlaydi.
+- Backendga so'rov ketmaydi.
+
+"Check-in" tugmasi:
+
+- Xona biriktirilmagan bo'lsa AssignRoomDialog ochiladi.
+- Xona tanlangandan keyin:
+  - `assignRoom(reservationId, roomNumber)` ishlaydi.
+  - Keyin `checkIn(reservationId)` ishlashi mumkin.
+- Xona allaqachon bor bo'lsa:
+  - `checkIn(reservationId)` ishlaydi.
+
+"Check-out" tugmasi:
+
+- `checkOut(reservationId)` ishlaydi.
+
+"Bekor qilish" tugmasi:
+
+- Confirm dialog ochadi.
+- Tasdiqlansa `rejectReservation(id)` ishlaydi.
+
+"To'lov qabul qilish" tugmasi:
+
+- Hozir backendga ulanmagan.
+- Toast chiqaradi yoki keyingi sprint uchun placeholder.
+
+Telefon linki:
+
+- `tel:` link ochadi.
+- Telefon ilovasini ochishi mumkin.
+
+Email linki:
+
+- `mailto:` link ochadi.
+- Email client ochishi mumkin.
+
+
+WEB-PARTNER ASSIGN ROOM MODALI
+==============================
+
+Asosiy fayl:
+
+- apps/web-partner/app/_components/domain/assign-room-dialog.tsx
+
+Modal ochilganda:
+
+- Reservation room type bo'yicha mos xonalar topiladi.
+- Avval `VACANT_CLEAN` xonalar ko'rsatiladi.
+- Xona topilmasa boshqa mos xonalar ham ko'rsatilishi mumkin.
+
+Xona kartasi bosilganda:
+
+- Tanlangan xona local statega yoziladi.
+
+"Xonaga tayinlash" bosilganda:
+
+- `assignRoom(reservationId, roomNumber)` ishlaydi.
+- Reservationga xona raqami yoziladi.
+- Backendga so'rov ketmaydi.
+
+
+WEB-PARTNER WALK-IN MODALI
+==========================
+
+Asosiy fayl:
+
+- apps/web-partner/app/_components/domain/walk-in-dialog.tsx
+
+Formada kiritiladi:
+
+- Ism familiya.
+- Telefon.
+- Xona turi.
+- Kirish sanasi.
+- Chiqish sanasi.
+- Kattalar soni.
+- Bolalar soni.
+
+"Saqlash" yoki submit bosilganda:
+
+- Form validatsiya qilinadi.
+- Kechalar soni hisoblanadi.
+- Total = xona turi narxi * kechalar soni.
+- `addReservation` ishlaydi.
+- Yangi reservation storega qo'shiladi.
+- Backendga so'rov ketmaydi.
+
+
+WEB-PARTNER ROOMS SAHIFASI
+==========================
+
+Asosiy fayllar:
+
+- apps/web-partner/app/(dashboard)/rooms/rooms-view.tsx
+- apps/web-partner/app/_hooks/use-rooms.ts
+- apps/web-partner/app/_stores/data-store.ts
+
+Rooms sahifasi ochilganda:
+
+- Xonalar store ichidan olinadi.
+- Backendga so'rov ketmaydi.
+
+Status filterlari:
+
+- Faqat ekrandagi ro'yxatni filter qiladi.
+
+Xona kartasi bosilganda:
+
+- Xona detail dialogi ochiladi.
+
+Status tugmalari bosilganda:
+
+- Agar xona occupied bo'lsa, status o'zgartirish cheklanishi mumkin.
+- Agar ruxsat bo'lsa `setRoomStatus(roomId, status)` ishlaydi.
+- Xona statusi local storeda o'zgaradi.
+- Backendga so'rov ketmaydi.
+
+
+WEB-PARTNER ROOM SETTINGS
+=========================
+
+Asosiy fayllar:
+
+- apps/web-partner/app/(dashboard)/settings/rooms/rooms-settings-view.tsx
+- room type dialoglar
+- room dialoglar
+- bulk rooms dialog
+
+"Yangi tur" tugmasi:
+
+- RoomTypeDialog ochadi.
+- Submit bo'lsa `addRoomType` ishlaydi.
+- Backendga so'rov ketmaydi.
+
+"Tahrirlash" xona turi tugmasi:
+
+- RoomTypeDialog mavjud ma'lumot bilan ochiladi.
+- Submit bo'lsa `updateRoomType` ishlaydi.
+
+"O'chirish" xona turi tugmasi:
+
+- Confirm dialog ochiladi.
+- Tasdiqlansa `deleteRoomType` ishlaydi.
+- Agar shu typega tegishli xona bor bo'lsa, store delete qilmasligi mumkin.
+
+Amenity pill tugmalari:
+
+- Formadagi amenitylar tanlanadi yoki olib tashlanadi.
+- Backendga so'rov ketmaydi.
+
+"Ko'p xona qo'shish" tugmasi:
+
+- BulkRoomsDialog ochadi.
+- Raqam oralig'i, qavat, xona turi kiritiladi.
+- Submit bo'lsa `bulkAddRooms` ishlaydi.
+- Takror raqamlar skip qilinadi.
+
+"Yangi xona" tugmasi:
+
+- RoomDialog ochadi.
+- Submit bo'lsa `addRoom` ishlaydi.
+
+"Xonani tahrirlash" tugmasi:
+
+- RoomDialog mavjud xona bilan ochiladi.
+- Submit bo'lsa `updateRoom` ishlaydi.
+
+"Xonani o'chirish" tugmasi:
+
+- Confirm dialog ochiladi.
+- Tasdiqlansa `deleteRoom` ishlaydi.
+- Xona occupied bo'lsa o'chirish cheklanishi mumkin.
+
+
+WEB-PARTNER LISTING SAHIFASI
+============================
+
+Asosiy fayllar:
+
+- apps/web-partner/app/(dashboard)/listing/listing-overview.tsx
+- listing editor komponentlari
+- apps/web-partner/app/_hooks/use-listing.ts
+- apps/web-partner/app/_stores/data-store.ts
+
+Listing - mehmonxonaning public sahifadagi ma'lumotlari.
+
+Sahifadagi "Tahrirlash" tugmalari:
+
+- Tegishli editor drawer/modalni ochadi.
+- Backendga darhol so'rov ketmaydi.
+
+General editor saqlash:
+
+- `updateListingGeneral` ishlaydi.
+- Mehmonxona nomi, qisqa ta'rif, to'liq ta'rif kabi ma'lumotlar local storeda o'zgaradi.
+
+Amenities editor:
+
+- Amenity bosilganda `toggleAmenity` ishlaydi.
+- Tanlangan amenity qo'shiladi yoki olib tashlanadi.
+
+Photos editor:
+
+- "Rasm qo'shish" - `addPhoto`.
+- "O'chirish" - `removePhoto`.
+- "Cover qilish" - `setCoverPhoto`.
+- "Yuqoriga/pastga" - `reorderPhoto`.
+- Hozir file upload backendga ulanmagan, demo rasm ma'lumotlari bilan ishlaydi.
+
+Location editor:
+
+- Yaqin joy qo'shish - `addNearby`.
+- Yaqin joyni o'chirish - `removeNearby`.
+
+Rules editor:
+
+- Saqlash - `updateListingRules`.
+- Extra fee qo'shish - `addExtraFee`.
+- Extra fee o'chirish - `removeExtraFee`.
+
+"Preview" tugmasi:
+
+- Preview drawer ochadi.
+- Backendga so'rov ketmaydi.
+
+"Publish" yoki status tugmasi:
+
+- Listing to'liqmi tekshiriladi.
+- To'liqlik shartlari:
+  - Nomi kamida 3 belgi.
+  - Qisqa ta'rif kamida 20 belgi.
+  - To'liq ta'rif kamida 100 belgi.
+  - Kamida 3 rasm.
+  - Kamida 3 amenity.
+  - Address bor.
+- Agar to'liq bo'lmasa toast error chiqadi.
+- Agar to'liq bo'lsa `setListingStatus` ishlaydi.
+- Backendga so'rov ketmaydi.
+
+
+WEB-PARTNER CALENDAR
+====================
+
+Calendar sahifasi bookinglarni vaqt bo'yicha ko'rsatadi.
+
+View tugmalari:
+
+- 7 kun.
+- 14 kun.
+- 30 kun.
+
+Bu tugmalar:
+
+- Faqat `viewMode` state o'zgartiradi.
+- Backendga so'rov ketmaydi.
+
+Chap/o'ng arrow tugmalari:
+
+- Calendar start offsetini o'zgartiradi.
+- Boshqa sanalarni ko'rsatadi.
+
+"Bugun" tugmasi:
+
+- Offsetni 0 ga qaytaradi.
+
+Room type filter:
+
+- Calendar ichidagi xonalar/bronlarni filter qiladi.
+
+Bo'sh cell bosilganda:
+
+- WalkInDialog ochiladi.
+- Sana oldindan to'ldirilgan bo'lishi mumkin.
+
+Reservation bar bosilganda:
+
+- Reservation detail sahifasiga o'tadi:
+  - `/reservations/:id`
+
+
+WEB-PARTNER GUESTS
+==================
+
+Guests sahifasi:
+
+- Mehmonlar store ichidan olinadi.
+- Backendga so'rov ketmaydi.
+
+Search input:
+
+- Ism, telefon, email bo'yicha local filter qiladi.
+
+VIP checkbox:
+
+- Faqat VIP mehmonlarni ko'rsatadi.
+
+Guest qatori bosilganda:
+
+- Guest detail sahifasiga o'tadi:
+  - `/guests/:id`
+
+Telefon linki:
+
+- `tel:` orqali telefon ilovasini ochadi.
+
+
+WEB-PARTNER REPORTS
+===================
+
+Reports sahifasida demo chart/statistikalar bor.
+
+Sana/filter tugmalari:
+
+- Frontend ichida ko'rsatiladigan demo ma'lumotni o'zgartiradi.
+
+"PDF eksport" tugmasi:
+
+- Hozir backendga ulanmagan.
+- Toast chiqaradi:
+  - PDF eksport keyingi sprintda.
+
+
+WEB-PARTNER SETTINGS
+====================
+
+Settings sahifalarida forma qiymatlari local ishlaydi.
+
+"Saqlash" tugmasi:
+
+- Odatda qisqa loading beradi.
+- Toast yoki alert chiqaradi.
+- Backendga so'rov ketmaydi.
+
+
+WEB-PARTNER NAVIGATSIYA
+=======================
+
+Sidebar linklari:
+
+- Dashboardga olib boradi.
+- Reservationsga olib boradi.
+- Calendar/Rooms/Listing/Guests/Reports/Settings kabi sahifalarga olib boradi.
+- Bu linklar backendga so'rov yubormaydi, faqat sahifa almashtiradi.
+
+Command palette:
+
+- Qidirilgan item tanlansa `router.push(item.href)` qiladi.
+- Ya'ni sahifani o'zgartiradi.
+
+
+WEB-PARTNER QISQA TUGMA XARITASI
+================================
+
+- Login, "Kod yuborish":
+  - Demo OTP, backendga bormaydi.
+
+- Login, "Tasdiqlash va kirish":
+  - Demo token yaratadi, localStoragega saqlaydi, `/` ga o'tadi.
+
+- Logout:
+  - Auth store tozalanadi, `/login` ga o'tadi.
+
+- Reservations, search/filter:
+  - Local filter.
+
+- Reservations, "Eksport":
+  - CSV lokal download.
+
+- Reservations, row click:
+  - `/reservations/:id` ga o'tadi.
+
+- Detail, "Chop etish":
+  - Brauzer print.
+
+- Detail, "Tasdiqlash":
+  - Storeda status CONFIRMED.
+
+- Detail, "Rad etish" yoki "Bekor qilish":
+  - Storeda status CANCELLED.
+
+- Detail, "Check-in":
+  - Xona yo'q bo'lsa assign modal.
+  - Keyin status IN_HOUSE.
+
+- Detail, "Check-out":
+  - Status COMPLETED, xona VACANT_DIRTY.
+
+- Walk-in submit:
+  - Storega yangi reservation qo'shadi.
+
+- Rooms, xona status tugmasi:
+  - Storeda xona statusini o'zgartiradi.
+
+- Room settings, "Yangi tur":
+  - Storega room type qo'shadi.
+
+- Room settings, "Yangi xona":
+  - Storega xona qo'shadi.
+
+- Listing, "Tahrirlash":
+  - Editor ochadi.
+
+- Listing, "Saqlash":
+  - Storedagi listingni o'zgartiradi.
+
+- Listing, "Publish":
+  - To'liqlikni tekshiradi, keyin store statusini o'zgartiradi.
+
+- Calendar, day/cell:
+  - Walk-in modal yoki reservation detail.
+
+- Reports, "PDF eksport":
+  - Placeholder toast, backendga bormaydi.
+
+
+3-PANEL: WEB-ADMIN, SUPER ADMIN PANEL
+=====================================
+
+Joylashuvi:
+
+- apps/web-admin
+
+Maqsadi:
+
+- Super admin butun platformani ko'radi.
+- Foydalanuvchilarni ko'radi.
+- Hamkorlarni ko'radi.
+- Bronlarni ko'radi.
+- Moliya, CMS, katalog, promo, support, auditni ko'radi.
+
+Bu panel hozir mock datadan olib tashlanib, `admin-api.ts` orqali backendga
+ulanadigan qilib yozilgan.
+
+Asosiy fayllar:
+
+- apps/web-admin/lib/api/client.ts
+- apps/web-admin/lib/api/admin-api.ts
+- apps/web-admin/lib/store/auth.ts
+- apps/web-admin/middleware.ts
+- apps/web-admin/app/(auth)/login/page.tsx
+
+
+WEB-ADMIN AUTH VA MIDDLEWARE
+============================
+
+Middleware fayli:
+
+- apps/web-admin/middleware.ts
+
+Vazifasi:
+
+- Har bir protected sahifada `admin_token` cookie bor-yo'qligini tekshiradi.
+
+Agar `admin_token` yo'q bo'lsa:
+
+- User `/login` sahifasiga redirect bo'ladi.
+
+Agar `admin_token` bor va user `/login` sahifasiga kirsa:
+
+- User `/dashboard` ga redirect bo'ladi.
+
+Agar user `/` ga kirsa:
+
+- User `/dashboard` ga redirect bo'ladi.
+
+Oddiy tilda:
+
+- Login qilmagan odam admin panelni ko'ra olmaydi.
+- Login qilgan odam login sahifasida qolmaydi, dashboardga o'tadi.
+
+
+WEB-ADMIN LOGIN OQIMI
+=====================
+
+Asosiy fayllar:
+
+- apps/web-admin/app/(auth)/login/page.tsx
+- apps/web-admin/lib/api/admin-api.ts
+- apps/web-admin/lib/store/auth.ts
+
+Login sahifasida:
+
+- Login input.
+- Parol input.
+- Parolni ko'rsatish/yashirish eye tugmasi.
+- Kirish tugmasi.
+
+Eye tugmasi bosilganda:
+
+- Faqat parol input type o'zgaradi.
+- Password ko'rinadi yoki yashirinadi.
+- Backendga so'rov ketmaydi.
+
+"Kirish" tugmasi bosilganda:
+
+- `handleLogin` ishlaydi.
+- Login va parol bo'sh emasligi tekshiriladi.
+- `AdminApi.login(username, password)` chaqiriladi.
+- Backendga so'rov ketadi:
+  - Method: POST
+  - URL: `/auth/admin/login`
+  - Body:
+    - `email`
+    - `username`
+    - `password`
+
+Agar username email bo'lmasa:
+
+- Frontend emailni shunday yasaydi:
+  - `username + "@uzbron.uz"`
+- Masalan username `admin` bo'lsa:
+  - email `admin@uzbron.uz`
+
+Agar backend 2FA talab qilsa:
+
+- Frontend avtomatik verify so'rovi yuboradi.
+- Method: POST
+- URL: `/auth/admin/verify-2fa`
+- Body:
+  - `challenge_id`
+  - `code: "000000"`
+
+Login muvaffaqiyatli bo'lsa:
+
+- Token olinadi.
+- Cookie yoziladi:
+  - `admin_token`
+- Zustand auth storega admin user yoziladi.
+- User `/dashboard` sahifasiga o'tadi.
+
+Login xato bo'lsa:
+
+- Error message ko'rsatiladi.
+
+
+WEB-ADMIN API CLIENT
+====================
+
+Asosiy fayl:
+
+- apps/web-admin/lib/api/client.ts
+
+Har bir backend so'rovida:
+
+- Cookie ichidan `admin_token` olinadi.
+- Token bo'lsa Authorization header qo'shiladi.
+- Demo admin headerlar ham qo'shiladi:
+  - `x-user-role: SUPER_ADMIN`
+  - `x-user-id: demo-admin-id`
+
+Backend 401 qaytarsa:
+
+- Cookie o'chadi.
+- Browser `/login` ga ketadi.
+
+AdminApi helper:
+
+- apps/web-admin/lib/api/admin-api.ts
+
+Vazifasi:
+
+- Backenddan kelgan snake_case maydonlarni admin UI kutadigan formatga aylantiradi.
+- Masalan:
+  - `created_at` -> `createdAt`
+  - `full_name` -> `fullName`
+  - `total_amount` -> `amount`
+- Ba'zi sahifalar uchun bir nechta endpointni parallel chaqiradi va ekranga mos
+  obyekt yasaydi.
+
+
+WEB-ADMIN DASHBOARD
+===================
+
+Asosiy fayl:
+
+- apps/web-admin/app/(dashboard)/dashboard/page.tsx
+
+Dashboard ochilganda:
+
+- `AdminApi.getDashboard()` ishlaydi.
+- U bir nechta ma'lumotni olib keladi:
+  - `/admin/dashboard/overview`
+  - `/admin/users`
+  - `/admin/partners`
+  - `/admin/bookings`
+  - `/admin/audit-logs`
+
+Dashboardda ko'rinadigan narsalar:
+
+- Stat cardlar.
+- Service distribution.
+- Recent activities.
+- Quick actions.
+
+Quick action bosilganda:
+
+- Bu button/link backendga POST qilmaydi.
+- Faqat kerakli sahifaga olib boradi.
+- Masalan:
+  - Hamkor arizalari -> `/partners/requests`
+  - Support -> `/support`
+  - Hotel bookings -> `/bookings/hotels`
+
+
+WEB-ADMIN USERS SAHIFASI
+========================
+
+Asosiy fayllar:
+
+- apps/web-admin/app/(dashboard)/users/page.tsx
+- apps/web-admin/app/(dashboard)/users/[id]/page.tsx
+- apps/web-admin/lib/api/admin-api.ts
+
+Users sahifasi ochilganda:
+
+- `AdminApi.getUsers()` ishlaydi.
+- Backendga so'rovlar:
+  - GET `/admin/users`
+  - GET `/admin/bookings`
+- Bookinglar userlar bilan bog'lanib, bron soni va sarflangan summa hisoblanadi.
+
+Search input:
+
+- Ism, telefon, email bo'yicha local filter.
+- Backendga qayta so'rov yubormaydi.
+
+Status select:
+
+- `active`, `blocked`, `unverified` bo'yicha local filter.
+
+"Export" tugmasi:
+
+- `exportToExcel(filtered, "Foydalanuvchilar")` ishlaydi.
+- Brauzer Excel file download qiladi.
+- Backendga so'rov ketmaydi.
+
+"SMS yuborish" tugmasi:
+
+- Hozir alohida backend actionga ulanmagan.
+- UI tugma sifatida turadi.
+
+User qatori bosilganda:
+
+- User detail sahifasiga o'tadi.
+- URL:
+  - `/users/:id`
+
+User detail sahifasi ochilganda:
+
+- `AdminApi.getUser(id)` ishlaydi:
+  - GET `/admin/users/:id`
+  - GET `/admin/bookings`
+- `AdminApi.getUserBookings(id)` ishlaydi:
+  - GET `/admin/users/:id/bookings`
+  - Qo'shimcha context endpointlar ham olinadi.
+
+"Orqaga" linklari:
+
+- `/users` sahifasiga qaytaradi.
+
+
+WEB-ADMIN PARTNERS
+==================
+
+Asosiy fayllar:
+
+- apps/web-admin/app/(dashboard)/partners/list/page.tsx
+- apps/web-admin/app/(dashboard)/partners/[id]/page.tsx
+- apps/web-admin/app/(dashboard)/partners/requests/page.tsx
+- apps/web-admin/lib/api/admin-api.ts
+
+Partners list ochilganda:
+
+- `AdminApi.getPartners()` ishlaydi.
+- Backendga so'rovlar:
+  - GET `/admin/partners`
+  - GET `/admin/bookings`
+
+Search input:
+
+- Hamkor nomi, telefon, email bo'yicha local filter.
+
+Type/status filterlar:
+
+- Local filter.
+
+"Export" tugmasi:
+
+- Excel download qiladi.
+- Backendga so'rov ketmaydi.
+
+Partner qatori bosilganda:
+
+- Partner detail sahifasiga o'tadi:
+  - `/partners/:id`
+
+Partner detail ochilganda:
+
+- `AdminApi.getPartner(id)`:
+  - GET `/admin/partners/:id`
+  - GET `/admin/bookings`
+- `AdminApi.getPartnerBookings(id)`:
+  - GET `/admin/bookings`
+  - Context endpointlar orqali hotel/partner bog'lanadi.
+
+
+WEB-ADMIN PARTNER REQUESTS
+==========================
+
+Partner requests sahifasi ochilganda:
+
+- `AdminApi.getPartnerRequests()` ishlaydi.
+- Backendga so'rov:
+  - GET `/admin/partners/requests`
+
+"Ko'rish" tugmasi:
+
+- Tanlangan ariza local statega yoziladi.
+- Modal ochiladi.
+- Backendga qo'shimcha so'rov ketmaydi.
+
+Modal ichidagi "Tasdiqlash" tugmasi:
+
+- Hozir backendga POST qilmaydi.
+- Modal yopiladi.
+- Listni haqiqiy database bo'yicha o'zgartirmaydi.
+
+Modal ichidagi "Rad etish" tugmasi:
+
+- Hozir backendga POST qilmaydi.
+- Modal yopiladi.
+
+"Yuklab olish" tugmasi:
+
+- Hozir alohida backend actionga ulanmagan.
+
+"Qo'ng'iroq" tugmasi:
+
+- UI tugma sifatida turadi yoki telefon link vazifasini bajarishi mumkin.
+
+"Izoh qoldirish" tugmasi:
+
+- Hozir backendga ulanmagan.
+
+Muhim:
+
+- Requestsni ko'rish backenddan keladi.
+- Approve/reject actionlari hozir real backend update qilmaydi.
+
+
+WEB-ADMIN BOOKINGS
+==================
+
+Asosiy fayllar:
+
+- apps/web-admin/app/(dashboard)/bookings/hotels/page.tsx
+- apps/web-admin/app/(dashboard)/bookings/buses/page.tsx
+- apps/web-admin/app/(dashboard)/bookings/[id]/page.tsx
+- apps/web-admin/lib/api/admin-api.ts
+
+Hotel bookings sahifasi ochilganda:
+
+- `AdminApi.getHotelBookings()` ishlaydi.
+- Backenddan olinadi:
+  - GET `/admin/bookings`
+  - GET `/admin/users`
+  - GET `/admin/partners`
+  - GET `/admin/hotels`
+  - GET `/admin/trips`
+  - GET `/admin/bus-companies`
+  - GET `/catalog/cities`
+  - GET `/admin/payments`
+- Keyin frontend bus bo'lmagan bookinglarni ajratadi.
+
+Bus bookings sahifasi ochilganda:
+
+- `AdminApi.getBusBookings()` ishlaydi.
+- Shu context olinadi.
+- Keyin frontend bus bookinglarni ajratadi.
+
+Search input:
+
+- Bron ID, mijoz ismi, telefon, marshrut/hotel bo'yicha local filter.
+
+Status filter:
+
+- Local filter.
+
+Payment filter:
+
+- Local filter.
+
+"Export" tugmasi:
+
+- Excel download qiladi.
+- Backendga so'rov ketmaydi.
+
+Booking qatori bosilganda:
+
+- Booking detail sahifasiga o'tadi:
+  - `/bookings/:id`
+
+Booking detail ochilganda:
+
+- `AdminApi.getBookingDetail(id)` ishlaydi.
+- Backendga so'rov:
+  - GET `/admin/bookings/:id`
+- Qo'shimcha context endpointlar ham ishlatiladi.
+
+Customer link:
+
+- `/users/:customerId` sahifasiga olib boradi.
+
+Back link:
+
+- Booking turi hotel bo'lsa `/bookings/hotels`.
+- Booking turi bus bo'lsa `/bookings/buses`.
+
+
+WEB-ADMIN FINANCE
+=================
+
+Asosiy fayllar:
+
+- apps/web-admin/app/(dashboard)/finance/overview/page.tsx
+- apps/web-admin/app/(dashboard)/finance/reports/page.tsx
+- apps/web-admin/app/(dashboard)/finance/withdrawals/page.tsx
+- apps/web-admin/lib/api/admin-api.ts
+
+Finance overview ochilganda:
+
+- `AdminApi.getFinanceOverview()` ishlaydi.
+- Backendga so'rovlar:
+  - GET `/admin/finance/overview`
+  - GET `/admin/withdrawals`
+
+Finance reports ochilganda:
+
+- `AdminApi.getFinanceReports()` ishlaydi.
+- Backendga so'rovlar:
+  - GET `/admin/finance/partners-report`
+  - GET `/admin/finance/overview`
+
+Withdrawals sahifasi ochilganda:
+
+- `AdminApi.getWithdrawals()` ishlaydi.
+- Backendga so'rov:
+  - GET `/admin/withdrawals`
+
+Withdrawalsdagi "Tasdiqlash" tugmasi:
+
+- Hozir real backend update qilmaydi.
+- Frontend local state ichida statusni `approved` qiladi.
+
+Withdrawalsdagi "Rad etish" tugmasi:
+
+- Hozir real backend update qilmaydi.
+- Frontend local state ichida statusni `rejected` qiladi.
+
+"Export" tugmasi:
+
+- Excel download qiladi.
+- Backendga so'rov ketmaydi.
+
+
+WEB-ADMIN CMS
+=============
+
+Asosiy sahifalar:
+
+- apps/web-admin/app/(dashboard)/cms/banners/page.tsx
+- apps/web-admin/app/(dashboard)/cms/news/page.tsx
+- apps/web-admin/app/(dashboard)/cms/pages/page.tsx
+- apps/web-admin/app/(dashboard)/cms/offers/page.tsx
+
+Banners sahifasi ochilganda:
+
+- `AdminApi.getCmsBanners()` ishlaydi.
+- Backendga so'rov:
+  - GET `/admin/cms/banners`
+
+News sahifasi ochilganda:
+
+- `AdminApi.getCmsNews()` ishlaydi.
+- Backendga so'rov:
+  - GET `/admin/cms/news`
+
+Pages sahifasi ochilganda:
+
+- `AdminApi.getCmsPages()` ishlaydi.
+- Backendga so'rov:
+  - GET `/admin/cms/pages`
+
+Offers sahifasi ochilganda:
+
+- `AdminApi.getCmsOffers()` ishlaydi.
+- Backendga so'rov:
+  - GET `/admin/cms/offers`
+
+Search/filter tugmalari:
+
+- Ko'p joyda local filter sifatida ishlaydi.
+
+Add/edit/delete ko'rinishidagi tugmalar:
+
+- Agar sahifada bor bo'lsa, hozir real backend mutationga to'liq ulanmagan
+  bo'lishi mumkin.
+- Asosiy real ulangan qism - ro'yxatni backenddan o'qish.
+
+
+WEB-ADMIN CATALOG
+=================
+
+Asosiy fayl:
+
+- apps/web-admin/app/(dashboard)/catalog/page.tsx
+
+Catalog sahifasi ochilganda:
+
+- `AdminApi.getRegions()` ishlaydi:
+  - GET `/catalog/regions`
+  - GET `/admin/hotels`
+- `AdminApi.getAmenities()` ishlaydi:
+  - GET `/catalog/amenities`
+
+Tab tugmalari:
+
+- Regionlar va amenitylar orasida almashadi.
+- Backendga yangi so'rov yubormaydi.
+
+Search/filter:
+
+- Local filter bo'lishi mumkin.
+
+Add/edit/delete:
+
+- Hozir ro'yxat o'qish backendga ulangan.
+- Mutationlar alohida backend actionga ulanganini tekshirish kerak.
+
+
+WEB-ADMIN PROMO CODES
+=====================
+
+Asosiy fayl:
+
+- apps/web-admin/app/(dashboard)/promos/page.tsx
+
+Promos sahifasi ochilganda:
+
+- `AdminApi.getPromos()` ishlaydi.
+- Backendga so'rov:
+  - GET `/admin/promos`
+
+Search/filter:
+
+- Local filter.
+
+Add/edit/delete tugmalari:
+
+- Hozir real backend mutation bo'lmasligi mumkin.
+- Asosiy ro'yxat backenddan o'qiladi.
+
+
+WEB-ADMIN SUPPORT
+=================
+
+Asosiy fayl:
+
+- apps/web-admin/app/(dashboard)/support/page.tsx
+
+Support sahifasi ochilganda:
+
+- `AdminApi.getTickets()` ishlaydi.
+- Backendga so'rov:
+  - GET `/admin/support/tickets`
+
+Ticket bosilganda:
+
+- `handleOpenTicket(ticket)` ishlaydi.
+- Tanlangan ticket local statega yoziladi.
+- Ticket messages olinadi:
+  - GET `/admin/support/tickets/:id`
+
+Search input:
+
+- Local filter.
+
+Status filter:
+
+- Local filter.
+
+Priority filter:
+
+- Local filter.
+
+Status o'zgartirish:
+
+- `handleStatusChange` ishlaydi.
+- Hozir local state ichida ticket status o'zgaradi.
+- Backendga PUT/PATCH ketmaydi.
+
+Message yozib "Yuborish" bosilganda:
+
+- `handleSendMessage` ishlaydi.
+- Yangi message local statega qo'shiladi.
+- Input tozalanadi.
+- Backendga POST ketmaydi.
+
+Muhim:
+
+- Ticket ro'yxati va messages backenddan o'qiladi.
+- Status update va message send hozir local ishlaydi.
+
+
+WEB-ADMIN AUDIT
+===============
+
+Asosiy fayl:
+
+- apps/web-admin/app/(dashboard)/audit/page.tsx
+
+Audit sahifasi ochilganda:
+
+- `AdminApi.getAuditLogs()` ishlaydi.
+- Backendga so'rov:
+  - GET `/admin/audit-logs`
+
+Search input:
+
+- Local filter.
+
+Pagination:
+
+- Frontend ichida hisoblanadi.
+- Backendga har page uchun alohida so'rov yubormaydi.
+
+
+WEB-ADMIN SETTINGS
+==================
+
+Settings sahifasi:
+
+- Sozlamalar local state ichida yuradi.
+
+"Saqlash" tugmasi:
+
+- 800ms atrofida loading ko'rsatadi.
+- Alert chiqaradi:
+  - Sozlamalar saqlandi.
+- Backendga so'rov ketmaydi.
+
+
+WEB-ADMIN TOPBAR VA SIDEBAR
+===========================
+
+Topbar logout tugmasi:
+
+- Zustand auth store tozalanadi.
+- `admin_token` cookie o'chiriladi.
+- User `/login` sahifasiga yuboriladi.
+
+Notification icon:
+
+- Notification dropdown ochadi.
+- `markAllAsRead`, `clearAll`, `markAsRead` kabi local store amallari ishlaydi.
+- Backendga so'rov ketmaydi.
+
+Sidebar parent item:
+
+- Ochiladi/yopiladi.
+- Backendga so'rov ketmaydi.
+
+Sidebar child link:
+
+- Kerakli sahifaga olib boradi.
+- Masalan:
+  - `/users`
+  - `/partners/list`
+  - `/bookings/hotels`
+  - `/finance/overview`
+  - `/support`
+
+
+WEB-ADMIN QISQA TUGMA XARITASI
+==============================
+
+- Login, eye icon:
+  - Parolni ko'rsatadi/yashiradi.
+
+- Login, "Kirish":
+  - `/auth/admin/login` ga POST.
+  - Kerak bo'lsa `/auth/admin/verify-2fa` ga POST.
+  - Cookie saqlaydi.
+  - `/dashboard` ga o'tadi.
+
+- Logout:
+  - Cookie o'chadi.
+  - Auth store tozalanadi.
+  - `/login` ga o'tadi.
+
+- Dashboard quick action:
+  - Faqat kerakli sahifaga link.
+
+- Users search/status:
+  - Local filter.
+
+- Users export:
+  - Excel download.
+
+- User row:
+  - `/users/:id` ga o'tadi.
+
+- Partners search/status/type:
+  - Local filter.
+
+- Partner row:
+  - `/partners/:id` ga o'tadi.
+
+- Partner requests "Ko'rish":
+  - Modal ochadi.
+
+- Partner requests "Tasdiqlash/Rad etish":
+  - Hozir backend update qilmaydi, modal yopiladi.
+
+- Hotel booking row:
+  - `/bookings/:id` ga o'tadi.
+
+- Bus booking row:
+  - `/bookings/:id` ga o'tadi.
+
+- Booking detail customer link:
+  - `/users/:customerId` ga o'tadi.
+
+- Withdrawals "Tasdiqlash":
+  - Local status approved.
+
+- Withdrawals "Rad etish":
+  - Local status rejected.
+
+- Support ticket row:
+  - Ticket detail/messages ochadi.
+
+- Support status change:
+  - Local status o'zgaradi.
+
+- Support message send:
+  - Local message qo'shiladi.
+
+- Audit search:
+  - Local filter.
+
+- Settings save:
+  - Local save/alert.
+
+
+REAL BACKENDGA BORADIGAN ASOSIY SO'ROVLAR
+=========================================
+
+web-user:
+
+- POST `/auth/user/send-otp`
+- POST `/auth/user/verify-otp`
+- GET `/catalog/cities`
+- GET `/catalog/amenities`
+- GET `/hotels`
+- GET `/hotels/:slugOrId`
+- GET `/hotels/:id/reviews`
+- GET `/bus-trips`
+- GET `/bus-trips/:id`
+- GET `/bus-trips/:id/seats`
+- GET `/bus-companies/:id/reviews`
+- POST `/bookings/hotel`
+- POST `/bookings/bus`
+- GET `/bookings/:id`
+- GET `/me`
+- PATCH `/me`
+- GET `/me/bookings`
+- GET `/me/favorites`
+- POST `/me/favorites`
+- DELETE `/me/favorites/:id`
+- GET `/me/bonuses`
+
+web-partner:
+
+- Api client bor:
+  - POST `/auth/otp/request`
+  - POST `/auth/otp/verify`
+  - GET `/partners/dashboard`
+  - GET `/hotels`
+  - GET `/hotels/:id`
+  - GET `/health`
+- Lekin hozir ko'p panel amallari bu endpointlardan foydalanmaydi.
+- Login, reservation, room, listing kabi asosiy oqimlar local demo store bilan yuradi.
+
+web-admin:
+
+- POST `/auth/admin/login`
+- POST `/auth/admin/verify-2fa`
+- GET `/admin/dashboard/overview`
+- GET `/admin/users`
+- GET `/admin/users/:id`
+- GET `/admin/users/:id/bookings`
+- GET `/admin/partners`
+- GET `/admin/partners/:id`
+- GET `/admin/partners/requests`
+- GET `/admin/bookings`
+- GET `/admin/bookings/:id`
+- GET `/admin/hotels`
+- GET `/admin/trips`
+- GET `/admin/bus-companies`
+- GET `/admin/payments`
+- GET `/admin/finance/overview`
+- GET `/admin/withdrawals`
+- GET `/admin/finance/partners-report`
+- GET `/admin/cms/banners`
+- GET `/admin/cms/news`
+- GET `/admin/cms/pages`
+- GET `/admin/cms/offers`
+- GET `/catalog/regions`
+- GET `/catalog/amenities`
+- GET `/admin/promos`
+- GET `/admin/support/tickets`
+- GET `/admin/support/tickets/:id`
+- GET `/admin/audit-logs`
+
+
+HOZIRCHA LOKAL/DEMO ISHLAYOTGAN JOYLAR
+======================================
+
+web-user:
+
+- Mehmonlar sonini oshirish/kamaytirish.
+- Hotel search submit paytida avval URL o'zgaradi, API keyin page orqali ishlaydi.
+- Bus o'rindiq tanlash bron qilmaguncha local.
+- Ba'zi filter/sort/paginationlar frontendda local.
+
+web-partner:
+
+- Login demo OTP.
+- Reservation confirm/reject/check-in/check-out.
+- Walk-in bron yaratish.
+- Room assign.
+- Xona statusini o'zgartirish.
+- Room type CRUD.
+- Room CRUD.
+- Bulk room add.
+- Listing edit/publish.
+- Calendar view.
+- Guest filter.
+- Reports.
+- Settings save.
+
+web-admin:
+
+- Users/partners/bookings kabi ro'yxatlar backenddan o'qiladi.
+- Search/filter/pagination/export ko'pincha local.
+- Partner request approve/reject hozir real backend update qilmaydi.
+- Withdrawal approve/reject local.
+- Support status change va message send local.
+- Settings save local.
+- Notification dropdown local.
+
+
+QAYERDA NIMA O'ZGARTIRILADI
+===========================
+
+web-user login:
+
+- `apps/web-user/components/auth/LoginForm.tsx`
+- `apps/web-user/lib/auth/actions.ts`
+- `apps/web-user/lib/api/auth.ts`
+
+web-user hotel:
+
+- `apps/web-user/components/search/SearchBar.tsx`
+- `apps/web-user/app/[lang]/(main)/hotels/page.tsx`
+- `apps/web-user/app/[lang]/(main)/hotels/[slug]/page.tsx`
+- `apps/web-user/lib/api/hotels.ts`
+
+web-user bus:
+
+- `apps/web-user/components/bus/BusSearchBar.tsx`
+- `apps/web-user/components/bus/SeatPicker.tsx`
+- `apps/web-user/lib/api/buses.ts`
+- `apps/web-user/lib/booking/actions.ts`
+
+web-user account/favorite:
+
+- `apps/web-user/lib/api/users.ts`
+- `apps/web-user/lib/account/actions.ts`
+- `apps/web-user/lib/account/favorites-actions.ts`
+- `apps/web-user/components/favorites/FavoriteButton.tsx`
+
+web-partner login:
+
+- `apps/web-partner/app/(auth)/login/login-form.tsx`
+- `apps/web-partner/app/_hooks/use-auth.ts`
+- `apps/web-partner/app/_stores/auth-store.ts`
+
+web-partner reservation/room/listing:
+
+- `apps/web-partner/app/_stores/data-store.ts`
+- `apps/web-partner/app/_hooks/use-reservations.ts`
+- `apps/web-partner/app/_hooks/use-rooms.ts`
+- `apps/web-partner/app/_hooks/use-listing.ts`
+- `apps/web-partner/app/(dashboard)/reservations`
+- `apps/web-partner/app/(dashboard)/rooms`
+- `apps/web-partner/app/(dashboard)/listing`
+
+web-admin login:
+
+- `apps/web-admin/app/(auth)/login/page.tsx`
+- `apps/web-admin/lib/api/admin-api.ts`
+- `apps/web-admin/lib/store/auth.ts`
+- `apps/web-admin/middleware.ts`
+
+web-admin API:
+
+- `apps/web-admin/lib/api/client.ts`
+- `apps/web-admin/lib/api/admin-api.ts`
+
+web-admin pages:
+
+- `apps/web-admin/app/(dashboard)/dashboard/page.tsx`
+- `apps/web-admin/app/(dashboard)/users/page.tsx`
+- `apps/web-admin/app/(dashboard)/partners`
+- `apps/web-admin/app/(dashboard)/bookings`
+- `apps/web-admin/app/(dashboard)/finance`
+- `apps/web-admin/app/(dashboard)/cms`
+- `apps/web-admin/app/(dashboard)/catalog/page.tsx`
+- `apps/web-admin/app/(dashboard)/promos/page.tsx`
+- `apps/web-admin/app/(dashboard)/support/page.tsx`
+- `apps/web-admin/app/(dashboard)/audit/page.tsx`
+- `apps/web-admin/app/(dashboard)/settings/page.tsx`
+
+
+ODDIY XULOSA
+============
+
+web-user:
+
+- Mijoz paneli backendga eng ko'p real ulangan.
+- Login, hotel, bus, booking, profile, favorite amallari backendga boradi.
+- Search tugmalari ko'pincha avval URLni o'zgartiradi, keyin page backenddan
+  ma'lumot oladi.
+
+web-partner:
+
+- Hozircha demo/local panelga o'xshaydi.
+- Tugmalarning ko'pi databasega yozmaydi.
+- Backendga to'liq ulash uchun data-store funksiyalarini API mutationlar bilan
+  almashtirish kerak.
+
+web-admin:
+
+- Ro'yxatlarni backenddan o'qishga ulangan.
+- Login backend orqali ishlaydi.
+- Ba'zi admin actionlar hali local:
+  - partner request approve/reject,
+  - withdrawal approve/reject,
+  - support reply/status,
+  - settings save.
+
+Eng muhim farq:
+
+- "Ma'lumot ko'rinishi" ko'p joyda backenddan.
+- "Ma'lumotni o'zgartirish" esa ayrim joylarda hali frontend local state bilan.

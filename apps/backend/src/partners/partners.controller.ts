@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { Role } from '@agoda/types';
@@ -15,11 +16,16 @@ import { Roles } from '../common/roles.decorator';
 import { RolesGuard } from '../common/roles.guard';
 import { PartnersService } from './partners.service';
 
-@Controller('partner')
+@Controller(['partner', 'partners'])
 @UseGuards(RolesGuard)
 @Roles(Role.PARTNER)
 export class PartnersController {
   constructor(private readonly partnersService: PartnersService) {}
+
+  @Get('dashboard')
+  dashboard(@CurrentActor() actor: RequestActor | undefined) {
+    return this.partnersService.dashboard(actor);
+  }
 
   @Get('profile')
   profile(@CurrentActor() actor: RequestActor | undefined) {
@@ -89,8 +95,11 @@ export class PartnersController {
   }
 
   @Get('hotels')
-  hotels(@CurrentActor() actor: RequestActor | undefined) {
-    return this.partnersService.hotels(actor);
+  hotels(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Query() query: Record<string, string | undefined>,
+  ) {
+    return this.partnersService.hotels(actor, query);
   }
 
   @Post('hotels')
@@ -102,76 +111,108 @@ export class PartnersController {
   }
 
   @Get('hotels/:id')
-  hotel(@Param('id') id: string) {
-    return this.partnersService.hotel(id);
+  hotel(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.partnersService.hotel(actor, id);
   }
 
   @Patch('hotels/:id')
-  updateHotel(@Param('id') id: string, @Body() body: Record<string, unknown>) {
-    return this.partnersService.updateHotel(id, body);
+  updateHotel(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.partnersService.updateHotel(actor, id, body);
   }
 
   @Post('hotels/:id/submit-review')
-  submitHotelReview(@Param('id') id: string) {
-    return this.partnersService.submitHotelReview(id);
+  submitHotelReview(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.partnersService.submitHotelReview(actor, id);
   }
 
   @Post('hotels/:id/images')
   addHotelImage(
+    @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
     @Body() body: Record<string, unknown>,
   ) {
-    return this.partnersService.addHotelImage(id, body);
+    return this.partnersService.addHotelImage(actor, id, body);
   }
 
   @Delete('hotels/:id/images/:imageId')
-  deleteHotelImage(@Param('id') id: string, @Param('imageId') imageId: string) {
-    return this.partnersService.deleteHotelImage(id, imageId);
+  deleteHotelImage(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Param('imageId') imageId: string,
+  ) {
+    return this.partnersService.deleteHotelImage(actor, id, imageId);
   }
 
   @Get('hotels/:id/rooms')
-  rooms(@Param('id') id: string) {
-    return this.partnersService.rooms(id);
+  rooms(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.partnersService.rooms(actor, id);
   }
 
   @Post('hotels/:id/rooms')
-  createRoom(@Param('id') id: string, @Body() body: Record<string, unknown>) {
-    return this.partnersService.createRoom(id, body);
+  createRoom(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.partnersService.createRoom(actor, id, body);
   }
 
   @Patch('hotels/:id/rooms/:roomId')
   updateRoom(
+    @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
     @Param('roomId') roomId: string,
     @Body() body: Record<string, unknown>,
   ) {
-    return this.partnersService.updateRoom(id, roomId, body);
+    return this.partnersService.updateRoom(actor, id, roomId, body);
   }
 
   @Delete('hotels/:id/rooms/:roomId')
-  deleteRoom(@Param('id') id: string, @Param('roomId') roomId: string) {
-    return this.partnersService.deleteRoom(id, roomId);
+  deleteRoom(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Param('roomId') roomId: string,
+  ) {
+    return this.partnersService.deleteRoom(actor, id, roomId);
   }
 
   @Get('hotels/:id/inventory')
-  inventory(@Param('id') id: string) {
-    return this.partnersService.inventory(id);
+  inventory(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.partnersService.inventory(actor, id);
   }
 
   @Put('hotels/:id/inventory')
   updateInventory(
+    @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
     @Body() body: Record<string, unknown>,
   ) {
-    return this.partnersService.updateInventory(id, body);
+    return this.partnersService.updateInventory(actor, id, body);
   }
 
   @Post('hotels/:id/blackout-dates')
   blackoutDates(
+    @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
     @Body() body: Record<string, unknown>,
   ) {
-    return this.partnersService.blackoutDates(id, body);
+    return this.partnersService.blackoutDates(actor, id, body);
   }
 
   @Get('vehicles')
@@ -213,8 +254,8 @@ export class PartnersController {
   }
 
   @Get('trips')
-  trips() {
-    return this.partnersService.trips();
+  trips(@Query() query: Record<string, string | undefined>) {
+    return this.partnersService.trips(query);
   }
 
   @Post('trips')
@@ -238,51 +279,76 @@ export class PartnersController {
   }
 
   @Get('bookings')
-  bookings(@CurrentActor() actor: RequestActor | undefined) {
-    return this.partnersService.bookings(actor);
+  bookings(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Query() query: Record<string, string | undefined>,
+  ) {
+    return this.partnersService.bookings(actor, query);
   }
 
   @Get('bookings/:id')
-  booking(@Param('id') id: string) {
-    return this.partnersService.booking(id);
+  booking(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.partnersService.booking(actor, id);
   }
 
   @Post('bookings/:id/confirm')
-  confirmBooking(@Param('id') id: string) {
-    return this.partnersService.bookingStatus(id, 'confirmed');
+  confirmBooking(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.partnersService.bookingStatus(actor, id, 'confirmed');
   }
 
   @Post('bookings/:id/reject')
   rejectBooking(
+    @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
     @Body() body: Record<string, unknown>,
   ) {
-    return this.partnersService.rejectBooking(id, body);
+    return this.partnersService.rejectBooking(actor, id, body);
   }
 
   @Post('bookings/:id/check-in')
-  checkIn(@Param('id') id: string) {
-    return this.partnersService.bookingStatus(id, 'checked_in');
+  checkIn(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.partnersService.bookingStatus(actor, id, 'checked_in');
   }
 
   @Post('bookings/:id/board')
-  board(@Param('id') id: string) {
-    return this.partnersService.bookingStatus(id, 'boarded');
+  board(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.partnersService.bookingStatus(actor, id, 'boarded');
   }
 
   @Post('bookings/:id/complete')
-  complete(@Param('id') id: string) {
-    return this.partnersService.bookingStatus(id, 'completed');
+  complete(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.partnersService.bookingStatus(actor, id, 'completed');
   }
 
   @Post('bookings/:id/cash-collected')
-  cashCollected(@Param('id') id: string) {
-    return this.partnersService.cashStatus(id, 'collected');
+  cashCollected(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.partnersService.cashStatus(actor, id, 'collected');
   }
 
   @Post('bookings/:id/cash-reversal')
-  cashReversal(@Param('id') id: string) {
-    return this.partnersService.cashStatus(id, 'reversed');
+  cashReversal(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.partnersService.cashStatus(actor, id, 'reversed');
   }
 
   @Get('finance/overview')
@@ -291,8 +357,11 @@ export class PartnersController {
   }
 
   @Get('finance/ledger')
-  ledger(@CurrentActor() actor: RequestActor | undefined) {
-    return this.partnersService.ledger(actor);
+  ledger(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Query() query: Record<string, string | undefined>,
+  ) {
+    return this.partnersService.ledger(actor, query);
   }
 
   @Get('finance/chart')
@@ -309,8 +378,11 @@ export class PartnersController {
   }
 
   @Get('withdrawals')
-  withdrawals(@CurrentActor() actor: RequestActor | undefined) {
-    return this.partnersService.withdrawals(actor);
+  withdrawals(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Query() query: Record<string, string | undefined>,
+  ) {
+    return this.partnersService.withdrawals(actor, query);
   }
 
   @Post('exports/bookings')
@@ -353,8 +425,11 @@ export class PartnersController {
   }
 
   @Delete('api-keys/:id')
-  revokeApiKey(@Param('id') id: string) {
-    return this.partnersService.revokeApiKey(id);
+  revokeApiKey(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.partnersService.revokeApiKey(actor, id);
   }
 
   @Get('webhooks')
@@ -372,25 +447,35 @@ export class PartnersController {
 
   @Patch('webhooks/:id')
   updateWebhook(
+    @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
     @Body() body: Record<string, unknown>,
   ) {
-    return this.partnersService.updateWebhook(id, body);
+    return this.partnersService.updateWebhook(actor, id, body);
   }
 
   @Delete('webhooks/:id')
-  deleteWebhook(@Param('id') id: string) {
-    return this.partnersService.deleteWebhook(id);
+  deleteWebhook(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.partnersService.deleteWebhook(actor, id);
   }
 
   @Post('webhooks/:id/test')
-  testWebhook(@Param('id') id: string) {
-    return this.partnersService.testWebhook(id);
+  testWebhook(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.partnersService.testWebhook(actor, id);
   }
 
   @Get('webhooks/:id/deliveries')
-  webhookDeliveries(@Param('id') id: string) {
-    return this.partnersService.webhookDeliveries(id);
+  webhookDeliveries(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.partnersService.webhookDeliveries(actor, id);
   }
 
   @Post('webhooks/deliveries/:deliveryId/retry')
