@@ -24,6 +24,7 @@
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "lint:check": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "security:hash-password": "ts-node scripts/hash-password.ts",
+    "postman:generate": "node postman/generate-collection.mjs",
     "test": "jest",
     "test:backend": "npm run test",
     "perf:backend": "jest --config ./test/jest-e2e.json --runInBand test/performance/performance.e2e-spec.ts",

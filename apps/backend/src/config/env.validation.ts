@@ -42,6 +42,7 @@ export function validateEnv(
 ): EnvironmentConfig {
   const nodeEnv = String(config.NODE_ENV ?? 'development');
   const production = nodeEnv === 'production';
+  const hasDatabaseUrl = Boolean(config.DATABASE_URL);
 
   if (production) {
     for (const key of [
@@ -124,7 +125,9 @@ export function validateEnv(
       ? String(config.PAYMENT_WEBHOOK_SECRET)
       : undefined,
     ENABLE_DEMO_AUTH: String(config.ENABLE_DEMO_AUTH ?? !production),
-    ENABLE_IN_MEMORY_DATA: String(config.ENABLE_IN_MEMORY_DATA ?? !production),
+    ENABLE_IN_MEMORY_DATA: String(
+      config.ENABLE_IN_MEMORY_DATA ?? (!hasDatabaseUrl && !production),
+    ),
     ENABLE_MOCK_PAYMENTS: String(config.ENABLE_MOCK_PAYMENTS ?? !production),
     DB_CONNECTION_TIMEOUT_MS: toNumber(
       config.DB_CONNECTION_TIMEOUT_MS,
