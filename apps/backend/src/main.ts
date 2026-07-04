@@ -22,6 +22,19 @@ async function bootstrap() {
     origin: corsOriginsFromEnv(config.get<string>('CORS_ORIGINS')),
     credentials: true,
   });
+  app.use(
+    (
+      request: { url: string; legacyApiPrefix?: boolean },
+      _response: unknown,
+      next: () => void,
+    ) => {
+      if (request.url === '/api' || request.url.startsWith('/api/')) {
+        request.legacyApiPrefix = true;
+        request.url = request.url.replace(/^\/api(?=\/|$)/, `/${apiPrefix}`);
+      }
+      next();
+    },
+  );
   app.setGlobalPrefix(apiPrefix);
   app.useGlobalPipes(
     new ValidationPipe({

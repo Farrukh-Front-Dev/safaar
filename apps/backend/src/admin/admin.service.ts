@@ -2,6 +2,30 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { BookingStatus } from '@agoda/types';
 import type { RequestActor } from '../common/actor';
 import { InMemoryDbService } from '../infrastructure/in-memory-db.service';
+import { PostgresService } from '../infrastructure/postgres.service';
+
+type DbRow = Record<string, unknown>;
+
+function numberValue(value: unknown): number {
+  const numeric = Number(value ?? 0);
+  return Number.isFinite(numeric) ? numeric : 0;
+}
+
+function cmsTypesForResource(resource: string): string[] {
+  if (resource === 'banners') {
+    return ['banner'];
+  }
+  if (resource === 'offers') {
+    return ['offer', 'promo'];
+  }
+  if (resource === 'news') {
+    return ['news'];
+  }
+  if (resource === 'pages') {
+    return ['page'];
+  }
+  return [resource.replace(/s$/, '')];
+}
 
 /**
  * Super Admin xizmati — admin.uzbron.uz.
@@ -29,9 +53,89 @@ export class AdminService {
     },
   ];
 
-  constructor(private readonly db: InMemoryDbService) {}
+  constructor(
+    private readonly db: InMemoryDbService,
+    private readonly postgres: PostgresService,
+  ) {}
 
-  getOverview() {
+  private async rows(sql: string, params: readonly unknown[] = []) {
+    return this.postgres.tryQuery<DbRow>(sql, params);
+  }
+
+  private dbBookingsSql(where = '') {
+    return `
+      select
+        b.id::text,
+        b.booking_number,
+        b.user_id::text,
+        b.partner_organization_id::text,
+        b.type::text,
+        b.confirmation_mode::text,
+        b.payment_method::text,
+        b.status::text,
+        b.currency,
+        b.subtotal::float8,
+        b.discount_amount::float8,
+        b.bonus_amount::float8,
+        b.service_fee::float8,
+        b.total_amount::float8,
+        b.commission_amount::float8,
+        b.partner_payable::float8,
+        b.hotel_id::text,
+        b.trip_id::text,
+        b.partner_confirmation_deadline,
+        b.expires_at,
+        b.confirmed_at,
+        b.cancelled_at,
+        b.cancel_reason_text,
+        b.policy_snapshot,
+        b.price_snapshot,
+        (
+          coalesce(b.price_snapshot, '{}'::jsonb) ||
+          jsonb_strip_nulls(
+            jsonb_build_object(
+              'hotel_id', b.hotel_id::text,
+              'trip_id', b.trip_id::text,
+              'check_in', b.price_snapshot ->> 'checkIn',
+              'check_out', b.price_snapshot ->> 'checkOut',
+              'room_type', b.price_snapshot ->> 'roomType',
+              'seatNumber', b.price_snapshot ->> 'seatNumber',
+              'seats', case
+                when b.price_snapshot ? 'seatNumber'
+                  then jsonb_build_array(b.price_snapshot ->> 'seatNumber')
+                else null
+              end
+            )
+          )
+        ) as item,
+        b.price_snapshot ->> 'route' as route,
+        b.price_snapshot ->> 'companyName' as company_name,
+        b.created_at,
+        b.updated_at
+      from bookings b
+      ${where}
+      order by b.created_at desc
+    `;
+  }
+
+  async getOverview() {
+    const rows = await this.rows(`
+      select
+        (select count(*) from users where deleted_at is null)::int as total_users,
+        (select count(*) from partner_organizations where status = 'approved')::int as active_partners,
+        (select count(*) from bookings)::int as today_bookings,
+        coalesce((select sum(amount) from payments where status = 'paid'), 0)::float8 as monthly_revenue
+    `);
+
+    if (rows?.[0]) {
+      return {
+        totalUsers: numberValue(rows[0]['total_users']),
+        activePartners: numberValue(rows[0]['active_partners']),
+        todayBookings: numberValue(rows[0]['today_bookings']),
+        monthlyRevenue: numberValue(rows[0]['monthly_revenue']),
+      };
+    }
+
     return {
       totalUsers: this.db.users.length,
       activePartners: this.db.partnerOrganizations.filter(
@@ -48,15 +152,75 @@ export class AdminService {
     return [{ date: new Date().toISOString().slice(0, 10), type, value: 0 }];
   }
 
-  activity() {
-    return this.db.auditLogs.slice(0, 20);
+  async activity() {
+    const rows = await this.rows(`
+      select id::text, actor_type, actor_id::text, action, entity_type, entity_id::text,
+             old_value, new_value, metadata, ip_address, user_agent, request_id, created_at
+      from audit_logs
+      order by created_at desc
+      limit 20
+    `);
+    return rows ?? this.db.auditLogs.slice(0, 20);
   }
 
-  users() {
-    return this.db.users;
+  async users() {
+    const rows = await this.rows(`
+      select
+        u.id::text,
+        u.phone,
+        u.first_name,
+        u.last_name,
+        u.email,
+        u.status::text,
+        u.preferred_language::text,
+        u.blocked_reason,
+        u.phone_verified_at,
+        u.last_login_at,
+        coalesce(count(b.id), 0)::int as bookings_count,
+        coalesce(sum(b.total_amount), 0)::float8 as total_spent,
+        0::float8 as bonus_balance,
+        u.created_at,
+        u.updated_at
+      from users u
+      left join bookings b on b.user_id = u.id
+      where u.deleted_at is null
+      group by u.id
+      order by u.created_at desc
+    `);
+    return rows ?? this.db.users;
   }
 
-  user(id: string) {
+  async user(id: string) {
+    const rows = await this.rows(
+      `
+        select
+          u.id::text,
+          u.phone,
+          u.first_name,
+          u.last_name,
+          u.email,
+          u.status::text,
+          u.preferred_language::text,
+          u.blocked_reason,
+          u.phone_verified_at,
+          u.last_login_at,
+          coalesce(count(b.id), 0)::int as bookings_count,
+          coalesce(sum(b.total_amount), 0)::float8 as total_spent,
+          0::float8 as bonus_balance,
+          u.created_at,
+          u.updated_at
+        from users u
+        left join bookings b on b.user_id = u.id
+        where u.id = $1::uuid and u.deleted_at is null
+        group by u.id
+      `,
+      [id],
+    );
+
+    if (rows?.[0]) {
+      return rows[0];
+    }
+
     const user = this.db.findUser(id);
     if (!user) {
       throw new NotFoundException({
@@ -67,26 +231,40 @@ export class AdminService {
     return user;
   }
 
-  userStatus(id: string, body: Record<string, unknown>) {
-    const user = this.user(id);
-    user.status = String(body.status ?? 'active') as typeof user.status;
+  async userStatus(id: string, body: Record<string, unknown>) {
+    const user = await this.user(id);
+    user.status = String(body.status ?? 'active');
     user.updated_at = this.db.now();
     return user;
   }
 
-  bonusAdjustment(id: string, body: Record<string, unknown>) {
-    const user = this.user(id);
+  async bonusAdjustment(id: string, body: Record<string, unknown>) {
+    const user = await this.user(id);
     const amount = Number(body.amount ?? 0);
-    user.bonus_balance += amount;
-    return { user_id: id, amount, balance: user.bonus_balance };
+    const currentBalance = numberValue(user['bonus_balance']);
+    return { user_id: id, amount, balance: currentBalance + amount };
   }
 
-  userBookings(id: string) {
-    return this.db.bookings.filter((booking) => booking.user_id === id);
+  async userBookings(id: string) {
+    const rows = await this.rows(
+      this.dbBookingsSql('where b.user_id = $1::uuid'),
+      [id],
+    );
+    return rows ?? this.db.bookings.filter((booking) => booking.user_id === id);
   }
 
-  userAudit(id: string) {
-    return this.db.auditLogs.filter((log) => log['actor_id'] === id);
+  async userAudit(id: string) {
+    const rows = await this.rows(
+      `
+        select id::text, actor_type, actor_id::text, action, entity_type, entity_id::text,
+               old_value, new_value, metadata, ip_address, user_agent, request_id, created_at
+        from audit_logs
+        where actor_id = $1::uuid
+        order by created_at desc
+      `,
+      [id],
+    );
+    return rows ?? this.db.auditLogs.filter((log) => log['actor_id'] === id);
   }
 
   userMessage(id: string, body: Record<string, unknown>) {
@@ -120,17 +298,114 @@ export class AdminService {
     return job;
   }
 
-  partners() {
-    return this.db.partnerOrganizations;
+  async partners() {
+    const rows = await this.rows(`
+      select
+        po.id::text,
+        po.type::text,
+        po.legal_name,
+        po.brand_name,
+        po.tax_id,
+        po.phone,
+        po.email,
+        po.city_id::text,
+        c.name ->> 'uz' as city,
+        po.address,
+        po.status::text,
+        po.default_commission_rate::float8,
+        po.approved_by::text,
+        po.approved_at,
+        po.rejection_reason,
+        coalesce(count(b.id), 0)::int as bookings_count,
+        coalesce(sum(b.total_amount), 0)::float8 as total_revenue,
+        coalesce(max(h.rating_average)::float8, max(bc.rating_average)::float8, 0)::float8 as rating_average,
+        po.created_at,
+        po.updated_at
+      from partner_organizations po
+      left join cities c on c.id = po.city_id
+      left join bookings b on b.partner_organization_id = po.id
+      left join hotels h on h.partner_organization_id = po.id
+      left join bus_companies bc on bc.partner_organization_id = po.id
+      group by po.id, c.name
+      order by po.created_at desc
+    `);
+    return rows ?? this.db.partnerOrganizations;
   }
 
-  partnerRequests() {
-    return this.db.partnerOrganizations.filter(
-      (partner) => partner.status !== 'approved',
+  async partnerRequests() {
+    const rows = await this.rows(`
+      select
+        po.id::text,
+        po.type::text,
+        po.legal_name,
+        po.brand_name,
+        po.tax_id,
+        po.phone,
+        po.email,
+        po.city_id::text,
+        c.name ->> 'uz' as city,
+        po.address,
+        po.status::text,
+        po.default_commission_rate::float8,
+        po.rejection_reason,
+        jsonb_build_array(
+          jsonb_build_object('name', 'STIR guvohnoma', 'type', 'tax_certificate', 'url', '#'),
+          jsonb_build_object('name', 'Litsenziya', 'type', 'license', 'url', '#')
+        ) as documents,
+        po.created_at,
+        po.updated_at
+      from partner_organizations po
+      left join cities c on c.id = po.city_id
+      where po.status <> 'approved'
+      order by po.created_at desc
+    `);
+    return (
+      rows ??
+      this.db.partnerOrganizations.filter(
+        (partner) => partner.status !== 'approved',
+      )
     );
   }
 
-  partner(id: string) {
+  async partner(id: string) {
+    const rows = await this.rows(
+      `
+        select
+          po.id::text,
+          po.type::text,
+          po.legal_name,
+          po.brand_name,
+          po.tax_id,
+          po.phone,
+          po.email,
+          po.city_id::text,
+          c.name ->> 'uz' as city,
+          po.address,
+          po.status::text,
+          po.default_commission_rate::float8,
+          po.approved_by::text,
+          po.approved_at,
+          po.rejection_reason,
+          coalesce(count(b.id), 0)::int as bookings_count,
+          coalesce(sum(b.total_amount), 0)::float8 as total_revenue,
+          coalesce(max(h.rating_average)::float8, max(bc.rating_average)::float8, 0)::float8 as rating_average,
+          po.created_at,
+          po.updated_at
+        from partner_organizations po
+        left join cities c on c.id = po.city_id
+        left join bookings b on b.partner_organization_id = po.id
+        left join hotels h on h.partner_organization_id = po.id
+        left join bus_companies bc on bc.partner_organization_id = po.id
+        where po.id = $1::uuid
+        group by po.id, c.name
+      `,
+      [id],
+    );
+
+    if (rows?.[0]) {
+      return rows[0];
+    }
+
     const partner = this.db.partnerOrganizations.find((item) => item.id === id);
     if (!partner) {
       throw new NotFoundException({
@@ -141,13 +416,13 @@ export class AdminService {
     return partner;
   }
 
-  partnerDecision(
+  async partnerDecision(
     actor: RequestActor | undefined,
     id: string,
     status: 'approved' | 'rejected' | 'more_information_required',
     body: Record<string, unknown> = {},
   ) {
-    const partner = this.partner(id);
+    const partner = await this.partner(id);
     partner.status = status;
     partner.updated_at = this.db.now();
     partner.rejection_reason = body.reason ? String(body.reason) : undefined;
@@ -155,15 +430,13 @@ export class AdminService {
     return partner;
   }
 
-  partnerStatus(
+  async partnerStatus(
     actor: RequestActor | undefined,
     id: string,
     body: Record<string, unknown>,
   ) {
-    const partner = this.partner(id);
-    partner.status = String(
-      body.status ?? partner.status,
-    ) as typeof partner.status;
+    const partner = await this.partner(id);
+    partner.status = String(body.status ?? partner.status);
     partner.updated_at = this.db.now();
     this.db.audit('partner.status', actor, {
       partner_id: id,
@@ -172,12 +445,12 @@ export class AdminService {
     return partner;
   }
 
-  partnerCommission(
+  async partnerCommission(
     actor: RequestActor | undefined,
     id: string,
     body: Record<string, unknown>,
   ) {
-    const partner = this.partner(id);
+    const partner = await this.partner(id);
     partner.default_commission_rate = Number(
       body.rate ?? body.default_commission_rate ?? 12,
     );
@@ -189,23 +462,36 @@ export class AdminService {
     return partner;
   }
 
-  partnerLedger(id: string) {
-    return this.db.bookings
-      .filter((booking) => booking.partner_organization_id === id)
-      .map((booking) => ({
-        id: this.db.id('ledger'),
-        booking_id: booking.id,
-        amount: booking.partner_payable,
-        currency: booking.currency,
-      }));
+  async partnerLedger(id: string) {
+    const rows = await this.rows(
+      `
+        select id::text, organization_id::text as partner_id, booking_id::text,
+               type, amount::float8, currency, created_at
+        from partner_ledger_entries
+        where organization_id = $1::uuid
+        order by created_at desc
+      `,
+      [id],
+    );
+    return (
+      rows ??
+      this.db.bookings
+        .filter((booking) => booking.partner_organization_id === id)
+        .map((booking) => ({
+          id: this.db.id('ledger'),
+          booking_id: booking.id,
+          amount: booking.partner_payable,
+          currency: booking.currency,
+        }))
+    );
   }
 
-  partnerAdjustment(
+  async partnerAdjustment(
     actor: RequestActor | undefined,
     id: string,
     body: Record<string, unknown>,
   ) {
-    this.partner(id);
+    await this.partner(id);
     const adjustment = {
       id: this.db.id('adjustment'),
       partner_id: id,
@@ -217,11 +503,66 @@ export class AdminService {
     return adjustment;
   }
 
-  hotels() {
-    return this.db.hotels;
+  async hotels() {
+    const rows = await this.rows(`
+      select
+        h.id::text,
+        h.partner_organization_id::text,
+        h.slug,
+        h.city_id::text,
+        coalesce(jsonb_object_agg(ht.language, ht.name) filter (where ht.id is not null), '{}'::jsonb) as name,
+        h.address,
+        h.latitude::float8,
+        h.longitude::float8,
+        h.stars,
+        h.rating_average::float8,
+        h.reviews_count,
+        h.status::text,
+        h.check_in_time,
+        h.check_out_time,
+        h.created_at,
+        h.updated_at
+      from hotels h
+      left join hotel_translations ht on ht.hotel_id = h.id
+      where h.deleted_at is null
+      group by h.id
+      order by h.created_at desc
+    `);
+    return rows ?? this.db.hotels;
   }
 
-  hotel(id: string) {
+  async hotel(id: string) {
+    const rows = await this.rows(
+      `
+        select
+          h.id::text,
+          h.partner_organization_id::text,
+          h.slug,
+          h.city_id::text,
+          coalesce(jsonb_object_agg(ht.language, ht.name) filter (where ht.id is not null), '{}'::jsonb) as name,
+          h.address,
+          h.latitude::float8,
+          h.longitude::float8,
+          h.stars,
+          h.rating_average::float8,
+          h.reviews_count,
+          h.status::text,
+          h.check_in_time,
+          h.check_out_time,
+          h.created_at,
+          h.updated_at
+        from hotels h
+        left join hotel_translations ht on ht.hotel_id = h.id
+        where h.id = $1::uuid and h.deleted_at is null
+        group by h.id
+      `,
+      [id],
+    );
+
+    if (rows?.[0]) {
+      return rows[0];
+    }
+
     const hotel = this.db.hotels.find((item) => item.id === id);
     if (!hotel) {
       throw new NotFoundException({
@@ -232,17 +573,65 @@ export class AdminService {
     return hotel;
   }
 
-  hotelStatus(id: string, status: 'published' | 'hidden' | 'rejected') {
-    const hotel = this.hotel(id);
+  async hotelStatus(id: string, status: 'published' | 'hidden' | 'rejected') {
+    const hotel = await this.hotel(id);
     hotel.status = status;
     return hotel;
   }
 
-  trips() {
-    return this.db.trips;
+  async trips() {
+    const rows = await this.rows(`
+      select
+        t.id::text,
+        t.route_id::text,
+        t.company_id::text,
+        t.vehicle_id::text,
+        t.from_city_id::text,
+        t.to_city_id::text,
+        t.departure_at,
+        t.arrival_at,
+        v.name as vehicle_name,
+        t.status::text,
+        t.base_price::float8,
+        t.policy_snapshot,
+        t.created_at,
+        t.updated_at
+      from trips t
+      left join vehicles v on v.id = t.vehicle_id
+      order by t.departure_at desc
+    `);
+    return rows ?? this.db.trips;
   }
 
-  trip(id: string) {
+  async trip(id: string) {
+    const rows = await this.rows(
+      `
+        select
+          t.id::text,
+          t.route_id::text,
+          t.company_id::text,
+          t.vehicle_id::text,
+          t.from_city_id::text,
+          t.to_city_id::text,
+          t.departure_at,
+          t.arrival_at,
+          v.name as vehicle_name,
+          t.status::text,
+          t.base_price::float8,
+          t.policy_snapshot,
+          t.created_at,
+          t.updated_at
+        from trips t
+        left join vehicles v on v.id = t.vehicle_id
+        where t.id = $1::uuid
+      `,
+      [id],
+    );
+
+    if (rows?.[0]) {
+      return rows[0];
+    }
+
     const trip = this.db.trips.find((item) => item.id === id);
     if (!trip) {
       throw new NotFoundException({
@@ -253,14 +642,20 @@ export class AdminService {
     return trip;
   }
 
-  tripStatus(id: string, status: 'cancelled') {
-    const trip = this.trip(id);
+  async tripStatus(id: string, status: 'cancelled') {
+    const trip = await this.trip(id);
     trip.status = status;
     return trip;
   }
 
-  busCompanies() {
-    return this.db.busCompanies;
+  async busCompanies() {
+    const rows = await this.rows(`
+      select id::text, partner_organization_id::text, name, status,
+             rating_average::float8, reviews_count, created_at, updated_at
+      from bus_companies
+      order by created_at desc
+    `);
+    return rows ?? this.db.busCompanies;
   }
 
   busCompanyStatus(id: string, body: Record<string, unknown>) {
@@ -271,11 +666,20 @@ export class AdminService {
     };
   }
 
-  bookings() {
-    return this.db.bookings;
+  async bookings() {
+    const rows = await this.rows(this.dbBookingsSql());
+    return rows ?? this.db.bookings;
   }
 
-  booking(id: string) {
+  async booking(id: string) {
+    const rows = await this.rows(this.dbBookingsSql('where b.id = $1::uuid'), [
+      id,
+    ]);
+
+    if (rows?.[0]) {
+      return rows[0];
+    }
+
     const booking = this.db.findBooking(id);
     if (!booking) {
       throw new NotFoundException({
@@ -286,12 +690,12 @@ export class AdminService {
     return booking;
   }
 
-  bookingCancel(
+  async bookingCancel(
     actor: RequestActor | undefined,
     id: string,
     body: Record<string, unknown>,
   ) {
-    const booking = this.booking(id);
+    const booking = await this.booking(id);
     booking.status = BookingStatus.CANCELLED;
     booking.cancelled_at = this.db.now();
     booking.cancel_reason_text = String(body.reason ?? 'Admin cancel');
@@ -299,8 +703,8 @@ export class AdminService {
     return booking;
   }
 
-  bookingStatusAction(id: string, body: Record<string, unknown>) {
-    const booking = this.booking(id);
+  async bookingStatusAction(id: string, body: Record<string, unknown>) {
+    const booking = await this.booking(id);
     const action = String(body.action ?? '');
     if (action === 'confirm') {
       booking.status = BookingStatus.CONFIRMED;
@@ -312,12 +716,30 @@ export class AdminService {
     return booking;
   }
 
-  payments() {
-    return this.db.payments;
+  async payments() {
+    const rows = await this.rows(`
+      select id::text, booking_id::text, provider::text, status::text,
+             amount::float8, currency, payment_url, provider_reference,
+             idempotency_key, created_at, updated_at
+      from payments
+      order by created_at desc
+    `);
+    return rows ?? this.db.payments;
   }
 
-  payment(id: string) {
+  async payment(id: string) {
+    const rows = await this.rows(
+      `
+        select id::text, booking_id::text, provider::text, status::text,
+               amount::float8, currency, payment_url, provider_reference,
+               idempotency_key, created_at, updated_at
+        from payments
+        where id = $1::uuid
+      `,
+      [id],
+    );
     return (
+      rows?.[0] ??
       this.db.payments.find((payment) => payment.id === id) ?? {
         id,
         status: 'not_found',
@@ -329,22 +751,53 @@ export class AdminService {
     return { payment_id: id, reconciled: true, checked_at: this.db.now() };
   }
 
-  refunds() {
-    return this.db.refunds;
+  async refunds() {
+    const rows = await this.rows(`
+      select id::text, booking_id::text, user_id::text, status::text,
+             requested_amount::float8, approved_amount::float8,
+             currency, reason, created_at, updated_at
+      from refunds
+      order by created_at desc
+    `);
+    return rows ?? this.db.refunds;
   }
 
-  refund(id: string) {
-    return this.db.refunds.find((refund) => refund['id'] === id) ?? { id };
+  async refund(id: string) {
+    const rows = await this.rows(
+      `
+        select id::text, booking_id::text, user_id::text, status::text,
+               requested_amount::float8, approved_amount::float8,
+               currency, reason, created_at, updated_at
+        from refunds
+        where id = $1::uuid
+      `,
+      [id],
+    );
+    return (
+      rows?.[0] ??
+      this.db.refunds.find((refund) => refund['id'] === id) ?? { id }
+    );
   }
 
-  refundStatus(id: string, status: string) {
-    const refund = this.refund(id);
+  async refundStatus(id: string, status: string) {
+    const refund = await this.refund(id);
     refund['status'] = status;
     refund['updated_at'] = this.db.now();
     return refund;
   }
 
-  financeOverview() {
+  async financeOverview() {
+    const rows = await this.rows(`
+      select
+        coalesce((select sum(total_amount) from bookings), 0)::float8 as gross_amount,
+        coalesce((select sum(amount) from payments where status = 'paid'), 0)::float8 as paid_amount,
+        'UZS' as currency
+    `);
+
+    if (rows?.[0]) {
+      return rows[0];
+    }
+
     const gross = this.db.bookings.reduce(
       (sum, booking) => sum + booking.total_amount,
       0,
@@ -358,23 +811,47 @@ export class AdminService {
     };
   }
 
-  partnersReport() {
-    return this.db.partnerOrganizations.map((partner) => ({
-      partner_id: partner.id,
-      brand_name: partner.brand_name,
-      bookings: this.db.bookings.filter(
-        (booking) => booking.partner_organization_id === partner.id,
-      ).length,
-    }));
+  async partnersReport() {
+    const rows = await this.rows(`
+      select
+        po.id::text as partner_id,
+        po.brand_name,
+        count(b.id)::int as bookings,
+        coalesce(sum(b.total_amount), 0)::float8 as total_revenue,
+        coalesce(sum(b.commission_amount), 0)::float8 as total_commission
+      from partner_organizations po
+      left join bookings b on b.partner_organization_id = po.id
+      group by po.id
+      order by total_revenue desc
+    `);
+
+    return (
+      rows ??
+      this.db.partnerOrganizations.map((partner) => ({
+        partner_id: partner.id,
+        brand_name: partner.brand_name,
+        bookings: this.db.bookings.filter(
+          (booking) => booking.partner_organization_id === partner.id,
+        ).length,
+      }))
+    );
   }
 
-  providerReconciliation() {
-    return this.db.payments.map((payment) => ({
-      payment_id: payment.id,
-      provider: payment.provider,
-      status: payment.status,
-      matched: true,
-    }));
+  async providerReconciliation() {
+    const rows = await this.rows(`
+      select id::text as payment_id, provider::text, status::text, true as matched
+      from payments
+      order by created_at desc
+    `);
+    return (
+      rows ??
+      this.db.payments.map((payment) => ({
+        payment_id: payment.id,
+        provider: payment.provider,
+        status: payment.status,
+        matched: true,
+      }))
+    );
   }
 
   financeDocuments() {
@@ -385,20 +862,78 @@ export class AdminService {
     return { id, regenerated: true, created_at: this.db.now() };
   }
 
-  withdrawals() {
-    return [];
+  async withdrawals() {
+    const rows = await this.rows(`
+      select
+        wr.id::text,
+        wr.organization_id::text as partner_id,
+        po.brand_name as partner_name,
+        wr.amount::float8,
+        wr.currency,
+        wr.status,
+        wr.created_at as request_date,
+        wr.created_at,
+        wr.updated_at,
+        coalesce(po.tax_id, po.id::text) as bank_account
+      from withdrawal_requests wr
+      left join partner_organizations po on po.id = wr.organization_id
+      order by wr.created_at desc
+    `);
+    return rows ?? [];
   }
 
-  withdrawal(id: string) {
-    return { id, status: 'requested' };
+  async withdrawal(id: string) {
+    const rows = await this.rows(
+      `
+        select
+          wr.id::text,
+          wr.organization_id::text as partner_id,
+          po.brand_name as partner_name,
+          wr.amount::float8,
+          wr.currency,
+          wr.status,
+          wr.created_at as request_date,
+          wr.created_at,
+          wr.updated_at,
+          coalesce(po.tax_id, po.id::text) as bank_account
+        from withdrawal_requests wr
+        left join partner_organizations po on po.id = wr.organization_id
+        where wr.id = $1::uuid
+      `,
+      [id],
+    );
+    return rows?.[0] ?? { id, status: 'requested' };
   }
 
   withdrawalStatus(id: string, status: string) {
     return { id, status, updated_at: this.db.now() };
   }
 
-  cmsList(resource: string) {
-    return this.cmsStore[resource] ?? [];
+  async cmsList(resource: string) {
+    const types = cmsTypesForResource(resource);
+    const rows = await this.rows(
+      `
+        select
+          id::text,
+          type,
+          slug,
+          coalesce(title ->> 'uz', slug, type) as title,
+          coalesce(body ->> 'uz', '') as body,
+          status,
+          metadata,
+          metadata ->> 'imageUrl' as image_url,
+          metadata ->> 'link' as link,
+          coalesce((metadata ->> 'order')::int, 0) as "order",
+          published_at,
+          created_at,
+          updated_at
+        from cms_entries
+        where type = any($1::text[])
+        order by coalesce((metadata ->> 'order')::int, 9999), created_at desc
+      `,
+      [types],
+    );
+    return rows ?? this.cmsStore[resource] ?? [];
   }
 
   cmsCreate(resource: string, body: Record<string, unknown>) {
@@ -425,8 +960,24 @@ export class AdminService {
     return { id, resource, translations: body, updated_at: this.db.now() };
   }
 
-  promos() {
-    return this.promosStore;
+  async promos() {
+    const rows = await this.rows(`
+      select
+        id::text,
+        coalesce(title ->> 'uz', upper(slug), 'PROMO') as code,
+        metadata ->> 'discountType' as discount_type,
+        coalesce((metadata ->> 'discountValue')::float8, 0) as discount_value,
+        coalesce((metadata ->> 'usageLimit')::int, 0) as usage_limit,
+        coalesce((metadata ->> 'usedCount')::int, 0) as used_count,
+        coalesce(published_at, created_at + interval '30 days') as valid_until,
+        status,
+        created_at,
+        updated_at
+      from cms_entries
+      where type = 'promo'
+      order by created_at desc
+    `);
+    return rows ?? this.promosStore;
   }
 
   promoCreate(body: Record<string, unknown>) {
@@ -444,12 +995,68 @@ export class AdminService {
     return { id, usages: 0, revenue: 0 };
   }
 
-  supportTickets() {
-    return this.db.supportTickets;
+  async supportTickets() {
+    const rows = await this.rows(`
+      select
+        st.id::text,
+        st.user_id::text,
+        st.subject,
+        st.priority,
+        st.status,
+        concat_ws(' ', u.first_name, u.last_name) as customer_name,
+        'user' as customer_type,
+        st.created_at,
+        st.updated_at
+      from support_tickets st
+      left join users u on u.id = st.user_id
+      order by st.created_at desc
+    `);
+    return rows ?? this.db.supportTickets;
   }
 
-  supportTicket(id: string) {
+  async supportTicket(id: string) {
+    const rows = await this.rows(
+      `
+        select
+          st.id::text,
+          st.user_id::text,
+          st.subject,
+          st.priority,
+          st.status,
+          concat_ws(' ', u.first_name, u.last_name) as customer_name,
+          'user' as customer_type,
+          st.created_at,
+          st.updated_at
+        from support_tickets st
+        left join users u on u.id = st.user_id
+        where st.id = $1::uuid
+      `,
+      [id],
+    );
+    const messages = await this.rows(
+      `
+        select
+          sm.id::text,
+          sm.ticket_id::text,
+          sm.sender_type,
+          sm.sender_id::text,
+          case
+            when sm.sender_type = 'admin' then coalesce(au.full_name, 'Admin')
+            else concat_ws(' ', u.first_name, u.last_name)
+          end as sender_name,
+          sm.body as message,
+          sm.created_at
+        from support_messages sm
+        left join users u on u.id = sm.sender_id
+        left join admin_users au on au.id = sm.sender_id
+        where sm.ticket_id = $1::uuid
+        order by sm.created_at asc
+      `,
+      [id],
+    );
+
     return (
+      (rows?.[0] ? { ...rows[0], messages: messages ?? [] } : undefined) ??
       this.db.supportTickets.find((ticket) => ticket['id'] === id) ?? { id }
     );
   }
@@ -458,8 +1065,14 @@ export class AdminService {
     return { id, action, body, updated_at: this.db.now() };
   }
 
-  supportStats() {
-    return { open: this.db.supportTickets.length, closed: 0 };
+  async supportStats() {
+    const rows = await this.rows(`
+      select
+        count(*) filter (where status = 'open')::int as open,
+        count(*) filter (where status = 'closed')::int as closed
+      from support_tickets
+    `);
+    return rows?.[0] ?? { open: this.db.supportTickets.length, closed: 0 };
   }
 
   notificationBroadcastCreate(body: Record<string, unknown>) {
@@ -487,8 +1100,14 @@ export class AdminService {
     return { id, action, updated_at: this.db.now() };
   }
 
-  adminUsers() {
-    return this.adminUsersStore;
+  async adminUsers() {
+    const rows = await this.rows(`
+      select id::text, email, full_name, role, status, created_at, updated_at
+      from admin_users
+      where deleted_at is null
+      order by created_at desc
+    `);
+    return rows ?? this.adminUsersStore;
   }
 
   adminUserCreate(body: Record<string, unknown>) {
@@ -538,8 +1157,28 @@ export class AdminService {
     };
   }
 
-  auditLogs() {
-    return this.db.auditLogs;
+  async auditLogs() {
+    const rows = await this.rows(`
+      select
+        id::text,
+        actor_type,
+        actor_id::text,
+        action,
+        entity_type,
+        entity_id::text,
+        old_value,
+        new_value,
+        coalesce(metadata, '{}'::jsonb) ||
+          jsonb_build_object('target', concat_ws(':', entity_type, entity_id::text)) as metadata,
+        ip_address,
+        user_agent,
+        request_id,
+        created_at
+      from audit_logs
+      order by created_at desc
+      limit 100
+    `);
+    return rows ?? this.db.auditLogs;
   }
 
   settings() {

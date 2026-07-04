@@ -9,6 +9,8 @@ import {
 } from '@nestjs/common';
 import { Role } from '@agoda/types';
 import { CurrentActor, type RequestActor } from '../common/actor';
+import { Permissions } from '../common/permissions.decorator';
+import { Permission } from '../common/permissions';
 import { Roles } from '../common/roles.decorator';
 import { RolesGuard } from '../common/roles.guard';
 import { AdminService } from './admin.service';
@@ -50,11 +52,13 @@ export class AdminController {
   }
 
   @Patch('users/:id/status')
+  @Permissions(Permission.UsersWrite)
   userStatus(@Param('id') id: string, @Body() body: Record<string, unknown>) {
     return this.adminService.userStatus(id, body);
   }
 
   @Post('users/:id/bonus-adjustment')
+  @Permissions(Permission.FinanceWrite)
   bonusAdjustment(
     @Param('id') id: string,
     @Body() body: Record<string, unknown>,
@@ -98,6 +102,7 @@ export class AdminController {
   }
 
   @Post('partners/:id/approve')
+  @Permissions(Permission.PartnersWrite)
   partnerApprove(
     @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
@@ -106,6 +111,7 @@ export class AdminController {
   }
 
   @Post('partners/:id/reject')
+  @Permissions(Permission.PartnersWrite)
   partnerReject(
     @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
@@ -115,6 +121,7 @@ export class AdminController {
   }
 
   @Post('partners/:id/request-information')
+  @Permissions(Permission.PartnersWrite)
   partnerRequestInfo(
     @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
@@ -129,6 +136,7 @@ export class AdminController {
   }
 
   @Patch('partners/:id/status')
+  @Permissions(Permission.PartnersWrite)
   partnerStatus(
     @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
@@ -138,6 +146,7 @@ export class AdminController {
   }
 
   @Patch('partners/:id/commission')
+  @Permissions(Permission.FinanceWrite)
   partnerCommission(
     @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
@@ -152,6 +161,7 @@ export class AdminController {
   }
 
   @Post('partners/:id/adjustment')
+  @Permissions(Permission.FinanceWrite)
   partnerAdjustment(
     @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
@@ -176,16 +186,19 @@ export class AdminController {
   }
 
   @Post('hotels/:id/publish')
+  @Permissions(Permission.PartnersWrite)
   hotelPublish(@Param('id') id: string) {
     return this.adminService.hotelStatus(id, 'published');
   }
 
   @Post('hotels/:id/reject')
+  @Permissions(Permission.PartnersWrite)
   hotelReject(@Param('id') id: string) {
     return this.adminService.hotelStatus(id, 'rejected');
   }
 
   @Patch('hotels/:id/visibility')
+  @Permissions(Permission.PartnersWrite)
   hotelVisibility(
     @Param('id') id: string,
     @Body() body: Record<string, unknown>,
@@ -235,6 +248,7 @@ export class AdminController {
   }
 
   @Post('bookings/:id/cancel')
+  @Permissions(Permission.BookingsWrite)
   bookingCancel(
     @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
@@ -262,6 +276,7 @@ export class AdminController {
   }
 
   @Post('payments/:id/reconcile')
+  @Permissions(Permission.FinanceWrite)
   paymentReconcile(@Param('id') id: string) {
     return this.adminService.paymentReconcile(id);
   }
@@ -277,16 +292,19 @@ export class AdminController {
   }
 
   @Post('refunds/:id/approve')
+  @Permissions(Permission.FinanceWrite)
   refundApprove(@Param('id') id: string) {
     return this.adminService.refundStatus(id, 'approved');
   }
 
   @Post('refunds/:id/reject')
+  @Permissions(Permission.FinanceWrite)
   refundReject(@Param('id') id: string) {
     return this.adminService.refundStatus(id, 'rejected');
   }
 
   @Post('refunds/:id/retry')
+  @Permissions(Permission.FinanceWrite)
   refundRetry(@Param('id') id: string) {
     return this.adminService.refundStatus(id, 'retrying');
   }
@@ -312,6 +330,7 @@ export class AdminController {
   }
 
   @Post('finance/export')
+  @Permissions(Permission.FinanceRead)
   financeExport(@CurrentActor() actor: RequestActor | undefined) {
     return this.adminService.exportJob(actor, 'admin-finance', 'xlsx');
   }
@@ -342,16 +361,19 @@ export class AdminController {
   }
 
   @Post('withdrawals/:id/approve')
+  @Permissions(Permission.FinanceWrite)
   withdrawalApprove(@Param('id') id: string) {
     return this.adminService.withdrawalStatus(id, 'approved');
   }
 
   @Post('withdrawals/:id/reject')
+  @Permissions(Permission.FinanceWrite)
   withdrawalReject(@Param('id') id: string) {
     return this.adminService.withdrawalStatus(id, 'rejected');
   }
 
   @Post('withdrawals/:id/mark-paid')
+  @Permissions(Permission.FinanceWrite)
   withdrawalMarkPaid(@Param('id') id: string) {
     return this.adminService.withdrawalStatus(id, 'paid');
   }
@@ -362,6 +384,7 @@ export class AdminController {
   }
 
   @Post('cms/:resource')
+  @Permissions(Permission.CmsWrite)
   cmsCreate(
     @Param('resource') resource: string,
     @Body() body: Record<string, unknown>,
@@ -370,6 +393,7 @@ export class AdminController {
   }
 
   @Patch('cms/:resource/:id')
+  @Permissions(Permission.CmsWrite)
   cmsUpdate(
     @Param('resource') resource: string,
     @Param('id') id: string,
@@ -379,6 +403,7 @@ export class AdminController {
   }
 
   @Post('cms/:resource/:id/publish')
+  @Permissions(Permission.CmsWrite)
   cmsPublish(@Param('resource') resource: string, @Param('id') id: string) {
     return this.adminService.cmsAction(resource, id, 'publish');
   }
@@ -423,6 +448,7 @@ export class AdminController {
   }
 
   @Post('promos')
+  @Permissions(Permission.CmsWrite)
   promoCreate(@Body() body: Record<string, unknown>) {
     return this.adminService.promoCreate(body);
   }
@@ -443,6 +469,7 @@ export class AdminController {
   }
 
   @Post('support/tickets/:id/:action')
+  @Permissions(Permission.SupportWrite)
   supportAction(
     @Param('id') id: string,
     @Param('action') action: string,
@@ -457,6 +484,7 @@ export class AdminController {
   }
 
   @Post('notifications/broadcast')
+  @Permissions(Permission.SupportWrite)
   notificationBroadcastCreate(@Body() body: Record<string, unknown>) {
     return this.adminService.notificationBroadcastCreate(body);
   }
@@ -485,11 +513,13 @@ export class AdminController {
   }
 
   @Post('admin-users')
+  @Permissions(Permission.AdminUsersWrite)
   adminUserCreate(@Body() body: Record<string, unknown>) {
     return this.adminService.adminUserCreate(body);
   }
 
   @Patch('admin-users/:id')
+  @Permissions(Permission.AdminUsersWrite)
   adminUserUpdate(
     @Param('id') id: string,
     @Body() body: Record<string, unknown>,
@@ -498,6 +528,7 @@ export class AdminController {
   }
 
   @Patch('admin-users/:id/status')
+  @Permissions(Permission.AdminUsersWrite)
   adminUserStatus(
     @Param('id') id: string,
     @Body() body: Record<string, unknown>,
@@ -506,6 +537,7 @@ export class AdminController {
   }
 
   @Post('admin-users/:id/reset-2fa')
+  @Permissions(Permission.AdminUsersWrite)
   adminUserReset2fa(@Param('id') id: string) {
     return this.adminService.adminUserReset2fa(id);
   }
@@ -516,6 +548,7 @@ export class AdminController {
   }
 
   @Patch('roles/:id/permissions')
+  @Permissions(Permission.AdminUsersWrite)
   rolePermissions(
     @Param('id') id: string,
     @Body() body: Record<string, unknown>,
@@ -534,6 +567,7 @@ export class AdminController {
   }
 
   @Patch('settings/:group')
+  @Permissions(Permission.SettingsWrite)
   settingsGroup(
     @Param('group') group: string,
     @Body() body: Record<string, unknown>,
@@ -542,6 +576,7 @@ export class AdminController {
   }
 
   @Patch('settings/providers/:provider')
+  @Permissions(Permission.SettingsWrite)
   providerSettings(
     @Param('provider') provider: string,
     @Body() body: Record<string, unknown>,

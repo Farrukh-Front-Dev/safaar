@@ -44,20 +44,29 @@ export class BookingsController {
 
   @Get(':id')
   @Roles(Role.USER, Role.PARTNER, Role.ADMIN, Role.SUPER_ADMIN)
-  findOne(@Param('id') id: string) {
-    return this.bookingsService.findOne(id);
+  findOne(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.bookingsService.findOne(actor, id);
   }
 
   @Post(':id/retry-payment')
   @Roles(Role.USER)
-  retryPayment(@Param('id') id: string) {
-    return this.bookingsService.retryPayment(id);
+  retryPayment(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.bookingsService.retryPayment(actor, id);
   }
 
   @Post(':id/cancel-preview')
   @Roles(Role.USER, Role.PARTNER, Role.ADMIN, Role.SUPER_ADMIN)
-  cancelPreview(@Param('id') id: string) {
-    return this.bookingsService.cancelPreview(id);
+  cancelPreview(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.bookingsService.cancelPreview(actor, id);
   }
 
   @Post(':id/cancel')
@@ -76,26 +85,38 @@ export class BookingsController {
 
   @Get(':id/voucher')
   @Roles(Role.USER, Role.PARTNER, Role.ADMIN, Role.SUPER_ADMIN)
-  voucher(@Param('id') id: string) {
-    return this.bookingsService.voucher(id);
+  voucher(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.bookingsService.voucher(actor, id);
   }
 
   @Get(':id/status-history')
   @Roles(Role.USER, Role.PARTNER, Role.ADMIN, Role.SUPER_ADMIN)
-  statusHistory(@Param('id') id: string) {
-    return this.bookingsService.statusHistory(id);
+  statusHistory(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.bookingsService.statusHistory(actor, id);
   }
 
   @Get(':id/conversation')
   @Roles(Role.USER, Role.PARTNER, Role.ADMIN, Role.SUPER_ADMIN)
-  conversation(@Param('id') id: string) {
-    return this.bookingsService.conversation(id);
+  conversation(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.bookingsService.conversation(actor, id);
   }
 
   @Get(':id/messages')
   @Roles(Role.USER, Role.PARTNER, Role.ADMIN, Role.SUPER_ADMIN)
-  messages(@Param('id') id: string) {
-    return this.bookingsService.messages(id);
+  messages(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.bookingsService.messages(actor, id);
   }
 
   @Post(':id/messages')
@@ -114,7 +135,11 @@ export class BookingsController {
 
   @Post(':id/messages/:messageId/read')
   @Roles(Role.USER, Role.PARTNER, Role.ADMIN, Role.SUPER_ADMIN)
-  readMessage(@Param('id') id: string, @Param('messageId') messageId: string) {
-    return this.bookingsService.readMessage(id, messageId);
+  readMessage(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Param('messageId') messageId: string,
+  ) {
+    return this.bookingsService.readMessage(actor, id, messageId);
   }
 }

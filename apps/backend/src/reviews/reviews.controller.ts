@@ -29,14 +29,21 @@ export class ReviewsController {
 
   @Patch(':id')
   @Roles(Role.USER)
-  update(@Param('id') id: string, @Body() body: Record<string, unknown>) {
-    return this.reviewsService.update(id, body);
+  update(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.reviewsService.update(actor, id, body);
   }
 
   @Delete(':id')
   @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)
-  delete(@Param('id') id: string) {
-    return this.reviewsService.delete(id);
+  delete(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.reviewsService.delete(actor, id);
   }
 
   @Post(':id/reply')

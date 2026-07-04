@@ -20,4 +20,5 @@ export interface RegisterUserDto {
 export interface VerifyOtpDto {
   phone: string;
   code: string;
+  challenge_id?: string;
 }

@@ -21,25 +21,42 @@ Override with:
 API_PREFIX=v1 PORT=4000 npm run start:dev -w @agoda/backend
 ```
 
-## Development Auth
+## Auth And Security
 
-JWT/Redis integration is intentionally mocked for the current backend MVP.
-Protected endpoints accept temporary headers:
+Protected endpoints now expect real Bearer JWT access tokens issued by
+`/v1/auth/*` endpoints. Refresh tokens are rotated; replaying an old refresh
+token revokes the session family.
 
-```text
-x-user-role: USER | PARTNER | ADMIN | SUPER_ADMIN
-x-user-id: demo-user-id
-x-organization-id: demo-partner-org-id
-x-request-id: any-uuid
-```
-
-Demo auth values:
+Development-only demo auth can be enabled with:
 
 ```text
-OTP code: 111111
-partner/admin password: password
-admin 2FA code: 000000
+ENABLE_DEMO_AUTH=true
+ENABLE_IN_MEMORY_DATA=true
+ENABLE_MOCK_PAYMENTS=true
 ```
+
+Production must keep those flags false and must provide strong values for:
+
+```text
+JWT_ACCESS_SECRET
+JWT_REFRESH_SECRET
+OTP_PEPPER
+TOTP_ENCRYPTION_KEY
+PARTNER_API_KEY_PEPPER
+PAYMENT_WEBHOOK_SECRET
+```
+
+Admin and partner passwords are verified with Argon2id hashes. To generate a
+new hash:
+
+```bash
+npm run security:hash-password -w @agoda/backend -- "new-password"
+```
+
+Payment webhooks in local/mock mode require
+`x-uzbron-mock-signature = HMAC_SHA256(provider.event.eventKey.payload, PAYMENT_WEBHOOK_SECRET)`.
+Real provider integrations intentionally fail closed until the official provider
+signature algorithms are implemented.
 
 ## Main Endpoint Groups
 

@@ -27,8 +27,11 @@ export class SupportController {
 
   @Get(':id')
   @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)
-  findOne(@Param('id') id: string) {
-    return this.supportService.findOne(id);
+  findOne(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.supportService.findOne(actor, id);
   }
 
   @Post(':id/messages')
@@ -43,13 +46,19 @@ export class SupportController {
 
   @Post(':id/close')
   @Roles(Role.USER)
-  close(@Param('id') id: string) {
-    return this.supportService.status(id, 'closed');
+  close(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.supportService.status(actor, id, 'closed');
   }
 
   @Post(':id/reopen')
   @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)
-  reopen(@Param('id') id: string) {
-    return this.supportService.status(id, 'open');
+  reopen(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.supportService.status(actor, id, 'open');
   }
 }

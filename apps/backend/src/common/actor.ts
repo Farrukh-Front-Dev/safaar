@@ -1,5 +1,6 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { Role } from '@agoda/types';
+import { Role, type ActorType } from '@agoda/types';
+import { demoAuthEnabled, verifyJwt } from '../auth/security';
 
 export interface RequestActor {
   id: string;
@@ -19,6 +20,10 @@ const roleActorType: Partial<Record<Role, RequestActor['actorType']>> = {
   [Role.USER]: 'user',
   [Role.PARTNER]: 'partner',
   [Role.ADMIN]: 'admin',
+  [Role.FINANCE_ADMIN]: 'admin',
+  [Role.CONTENT_ADMIN]: 'admin',
+  [Role.SUPPORT_ADMIN]: 'admin',
+  [Role.MODERATOR]: 'admin',
   [Role.SUPER_ADMIN]: 'admin',
 };
 
@@ -28,22 +33,98 @@ function firstHeader(value: string | string[] | undefined): string | undefined {
 
 export function buildActorFromHeaders(
   headers: RequestWithActor['headers'],
+  options: { allowDemoAuth?: boolean } = {},
 ): RequestActor | undefined {
-  const rawRole = firstHeader(headers['x-user-role']);
+  const jwtActor = buildActorFromAuthorization(headers);
+  if (jwtActor) {
+    return jwtActor;
+  }
 
-  if (!rawRole || !(rawRole in Role)) {
+  const allowDemoAuth = options.allowDemoAuth ?? false;
+  if (!allowDemoAuth) {
     return undefined;
   }
 
-  const role = Role[rawRole as keyof typeof Role];
-  const actorType = roleActorType[role] ?? 'user';
-  const id =
-    firstHeader(headers['x-user-id']) ??
-    (actorType === 'admin'
-      ? 'demo-admin-id'
-      : actorType === 'partner'
-        ? 'demo-partner-user-id'
-        : 'demo-user-id');
+  const rawRole = firstHeader(headers['x-user-role']);
+
+  if (rawRole && rawRole in Role) {
+    const role = Role[rawRole as keyof typeof Role];
+    const actorType = roleActorType[role] ?? 'user';
+    const id =
+      firstHeader(headers['x-user-id']) ??
+      (actorType === 'admin'
+        ? 'demo-admin-id'
+        : actorType === 'partner'
+          ? 'demo-partner-user-id'
+          : 'demo-user-id');
+
+    return buildActor(role, id, headers);
+  }
+
+  return buildDemoActorFromAuthorization(headers);
+}
+
+function buildActorFromAuthorization(
+  headers: RequestWithActor['headers'],
+): RequestActor | undefined {
+  const authorization = firstHeader(headers.authorization);
+  const token = authorization?.startsWith('Bearer ')
+    ? authorization.slice('Bearer '.length)
+    : undefined;
+
+  if (!token) {
+    return undefined;
+  }
+
+  const payload = verifyJwt(token, 'access');
+  if (!payload) {
+    return undefined;
+  }
+
+  return {
+    id: payload.sub,
+    actorType: payload.actor_type,
+    role: payload.role,
+    roles: payload.roles?.length ? payload.roles : [payload.role],
+    organizationId: payload.organization_id ?? undefined,
+    sessionId: payload.session_id,
+  };
+}
+
+function buildDemoActorFromAuthorization(
+  headers: RequestWithActor['headers'],
+): RequestActor | undefined {
+  const authorization = firstHeader(headers.authorization);
+  const token = authorization?.startsWith('Bearer ')
+    ? authorization.slice('Bearer '.length)
+    : undefined;
+
+  if (!token || !demoAuthEnabled()) {
+    return undefined;
+  }
+
+  if (token === 'demo-access-token') {
+    return buildActor(Role.PARTNER, 'demo-partner-user-id', headers);
+  }
+
+  if (!token.startsWith('mock-access.')) {
+    return undefined;
+  }
+
+  const [, actorId, roleValue] = token.split('.');
+  if (!actorId || !Object.values(Role).includes(roleValue as Role)) {
+    return undefined;
+  }
+
+  return buildActor(roleValue as Role, actorId, headers);
+}
+
+function buildActor(
+  role: Role,
+  id: string,
+  headers: RequestWithActor['headers'],
+): RequestActor {
+  const actorType: ActorType = roleActorType[role] ?? 'user';
 
   return {
     id,
@@ -59,6 +140,6 @@ export function buildActorFromHeaders(
 export const CurrentActor = createParamDecorator(
   (_: unknown, context: ExecutionContext): RequestActor | undefined => {
     const request = context.switchToHttp().getRequest<RequestWithActor>();
-    return request.user ?? buildActorFromHeaders(request.headers);
+    return request.user;
   },
 );

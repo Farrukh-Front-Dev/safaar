@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import type { RequestActor } from '../common/actor';
 import { InMemoryDbService } from '../infrastructure/in-memory-db.service';
 
@@ -52,12 +56,20 @@ export class UsersService {
     );
   }
 
-  booking(id: string) {
+  booking(actor: RequestActor | undefined, id: string) {
+    const currentActor = this.db.actorOrDemo(actor);
     const booking = this.db.findBooking(id);
     if (!booking) {
       throw new NotFoundException({
         code: 'BOOKING_EXPIRED',
         message: 'Bron topilmadi',
+      });
+    }
+
+    if (booking.user_id !== currentActor.id) {
+      throw new ForbiddenException({
+        code: 'BOOKING_FORBIDDEN',
+        message: 'Bu bron sizga tegishli emas',
       });
     }
 

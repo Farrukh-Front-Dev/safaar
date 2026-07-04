@@ -163,11 +163,14 @@ model AuthSession {
   actorType    String    @map("actor_type") @db.VarChar(32)
   actorId      String    @map("actor_id") @db.Uuid
   refreshHash  String    @map("refresh_hash") @db.VarChar(255)
+  refreshJti   String?   @map("refresh_jti") @db.VarChar(128)
   familyId     String    @map("family_id") @db.Uuid
+  replacedByJti String?  @map("replaced_by_jti") @db.VarChar(128)
   ipAddress    String?   @map("ip_address") @db.VarChar(64)
   userAgent    String?   @map("user_agent")
   expiresAt    DateTime  @map("expires_at") @db.Timestamptz
   revokedAt    DateTime? @map("revoked_at") @db.Timestamptz
+  lastUsedAt   DateTime? @map("last_used_at") @db.Timestamptz
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -176,6 +179,20 @@ model AuthSession {
   @@index([actorType, actorId])
   @@index([familyId])
   @@map("auth_sessions")
+}
+
+model OtpChallenge {
+  id           String    @id @default(uuid()) @db.Uuid
+  phone        String    @db.VarChar(20)
+  purpose      String    @db.VarChar(40)
+  codeHash     String    @map("code_hash") @db.VarChar(255)
+  attempts     Int       @default(0)
+  expiresAt    DateTime  @map("expires_at") @db.Timestamptz
+  consumedAt   DateTime? @map("consumed_at") @db.Timestamptz
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([phone, purpose, expiresAt])
+  @@map("otp_challenges")
 }
 
 model PartnerOrganization {
@@ -238,7 +255,22 @@ model AdminUser {
   updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz
   deletedAt    DateTime? @map("deleted_at") @db.Timestamptz
 
+  recoveryCodes AdminRecoveryCode[]
+
   @@map("admin_users")
+}
+
+model AdminRecoveryCode {
+  id        String    @id @default(uuid()) @db.Uuid
+  adminId   String    @map("admin_id") @db.Uuid
+  codeHash  String    @map("code_hash") @db.VarChar(255)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  admin AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId, usedAt])
+  @@map("admin_recovery_codes")
 }
 
 model Region {
@@ -649,12 +681,28 @@ model PaymentEvent {
   eventType   String   @map("event_type") @db.VarChar(80)
   eventKey    String   @unique @map("event_key") @db.VarChar(255)
   payload     Json
+  payloadHash String?  @map("payload_hash") @db.VarChar(128)
   processedAt DateTime? @map("processed_at") @db.Timestamptz
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   payment Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
 
   @@map("payment_events")
+}
+
+model IdempotencyRecord {
+  id             String    @id @default(uuid()) @db.Uuid
+  scope          String    @db.VarChar(80)
+  key            String    @db.VarChar(255)
+  requestHash    String    @map("request_hash") @db.VarChar(128)
+  responseStatus Int?      @map("response_status")
+  responseBody   Json?     @map("response_body")
+  lockedUntil    DateTime? @map("locked_until") @db.Timestamptz
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@unique([scope, key])
+  @@map("idempotency_records")
 }
 
 model Refund {

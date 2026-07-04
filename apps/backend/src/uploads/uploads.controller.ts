@@ -46,7 +46,10 @@ export class UploadsController {
 
   @Delete(':id')
   @Roles(Role.USER, Role.PARTNER, Role.ADMIN, Role.SUPER_ADMIN)
-  delete(@Param('id') id: string) {
-    return this.uploadsService.delete(id);
+  delete(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.uploadsService.delete(actor, id);
   }
 }

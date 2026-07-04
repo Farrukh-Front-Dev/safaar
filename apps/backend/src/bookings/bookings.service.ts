@@ -1,9 +1,10 @@
 import {
+  ForbiddenException,
   Injectable,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { BookingStatus } from '@agoda/types';
+import { BookingStatus, Role } from '@agoda/types';
 import type { RequestActor } from '../common/actor';
 import {
   type BookingRecord,
@@ -120,21 +121,21 @@ export class BookingsService {
     return { booking, payment };
   }
 
-  findOne(id: string) {
-    const booking = this.assertBooking(id);
+  findOne(actor: RequestActor | undefined, id: string) {
+    const booking = this.assertBooking(id, actor);
     return {
       ...booking,
       payment: this.db.findPaymentByBooking(id),
     };
   }
 
-  retryPayment(id: string) {
-    const booking = this.assertBooking(id);
+  retryPayment(actor: RequestActor | undefined, id: string) {
+    const booking = this.assertBooking(id, actor);
     return this.db.createPayment(booking);
   }
 
-  cancelPreview(id: string) {
-    const booking = this.assertBooking(id);
+  cancelPreview(actor: RequestActor | undefined, id: string) {
+    const booking = this.assertBooking(id, actor);
     const refundAmount = Math.round(booking.total_amount * 0.8);
 
     return {
@@ -152,7 +153,7 @@ export class BookingsService {
     id: string,
     body: Record<string, unknown>,
   ) {
-    const booking = this.assertBooking(id);
+    const booking = this.assertBooking(id, actor);
 
     if (booking.status === BookingStatus.CANCELLED) {
       throw new UnprocessableEntityException({
@@ -174,8 +175,8 @@ export class BookingsService {
     return booking;
   }
 
-  voucher(id: string) {
-    const booking = this.assertBooking(id);
+  voucher(actor: RequestActor | undefined, id: string) {
+    const booking = this.assertBooking(id, actor);
 
     return {
       booking_id: id,
@@ -185,15 +186,15 @@ export class BookingsService {
     };
   }
 
-  statusHistory(id: string) {
-    this.assertBooking(id);
+  statusHistory(actor: RequestActor | undefined, id: string) {
+    this.assertBooking(id, actor);
     return this.db.bookingStatusHistory.filter(
       (entry) => entry['booking_id'] === id,
     );
   }
 
-  conversation(id: string) {
-    const booking = this.assertBooking(id);
+  conversation(actor: RequestActor | undefined, id: string) {
+    const booking = this.assertBooking(id, actor);
     return {
       id: `conversation_${id}`,
       booking_id: id,
@@ -204,8 +205,8 @@ export class BookingsService {
     };
   }
 
-  messages(id: string) {
-    this.assertBooking(id);
+  messages(actor: RequestActor | undefined, id: string) {
+    this.assertBooking(id, actor);
     return this.db.bookingMessages.filter(
       (message) => message['booking_id'] === id,
     );
@@ -216,7 +217,7 @@ export class BookingsService {
     id: string,
     body: Record<string, unknown>,
   ) {
-    this.assertBooking(id);
+    this.assertBooking(id, actor);
     const currentActor = this.db.actorOrDemo(actor);
     const message = {
       id: this.db.id('msg'),
@@ -232,8 +233,8 @@ export class BookingsService {
     return message;
   }
 
-  readMessage(id: string, messageId: string) {
-    this.assertBooking(id);
+  readMessage(actor: RequestActor | undefined, id: string, messageId: string) {
+    this.assertBooking(id, actor);
     const message = this.db.bookingMessages.find(
       (item) => item['id'] === messageId && item['booking_id'] === id,
     );
@@ -312,7 +313,7 @@ export class BookingsService {
     });
   }
 
-  private assertBooking(id: string): BookingRecord {
+  private assertBooking(id: string, actor?: RequestActor): BookingRecord {
     const booking = this.db.findBooking(id);
 
     if (!booking) {
@@ -322,7 +323,36 @@ export class BookingsService {
       });
     }
 
-    return booking;
+    if (
+      !actor ||
+      actor.role === Role.SUPER_ADMIN ||
+      actor.actorType === 'admin'
+    ) {
+      return booking;
+    }
+
+    if (actor.actorType === 'user' && booking.user_id === actor.id) {
+      return booking;
+    }
+
+    if (
+      actor.actorType === 'partner' &&
+      booking.partner_organization_id === actor.organizationId
+    ) {
+      return booking;
+    }
+
+    throw new ForbiddenException({
+      code: 'BOOKING_FORBIDDEN',
+      message: 'Bu bron sizga tegishli emas',
+    });
+  }
+
+  assertBookingForActor(
+    actor: RequestActor | undefined,
+    id: string,
+  ): BookingRecord {
+    return this.assertBooking(id, actor);
   }
 
   private paymentMethod(value: unknown): PaymentMethod {

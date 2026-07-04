@@ -52,8 +52,11 @@ export class UsersController {
   }
 
   @Get('bookings/:id')
-  booking(@Param('id') id: string) {
-    return this.usersService.booking(id);
+  booking(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.usersService.booking(actor, id);
   }
 
   @Get('bonuses')
