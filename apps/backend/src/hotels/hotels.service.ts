@@ -6,21 +6,83 @@ import {
 } from '../common/pagination';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { InMemoryDbService } from '../infrastructure/in-memory-db.service';
+import { PostgresService } from '../infrastructure/postgres.service';
 
 @Injectable()
 export class HotelsService {
   constructor(
     private readonly cache: AppCacheService,
     private readonly db: InMemoryDbService,
+    private readonly pg: PostgresService,
   ) {}
 
-  findAll(query: QueryLike) {
+  async findAll(query: QueryLike) {
     return this.cache.getOrSet(`hotels:list:${cacheKey(query)}`, 60, () => {
       return this.findAllFresh(query);
     });
   }
 
-  private findAllFresh(query: QueryLike) {
+  private async findAllFresh(query: QueryLike) {
+    const pgResult = await this.pg.tryQuery(
+      `SELECT h.id, h.partner_organization_id, h.slug, h.city_id,
+        h.address, h.latitude, h.longitude, h.stars,
+        h.rating_average, h.reviews_count, h.status,
+        h.check_in_time, h.check_out_time,
+        h.created_at, h.updated_at,
+        ht.name, ht.description,
+        c.name as city_name, c.region_id,
+        rp.min_price
+      FROM hotels h
+      LEFT JOIN hotel_translations ht ON ht.hotel_id = h.id AND ht.language = 'uz'
+      LEFT JOIN cities c ON c.id = h.city_id
+      LEFT JOIN (SELECT hotel_id, MIN(base_price) as min_price FROM hotel_rooms WHERE status = 'active' GROUP BY hotel_id) rp ON rp.hotel_id = h.id
+      WHERE h.status = 'published'
+      ${query.city_id ? 'AND h.city_id = $1' : ''}
+      ${query.stars ? `AND h.stars = ${Number(query.stars)}` : ''}
+      ORDER BY h.rating_average DESC`,
+      query.city_id ? [query.city_id] : [],
+    );
+
+    if (pgResult) {
+      const mapped = pgResult.map((row: Record<string, unknown>) => {
+        const r = row as Record<string, unknown>;
+        return {
+          id: r.id,
+          partner_organization_id: r.partner_organization_id,
+          slug: r.slug,
+          city_id: r.city_id,
+          address: r.address,
+          latitude: Number(r.latitude),
+          longitude: Number(r.longitude),
+          stars: Number(r.stars),
+          rating_average: Number(r.rating_average),
+          reviews_count: Number(r.reviews_count),
+          status: r.status,
+          check_in_time: r.check_in_time,
+          check_out_time: r.check_out_time,
+          created_at: r.created_at,
+          updated_at: r.updated_at,
+          name: { uz: r.name, ru: r.name, en: r.name },
+          description: { uz: r.description, ru: r.description, en: r.description },
+          city: { id: r.city_id, region_id: r.region_id, name: r.city_name },
+          amenities: [],
+          images: [],
+          min_price: Number(r.min_price || 0),
+        };
+      });
+
+      const pagination = parsePagination(query, 'public', {
+        allowedSortBy: ['created_at', 'rating_average', 'stars', 'min_price'],
+        defaultSortBy: 'rating_average',
+      });
+
+      return paginatedObject(mapped, pagination);
+    }
+
+    return this.findAllFreshInMemory(query);
+  }
+
+  private findAllFreshInMemory(query: QueryLike) {
     const pagination = parsePagination(query, 'public', {
       allowedSortBy: ['created_at', 'rating_average', 'stars', 'min_price'],
       defaultSortBy: 'rating_average',
@@ -94,7 +156,75 @@ export class HotelsService {
     return paginatedObject(sorted, pagination);
   }
 
-  findOne(slugOrId: string) {
+  async findOne(slugOrId: string) {
+    const pgResult = await this.pg.tryQuery(
+      `SELECT h.id, h.partner_organization_id, h.slug, h.city_id,
+        h.address, h.latitude, h.longitude, h.stars,
+        h.rating_average, h.reviews_count, h.status,
+        h.check_in_time, h.check_out_time,
+        h.created_at, h.updated_at,
+        ht.name, ht.description,
+        c.name as city_name, c.region_id
+      FROM hotels h
+      LEFT JOIN hotel_translations ht ON ht.hotel_id = h.id AND ht.language = 'uz'
+      LEFT JOIN cities c ON c.id = h.city_id
+      WHERE (h.id::text = $1 OR h.slug = $1) AND h.status = 'published'`,
+      [slugOrId],
+    );
+
+    if (pgResult && pgResult.length > 0) {
+      const h = pgResult[0] as Record<string, unknown>;
+      const roomRows = await this.pg.tryQuery(
+        `SELECT hr.id, hr.hotel_id, hr.room_type_id, hr.code,
+          hr.base_occupancy, hr.max_adults, hr.max_children,
+          hr.total_inventory, hr.base_price, hr.status
+        FROM hotel_rooms hr
+        WHERE hr.hotel_id = $1 AND hr.status = 'active'`,
+        [h.id],
+      );
+      const rooms = (roomRows ?? []).map((r: Record<string, unknown>) => ({
+        id: r.id,
+        hotel_id: r.hotel_id,
+        room_type_id: r.room_type_id,
+        code: r.code,
+        base_occupancy: Number(r.base_occupancy),
+        max_adults: Number(r.max_adults),
+        max_children: Number(r.max_children),
+        total_inventory: Number(r.total_inventory),
+        base_price: Number(r.base_price),
+        status: r.status,
+        available: Number(r.total_inventory),
+      }));
+
+      return {
+        id: h.id,
+        partner_organization_id: h.partner_organization_id,
+        slug: h.slug,
+        city_id: h.city_id,
+        address: h.address,
+        latitude: Number(h.latitude),
+        longitude: Number(h.longitude),
+        stars: Number(h.stars),
+        rating_average: Number(h.rating_average),
+        reviews_count: Number(h.reviews_count),
+        status: h.status,
+        check_in_time: h.check_in_time,
+        check_out_time: h.check_out_time,
+        created_at: h.created_at,
+        updated_at: h.updated_at,
+        name: { uz: h.name, ru: h.name, en: h.name },
+        description: { uz: h.description, ru: h.description, en: h.description },
+        city: { id: h.city_id, region_id: h.region_id, name: h.city_name },
+        amenities: [],
+        images: [],
+        rooms,
+      };
+    }
+
+    return this.findOneInMemory(slugOrId);
+  }
+
+  private findOneInMemory(slugOrId: string) {
     const hotel = this.db.hotels.find(
       (item) => item.id === slugOrId || item.slug === slugOrId,
     );
@@ -112,7 +242,41 @@ export class HotelsService {
     };
   }
 
-  rooms(id: string) {
+  async rooms(id: string) {
+    const pgResult = await this.findRoomsPg(id);
+    if (pgResult) return pgResult;
+
+    return this.roomsInMemory(id);
+  }
+
+  private async findRoomsPg(hotelId: string) {
+    const pgResult = await this.pg.tryQuery(
+      `SELECT hr.id, hr.hotel_id, hr.room_type_id, hr.code,
+        hr.base_occupancy, hr.max_adults, hr.max_children,
+        hr.total_inventory, hr.base_price, hr.status
+      FROM hotel_rooms hr
+      WHERE hr.hotel_id = $1 AND hr.status = 'active'`,
+      [hotelId],
+    );
+
+    if (!pgResult) return null;
+
+    return pgResult.map((r: Record<string, unknown>) => ({
+      id: r.id,
+      hotel_id: r.hotel_id,
+      room_type_id: r.room_type_id,
+      code: r.code,
+      base_occupancy: Number(r.base_occupancy),
+      max_adults: Number(r.max_adults),
+      max_children: Number(r.max_children),
+      total_inventory: Number(r.total_inventory),
+      base_price: Number(r.base_price),
+      status: r.status,
+      available: Number(r.total_inventory),
+    }));
+  }
+
+  private roomsInMemory(id: string) {
     this.assertHotel(id);
     return this.db.rooms
       .filter((room) => room.hotel_id === id && room.status === 'active')
@@ -122,12 +286,12 @@ export class HotelsService {
       }));
   }
 
-  quote(id: string, body: Record<string, unknown>) {
-    this.assertHotel(id);
-    const roomId = String(body.room_id ?? this.rooms(id)[0]?.id ?? '');
-    const room = this.db.rooms.find((item) => item.id === roomId);
+  async quote(id: string, body: Record<string, unknown>) {
+    const rooms = await this.rooms(id);
+    const roomId = String(body.room_id ?? rooms[0]?.id ?? '');
+    const room = rooms.find((item) => item.id === roomId);
 
-    if (!room || room.hotel_id !== id) {
+    if (!room) {
       throw new NotFoundException({
         code: 'ROOM_NOT_AVAILABLE',
         message: 'Xona mavjud emas',
@@ -138,7 +302,7 @@ export class HotelsService {
     const checkOut = String(body.check_out ?? '');
     const nights = this.calculateNights(checkIn, checkOut);
     const roomsCount = Number(body.rooms ?? 1);
-    const subtotal = room.base_price * nights * roomsCount;
+    const subtotal = Number(room.base_price) * nights * roomsCount;
 
     return {
       quote_id: this.db.id('quote'),
@@ -157,7 +321,18 @@ export class HotelsService {
     };
   }
 
-  reviews(id: string) {
+  async reviews(id: string) {
+    const pgResult = await this.pg.tryQuery(
+      `SELECT r.*, u.first_name, u.last_name
+       FROM reviews r
+       LEFT JOIN users u ON u.id = r.user_id
+       WHERE r.target_type = 'hotel' AND r.target_id = $1 AND r.status = 'published'
+       ORDER BY r.created_at DESC`,
+      [id],
+    );
+
+    if (pgResult) return pgResult;
+
     this.assertHotel(id);
     return this.db.reviews.filter((review) => review['target_id'] === id);
   }
