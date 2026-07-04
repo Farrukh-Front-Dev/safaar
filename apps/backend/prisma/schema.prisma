@@ -137,6 +137,8 @@ model User {
   notifications  Notification[]
   supportTickets SupportTicket[]
 
+  @@index([status, createdAt])
+  @@index([deletedAt, createdAt])
   @@map("users")
 }
 
@@ -223,6 +225,8 @@ model PartnerOrganization {
   ledgerEntries PartnerLedgerEntry[]
 
   @@index([status])
+  @@index([cityId, status])
+  @@index([status, createdAt])
   @@map("partner_organizations")
 }
 
@@ -240,6 +244,7 @@ model PartnerUser {
   organization PartnerOrganization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, email])
+  @@index([email])
   @@map("partner_users")
 }
 
@@ -257,6 +262,7 @@ model AdminUser {
 
   recoveryCodes AdminRecoveryCode[]
 
+  @@index([deletedAt, createdAt])
   @@map("admin_users")
 }
 
@@ -387,6 +393,10 @@ model Hotel {
 
   @@index([cityId, status])
   @@index([ratingAverage])
+  @@index([partnerOrganizationId, status])
+  @@index([status, createdAt])
+  @@index([status, ratingAverage])
+  @@index([status, stars])
   @@map("hotels")
 }
 
@@ -480,6 +490,7 @@ model RoomInventory {
   room HotelRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
 
   @@unique([roomId, date])
+  @@index([date])
   @@map("room_inventory")
 }
 
@@ -497,6 +508,8 @@ model BusCompany {
   vehicles Vehicle[]
   trips    Trip[]
 
+  @@index([partnerOrganizationId, status])
+  @@index([status, createdAt])
   @@map("bus_companies")
 }
 
@@ -514,6 +527,7 @@ model Vehicle {
   company BusCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
   trips   Trip[]
 
+  @@index([companyId, status])
   @@map("vehicles")
 }
 
@@ -557,6 +571,9 @@ model Trip {
   bookings Booking[]
 
   @@index([fromCityId, toCityId, departureAt])
+  @@index([status, departureAt])
+  @@index([routeId, departureAt, status])
+  @@index([companyId, status, departureAt])
   @@map("trips")
 }
 
@@ -574,6 +591,7 @@ model TripSeat {
 
   @@unique([tripId, seatCode])
   @@index([status])
+  @@index([tripId, status])
   @@map("trip_seats")
 }
 
@@ -618,7 +636,12 @@ model Booking {
 
   @@index([userId, createdAt])
   @@index([partnerOrganizationId, status])
+  @@index([partnerOrganizationId, createdAt])
+  @@index([status, createdAt])
   @@index([status, expiresAt])
+  @@index([type, status, createdAt])
+  @@index([hotelId, createdAt])
+  @@index([tripId, createdAt])
   @@map("bookings")
 }
 
@@ -671,6 +694,8 @@ model Payment {
   events  PaymentEvent[]
 
   @@index([bookingId, status])
+  @@index([status, createdAt])
+  @@index([provider, providerReference])
   @@map("payments")
 }
 
@@ -720,6 +745,8 @@ model Refund {
   booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
+  @@index([bookingId])
+  @@index([status, createdAt])
   @@map("refunds")
 }
 
@@ -749,6 +776,7 @@ model WithdrawalRequest {
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   @@index([organizationId, status])
+  @@index([status, createdAt])
   @@map("withdrawal_requests")
 }
 
@@ -796,6 +824,7 @@ model Notification {
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([ownerType, ownerId, readAt])
+  @@index([ownerType, ownerId, readAt, createdAt])
   @@map("notifications")
 }
 
@@ -812,6 +841,8 @@ model SupportTicket {
   messages SupportMessage[]
 
   @@index([userId, status])
+  @@index([userId, status, createdAt])
+  @@index([status, createdAt])
   @@map("support_tickets")
 }
 
@@ -881,6 +912,7 @@ model AuditLog {
 
   @@index([actorType, actorId, createdAt])
   @@index([action, createdAt])
+  @@index([entityType, entityId])
   @@map("audit_logs")
 }
 
@@ -898,6 +930,8 @@ model ExportJob {
   expiresAt   DateTime? @map("expires_at") @db.Timestamptz
 
   @@index([ownerType, ownerId, status])
+  @@index([ownerType, ownerId, createdAt])
+  @@index([status, createdAt])
   @@map("export_jobs")
 }
 
@@ -915,6 +949,8 @@ model CmsEntry {
 
   @@unique([type, slug])
   @@index([type, status])
+  @@index([type, status, createdAt])
+  @@index([publishedAt])
   @@map("cms_entries")
 }
 

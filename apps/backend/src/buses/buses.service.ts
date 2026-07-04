@@ -1,9 +1,18 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  paginateArray,
+  parsePagination,
+  type QueryLike,
+} from '../common/pagination';
+import { AppCacheService } from '../infrastructure/cache.service';
 import { InMemoryDbService } from '../infrastructure/in-memory-db.service';
 
 @Injectable()
 export class BusesService {
-  constructor(private readonly db: InMemoryDbService) {}
+  constructor(
+    private readonly cache: AppCacheService,
+    private readonly db: InMemoryDbService,
+  ) {}
 
   routes() {
     return this.db.busRoutes.map((route) => ({
@@ -13,20 +22,70 @@ export class BusesService {
     }));
   }
 
-  trips(query: Record<string, string | undefined>) {
-    return this.db.trips
-      .filter((trip) => {
-        if (query.from_city_id && trip.from_city_id !== query.from_city_id) {
-          return false;
+  trips(query: QueryLike) {
+    return this.cache.getOrSet(`bus-trips:list:${cacheKey(query)}`, 60, () => {
+      const pagination = parsePagination(query, 'public', {
+        allowedSortBy: ['departure_at', 'base_price', 'available_seats'],
+        defaultSortBy: 'departure_at',
+        defaultLimit: 20,
+      });
+      const availableSeatsByTrip = new Map<string, number>();
+      for (const seat of this.db.tripSeats) {
+        if (seat.status !== 'available') {
+          continue;
         }
 
-        if (query.to_city_id && trip.to_city_id !== query.to_city_id) {
-          return false;
-        }
+        availableSeatsByTrip.set(
+          seat.trip_id,
+          (availableSeatsByTrip.get(seat.trip_id) ?? 0) + 1,
+        );
+      }
 
-        return trip.status === 'scheduled';
-      })
-      .map((trip) => this.tripSummary(trip.id));
+      const trips = this.db.trips
+        .filter((trip) => {
+          if (
+            query.from_city_id &&
+            trip.from_city_id !== first(query.from_city_id)
+          ) {
+            return false;
+          }
+
+          if (query.to_city_id && trip.to_city_id !== first(query.to_city_id)) {
+            return false;
+          }
+
+          if (
+            query.departure_date &&
+            !trip.departure_at.startsWith(first(query.departure_date) ?? '')
+          ) {
+            return false;
+          }
+
+          if (
+            query.min_price &&
+            trip.base_price < Number(first(query.min_price))
+          ) {
+            return false;
+          }
+
+          if (
+            query.max_price &&
+            trip.base_price > Number(first(query.max_price))
+          ) {
+            return false;
+          }
+
+          return trip.status === 'scheduled';
+        })
+        .map((trip) => this.tripSummary(trip.id, availableSeatsByTrip))
+        .filter((trip) => trip !== undefined);
+
+      return paginateArray(trips, pagination, {
+        departure_at: (trip) => trip.departure_at,
+        base_price: (trip) => trip.base_price,
+        available_seats: (trip) => trip.available_seats,
+      });
+    });
   }
 
   trip(id: string) {
@@ -82,15 +141,17 @@ export class BusesService {
     return this.db.reviews.filter((review) => review['target_id'] === id);
   }
 
-  private tripSummary(id: string) {
+  private tripSummary(id: string, availableSeatsByTrip?: Map<string, number>) {
     const trip = this.db.trips.find((item) => item.id === id);
     if (!trip) {
       return undefined;
     }
 
-    const availableSeats = this.db.tripSeats.filter(
-      (seat) => seat.trip_id === id && seat.status === 'available',
-    ).length;
+    const availableSeats =
+      availableSeatsByTrip?.get(id) ??
+      this.db.tripSeats.filter(
+        (seat) => seat.trip_id === id && seat.status === 'available',
+      ).length;
 
     return {
       ...trip,
@@ -103,4 +164,17 @@ export class BusesService {
       available_seats: availableSeats,
     };
   }
+}
+
+function first(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function cacheKey(query: QueryLike): string {
+  return Object.keys(query)
+    .sort()
+    .map(
+      (key) => `${key}=${encodeURIComponent(String(first(query[key]) ?? ''))}`,
+    )
+    .join('&');
 }

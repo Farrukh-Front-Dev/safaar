@@ -5,7 +5,13 @@ import {
 } from '@nestjs/common';
 import { BookingStatus } from '@agoda/types';
 import type { RequestActor } from '../common/actor';
+import {
+  paginateArray,
+  parsePagination,
+  type QueryLike,
+} from '../common/pagination';
 import { InMemoryDbService } from '../infrastructure/in-memory-db.service';
+import { JobQueueService } from '../infrastructure/job-queue.service';
 import { hashSecret, partnerApiPepper, randomToken } from '../auth/security';
 
 /**
@@ -20,13 +26,14 @@ export class PartnersService {
   private readonly withdrawalsStore: Array<Record<string, unknown>> = [];
   private readonly financeDocumentsStore: Array<Record<string, unknown>> = [];
 
-  constructor(private readonly db: InMemoryDbService) {}
+  constructor(
+    private readonly db: InMemoryDbService,
+    private readonly jobs: JobQueueService,
+  ) {}
 
   dashboard(actor: RequestActor | undefined) {
     const organizationId = this.organizationId(actor);
-    const bookings = this.db.bookings.filter(
-      (booking) => booking.partner_organization_id === organizationId,
-    );
+    const bookings = this.bookingsForOrganization(organizationId);
     const hotelIds = new Set(
       this.db.hotels
         .filter((hotel) => hotel.partner_organization_id === organizationId)
@@ -166,10 +173,13 @@ export class PartnersService {
     return organization;
   }
 
-  hotels(actor: RequestActor | undefined) {
+  hotels(actor: RequestActor | undefined, query: QueryLike = {}) {
     const organizationId = this.organizationId(actor);
-    return this.db.hotels.filter(
-      (hotel) => hotel.partner_organization_id === organizationId,
+    return this.paginatePartner(
+      this.db.hotels.filter(
+        (hotel) => hotel.partner_organization_id === organizationId,
+      ),
+      query,
     );
   }
 
@@ -400,8 +410,8 @@ export class PartnersService {
     return { id, ...body, updated_at: this.db.now() };
   }
 
-  trips() {
-    return this.db.trips;
+  trips(query: QueryLike = {}) {
+    return this.paginatePartner(this.db.trips, query);
   }
 
   createTrip(body: Record<string, unknown>) {
@@ -453,10 +463,11 @@ export class PartnersService {
     return this.db.tripSeats.filter((seat) => seat.trip_id === id);
   }
 
-  bookings(actor: RequestActor | undefined) {
+  bookings(actor: RequestActor | undefined, query: QueryLike = {}) {
     const organizationId = this.organizationId(actor);
-    return this.db.bookings.filter(
-      (booking) => booking.partner_organization_id === organizationId,
+    return this.paginatePartner(
+      this.bookingsForOrganization(organizationId),
+      query,
     );
   }
 
@@ -518,7 +529,7 @@ export class PartnersService {
   }
 
   financeOverview(actor: RequestActor | undefined) {
-    const bookings = this.bookings(actor);
+    const bookings = this.bookingsForOrganization(this.organizationId(actor));
     const gross = bookings.reduce(
       (sum, booking) => sum + booking.total_amount,
       0,
@@ -531,15 +542,20 @@ export class PartnersService {
     };
   }
 
-  ledger(actor: RequestActor | undefined) {
-    return this.bookings(actor).map((booking) => ({
-      id: this.db.id('ledger'),
-      booking_id: booking.id,
-      amount: booking.partner_payable,
-      currency: booking.currency,
-      type: 'booking_payable',
-      created_at: booking.created_at,
-    }));
+  ledger(actor: RequestActor | undefined, query: QueryLike = {}) {
+    return this.paginatePartner(
+      this.bookingsForOrganization(this.organizationId(actor)).map(
+        (booking) => ({
+          id: this.db.id('ledger'),
+          booking_id: booking.id,
+          amount: booking.partner_payable,
+          currency: booking.currency,
+          type: 'booking_payable',
+          created_at: booking.created_at,
+        }),
+      ),
+      query,
+    );
   }
 
   financeChart(actor: RequestActor | undefined) {
@@ -565,14 +581,17 @@ export class PartnersService {
     return request;
   }
 
-  withdrawals(actor: RequestActor | undefined) {
+  withdrawals(actor: RequestActor | undefined, query: QueryLike = {}) {
     const organizationId = this.organizationId(actor);
-    return this.withdrawalsStore.filter(
-      (withdrawal) => withdrawal['organization_id'] === organizationId,
+    return this.paginatePartner(
+      this.withdrawalsStore.filter(
+        (withdrawal) => withdrawal['organization_id'] === organizationId,
+      ),
+      query,
     );
   }
 
-  createExport(
+  async createExport(
     actor: RequestActor | undefined,
     type: string,
     body: Record<string, unknown>,
@@ -591,6 +610,18 @@ export class PartnersService {
       updated_at: this.db.now(),
     };
     this.db.exportJobs.unshift(job);
+    await this.jobs.add(
+      'partner-export',
+      {
+        export_id: job.id,
+        owner_id: currentActor.id,
+        type,
+        format,
+      },
+      {
+        idempotencyKey: `partner-export:${currentActor.id}:${type}:${format}`,
+      },
+    );
     return job;
   }
 
@@ -709,6 +740,28 @@ export class PartnersService {
     return this.db.actorOrDemo(actor).organizationId ?? 'demo-partner-org-id';
   }
 
+  private bookingsForOrganization(organizationId: string) {
+    return this.db.bookings.filter(
+      (booking) => booking.partner_organization_id === organizationId,
+    );
+  }
+
+  private paginatePartner<T extends object>(
+    items: readonly T[],
+    query: QueryLike,
+  ) {
+    const pagination = parsePagination(query, 'partner', {
+      defaultLimit: 50,
+      allowedSortBy: ['created_at', 'updated_at', 'status', 'total_amount'],
+    });
+    return paginateArray(items, pagination, {
+      created_at: (item) => field(item, 'created_at'),
+      updated_at: (item) => field(item, 'updated_at'),
+      status: (item) => field(item, 'status'),
+      total_amount: (item) => field(item, 'total_amount'),
+    });
+  }
+
   private assertOrganization(id: string) {
     const organization = this.db.partnerOrganizations.find(
       (item) => item.id === id,
@@ -783,4 +836,8 @@ export class PartnersService {
       revoked_at: apiKey['revoked_at'],
     };
   }
+}
+
+function field(item: object, key: string): unknown {
+  return (item as Record<string, unknown>)[key];
 }

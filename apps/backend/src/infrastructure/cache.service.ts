@@ -1,0 +1,209 @@
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import Redis from 'ioredis';
+
+type CacheEntry = {
+  value: string;
+  expiresAt: number;
+};
+
+@Injectable()
+export class AppCacheService implements OnModuleDestroy {
+  private readonly logger = new Logger(AppCacheService.name);
+  private readonly enabled: boolean;
+  private readonly defaultTtlSeconds: number;
+  private readonly memory = new Map<string, CacheEntry>();
+  private readonly redis?: Redis;
+
+  constructor(config: ConfigService) {
+    this.enabled = stringFlag(config.get<string>('CACHE_ENABLED'), true);
+    this.defaultTtlSeconds = toPositiveInt(
+      config.get<string>('CACHE_DEFAULT_TTL_SECONDS'),
+      300,
+    );
+    const redisUrl = config.get<string>('REDIS_URL');
+
+    if (this.enabled && redisUrl) {
+      this.redis = new Redis(redisUrl, {
+        enableOfflineQueue: false,
+        maxRetriesPerRequest: 1,
+        lazyConnect: true,
+      });
+      this.redis.on('error', (error: Error) =>
+        this.logger.warn(
+          JSON.stringify({
+            event: 'cache_redis_error',
+            message: error.message,
+          }),
+        ),
+      );
+    }
+  }
+
+  async getOrSet<T>(
+    key: string,
+    ttlSeconds: number,
+    producer: () => Promise<T> | T,
+  ): Promise<T> {
+    const cached = await this.get<T>(key);
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    const value = await producer();
+    await this.set(key, value, ttlSeconds);
+    return value;
+  }
+
+  async get<T>(key: string): Promise<T | undefined> {
+    if (!this.enabled) {
+      return undefined;
+    }
+
+    const redisValue = await this.redisGet(key);
+    if (redisValue !== undefined) {
+      return JSON.parse(redisValue) as T;
+    }
+
+    const entry = this.memory.get(key);
+    if (!entry) {
+      return undefined;
+    }
+
+    if (Date.now() >= entry.expiresAt) {
+      this.memory.delete(key);
+      return undefined;
+    }
+
+    return JSON.parse(entry.value) as T;
+  }
+
+  async set<T>(
+    key: string,
+    value: T,
+    ttlSeconds = this.defaultTtlSeconds,
+  ): Promise<void> {
+    if (!this.enabled) {
+      return;
+    }
+
+    const serialized = JSON.stringify(value);
+    const ttl = Math.max(1, ttlSeconds);
+    const redisStored = await this.redisSet(key, serialized, ttl);
+    if (redisStored) {
+      return;
+    }
+
+    this.memory.set(key, {
+      value: serialized,
+      expiresAt: Date.now() + ttl * 1000,
+    });
+  }
+
+  async del(key: string): Promise<void> {
+    this.memory.delete(key);
+    if (!this.redis) {
+      return;
+    }
+
+    try {
+      await this.redis.del(key);
+    } catch {
+      // Redis fallback errors are already logged by the connection listener.
+    }
+  }
+
+  async delByPattern(pattern: string): Promise<void> {
+    const prefix = pattern.endsWith('*') ? pattern.slice(0, -1) : pattern;
+    for (const key of this.memory.keys()) {
+      if (key.startsWith(prefix)) {
+        this.memory.delete(key);
+      }
+    }
+
+    if (!this.redis) {
+      return;
+    }
+
+    try {
+      const keys = await this.redis.keys(pattern);
+      if (keys.length > 0) {
+        await this.redis.del(keys);
+      }
+    } catch {
+      // Redis fallback errors are already logged by the connection listener.
+    }
+  }
+
+  async onModuleDestroy() {
+    if (!this.redis) {
+      return;
+    }
+
+    try {
+      if (this.redis.status === 'ready') {
+        await this.redis.quit();
+        return;
+      }
+    } catch {
+      // Fall through to disconnect for half-open local/dev Redis connections.
+    }
+
+    this.redis.disconnect();
+  }
+
+  private async redisGet(key: string): Promise<string | undefined> {
+    if (!this.redis) {
+      return undefined;
+    }
+
+    try {
+      await this.ensureRedisConnected();
+      const value = await this.redis.get(key);
+      return value ?? undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private async redisSet(
+    key: string,
+    value: string,
+    ttlSeconds: number,
+  ): Promise<boolean> {
+    if (!this.redis) {
+      return false;
+    }
+
+    try {
+      await this.ensureRedisConnected();
+      await this.redis.set(key, value, 'EX', ttlSeconds);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private async ensureRedisConnected() {
+    if (!this.redis || this.redis.status === 'ready') {
+      return;
+    }
+
+    if (this.redis.status === 'wait') {
+      await this.redis.connect();
+    }
+  }
+}
+
+function stringFlag(value: unknown, fallback: boolean): boolean {
+  if (value === undefined || value === null || value === '') {
+    return fallback;
+  }
+
+  return String(value).toLowerCase() === 'true';
+}
+
+function toPositiveInt(value: unknown, fallback: number): number {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}

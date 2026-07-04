@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { Role } from '@agoda/types';
@@ -94,8 +95,11 @@ export class PartnersController {
   }
 
   @Get('hotels')
-  hotels(@CurrentActor() actor: RequestActor | undefined) {
-    return this.partnersService.hotels(actor);
+  hotels(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Query() query: Record<string, string | undefined>,
+  ) {
+    return this.partnersService.hotels(actor, query);
   }
 
   @Post('hotels')
@@ -250,8 +254,8 @@ export class PartnersController {
   }
 
   @Get('trips')
-  trips() {
-    return this.partnersService.trips();
+  trips(@Query() query: Record<string, string | undefined>) {
+    return this.partnersService.trips(query);
   }
 
   @Post('trips')
@@ -275,8 +279,11 @@ export class PartnersController {
   }
 
   @Get('bookings')
-  bookings(@CurrentActor() actor: RequestActor | undefined) {
-    return this.partnersService.bookings(actor);
+  bookings(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Query() query: Record<string, string | undefined>,
+  ) {
+    return this.partnersService.bookings(actor, query);
   }
 
   @Get('bookings/:id')
@@ -350,8 +357,11 @@ export class PartnersController {
   }
 
   @Get('finance/ledger')
-  ledger(@CurrentActor() actor: RequestActor | undefined) {
-    return this.partnersService.ledger(actor);
+  ledger(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Query() query: Record<string, string | undefined>,
+  ) {
+    return this.partnersService.ledger(actor, query);
   }
 
   @Get('finance/chart')
@@ -368,8 +378,11 @@ export class PartnersController {
   }
 
   @Get('withdrawals')
-  withdrawals(@CurrentActor() actor: RequestActor | undefined) {
-    return this.partnersService.withdrawals(actor);
+  withdrawals(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Query() query: Record<string, string | undefined>,
+  ) {
+    return this.partnersService.withdrawals(actor, query);
   }
 
   @Post('exports/bookings')

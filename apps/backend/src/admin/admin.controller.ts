@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { Role } from '@agoda/types';
@@ -42,8 +43,8 @@ export class AdminController {
   }
 
   @Get('users')
-  users() {
-    return this.adminService.users();
+  users(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.users(query);
   }
 
   @Get('users/:id')
@@ -67,13 +68,19 @@ export class AdminController {
   }
 
   @Get('users/:id/bookings')
-  userBookings(@Param('id') id: string) {
-    return this.adminService.userBookings(id);
+  userBookings(
+    @Param('id') id: string,
+    @Query() query: Record<string, string | undefined>,
+  ) {
+    return this.adminService.userBookings(id, query);
   }
 
   @Get('users/:id/audit')
-  userAudit(@Param('id') id: string) {
-    return this.adminService.userAudit(id);
+  userAudit(
+    @Param('id') id: string,
+    @Query() query: Record<string, string | undefined>,
+  ) {
+    return this.adminService.userAudit(id, query);
   }
 
   @Post('users/:id/message')
@@ -87,13 +94,13 @@ export class AdminController {
   }
 
   @Get('partners')
-  partners() {
-    return this.adminService.partners();
+  partners(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.partners(query);
   }
 
   @Get('partners/requests')
-  partnerRequests() {
-    return this.adminService.partnerRequests();
+  partnerRequests(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.partnerRequests(query);
   }
 
   @Get('partners/:id')
@@ -176,8 +183,8 @@ export class AdminController {
   }
 
   @Get('hotels')
-  hotels() {
-    return this.adminService.hotels();
+  hotels(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.hotels(query);
   }
 
   @Get('hotels/:id')
@@ -210,8 +217,8 @@ export class AdminController {
   }
 
   @Get('trips')
-  trips() {
-    return this.adminService.trips();
+  trips(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.trips(query);
   }
 
   @Get('trips/:id')
@@ -238,8 +245,8 @@ export class AdminController {
   }
 
   @Get('bookings')
-  bookings() {
-    return this.adminService.bookings();
+  bookings(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.bookings(query);
   }
 
   @Get('bookings/:id')
@@ -266,8 +273,8 @@ export class AdminController {
   }
 
   @Get('payments')
-  payments() {
-    return this.adminService.payments();
+  payments(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.payments(query);
   }
 
   @Get('payments/:id')
@@ -282,8 +289,8 @@ export class AdminController {
   }
 
   @Get('refunds')
-  refunds() {
-    return this.adminService.refunds();
+  refunds(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.refunds(query);
   }
 
   @Get('refunds/:id')
@@ -351,8 +358,8 @@ export class AdminController {
   }
 
   @Get('withdrawals')
-  withdrawals() {
-    return this.adminService.withdrawals();
+  withdrawals(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.withdrawals(query);
   }
 
   @Get('withdrawals/:id')
@@ -379,8 +386,11 @@ export class AdminController {
   }
 
   @Get('cms/:resource')
-  cmsList(@Param('resource') resource: string) {
-    return this.adminService.cmsList(resource);
+  cmsList(
+    @Param('resource') resource: string,
+    @Query() query: Record<string, string | undefined>,
+  ) {
+    return this.adminService.cmsList(resource, query);
   }
 
   @Post('cms/:resource')
@@ -443,8 +453,8 @@ export class AdminController {
   }
 
   @Get('promos')
-  promos() {
-    return this.adminService.promos();
+  promos(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.promos(query);
   }
 
   @Post('promos')
@@ -459,8 +469,8 @@ export class AdminController {
   }
 
   @Get('support/tickets')
-  supportTickets() {
-    return this.adminService.supportTickets();
+  supportTickets(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.supportTickets(query);
   }
 
   @Get('support/tickets/:id')
@@ -490,8 +500,8 @@ export class AdminController {
   }
 
   @Get('notifications/broadcasts')
-  notificationBroadcasts() {
-    return this.adminService.notificationBroadcasts();
+  notificationBroadcasts(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.notificationBroadcasts(query);
   }
 
   @Get('notifications/broadcasts/:id')
@@ -508,8 +518,8 @@ export class AdminController {
   }
 
   @Get('admin-users')
-  adminUsers() {
-    return this.adminService.adminUsers();
+  adminUsers(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.adminUsers(query);
   }
 
   @Post('admin-users')
@@ -557,8 +567,8 @@ export class AdminController {
   }
 
   @Get('audit-logs')
-  auditLogs() {
-    return this.adminService.auditLogs();
+  auditLogs(@Query() query: Record<string, string | undefined>) {
+    return this.adminService.auditLogs(query);
   }
 
   @Get('settings')

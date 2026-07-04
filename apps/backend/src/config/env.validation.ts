@@ -19,6 +19,15 @@ interface EnvironmentConfig {
   ENABLE_DEMO_AUTH: string;
   ENABLE_IN_MEMORY_DATA: string;
   ENABLE_MOCK_PAYMENTS: string;
+  DB_CONNECTION_TIMEOUT_MS: number;
+  DB_QUERY_TIMEOUT_MS: number;
+  DB_QUERY_ATTEMPTS: number;
+  DB_POOL_MAX: number;
+  DB_IDLE_TIMEOUT_MS: number;
+  SLOW_REQUEST_MS: number;
+  SLOW_QUERY_MS: number;
+  CACHE_ENABLED: string;
+  CACHE_DEFAULT_TTL_SECONDS: number;
   CORS_ORIGINS?: string;
   SWAGGER_ENABLED: string;
 }
@@ -117,6 +126,21 @@ export function validateEnv(
     ENABLE_DEMO_AUTH: String(config.ENABLE_DEMO_AUTH ?? !production),
     ENABLE_IN_MEMORY_DATA: String(config.ENABLE_IN_MEMORY_DATA ?? !production),
     ENABLE_MOCK_PAYMENTS: String(config.ENABLE_MOCK_PAYMENTS ?? !production),
+    DB_CONNECTION_TIMEOUT_MS: toNumber(
+      config.DB_CONNECTION_TIMEOUT_MS,
+      production ? 8000 : 5000,
+    ),
+    DB_QUERY_TIMEOUT_MS: toNumber(
+      config.DB_QUERY_TIMEOUT_MS,
+      production ? 8000 : 5000,
+    ),
+    DB_QUERY_ATTEMPTS: toNumber(config.DB_QUERY_ATTEMPTS, production ? 3 : 1),
+    DB_POOL_MAX: toNumber(config.DB_POOL_MAX, 5),
+    DB_IDLE_TIMEOUT_MS: toNumber(config.DB_IDLE_TIMEOUT_MS, 10000),
+    SLOW_REQUEST_MS: toNumber(config.SLOW_REQUEST_MS, 1000),
+    SLOW_QUERY_MS: toNumber(config.SLOW_QUERY_MS, 300),
+    CACHE_ENABLED: String(config.CACHE_ENABLED ?? 'true'),
+    CACHE_DEFAULT_TTL_SECONDS: toNumber(config.CACHE_DEFAULT_TTL_SECONDS, 300),
     CORS_ORIGINS: config.CORS_ORIGINS ? String(config.CORS_ORIGINS) : undefined,
     SWAGGER_ENABLED: String(config.SWAGGER_ENABLED ?? !production),
   };
