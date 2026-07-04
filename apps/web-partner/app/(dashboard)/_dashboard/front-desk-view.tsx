@@ -355,7 +355,6 @@ export function FrontDeskView() {
             <CardBody className="flex flex-col gap-3">
               <h2 className="text-sm font-semibold">Tezkor yo'nalishlar</h2>
               <QuickLink href="/reservations" icon={<Users />} label="Bronlar ro'yxati" />
-              <QuickLink href="/rooms" icon={<BedDouble />} label="Xona holatlari" />
               <QuickLink href="/calendar" icon={<CalendarDays />} label="Bandlik kalendari" />
             </CardBody>
           </Card>
