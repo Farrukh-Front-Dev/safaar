@@ -32,18 +32,22 @@
 
   --shadow-card: 0 1px 2px 0 rgba(15, 23, 42, 0.04),
     0 1px 3px 0 rgba(15, 23, 42, 0.04);
+  --shadow-lifted: 0 14px 30px -18px rgba(15, 23, 42, 0.38),
+    0 8px 16px -14px rgba(37, 99, 235, 0.24);
 }
 
 /* CSS o'zgaruvchilari — light theme */
 :root {
-  --background: #f6f7f9;
+  --background: #f7f9fc;
   --foreground: #0f172a;
   --surface: #ffffff;
-  --surface-muted: #f3f5f7;
-  --surface-hover: #eef2f6;
+  --surface-muted: #f2f6fb;
+  --surface-hover: #edf4fb;
   --border: #dfe5ec;
   --border-strong: #c4ceda;
   --muted-foreground: #5f6f82;
+  --panel-gradient: #ffffff;
+  --page-gradient: #f7f9fc;
 }
 
 /* Dark theme — next-themes orqali html.dark qo'shiladi */
@@ -56,6 +60,8 @@
   --border: #2a3441;
   --border-strong: #445063;
   --muted-foreground: #9aa8b8;
+  --panel-gradient: #151b23;
+  --page-gradient: #0d1117;
 }
 
 html,
@@ -66,6 +72,7 @@ body {
 
 body {
   text-rendering: optimizeLegibility;
+  background: var(--background);
 }
 
 /* Focus ring (a11y) */
@@ -89,6 +96,21 @@ body {
 
 .fade-in {
   animation: fade-in 0.25s ease-out both;
+}
+
+@keyframes soft-pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.soft-pop {
+  animation: soft-pop 0.22s ease-out both;
 }
 
 /* Reduce motion — a11y */

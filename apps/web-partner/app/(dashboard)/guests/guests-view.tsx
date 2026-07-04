@@ -86,7 +86,7 @@ export function GuestsView() {
       ) : (
         <div className="overflow-x-auto rounded-card border border-[var(--border)] bg-[var(--surface)]">
           <table className="w-full text-sm">
-            <thead className="border-b border-[var(--border)] bg-[var(--surface-muted)]/40 text-left text-xs uppercase tracking-wide text-[var(--muted-foreground)]">
+            <thead className="border-b border-[var(--border)] bg-[var(--surface-muted)] text-left text-xs uppercase tracking-wide text-[var(--muted-foreground)]">
               <tr>
                 <th className="px-4 py-3">Mijoz</th>
                 <th className="px-4 py-3">Aloqa</th>

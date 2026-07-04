@@ -1,6 +1,13 @@
 "use client";
 
-import { MapPin, Plus, Trash2 } from "lucide-react";
+import {
+  ExternalLink,
+  Loader2,
+  MapPin,
+  Navigation,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../../../_components/ui/button";
@@ -22,8 +29,16 @@ export function LocationEditor({
   const { data } = useListing();
   const addNearby = useDataStore((s) => s.addNearby);
   const removeNearby = useDataStore((s) => s.removeNearby);
+  const updateLocation = useDataStore((s) => s.updateListingLocation);
   const [name, setName] = useState("");
   const [distance, setDistance] = useState("");
+  const [locating, setLocating] = useState(false);
+
+  const hasCoordinates =
+    typeof data.latitude === "number" && typeof data.longitude === "number";
+  const mapUrl = hasCoordinates
+    ? `https://www.google.com/maps?q=${data.latitude},${data.longitude}`
+    : null;
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +54,41 @@ export function LocationEditor({
     setName("");
     setDistance("");
     toast.success("Qo'shildi");
+  };
+
+  const handleUseCurrentLocation = () => {
+    if (!("geolocation" in navigator)) {
+      toast.error("Brauzeringiz lakatsiyani qo'llab-quvvatlamaydi");
+      return;
+    }
+
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const latitude = Number(position.coords.latitude.toFixed(6));
+        const longitude = Number(position.coords.longitude.toFixed(6));
+        updateLocation({ latitude, longitude });
+        setLocating(false);
+        toast.success("Lakatsiya belgilandi", {
+          description: `${latitude}, ${longitude}`,
+        });
+      },
+      (error) => {
+        setLocating(false);
+        const message =
+          error.code === error.PERMISSION_DENIED
+            ? "Lakatsiyaga ruxsat berilmadi"
+            : error.code === error.POSITION_UNAVAILABLE
+              ? "Lakatsiyani aniqlab bo'lmadi"
+              : "Lakatsiya olish vaqti tugadi";
+        toast.error(message);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 12_000,
+        maximumAge: 60_000,
+      },
+    );
   };
 
   return (
@@ -62,6 +112,51 @@ export function LocationEditor({
             <p className="text-xs text-[var(--muted-foreground)]">
               Manzilni Sozlamalar → Mehmonxona bo'limidan o'zgartiring.
             </p>
+          </div>
+          <div className="rounded-card border border-[var(--border)] bg-[var(--surface-muted)] p-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold">Xaritadagi lakatsiya</p>
+                <p className="mt-1 text-xs leading-5 text-[var(--muted-foreground)]">
+                  Brauzer orqali mehmonxona joyini belgilang. Bu mijozlarga
+                  xaritada aniq nuqtani ko'rsatish uchun kerak bo'ladi.
+                </p>
+                {hasCoordinates ? (
+                  <p className="mt-2 font-mono text-xs text-[var(--foreground)]">
+                    {data.latitude?.toFixed(6)}, {data.longitude?.toFixed(6)}
+                  </p>
+                ) : (
+                  <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-300">
+                    Lakatsiya hali belgilanmagan.
+                  </p>
+                )}
+              </div>
+              <div className="flex shrink-0 flex-wrap gap-2">
+                {mapUrl && (
+                  <a
+                    href={mapUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-[var(--border-strong)] bg-[var(--surface)] px-3 text-sm font-medium text-[var(--foreground)] shadow-sm shadow-slate-950/5 transition-colors hover:bg-[var(--surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+                  >
+                    <ExternalLink className="h-4 w-4" aria-hidden />
+                    Xaritada
+                  </a>
+                )}
+                <Button
+                  size="sm"
+                  onClick={handleUseCurrentLocation}
+                  disabled={locating}
+                >
+                  {locating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                  ) : (
+                    <Navigation className="h-4 w-4" aria-hidden />
+                  )}
+                  {locating ? "Aniqlanmoqda..." : "Lakatsiyamdan foydalanish"}
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 

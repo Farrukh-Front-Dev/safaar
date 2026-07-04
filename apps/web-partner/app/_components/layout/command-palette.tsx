@@ -212,7 +212,7 @@ export function CommandPalette() {
                     setSelectedIdx(0);
                   }}
                   placeholder="Bron ID, mijoz, xona yoki sahifa qidiring..."
-                  className="flex-1 border-0 bg-transparent py-4 text-sm focus:outline-none"
+                  className="flex-1 border-0 bg-[var(--surface)] py-4 text-sm focus:outline-none"
                   aria-label="Qidiruv"
                 />
                 <kbd className="hidden rounded border border-[var(--border)] bg-[var(--surface-muted)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--muted-foreground)] sm:inline">
@@ -293,7 +293,7 @@ export function CommandPalette() {
               </div>
 
               {/* Footer */}
-              <div className="flex items-center justify-between border-t border-[var(--border)] bg-[var(--surface-muted)]/50 px-4 py-2 text-[10px] text-[var(--muted-foreground)]">
+              <div className="flex items-center justify-between border-t border-[var(--border)] bg-[var(--surface-muted)] px-4 py-2 text-[10px] text-[var(--muted-foreground)]">
                 <div className="flex items-center gap-3">
                   <span className="inline-flex items-center gap-1">
                     <kbd className="rounded border border-[var(--border)] bg-[var(--surface)] px-1 py-0.5">

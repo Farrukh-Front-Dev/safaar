@@ -1,5 +1,6 @@
 "use client";
 
+import { ImageIcon } from "lucide-react";
 import { useEffect } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -28,6 +29,14 @@ const AMENITY_OPTIONS = [
 
 const schema = z.object({
   name: z.string().min(2, "Nom kamida 2 belgi"),
+  description: z.string().max(180, "Tavsif 180 belgidan oshmasin").optional(),
+  imageUrl: z
+    .string()
+    .url("Rasm linki noto'g'ri")
+    .or(z.literal(""))
+    .optional(),
+  bedType: z.string().max(60, "Juda uzun").optional(),
+  sizeSqm: z.number().min(0).max(500).optional(),
   basePrice: z.number().min(0, "Narx 0 dan kichik bo'lmasin"),
   capacity: z.number().int().min(1).max(10),
   amenities: z.array(z.string()),
@@ -49,6 +58,10 @@ export function RoomTypeDialog({ open, onClose, editing }: Props) {
     resolver: zodResolver(schema),
     defaultValues: {
       name: "",
+      description: "",
+      imageUrl: "",
+      bedType: "",
+      sizeSqm: 24,
       basePrice: 400_000,
       capacity: 2,
       amenities: [],
@@ -61,12 +74,20 @@ export function RoomTypeDialog({ open, onClose, editing }: Props) {
         editing
           ? {
               name: editing.name,
+              description: editing.description ?? "",
+              imageUrl: editing.imageUrl ?? "",
+              bedType: editing.bedType ?? "",
+              sizeSqm: editing.sizeSqm ?? 24,
               basePrice: editing.basePrice,
               capacity: editing.capacity,
               amenities: editing.amenities,
             }
           : {
               name: "",
+              description: "",
+              imageUrl: "",
+              bedType: "",
+              sizeSqm: 24,
               basePrice: 400_000,
               capacity: 2,
               amenities: [],
@@ -77,6 +98,7 @@ export function RoomTypeDialog({ open, onClose, editing }: Props) {
 
   const selectedAmenities =
     useWatch({ control: form.control, name: "amenities" }) ?? [];
+  const imageUrl = useWatch({ control: form.control, name: "imageUrl" }) ?? "";
 
   const toggleAmenity = (value: string) => {
     const current = form.getValues("amenities");
@@ -112,7 +134,8 @@ export function RoomTypeDialog({ open, onClose, editing }: Props) {
       size="lg"
     >
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-[1fr_180px]">
+          <div className="grid gap-4 md:grid-cols-2">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="rt-name">Nomi</Label>
             <Input
@@ -138,6 +161,43 @@ export function RoomTypeDialog({ open, onClose, editing }: Props) {
           </div>
 
           <div className="flex flex-col gap-1.5 md:col-span-2">
+            <Label htmlFor="rt-desc">Qisqa tavsif</Label>
+            <Input
+              id="rt-desc"
+              placeholder="Keng, balkonli xona..."
+              {...form.register("description")}
+            />
+            {err.description && (
+              <p className="text-xs text-red-600">
+                {err.description.message}
+              </p>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="rt-bed">Karavot turi</Label>
+            <Input
+              id="rt-bed"
+              placeholder="1 king bed"
+              {...form.register("bedType")}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="rt-size">Maydon (m²)</Label>
+            <Input
+              id="rt-size"
+              type="number"
+              min={0}
+              max={500}
+              {...form.register("sizeSqm", {
+                setValueAs: (value) =>
+                  value === "" ? undefined : Number(value),
+              })}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5 md:col-span-2">
             <Label htmlFor="rt-price">Bir kechalik narx (so'm)</Label>
             <Input
               id="rt-price"
@@ -147,6 +207,35 @@ export function RoomTypeDialog({ open, onClose, editing }: Props) {
               placeholder="400000"
               {...form.register("basePrice", { valueAsNumber: true })}
             />
+          </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="rt-image">Xona rasmi</Label>
+            <div className="aspect-[4/3] overflow-hidden rounded-card border border-[var(--border)] bg-[var(--surface-muted)]">
+              {imageUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={imageUrl}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center gap-2 text-[var(--muted-foreground)]">
+                  <ImageIcon className="h-8 w-8" aria-hidden />
+                  <span className="text-xs">Rasm linki kiriting</span>
+                </div>
+              )}
+            </div>
+            <Input
+              id="rt-image"
+              placeholder="https://..."
+              aria-invalid={Boolean(err.imageUrl)}
+              {...form.register("imageUrl")}
+            />
+            {err.imageUrl && (
+              <p className="text-xs text-red-600">{err.imageUrl.message}</p>
+            )}
           </div>
         </div>
 

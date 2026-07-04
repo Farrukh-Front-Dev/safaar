@@ -45,6 +45,7 @@ export interface WalkInInitial {
   checkIn?: string;
   checkOut?: string;
   roomTypeId?: string;
+  roomNumber?: string;
 }
 
 interface WalkInDialogProps {
@@ -60,6 +61,7 @@ export function WalkInDialog({
   initialValues,
 }: WalkInDialogProps) {
   const roomTypes = useDataStore((s) => s.roomTypes);
+  const rooms = useDataStore((s) => s.rooms);
   const addReservation = useDataStore((s) => s.addReservation);
   const [submitting, setSubmitting] = useState(false);
 
@@ -106,12 +108,17 @@ export function WalkInDialog({
         return;
       }
       const nights = nightsBetween(values.checkIn, values.checkOut);
-      const total = roomType.basePrice * nights;
+      const selectedRoom = initialValues?.roomNumber
+        ? rooms.find((room) => room.number === initialValues.roomNumber)
+        : null;
+      const nightlyPrice = selectedRoom?.nightlyPrice ?? roomType.basePrice;
+      const total = nightlyPrice * nights;
 
       const created = addReservation({
         fullName: values.fullName,
         phone: normalizePhone(values.phone),
         roomTypeId: values.roomTypeId,
+        roomNumber: initialValues?.roomNumber,
         checkIn: values.checkIn,
         checkOut: values.checkOut,
         adults: values.adults,
@@ -188,6 +195,13 @@ export function WalkInDialog({
             )}
           </select>
         </div>
+
+        {initialValues?.roomNumber && (
+          <div className="rounded-card border border-brand-200 bg-brand-50/60 px-3 py-2 text-sm text-brand-900 dark:border-brand-900/50 dark:bg-brand-950/25 dark:text-brand-100 md:col-span-2">
+            <span className="font-semibold">Kalendar xonasi:</span>{" "}
+            {initialValues.roomNumber}
+          </div>
+        )}
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="checkIn">Kelish sanasi</Label>

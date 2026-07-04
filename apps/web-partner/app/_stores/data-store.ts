@@ -33,6 +33,7 @@ export interface WalkInDraft {
   fullName: string;
   phone: string;
   roomTypeId: string;
+  roomNumber?: string;
   checkIn: string;
   checkOut: string;
   adults: number;
@@ -43,6 +44,10 @@ export interface WalkInDraft {
 
 export interface RoomTypeDraft {
   name: string;
+  description?: string;
+  imageUrl?: string;
+  bedType?: string;
+  sizeSqm?: number;
   basePrice: number;
   capacity: number;
   amenities: string[];
@@ -84,6 +89,11 @@ export interface PhotoDraft {
   category: PhotoCategory;
 }
 
+export interface ListingLocationDraft {
+  latitude: number;
+  longitude: number;
+}
+
 interface DataState {
   reservations: ReservationView[];
   rooms: Room[];
@@ -121,6 +131,7 @@ interface DataState {
   // Listing (e'lon) mutations
   updateListingGeneral: (draft: ListingGeneralDraft) => void;
   updateListingRules: (draft: ListingRulesDraft) => void;
+  updateListingLocation: (draft: ListingLocationDraft) => void;
   setListingStatus: (status: ListingStatus) => void;
   toggleAmenity: (amenityId: string) => void;
   addPhoto: (draft: PhotoDraft) => ListingPhoto;
@@ -233,6 +244,7 @@ export const useDataStore = create<DataState>((set, get) => ({
       },
       roomTypeId: draft.roomTypeId,
       roomTypeName: roomType?.name ?? "—",
+      roomNumber: draft.roomNumber,
       checkIn: draft.checkIn,
       checkOut: draft.checkOut,
       nights: draft.nights,
@@ -305,6 +317,8 @@ export const useDataStore = create<DataState>((set, get) => ({
       floor: draft.floor,
       roomTypeId: draft.roomTypeId,
       roomTypeName: roomType.name,
+      isListed: true,
+      nightlyPrice: roomType.basePrice,
       status: RoomStatus.VACANT_CLEAN,
     };
     set({ rooms: [...state.rooms, room] });
@@ -388,6 +402,8 @@ export const useDataStore = create<DataState>((set, get) => ({
         roomTypeId: draft.roomTypeId,
         roomTypeName: roomType.name,
         status: RoomStatus.VACANT_CLEAN,
+        isListed: true,
+        nightlyPrice: roomType.basePrice,
       });
     }
 
@@ -417,6 +433,11 @@ export const useDataStore = create<DataState>((set, get) => ({
     })),
 
   updateListingRules: (draft) =>
+    set((state) => ({
+      listing: { ...state.listing, ...draft },
+    })),
+
+  updateListingLocation: (draft) =>
     set((state) => ({
       listing: { ...state.listing, ...draft },
     })),

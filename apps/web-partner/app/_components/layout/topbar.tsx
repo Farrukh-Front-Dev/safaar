@@ -17,7 +17,7 @@ export function Topbar() {
   const openMobileMenu = useUiStore((s) => s.openMobileSidebar);
 
   return (
-    <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface)]/95 px-4 backdrop-blur-md md:px-5">
+    <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-4 shadow-sm shadow-slate-950/5 md:px-5">
       <div className="flex items-center gap-2 min-w-0">
         <Tooltip content="Menyu" side="bottom">
           <button

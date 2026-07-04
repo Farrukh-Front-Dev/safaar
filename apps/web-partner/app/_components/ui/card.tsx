@@ -10,8 +10,10 @@ export function Card({ className, interactive, ...props }: CardProps) {
   return (
     <div
       className={cn(
-        "rounded-card border border-[var(--border)] bg-[var(--surface)] shadow-card transition-shadow duration-200",
-        interactive && "hover:border-[var(--border-strong)] hover:shadow-md",
+        "rounded-card border border-[var(--border)] bg-[var(--panel-gradient)] shadow-card transition-all duration-200",
+        "relative overflow-hidden",
+        interactive &&
+          "hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:shadow-[var(--shadow-lifted)]",
         className,
       )}
       {...props}
@@ -26,7 +28,7 @@ export function CardHeader({
   return (
     <div
       className={cn(
-        "flex flex-col gap-1 border-b border-[var(--border)] px-4 py-3.5",
+        "flex flex-col gap-1 border-b border-[var(--border)] bg-[var(--surface-muted)] px-4 py-3.5",
         className,
       )}
       {...props}

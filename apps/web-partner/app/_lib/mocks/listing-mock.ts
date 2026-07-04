@@ -88,6 +88,8 @@ export const mockListing: Listing = {
 
   address: "Samarqand shahri, Registon ko'chasi 5-uy",
   city: "Samarqand",
+  latitude: 39.6542,
+  longitude: 66.975,
   nearby: [
     { id: "n-1", name: "Registon maydoni", distance: "200 m" },
     { id: "n-2", name: "Bibi-Xonim jomiy masjidi", distance: "800 m" },

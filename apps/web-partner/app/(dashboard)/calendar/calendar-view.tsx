@@ -19,6 +19,7 @@ import { useRooms } from "../../_hooks/use-rooms";
 import { useReservations } from "../../_hooks/use-reservations";
 import { useRoomTypes } from "../../_hooks/use-room-types";
 import { cn } from "../../_lib/utils/cn";
+import { formatMoney } from "../../_lib/utils/format";
 import { TODAY_ISO } from "../../_lib/mocks/data";
 import { ReservationBar } from "./_components/reservation-bar";
 
@@ -66,6 +67,7 @@ export function CalendarView() {
     checkIn?: string;
     checkOut?: string;
     roomTypeId?: string;
+    roomNumber?: string;
   }>({});
 
   const startDate = addDays(TODAY_ISO, startOffset);
@@ -91,8 +93,8 @@ export function CalendarView() {
   // Cell o'lchami view mode'ga qarab
   const cellWidth =
     viewMode === 7 ? 110 : viewMode === 14 ? 64 : 38;
-  const roomColWidth = 80;
-  const rowHeight = 44;
+  const roomColWidth = 156;
+  const rowHeight = 58;
   const headerHeight = 56;
 
   // Bo'sh katakka klik — yangi bron yaratish
@@ -102,6 +104,7 @@ export function CalendarView() {
       checkIn: dateIso,
       checkOut: addDays(dateIso, 1),
       roomTypeId: room?.roomTypeId,
+      roomNumber,
     });
     setWalkInOpen(true);
   };
@@ -160,12 +163,35 @@ export function CalendarView() {
     return `${sDate.getDate()} ${MONTH_LABEL[sDate.getMonth()]} → ${eDate.getDate()} ${MONTH_LABEL[eDate.getMonth()]}`;
   }, [startDate, viewMode]);
 
+  const periodStats = useMemo(() => {
+    const visible = reservations.filter((r) => {
+      if (
+        r.status === BookingStatus.CANCELLED ||
+        r.status === BookingStatus.EXPIRED
+      ) {
+        return false;
+      }
+      const ciOffset = dayDiff(r.checkIn, startDate);
+      const coOffset = dayDiff(r.checkOut, startDate);
+      return coOffset > 0 && ciOffset < viewMode;
+    });
+    const total = visible.reduce((sum, r) => sum + r.totalPrice, 0);
+    const paid = visible.reduce((sum, r) => sum + r.paidAmount, 0);
+    return {
+      bookings: visible.length,
+      total,
+      paid,
+      balance: total - paid,
+      listedRooms: sortedRooms.filter((room) => room.isListed).length,
+    };
+  }, [reservations, sortedRooms, startDate, viewMode]);
+
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
         eyebrow="Operatsion"
         title="Kalendar"
-        description="Xona bandligini bir qarashda ko'ring. Bo'sh katakka bosib bron yarating."
+        description="Har bir real xona bo'yicha bandlik, to'lov va kelish-ketish sanalarini aniq ko'ring."
         actions={
           <Button
             size="sm"
@@ -179,6 +205,30 @@ export function CalendarView() {
           </Button>
         }
       />
+
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <CalendarMetric
+          label="E'londagi xonalar"
+          value={`${periodStats.listedRooms} / ${sortedRooms.length}`}
+          hint="turistlarga sotuvda"
+        />
+        <CalendarMetric
+          label="Davrdagi bronlar"
+          value={periodStats.bookings.toString()}
+          hint={periodLabel}
+        />
+        <CalendarMetric
+          label="Oldindan to'langan"
+          value={formatMoney(periodStats.paid)}
+          hint={`Jami: ${formatMoney(periodStats.total)}`}
+        />
+        <CalendarMetric
+          label="Qoldiq to'lov"
+          value={formatMoney(periodStats.balance)}
+          hint="kelganda yoki chiqishda olinadi"
+          danger={periodStats.balance > 0}
+        />
+      </section>
 
       {/* Boshqaruv lentasi */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-[var(--border)] bg-[var(--surface)] p-3">
@@ -343,7 +393,7 @@ export function CalendarView() {
                     "flex flex-col items-center justify-center border-b border-r border-[var(--border)] text-[10px] font-medium",
                     isToday
                       ? "bg-brand-50 text-brand-800 dark:bg-brand-900/40 dark:text-brand-200"
-                      : "bg-[var(--surface-muted)]/40",
+                      : "bg-[var(--surface-muted)]",
                     isWeekend && !isToday && "text-zinc-400",
                   )}
                 >
@@ -372,6 +422,8 @@ export function CalendarView() {
                   key={room.id}
                   number={room.number}
                   typeName={room.roomTypeName}
+                  isListed={room.isListed}
+                  nightlyPrice={room.nightlyPrice}
                   gridRow={gridRow}
                   days={days}
                   cellWidth={cellWidth}
@@ -400,6 +452,8 @@ export function CalendarView() {
 interface RoomRowProps {
   number: string;
   typeName: string;
+  isListed: boolean;
+  nightlyPrice?: number;
   gridRow: number;
   days: string[];
   cellWidth: number;
@@ -416,6 +470,8 @@ interface RoomRowProps {
 function RoomRow({
   number,
   typeName,
+  isListed,
+  nightlyPrice,
   gridRow,
   days,
   cellWidth,
@@ -434,13 +490,26 @@ function RoomRow({
           left: 0,
           zIndex: 15,
         }}
-        className="flex flex-col items-start justify-center border-b border-r border-[var(--border)] bg-[var(--surface)] px-3"
+        className="flex min-w-0 flex-col items-start justify-center border-b border-r border-[var(--border)] bg-[var(--surface)] px-3"
       >
-        <span className="font-mono text-sm font-bold leading-none">
-          {number}
-        </span>
-        <span className="text-[10px] text-[var(--muted-foreground)]">
+        <div className="flex w-full items-center justify-between gap-2">
+          <span className="font-mono text-sm font-bold leading-none">
+            {number}
+          </span>
+          <span
+            className={cn(
+              "rounded-full px-1.5 py-0.5 text-[9px] font-semibold",
+              isListed
+                ? "bg-accent-50 text-accent-700 dark:bg-accent-950/35 dark:text-accent-200"
+                : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800",
+            )}
+          >
+            {isListed ? "E'londa" : "Yopiq"}
+          </span>
+        </div>
+        <span className="mt-1 truncate text-[10px] text-[var(--muted-foreground)]">
           {typeName}
+          {nightlyPrice ? ` · ${formatMoney(nightlyPrice)}` : ""}
         </span>
       </div>
 
@@ -458,8 +527,8 @@ function RoomRow({
             style={{ gridRow, gridColumn: i + 2 }}
             className={cn(
               "border-b border-r border-[var(--border)] transition-colors hover:bg-brand-50 dark:hover:bg-brand-900/20",
-              isToday && "bg-brand-50/30 dark:bg-brand-900/10",
-              isWeekend && !isToday && "bg-[var(--surface-muted)]/30",
+              isToday && "bg-brand-50 dark:bg-brand-900",
+              isWeekend && !isToday && "bg-[var(--surface-muted)]",
             )}
           />
         );
@@ -478,5 +547,36 @@ function RoomRow({
         />
       ))}
     </>
+  );
+}
+
+function CalendarMetric({
+  label,
+  value,
+  hint,
+  danger,
+}: {
+  label: string;
+  value: string;
+  hint: string;
+  danger?: boolean;
+}) {
+  return (
+    <div className="rounded-card border border-[var(--border)] bg-[var(--surface)] px-4 py-3">
+      <p className="text-xs font-medium text-[var(--muted-foreground)]">
+        {label}
+      </p>
+      <p
+        className={cn(
+          "mt-1 truncate text-lg font-semibold",
+          danger ? "text-red-600" : "text-[var(--foreground)]",
+        )}
+      >
+        {value}
+      </p>
+      <p className="mt-0.5 truncate text-[11px] text-[var(--muted-foreground)]">
+        {hint}
+      </p>
+    </div>
   );
 }

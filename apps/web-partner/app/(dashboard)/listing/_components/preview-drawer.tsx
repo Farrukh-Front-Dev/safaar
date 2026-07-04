@@ -1,11 +1,22 @@
 "use client";
 
-import { Calendar, MapPin, Star } from "lucide-react";
+import {
+  BedDouble,
+  Calendar,
+  ExternalLink,
+  Image as ImageIcon,
+  MapPin,
+  Star,
+  Users,
+} from "lucide-react";
 import { Button } from "../../../_components/ui/button";
 import { Drawer } from "../../../_components/ui/drawer";
 import { AMENITY_GROUPS } from "../../../_lib/domain/listing";
 import { useListing } from "../../../_hooks/use-listing";
+import { useRooms } from "../../../_hooks/use-rooms";
+import { useRoomTypes } from "../../../_hooks/use-room-types";
 import { cn } from "../../../_lib/utils/cn";
+import { formatMoney } from "../../../_lib/utils/format";
 
 // Amenities'ni label'ga aylantirish uchun map
 const AMENITY_LABEL = new Map<string, string>();
@@ -21,8 +32,26 @@ export function PreviewDrawer({
   onClose: () => void;
 }) {
   const { data: l } = useListing();
+  const { data: rooms } = useRooms();
+  const { data: roomTypes } = useRoomTypes();
   const cover = l.photos.find((p) => p.isCover) ?? l.photos[0];
   const otherPhotos = l.photos.filter((p) => !p.isCover).slice(0, 4);
+  const roomAds = roomTypes.map((roomType) => {
+    const relatedRooms = rooms.filter((room) => room.roomTypeId === roomType.id);
+    const listedRooms = relatedRooms.filter((room) => room.isListed);
+    const prices = relatedRooms.map(
+      (room) => room.nightlyPrice ?? roomType.basePrice,
+    );
+    return {
+      roomType,
+      listedCount: listedRooms.length,
+      minPrice: prices.length > 0 ? Math.min(...prices) : roomType.basePrice,
+    };
+  });
+  const mapUrl =
+    typeof l.latitude === "number" && typeof l.longitude === "number"
+      ? `https://www.google.com/maps?q=${l.latitude},${l.longitude}`
+      : null;
 
   return (
     <Drawer
@@ -100,6 +129,17 @@ export function PreviewDrawer({
               <MapPin className="h-3.5 w-3.5" aria-hidden />
               {l.city} · {l.address}
             </span>
+            {mapUrl && (
+              <a
+                href={mapUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-sm font-medium text-brand-700 hover:underline dark:text-brand-300"
+              >
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                Xaritada
+              </a>
+            )}
           </div>
         </div>
 
@@ -118,6 +158,91 @@ export function PreviewDrawer({
             <p className="whitespace-pre-line text-sm leading-relaxed">
               {l.fullDescription}
             </p>
+          </div>
+        )}
+
+        {roomAds.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-[var(--muted-foreground)]">
+              Xona variantlari
+            </h2>
+            <div className="grid gap-3">
+              {roomAds.map(({ roomType, listedCount, minPrice }) => (
+                <div
+                  key={roomType.id}
+                  className="overflow-hidden rounded-card border border-[var(--border)] bg-[var(--surface)]"
+                >
+                  <div className="grid gap-0 sm:grid-cols-[180px_minmax(0,1fr)_auto]">
+                    <div className="aspect-[4/3] bg-[var(--surface-muted)] sm:h-full sm:aspect-auto">
+                      {roomType.imageUrl ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={roomType.imageUrl}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-[var(--muted-foreground)]">
+                          <ImageIcon className="h-8 w-8" aria-hidden />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 p-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <BedDouble
+                          className="h-4 w-4 text-brand-600"
+                          aria-hidden
+                        />
+                        <h3 className="font-semibold">{roomType.name}</h3>
+                        {listedCount <= 2 && listedCount > 0 && (
+                          <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700">
+                            Faqat {listedCount} ta qoldi
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[var(--muted-foreground)]">
+                        <span className="inline-flex items-center gap-1">
+                          <Users className="h-3.5 w-3.5" aria-hidden />
+                          {roomType.capacity} kishi
+                        </span>
+                        {roomType.bedType && <span>{roomType.bedType}</span>}
+                        {typeof roomType.sizeSqm === "number" &&
+                          roomType.sizeSqm > 0 && (
+                            <span>{roomType.sizeSqm} m²</span>
+                          )}
+                        <span>{listedCount} xona mavjud</span>
+                      </p>
+                      {roomType.description && (
+                        <p className="mt-2 line-clamp-2 text-sm leading-6 text-[var(--muted-foreground)]">
+                          {roomType.description}
+                        </p>
+                      )}
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {roomType.amenities.slice(0, 4).map((amenity) => (
+                          <span
+                            key={amenity}
+                            className="rounded-full border border-[var(--border)] px-2 py-0.5 text-[11px]"
+                          >
+                            {AMENITY_LABEL.get(amenity) ?? amenity}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="border-t border-[var(--border)] p-4 text-left sm:border-l sm:border-t-0 sm:text-right">
+                      <p className="text-[11px] text-[var(--muted-foreground)]">
+                        1 kecha
+                      </p>
+                      <p className="text-lg font-bold text-brand-700 dark:text-brand-300">
+                        {formatMoney(minPrice)}
+                      </p>
+                      <Button size="sm" className="mt-2">
+                        Tanlash
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

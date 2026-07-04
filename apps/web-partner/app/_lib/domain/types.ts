@@ -37,6 +37,10 @@ export type ReservationUiStatus = BookingStatus | "IN_HOUSE";
 export interface RoomType {
   id: string;
   name: string;
+  description?: string;
+  imageUrl?: string;
+  bedType?: string;
+  sizeSqm?: number;
   basePrice: number;
   capacity: number;
   amenities: string[];
@@ -49,6 +53,10 @@ export interface Room {
   floor: number;
   roomTypeId: string;
   roomTypeName: string;
+  /** Turistlarga sotuvda ko'rinadimi. */
+  isListed: boolean;
+  /** Agar xona alohida narxda e'lon qilinsa. */
+  nightlyPrice?: number;
   status: RoomStatus;
   /** Hozir band bo'lsa — joriy bronning qisqa ma'lumoti */
   occupant?: {

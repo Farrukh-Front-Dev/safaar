@@ -3,29 +3,35 @@
 import {
   AlertCircle,
   BedDouble,
+  CalendarDays,
   CalendarPlus,
-  Clock,
+  CheckCircle2,
+  Clock3,
   Inbox,
   LogIn,
   LogOut,
   Phone,
+  Search,
+  Sparkles,
+  Users,
+  Wallet,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BookingStatus } from "@agoda/types";
 import { Button } from "../../_components/ui/button";
-import {
-  Card,
-  CardBody,
-} from "../../_components/ui/card";
+import { Card, CardBody } from "../../_components/ui/card";
 import { EmptyState } from "../../_components/ui/empty-state";
 import { ConfirmDialog } from "../../_components/ui/dialog";
+import { Input } from "../../_components/ui/input";
 import { Tooltip } from "../../_components/ui/tooltip";
 import { AssignRoomDialog } from "../../_components/domain/assign-room-dialog";
 import { OccupancyMeter } from "../../_components/domain/occupancy-meter";
 import { SourceBadge } from "../../_components/domain/source-badge";
 import { WalkInDialog } from "../../_components/domain/walk-in-dialog";
+import { PageHeader } from "../../_components/layout/page-header";
 import { useFrontDeskStats } from "../../_hooks/use-dashboard";
 import { useReservations } from "../../_hooks/use-reservations";
 import { useDataStore } from "../../_stores/data-store";
@@ -64,11 +70,18 @@ function formatTodayUz(iso: string): string {
 }
 
 type TaskKind = "pending" | "arrival" | "departure";
+type FilterKey = "all" | TaskKind;
 
 interface Task {
   kind: TaskKind;
   reservation: ReservationView;
 }
+
+const TASK_ORDER: Record<TaskKind, number> = {
+  pending: 0,
+  arrival: 1,
+  departure: 2,
+};
 
 export function FrontDeskView() {
   const stats = useFrontDeskStats();
@@ -84,11 +97,11 @@ export function FrontDeskView() {
     id: string;
     name: string;
   } | null>(null);
-  const [filter, setFilter] = useState<"all" | TaskKind>("all");
+  const [filter, setFilter] = useState<FilterKey>("all");
+  const [query, setQuery] = useState("");
   const [assignReservation, setAssignReservation] =
     useState<ReservationView | null>(null);
 
-  // Hamma vazifalarni bitta ro'yxat sifatida
   const tasks: Task[] = useMemo(() => {
     const arr: Task[] = [];
     for (const r of reservations.data) {
@@ -103,174 +116,250 @@ export function FrontDeskView() {
         arr.push({ kind: "departure", reservation: r });
       }
     }
-    // Tartiblash: zudlik birinchi, keyin keladi, keyin ketadi
-    const order: Record<TaskKind, number> = {
-      pending: 0,
-      arrival: 1,
-      departure: 2,
-    };
-    return arr.sort((a, b) => order[a.kind] - order[b.kind]);
+    return arr.sort((a, b) => TASK_ORDER[a.kind] - TASK_ORDER[b.kind]);
   }, [reservations.data]);
 
   const counts = useMemo(() => {
     const c = { all: tasks.length, pending: 0, arrival: 0, departure: 0 };
-    for (const t of tasks) c[t.kind]++;
+    for (const task of tasks) c[task.kind]++;
     return c;
   }, [tasks]);
 
   const filtered = useMemo(() => {
-    if (filter === "all") return tasks;
-    return tasks.filter((t) => t.kind === filter);
-  }, [tasks, filter]);
+    let list = filter === "all" ? tasks : tasks.filter((task) => task.kind === filter);
+    const q = query.trim().toLowerCase();
+    if (q) {
+      list = list.filter(({ reservation }) =>
+        [
+          reservation.id,
+          reservation.guest.fullName,
+          reservation.guest.phone,
+          reservation.roomTypeName,
+          reservation.roomNumber,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase()
+          .includes(q),
+      );
+    }
+    return list;
+  }, [filter, query, tasks]);
 
   const occupancy = stats.data?.occupancyPercent ?? 0;
+  const nextTask = tasks[0];
+  const activeReservations = reservations.data.filter(
+    (reservation) =>
+      reservation.status !== BookingStatus.CANCELLED &&
+      reservation.status !== BookingStatus.EXPIRED &&
+      reservation.status !== BookingStatus.COMPLETED,
+  );
+  const balance = activeReservations.reduce(
+    (sum, reservation) =>
+      sum + Math.max(0, reservation.totalPrice - reservation.paidAmount),
+    0,
+  );
+
+  const handleCheckIn = (reservation: ReservationView) => {
+    if (!reservation.roomNumber) {
+      setAssignReservation(reservation);
+      return;
+    }
+    checkIn(reservation.id);
+    toast.success(`Check-in qilindi: ${reservation.guest.fullName}`);
+  };
+
+  const handleCheckOut = (reservation: ReservationView) => {
+    checkOut(reservation.id);
+    toast.success(`Check-out qilindi: ${reservation.guest.fullName}`);
+  };
+
+  const handleConfirm = (reservation: ReservationView) => {
+    confirmReservation(reservation.id);
+    toast.success(`Bron tasdiqlandi: ${reservation.id}`);
+  };
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Sarlavha — kompakt */}
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-semibold uppercase tracking-widest text-brand-700 dark:text-brand-300">
-            Front Desk
-          </span>
-          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-            Bugun, {formatTodayUz(TODAY_ISO)}
-          </h1>
-        </div>
-        <Button onClick={() => setWalkInOpen(true)}>
-          <CalendarPlus className="h-4 w-4" aria-hidden />
-          Yangi bron
-        </Button>
-      </div>
+      <PageHeader
+        eyebrow="Front Desk"
+        title={`Bugun, ${formatTodayUz(TODAY_ISO)}`}
+        description="Resepsiyon uchun eng kerakli ishlar: yangi bronlar, check-in, check-out va to'lov nazorati."
+        actions={
+          <>
+            <Link href="/calendar">
+              <Button variant="outline" size="sm">
+                <CalendarDays className="h-4 w-4" aria-hidden />
+                Kalendar
+              </Button>
+            </Link>
+            <Button size="sm" onClick={() => setWalkInOpen(true)}>
+              <CalendarPlus className="h-4 w-4" aria-hidden />
+              Yangi bron
+            </Button>
+          </>
+        }
+      />
 
-      {/* KPI yo'lakchasi — bitta yuza karta */}
-      <Card>
-        <CardBody className="grid grid-cols-2 gap-px overflow-hidden bg-[var(--border)] p-0 sm:grid-cols-4">
-          <KpiCell
-            tone="brand"
-            icon={<BedDouble className="h-4 w-4" aria-hidden />}
-            label="To'liqlik"
-            value={`${occupancy}%`}
-            hint={`${stats.data?.occupiedRooms ?? 0} / ${stats.data?.totalRooms ?? 0} band`}
-          >
-            <OccupancyMeter percent={occupancy} className="mt-1.5 h-1.5" />
-          </KpiCell>
-          <KpiCell
-            tone="amber"
-            icon={<Clock className="h-4 w-4" aria-hidden />}
-            label="Zudlik kerak"
-            value={counts.pending}
-            hint="javob kutmoqda"
-          />
-          <KpiCell
-            tone="accent"
-            icon={<LogIn className="h-4 w-4" aria-hidden />}
-            label="Bugun keladi"
-            value={counts.arrival}
-            hint="check-in qilinadi"
-          />
-          <KpiCell
-            tone="neutral"
-            icon={<LogOut className="h-4 w-4" aria-hidden />}
-            label="Bugun ketadi"
-            value={counts.departure}
-            hint="check-out qilinadi"
-          />
-        </CardBody>
-      </Card>
-
-      {/* Vazifalar bloki */}
-      <div className="flex flex-col gap-3">
-        {/* Tab filter */}
-        <div
-          role="tablist"
-          aria-label="Vazifa turi"
-          className="flex flex-wrap gap-1 rounded-card border border-[var(--border)] bg-[var(--surface)] p-1"
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <FrontMetric
+          icon={<BedDouble />}
+          label="Bandlik"
+          value={`${occupancy}%`}
+          hint={`${stats.data?.occupiedRooms ?? 0}/${stats.data?.totalRooms ?? 0} xona band`}
+          tone="brand"
         >
-          <FilterTab
-            active={filter === "all"}
-            count={counts.all}
-            onClick={() => setFilter("all")}
-            label="Hammasi"
-          />
-          <FilterTab
-            active={filter === "pending"}
-            count={counts.pending}
-            onClick={() => setFilter("pending")}
-            label="Zudlik"
-            tone="amber"
-            icon={<Clock className="h-3.5 w-3.5" aria-hidden />}
-          />
-          <FilterTab
-            active={filter === "arrival"}
-            count={counts.arrival}
-            onClick={() => setFilter("arrival")}
-            label="Keladi"
-            tone="brand"
-            icon={<LogIn className="h-3.5 w-3.5" aria-hidden />}
-          />
-          <FilterTab
-            active={filter === "departure"}
-            count={counts.departure}
-            onClick={() => setFilter("departure")}
-            label="Ketadi"
-            tone="accent"
-            icon={<LogOut className="h-3.5 w-3.5" aria-hidden />}
-          />
-        </div>
+          <OccupancyMeter percent={occupancy} className="mt-2 h-1.5" />
+        </FrontMetric>
+        <FrontMetric
+          icon={<Clock3 />}
+          label="Zudlik kerak"
+          value={counts.pending.toString()}
+          hint="tasdiq kutayotgan bronlar"
+          tone={counts.pending > 0 ? "warning" : "neutral"}
+        />
+        <FrontMetric
+          icon={<LogIn />}
+          label="Bugun keladi"
+          value={counts.arrival.toString()}
+          hint="check-in navbati"
+          tone="accent"
+        />
+        <FrontMetric
+          icon={<Wallet />}
+          label="Qoldiq to'lov"
+          value={formatMoney(balance)}
+          hint="faol bronlar bo'yicha"
+          tone={balance > 0 ? "danger" : "accent"}
+        />
+      </section>
 
-        {/* Vazifalar ro'yxati */}
-        <Card>
-          <CardBody className="p-0">
-            {filtered.length === 0 ? (
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
+        <section className="flex min-w-0 flex-col gap-3">
+          <Card>
+            <CardBody className="flex flex-col gap-3">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <h2 className="text-base font-semibold">Bugungi ish navbati</h2>
+                  <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                    Avval zudlik, keyin kelish va ketish vazifalari.
+                  </p>
+                </div>
+                <div className="relative min-w-[240px] lg:w-[320px]">
+                  <Search
+                    className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-600 dark:text-brand-300"
+                    aria-hidden
+                  />
+                  <Input
+                    type="search"
+                    placeholder="Ism, telefon, xona..."
+                    className="h-10 rounded-lg bg-[var(--surface-muted)] pl-9"
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    aria-label="Front desk vazifalaridan qidirish"
+                  />
+                </div>
+              </div>
+
+              <div
+                role="tablist"
+                aria-label="Vazifa turi"
+                className="flex flex-wrap gap-1 rounded-card bg-[var(--surface-muted)] p-1"
+              >
+                <FilterTab
+                  active={filter === "all"}
+                  count={counts.all}
+                  onClick={() => setFilter("all")}
+                  label="Hammasi"
+                />
+                <FilterTab
+                  active={filter === "pending"}
+                  count={counts.pending}
+                  onClick={() => setFilter("pending")}
+                  label="Zudlik"
+                  tone="warning"
+                  icon={<Clock3 className="h-3.5 w-3.5" aria-hidden />}
+                />
+                <FilterTab
+                  active={filter === "arrival"}
+                  count={counts.arrival}
+                  onClick={() => setFilter("arrival")}
+                  label="Keladi"
+                  tone="brand"
+                  icon={<LogIn className="h-3.5 w-3.5" aria-hidden />}
+                />
+                <FilterTab
+                  active={filter === "departure"}
+                  count={counts.departure}
+                  onClick={() => setFilter("departure")}
+                  label="Ketadi"
+                  tone="accent"
+                  icon={<LogOut className="h-3.5 w-3.5" aria-hidden />}
+                />
+              </div>
+            </CardBody>
+          </Card>
+
+          {filtered.length === 0 ? (
+            <Card>
               <EmptyState
                 icon={<Inbox className="h-10 w-10" aria-hidden />}
-                title="Hammasi joyida!"
+                title="Hammasi joyida"
                 description={
-                  filter === "all"
-                    ? "Bugun bajariladigan vazifa yo'q."
-                    : "Ushbu filterda vazifa yo'q."
+                  query
+                    ? "Qidiruv bo'yicha vazifa topilmadi."
+                    : "Ushbu bo'limda bajariladigan vazifa yo'q."
                 }
               />
-            ) : (
-              <ul className="divide-y divide-[var(--border)]">
-                {filtered.map(({ kind, reservation }) => (
-                  <TaskRow
-                    key={`${kind}-${reservation.id}`}
-                    kind={kind}
-                    reservation={reservation}
-                    onCheckIn={() => {
-                      if (!reservation.roomNumber) {
-                        setAssignReservation(reservation);
-                        return;
-                      }
-                      checkIn(reservation.id);
-                      toast.success(
-                        `Check-in qilindi: ${reservation.guest.fullName}`,
-                      );
-                    }}
-                    onCheckOut={() => {
-                      checkOut(reservation.id);
-                      toast.success(
-                        `Check-out qilindi: ${reservation.guest.fullName}`,
-                      );
-                    }}
-                    onConfirm={() => {
-                      confirmReservation(reservation.id);
-                      toast.success(`Bron tasdiqlandi: ${reservation.id}`);
-                    }}
-                    onReject={() =>
-                      setConfirmReject({
-                        id: reservation.id,
-                        name: reservation.guest.fullName,
-                      })
-                    }
-                  />
-                ))}
-              </ul>
-            )}
-          </CardBody>
-        </Card>
+            </Card>
+          ) : (
+            <div className="grid gap-3">
+              {filtered.map(({ kind, reservation }) => (
+                <TaskCard
+                  key={`${kind}-${reservation.id}`}
+                  kind={kind}
+                  reservation={reservation}
+                  onCheckIn={() => handleCheckIn(reservation)}
+                  onCheckOut={() => handleCheckOut(reservation)}
+                  onConfirm={() => handleConfirm(reservation)}
+                  onReject={() =>
+                    setConfirmReject({
+                      id: reservation.id,
+                      name: reservation.guest.fullName,
+                    })
+                  }
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
+        <aside className="flex min-w-0 flex-col gap-4 xl:sticky xl:top-20 xl:self-start">
+          <Card>
+            <CardBody className="flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-brand-600" aria-hidden />
+                <h2 className="text-sm font-semibold">Keyingi ish</h2>
+              </div>
+              {nextTask ? (
+                <NextTaskCard task={nextTask} />
+              ) : (
+                <div className="rounded-card bg-[var(--surface-muted)] p-3 text-sm text-[var(--muted-foreground)]">
+                  Hozircha shoshilinch vazifa yo'q.
+                </div>
+              )}
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardBody className="flex flex-col gap-3">
+              <h2 className="text-sm font-semibold">Tezkor yo'nalishlar</h2>
+              <QuickLink href="/reservations" icon={<Users />} label="Bronlar ro'yxati" />
+              <QuickLink href="/rooms" icon={<BedDouble />} label="Xona holatlari" />
+              <QuickLink href="/calendar" icon={<CalendarDays />} label="Bandlik kalendari" />
+            </CardBody>
+          </Card>
+        </aside>
       </div>
 
       <WalkInDialog open={walkInOpen} onClose={() => setWalkInOpen(false)} />
@@ -300,7 +389,7 @@ export function FrontDeskView() {
         title="Bron rad etilsinmi?"
         description={
           confirmReject
-            ? `${confirmReject.name} ning bronini rad etmoqchimisiz? Mijozga SMS yuboriladi.`
+            ? `${confirmReject.name} ning bronini rad etmoqchimisiz?`
             : ""
         }
         confirmLabel="Ha, rad etish"
@@ -310,53 +399,57 @@ export function FrontDeskView() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// KPI cell
-// ─────────────────────────────────────────────────────────────────────────
-
-interface KpiCellProps {
-  label: string;
-  value: number | string;
-  hint?: string;
+function FrontMetric({
+  icon,
+  label,
+  value,
+  hint,
+  tone = "neutral",
+  children,
+}: {
   icon: React.ReactNode;
-  tone: "brand" | "accent" | "amber" | "neutral";
+  label: string;
+  value: string;
+  hint: string;
+  tone?: "neutral" | "brand" | "accent" | "warning" | "danger";
   children?: React.ReactNode;
-}
-
-function KpiCell({ label, value, hint, icon, tone, children }: KpiCellProps) {
-  const toneClasses = {
-    brand: "text-brand-700",
-    accent: "text-accent-700",
-    amber: "text-amber-700",
-    neutral: "text-zinc-700 dark:text-zinc-300",
+}) {
+  const toneClass = {
+    neutral: "bg-[var(--surface-muted)] text-[var(--muted-foreground)]",
+    brand: "bg-brand-50 text-brand-700 dark:bg-brand-950/35 dark:text-brand-200",
+    accent:
+      "bg-accent-50 text-accent-700 dark:bg-accent-950/35 dark:text-accent-200",
+    warning: "bg-amber-50 text-amber-700 dark:bg-amber-950/35 dark:text-amber-200",
+    danger: "bg-red-50 text-red-700 dark:bg-red-950/35 dark:text-red-200",
   }[tone];
 
   return (
-    <div className="flex min-w-0 flex-col gap-1.5 bg-[var(--surface)] p-3.5 transition-colors hover:bg-[var(--surface-hover)] sm:p-4">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-[var(--muted-foreground)]">
-          {label}
-        </span>
-        <span className={cn("inline-flex", toneClasses)}>{icon}</span>
-      </div>
-      <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-        <span className={cn("text-2xl font-semibold", toneClasses)}>
-          {value}
-        </span>
-        {hint && (
-          <span className="min-w-0 text-[11px] text-[var(--muted-foreground)]">
-            {hint}
+    <Card interactive>
+      <CardBody className="flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+            {label}
+          </p>
+          <span
+            className={cn(
+              "flex h-9 w-9 items-center justify-center rounded-md [&>svg]:h-4 [&>svg]:w-4",
+              toneClass,
+            )}
+          >
+            {icon}
           </span>
-        )}
-      </div>
-      {children}
-    </div>
+        </div>
+        <div>
+          <p className="truncate text-2xl font-bold tracking-tight">{value}</p>
+          <p className="mt-1 text-xs leading-5 text-[var(--muted-foreground)]">
+            {hint}
+          </p>
+        </div>
+        {children}
+      </CardBody>
+    </Card>
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────
-// Filter tab
-// ─────────────────────────────────────────────────────────────────────────
 
 function FilterTab({
   active,
@@ -371,12 +464,12 @@ function FilterTab({
   onClick: () => void;
   label: string;
   icon?: React.ReactNode;
-  tone?: "brand" | "accent" | "amber";
+  tone?: "brand" | "accent" | "warning";
 }) {
   const activeClass = {
     brand: "bg-brand-700",
     accent: "bg-accent-600",
-    amber: "bg-amber-500",
+    warning: "bg-amber-500",
     undefined: "bg-zinc-700",
   }[tone ?? "undefined"];
 
@@ -387,10 +480,10 @@ function FilterTab({
       aria-selected={active}
       onClick={onClick}
       className={cn(
-        "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors duration-150",
+        "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-150",
         active
           ? `${activeClass} text-white shadow-sm`
-          : "text-zinc-600 hover:bg-[var(--surface-hover)] dark:text-zinc-300",
+          : "text-zinc-600 hover:bg-[var(--surface)] dark:text-zinc-300",
       )}
     >
       {icon}
@@ -409,89 +502,65 @@ function FilterTab({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// Vazifa qatori — yagona format
-// ─────────────────────────────────────────────────────────────────────────
-
-interface TaskRowProps {
+function TaskCard({
+  kind,
+  reservation,
+  onCheckIn,
+  onCheckOut,
+  onConfirm,
+  onReject,
+}: {
   kind: TaskKind;
   reservation: ReservationView;
   onCheckIn: () => void;
   onCheckOut: () => void;
   onConfirm: () => void;
   onReject: () => void;
-}
-
-function TaskRow({
-  kind,
-  reservation: r,
-  onCheckIn,
-  onCheckOut,
-  onConfirm,
-  onReject,
-}: TaskRowProps) {
-  const balance = r.totalPrice - r.paidAmount;
-
-  // Holatga qarab chap belgisi
-  const indicator = {
-    pending: {
-      icon: <AlertCircle className="h-4 w-4" aria-hidden />,
-      bg: "bg-amber-100 text-amber-700",
-      label: "Yangi",
-    },
-    arrival: {
-      icon: <LogIn className="h-4 w-4" aria-hidden />,
-      bg: "bg-brand-100 text-brand-700",
-      label: "Keladi",
-    },
-    departure: {
-      icon: <LogOut className="h-4 w-4" aria-hidden />,
-      bg: "bg-accent-100 text-accent-700",
-      label: "Ketadi",
-    },
-  }[kind];
+}) {
+  const balance = Math.max(0, reservation.totalPrice - reservation.paidAmount);
+  const meta = TASK_META[kind];
 
   return (
-    <li className="grid gap-3 px-3 py-3 transition-colors duration-150 hover:bg-[var(--surface-hover)] sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center sm:px-4">
-      {/* Chap belgisi */}
-      <span
-        className={cn(
-          "flex h-10 w-10 shrink-0 items-center justify-center rounded-md",
-          indicator.bg,
-        )}
-        aria-label={indicator.label}
-      >
-        {indicator.icon}
-      </span>
+    <Card interactive>
+      <CardBody className="grid gap-4 md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center">
+        <span
+          className={cn(
+            "flex h-11 w-11 items-center justify-center rounded-md [&>svg]:h-5 [&>svg]:w-5",
+            meta.iconClass,
+          )}
+          aria-label={meta.label}
+        >
+          {meta.icon}
+        </span>
 
-      {/* Asosiy ma'lumot */}
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-          <Link
-            href={`/reservations/${r.id}`}
-            className="truncate font-semibold hover:text-brand-700 dark:hover:text-brand-300"
-          >
-            {r.guest.fullName}
-          </Link>
-          <SourceBadge source={r.source} />
-        </div>
-        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--muted-foreground)]">
-          <span className="inline-flex items-center gap-1">
-            <BedDouble className="h-3 w-3" aria-hidden />
-            {r.roomTypeName}
-            {r.roomNumber && (
-              <span className="font-mono text-brand-700 dark:text-brand-300">
-                {" "}
-                · {r.roomNumber}
-              </span>
-            )}
-          </span>
-          <span>·</span>
-          <span>{r.nights} kech.</span>
-          {kind === "departure" && (
-            <>
-              <span>·</span>
-              {balance > 0 ? (
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href={`/reservations/${reservation.id}`}
+              className="truncate text-base font-semibold hover:text-brand-700 dark:hover:text-brand-300"
+            >
+              {reservation.guest.fullName}
+            </Link>
+            <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold", meta.badgeClass)}>
+              {meta.label}
+            </span>
+            <SourceBadge source={reservation.source} />
+          </div>
+
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--muted-foreground)]">
+            <span className="inline-flex items-center gap-1">
+              <BedDouble className="h-3.5 w-3.5" aria-hidden />
+              {reservation.roomTypeName}
+              {reservation.roomNumber && (
+                <span className="font-mono text-brand-700 dark:text-brand-300">
+                  · {reservation.roomNumber}
+                </span>
+              )}
+            </span>
+            <span>{reservation.nights} kech.</span>
+            <span>{formatMoney(reservation.totalPrice)}</span>
+            {kind === "departure" &&
+              (balance > 0 ? (
                 <span className="font-semibold text-red-600">
                   Qoldiq: {formatMoney(balance)}
                 </span>
@@ -499,56 +568,126 @@ function TaskRow({
                 <span className="font-medium text-accent-600">
                   To'liq to'langan
                 </span>
-              )}
-            </>
-          )}
+              ))}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 md:justify-end">
+          <Tooltip content="Qo'ng'iroq" side="bottom">
+            <a
+              href={`tel:+${reservation.guest.phone}`}
+              aria-label={`Qo'ng'iroq: ${formatPhone(reservation.guest.phone)}`}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-900/40 dark:hover:text-brand-300"
+            >
+              <Phone className="h-4 w-4" aria-hidden />
+            </a>
+          </Tooltip>
+
           {kind === "pending" && (
             <>
-              <span>·</span>
-              <span className="font-medium">{formatMoney(r.totalPrice)}</span>
+              <Button size="sm" variant="outline" onClick={onReject}>
+                <XCircle className="h-4 w-4" aria-hidden />
+                Rad
+              </Button>
+              <Button size="sm" variant="secondary" onClick={onConfirm}>
+                <CheckCircle2 className="h-4 w-4" aria-hidden />
+                Tasdiqlash
+              </Button>
             </>
           )}
+          {kind === "arrival" && (
+            <Button size="sm" onClick={onCheckIn}>
+              <LogIn className="h-4 w-4" aria-hidden />
+              {reservation.roomNumber ? "Check-in" : "Xona tayinlash"}
+            </Button>
+          )}
+          {kind === "departure" && (
+            <Button size="sm" variant="secondary" onClick={onCheckOut}>
+              <LogOut className="h-4 w-4" aria-hidden />
+              Check-out
+            </Button>
+          )}
+        </div>
+      </CardBody>
+    </Card>
+  );
+}
+
+const TASK_META: Record<
+  TaskKind,
+  {
+    label: string;
+    icon: React.ReactNode;
+    iconClass: string;
+    badgeClass: string;
+  }
+> = {
+  pending: {
+    label: "Yangi",
+    icon: <AlertCircle aria-hidden />,
+    iconClass:
+      "bg-amber-50 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/35 dark:text-amber-200 dark:ring-amber-900/60",
+    badgeClass:
+      "bg-amber-50 text-amber-700 dark:bg-amber-950/35 dark:text-amber-200",
+  },
+  arrival: {
+    label: "Keladi",
+    icon: <LogIn aria-hidden />,
+    iconClass:
+      "bg-brand-50 text-brand-700 ring-1 ring-brand-200 dark:bg-brand-950/35 dark:text-brand-200 dark:ring-brand-900/60",
+    badgeClass:
+      "bg-brand-50 text-brand-700 dark:bg-brand-950/35 dark:text-brand-200",
+  },
+  departure: {
+    label: "Ketadi",
+    icon: <LogOut aria-hidden />,
+    iconClass:
+      "bg-accent-50 text-accent-700 ring-1 ring-accent-200 dark:bg-accent-950/35 dark:text-accent-200 dark:ring-accent-900/60",
+    badgeClass:
+      "bg-accent-50 text-accent-700 dark:bg-accent-950/35 dark:text-accent-200",
+  },
+};
+
+function NextTaskCard({ task }: { task: Task }) {
+  const meta = TASK_META[task.kind];
+  return (
+    <Link
+      href={`/reservations/${task.reservation.id}`}
+      className="block rounded-card border border-[var(--border)] bg-[var(--surface-muted)] p-3 transition-colors hover:border-[var(--border-strong)] hover:bg-[var(--surface-hover)]"
+    >
+      <div className="flex items-center gap-2">
+        <span className={cn("flex h-8 w-8 items-center justify-center rounded-md [&>svg]:h-4 [&>svg]:w-4", meta.iconClass)}>
+          {meta.icon}
+        </span>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold">
+            {task.reservation.guest.fullName}
+          </p>
+          <p className="text-xs text-[var(--muted-foreground)]">
+            {meta.label} · {task.reservation.roomTypeName}
+          </p>
         </div>
       </div>
+    </Link>
+  );
+}
 
-      {/* Tezkor aloqa */}
-      <div className="flex items-center gap-2 sm:justify-end">
-        <Tooltip content="Qo'ng'iroq" side="bottom">
-          <a
-            href={`tel:+${r.guest.phone}`}
-            aria-label={`Qo'ng'iroq: ${formatPhone(r.guest.phone)}`}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-900/40 dark:hover:text-brand-300"
-          >
-            <Phone className="h-4 w-4" aria-hidden />
-          </a>
-        </Tooltip>
-
-        {/* Asosiy harakat */}
-        <div className="flex min-w-0 flex-1 flex-wrap justify-end gap-2 sm:flex-none">
-        {kind === "pending" && (
-          <>
-            <Button size="sm" variant="outline" onClick={onReject}>
-              Rad
-            </Button>
-            <Button size="sm" variant="secondary" onClick={onConfirm}>
-              Tasdiqlash
-            </Button>
-          </>
-        )}
-        {kind === "arrival" && (
-          <Button size="sm" onClick={onCheckIn}>
-            <LogIn className="h-3.5 w-3.5" aria-hidden />
-            Check-in
-          </Button>
-        )}
-        {kind === "departure" && (
-          <Button size="sm" variant="secondary" onClick={onCheckOut}>
-            <LogOut className="h-3.5 w-3.5" aria-hidden />
-            Check-out
-          </Button>
-        )}
-        </div>
-      </div>
-    </li>
+function QuickLink({
+  href,
+  icon,
+  label,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-2 rounded-md border border-[var(--border)] px-3 py-2 text-sm font-medium transition-colors hover:border-brand-300 hover:bg-brand-50 dark:hover:bg-brand-950/25"
+    >
+      <span className="[&>svg]:h-4 [&>svg]:w-4">{icon}</span>
+      {label}
+    </Link>
   );
 }

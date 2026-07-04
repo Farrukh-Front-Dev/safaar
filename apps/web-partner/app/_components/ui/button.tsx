@@ -14,17 +14,17 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<Variant, string> = {
   primary:
-    "bg-brand-700 text-white shadow-sm shadow-brand-900/10 hover:bg-brand-800 active:bg-brand-900 disabled:bg-brand-300 disabled:text-white/80 disabled:shadow-none",
+    "bg-gradient-to-b from-brand-600 to-brand-700 text-white shadow-sm shadow-brand-900/15 hover:from-brand-500 hover:to-brand-700 active:from-brand-700 active:to-brand-800 disabled:from-brand-300 disabled:to-brand-300 disabled:text-white/80 disabled:shadow-none",
   secondary:
-    "bg-accent-600 text-white shadow-sm shadow-accent-900/10 hover:bg-accent-700 active:bg-accent-800 disabled:bg-accent-300",
+    "bg-gradient-to-b from-accent-500 to-accent-600 text-white shadow-sm shadow-accent-900/10 hover:from-accent-400 hover:to-accent-600 active:from-accent-600 active:to-accent-700 disabled:from-accent-300 disabled:to-accent-300",
   outline:
-    "border border-[var(--border-strong)] bg-[var(--surface)] text-[var(--foreground)] shadow-sm shadow-slate-950/5 hover:bg-[var(--surface-hover)] active:bg-[var(--surface-muted)]",
+    "border border-[var(--border-strong)] bg-[var(--panel-gradient)] text-[var(--foreground)] shadow-sm shadow-slate-950/5 hover:border-brand-300 hover:bg-[var(--surface-hover)] active:bg-[var(--surface-muted)] dark:hover:border-brand-700",
   ghost:
-    "bg-transparent text-[var(--foreground)] hover:bg-[var(--surface-hover)] active:bg-[var(--surface-muted)]",
+    "bg-[var(--surface-muted)] text-[var(--foreground)] hover:bg-[var(--surface-hover)] active:bg-[var(--surface-muted)]",
   subtle:
     "bg-[var(--surface-muted)] text-[var(--foreground)] hover:bg-[var(--surface-hover)]",
   danger:
-    "bg-red-600 text-white shadow-sm hover:bg-red-700 active:bg-red-800 disabled:bg-red-300",
+    "bg-gradient-to-b from-red-500 to-red-600 text-white shadow-sm shadow-red-900/10 hover:from-red-500 hover:to-red-700 active:from-red-600 active:to-red-800 disabled:from-red-300 disabled:to-red-300",
 };
 
 const sizeClasses: Record<Size, string> = {
@@ -53,9 +53,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       type={type}
       disabled={disabled || loading}
       className={cn(
-        "inline-flex items-center justify-center rounded-md font-medium transition-colors duration-150",
+        "inline-flex items-center justify-center rounded-md font-medium transition-all duration-150",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]",
-        "disabled:cursor-not-allowed disabled:opacity-60",
+        "hover:-translate-y-px active:translate-y-0 active:scale-[0.99]",
+        "disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60",
         variantClasses[variant],
         sizeClasses[size],
         className,

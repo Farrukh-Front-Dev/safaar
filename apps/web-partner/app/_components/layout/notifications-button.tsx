@@ -158,7 +158,7 @@ export function NotificationsButton() {
             </ul>
           )}
 
-          <div className="border-t border-[var(--border)] bg-[var(--surface-muted)]/50 px-4 py-2 text-center">
+          <div className="border-t border-[var(--border)] bg-[var(--surface-muted)] px-4 py-2 text-center">
             <Link
               href="/reservations"
               onClick={() => setOpen(false)}

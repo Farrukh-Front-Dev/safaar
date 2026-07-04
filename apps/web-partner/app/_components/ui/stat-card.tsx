@@ -21,13 +21,17 @@ export function StatCard({
   className,
 }: StatCardProps) {
   return (
-    <Card className={cn("", className)}>
+    <Card interactive className={cn("group", className)}>
       <CardBody className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <p className="text-sm text-[var(--muted-foreground)]">{label}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
+            {label}
+          </p>
           <p className="text-2xl font-bold tracking-tight">{value}</p>
           {hint ? (
-            <p className="text-xs text-[var(--muted-foreground)]">{hint}</p>
+            <p className="text-xs leading-5 text-[var(--muted-foreground)]">
+              {hint}
+            </p>
           ) : null}
           {trend ? (
             <p
@@ -41,7 +45,7 @@ export function StatCard({
           ) : null}
         </div>
         {icon ? (
-          <div className="rounded-lg bg-brand-50 p-2 text-brand-700">
+          <div className="rounded-lg bg-gradient-to-b from-brand-50 to-accent-50 p-2 text-brand-700 ring-1 ring-brand-100 transition-transform duration-200 group-hover:scale-105 dark:from-brand-950/40 dark:to-accent-950/25 dark:text-brand-200 dark:ring-brand-900/60">
             {icon}
           </div>
         ) : null}

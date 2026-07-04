@@ -147,7 +147,7 @@ export function ReportsView() {
         </CardHeader>
         <CardBody className="p-0">
           <table className="w-full text-sm">
-            <thead className="border-b border-[var(--border)] bg-[var(--surface-muted)]/40 text-left text-xs uppercase tracking-wide text-[var(--muted-foreground)]">
+            <thead className="border-b border-[var(--border)] bg-[var(--surface-muted)] text-left text-xs uppercase tracking-wide text-[var(--muted-foreground)]">
               <tr>
                 <th className="px-5 py-3">Xona turi</th>
                 <th className="px-5 py-3 text-right">Bronlar</th>

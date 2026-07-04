@@ -47,6 +47,18 @@ export function ReservationBar({
 }: ReservationBarProps) {
   const router = useRouter();
   const balance = reservation.totalPrice - reservation.paidAmount;
+  const paymentLabel =
+    reservation.paidAmount <= 0
+      ? "To'lanmagan"
+      : balance > 0
+        ? "Qisman"
+        : "To'langan";
+  const paymentClass =
+    reservation.paidAmount <= 0
+      ? "bg-red-100 text-red-700"
+      : balance > 0
+        ? "bg-white/80 text-amber-800"
+        : "bg-white/80 text-accent-700";
 
   return (
     <div
@@ -64,13 +76,25 @@ export function ReservationBar({
         }}
         title={`${reservation.guest.fullName} · ${formatDate(reservation.checkIn)} → ${formatDate(reservation.checkOut)}`}
         className={cn(
-          "flex h-full w-full items-center px-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--surface)]",
+          "flex h-full w-full min-w-0 items-center gap-1.5 px-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--surface)]",
           statusClasses(reservation.status),
           truncatedStart ? "rounded-l-none" : "rounded-l-md",
           truncatedEnd ? "rounded-r-none" : "rounded-r-md",
         )}
       >
-        <span className="truncate">{reservation.guest.fullName}</span>
+        <span className="min-w-0 flex-1 truncate">
+          {reservation.guest.fullName}
+        </span>
+        {spanCols >= 2 && (
+          <span
+            className={cn(
+              "hidden shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold leading-none sm:inline-flex",
+              paymentClass,
+            )}
+          >
+            {paymentLabel}
+          </span>
+        )}
       </button>
 
       {/* Rich tooltip — hover'da */}
@@ -103,6 +127,12 @@ export function ReservationBar({
           <span className="text-[var(--muted-foreground)]">Summa: </span>
           <span className="font-semibold">
             {formatMoney(reservation.totalPrice)}
+          </span>
+        </p>
+        <p>
+          <span className="text-[var(--muted-foreground)]">Oldindan: </span>
+          <span className="font-semibold">
+            {formatMoney(reservation.paidAmount)}
           </span>
         </p>
         {balance > 0 && (

@@ -7,7 +7,11 @@ export function Label({
 }: LabelHTMLAttributes<HTMLLabelElement>) {
   return (
     <label
-      className={cn("text-sm font-medium text-[var(--foreground)]", className)}
+      className={cn(
+        "text-sm font-semibold text-[var(--foreground)]",
+        "has-[:disabled]:opacity-60",
+        className,
+      )}
       {...props}
     />
   );

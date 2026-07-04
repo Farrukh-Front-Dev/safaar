@@ -81,12 +81,12 @@ export function Drawer({
         aria-modal="true"
         aria-labelledby="drawer-title"
         className={cn(
-          "absolute right-0 top-0 flex h-full w-full flex-col bg-[var(--surface)] shadow-2xl transition-transform duration-300 ease-out",
+          "absolute right-0 top-0 flex h-full w-full flex-col border-l border-[var(--border)] bg-[var(--panel-gradient)] shadow-2xl transition-transform duration-300 ease-out",
           sizes[size],
           open ? "translate-x-0" : "translate-x-full",
         )}
       >
-        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--border)] px-6 py-4">
+        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface-muted)] px-6 py-4">
           <div className="flex flex-col gap-1">
             <h2
               id="drawer-title"
@@ -104,7 +104,7 @@ export function Drawer({
             type="button"
             onClick={onClose}
             aria-label="Yopish"
-            className="-mr-2 rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-[var(--surface-muted)] hover:text-zinc-900 dark:hover:text-white"
+            className="-mr-2 rounded-md p-1.5 text-zinc-500 transition-all hover:-translate-y-px hover:bg-[var(--surface)] hover:text-zinc-900 hover:shadow-sm dark:hover:text-white"
           >
             <X className="h-5 w-5" aria-hidden />
           </button>
@@ -113,7 +113,7 @@ export function Drawer({
         <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
 
         {footer && (
-          <footer className="flex shrink-0 items-center justify-end gap-2 border-t border-[var(--border)] bg-[var(--surface-muted)]/50 px-6 py-3">
+          <footer className="flex shrink-0 items-center justify-end gap-2 border-t border-[var(--border)] bg-[var(--surface-muted)] px-6 py-3">
             {footer}
           </footer>
         )}

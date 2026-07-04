@@ -2,6 +2,7 @@
 
 import {
   BedDouble,
+  Image as ImageIcon,
   Info,
   Pencil,
   Plus,
@@ -24,6 +25,7 @@ import { Tooltip } from "../../../_components/ui/tooltip";
 import { useDataStore } from "../../../_stores/data-store";
 import { useRooms } from "../../../_hooks/use-rooms";
 import { useRoomTypes } from "../../../_hooks/use-room-types";
+import { cn } from "../../../_lib/utils/cn";
 import { formatMoney } from "../../../_lib/utils/format";
 import type { Room, RoomType } from "../../../_lib/domain/types";
 import { RoomTypeDialog } from "./_dialogs/room-type-dialog";
@@ -130,9 +132,9 @@ export function RoomsSettingsView() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="border-b border-[var(--border)] bg-[var(--surface-muted)]/40 text-left text-xs uppercase tracking-wide text-[var(--muted-foreground)]">
+                <thead className="border-b border-[var(--border)] bg-[var(--surface-muted)] text-left text-xs uppercase tracking-wide text-[var(--muted-foreground)]">
                   <tr>
-                    <th className="px-5 py-3">Nomi</th>
+                    <th className="px-5 py-3">Xona e'loni</th>
                     <th className="px-5 py-3">Sig'im</th>
                     <th className="px-5 py-3">Bir kechalik</th>
                     <th className="px-5 py-3">Qulayliklar</th>
@@ -146,7 +148,36 @@ export function RoomsSettingsView() {
                       key={rt.id}
                       className="border-b border-[var(--border)] transition-colors last:border-0 hover:bg-[var(--surface-muted)]"
                     >
-                      <td className="px-5 py-3 font-medium">{rt.name}</td>
+                      <td className="px-5 py-3">
+                        <div className="flex min-w-[220px] items-center gap-3">
+                          <div className="h-14 w-20 shrink-0 overflow-hidden rounded-md bg-[var(--surface-muted)]">
+                            {rt.imageUrl ? (
+                              /* eslint-disable-next-line @next/next/no-img-element */
+                              <img
+                                src={rt.imageUrl}
+                                alt=""
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center text-[var(--muted-foreground)]">
+                                <ImageIcon className="h-5 w-5" aria-hidden />
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-medium">{rt.name}</p>
+                            <p className="mt-0.5 line-clamp-1 text-xs text-[var(--muted-foreground)]">
+                              {rt.description || "Tavsif kiritilmagan"}
+                            </p>
+                            <p className="mt-0.5 flex flex-wrap gap-2 text-[11px] text-[var(--muted-foreground)]">
+                              {rt.bedType && <span>{rt.bedType}</span>}
+                              {typeof rt.sizeSqm === "number" && rt.sizeSqm > 0 && (
+                                <span>{rt.sizeSqm} m²</span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
                       <td className="px-5 py-3 text-[var(--muted-foreground)]">
                         <span className="inline-flex items-center gap-1">
                           <Users className="h-3 w-3" aria-hidden />
@@ -281,7 +312,7 @@ export function RoomsSettingsView() {
                   key={floor}
                   className="border-b border-[var(--border)] last:border-0"
                 >
-                  <div className="flex items-center justify-between bg-[var(--surface-muted)]/40 px-5 py-2">
+                  <div className="flex items-center justify-between bg-[var(--surface-muted)] px-5 py-2">
                     <h3 className="text-sm font-semibold uppercase tracking-widest text-[var(--muted-foreground)]">
                       {floor}-qavat
                     </h3>
@@ -301,6 +332,19 @@ export function RoomsSettingsView() {
                           </span>
                           <span className="text-sm text-[var(--muted-foreground)]">
                             {r.roomTypeName}
+                          </span>
+                          <span className="hidden text-xs text-[var(--muted-foreground)] sm:inline">
+                            {r.nightlyPrice ? `· ${formatMoney(r.nightlyPrice)}` : ""}
+                          </span>
+                          <span
+                            className={cn(
+                              "rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                              r.isListed
+                                ? "bg-accent-50 text-accent-700 dark:bg-accent-950/35 dark:text-accent-200"
+                                : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800",
+                            )}
+                          >
+                            {r.isListed ? "E'londa" : "Yopiq"}
                           </span>
                         </div>
                         <div className="flex gap-1">

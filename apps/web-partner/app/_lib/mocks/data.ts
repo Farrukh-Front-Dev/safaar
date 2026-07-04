@@ -24,6 +24,11 @@ export const mockRoomTypes: RoomType[] = [
   {
     id: "rt-std",
     name: "Standart",
+    description: "Ikki kishilik qulay xona, shahar tomonga qaragan.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=900&q=80",
+    bedType: "1 queen bed",
+    sizeSqm: 24,
     basePrice: 380_000,
     capacity: 2,
     amenities: ["wifi", "tv", "ac"],
@@ -31,6 +36,11 @@ export const mockRoomTypes: RoomType[] = [
   {
     id: "rt-lux",
     name: "Lyuks",
+    description: "Keng xona, mini-bar va balkon bilan.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=900&q=80",
+    bedType: "1 king bed",
+    sizeSqm: 36,
     basePrice: 620_000,
     capacity: 2,
     amenities: ["wifi", "tv", "ac", "minibar", "balcony"],
@@ -38,6 +48,11 @@ export const mockRoomTypes: RoomType[] = [
   {
     id: "rt-fam",
     name: "Family Suite",
+    description: "Oilalar uchun alohida yotoq va dam olish zonasi.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=900&q=80",
+    bedType: "1 king + 2 single",
+    sizeSqm: 52,
     basePrice: 880_000,
     capacity: 4,
     amenities: ["wifi", "tv", "ac", "minibar", "kitchen", "balcony"],
@@ -131,6 +146,8 @@ function buildRooms(): Room[] {
         floor,
         roomTypeId: type.id,
         roomTypeName: type.name,
+        isListed: status !== RoomStatus.OUT_OF_SERVICE,
+        nightlyPrice: type.basePrice + (floor - 1) * 25_000,
         status,
         occupant:
           status === RoomStatus.OCCUPIED ? occupantsByRoom[number] : undefined,

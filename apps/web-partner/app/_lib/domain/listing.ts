@@ -85,6 +85,8 @@ export interface Listing {
   // Joylashuv
   address: string;
   city: string;
+  latitude?: number;
+  longitude?: number;
   nearby: NearbyPlace[];
 
   // Uy qoidalari

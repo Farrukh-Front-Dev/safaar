@@ -70,11 +70,11 @@ export function Dialog({
       />
       <div
         className={cn(
-          "relative z-10 flex w-full flex-col overflow-hidden rounded-card border border-[var(--border)] bg-[var(--surface)] shadow-2xl",
+          "soft-pop relative z-10 flex w-full flex-col overflow-hidden rounded-card border border-[var(--border)] bg-[var(--panel-gradient)] shadow-2xl",
           sizes[size],
         )}
       >
-        <header className="flex items-start justify-between gap-3 border-b border-[var(--border)] px-5 py-4">
+        <header className="flex items-start justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface-muted)] px-5 py-4">
           <div className="flex flex-col gap-1">
             <h2
               id="dialog-title"
@@ -101,7 +101,7 @@ export function Dialog({
         <div className="max-h-[70vh] overflow-y-auto px-5 py-4">{children}</div>
 
         {footer && (
-          <footer className="flex items-center justify-end gap-2 border-t border-[var(--border)] bg-[var(--surface-muted)]/50 px-5 py-3">
+          <footer className="flex items-center justify-end gap-2 border-t border-[var(--border)] bg-[var(--surface-muted)] px-5 py-3">
             {footer}
           </footer>
         )}
