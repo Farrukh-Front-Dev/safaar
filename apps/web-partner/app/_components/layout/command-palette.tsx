@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  BedDouble,
   CalendarRange,
   Command as CommandIcon,
   Search,
@@ -13,7 +12,6 @@ import { createPortal } from "react-dom";
 import { useMounted } from "../../_hooks/use-mounted";
 import { useReservations } from "../../_hooks/use-reservations";
 import { useGuests } from "../../_hooks/use-guests";
-import { useRooms } from "../../_hooks/use-rooms";
 import { NAV_GROUPS } from "./sidebar-nav";
 import { cn } from "../../_lib/utils/cn";
 import { formatPhone } from "../../_lib/utils/format";
@@ -24,7 +22,7 @@ interface ResultItem {
   sublabel?: string;
   icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
   href: string;
-  group: "Bronlar" | "Mijozlar" | "Xonalar" | "Sahifalar";
+  group: "Bronlar" | "Mijozlar" | "Sahifalar";
 }
 
 export function CommandPalette() {
@@ -37,7 +35,6 @@ export function CommandPalette() {
 
   const { data: reservations } = useReservations();
   const { data: guests } = useGuests();
-  const { data: rooms } = useRooms();
 
   // Klaviatura shortcut — ⌘K yoki Ctrl+K
   useEffect(() => {
@@ -120,23 +117,10 @@ export function CommandPalette() {
         }
       }
 
-      // Rooms by number
-      for (const room of rooms) {
-        if (room.number.includes(q)) {
-          items.push({
-            id: `room-${room.id}`,
-            label: `Xona ${room.number}`,
-            sublabel: `${room.floor}-qavat · ${room.roomTypeName}`,
-            icon: BedDouble,
-            href: `/rooms`,
-            group: "Xonalar",
-          });
-        }
-      }
     }
 
     return items.slice(0, 30);
-  }, [query, reservations, guests, rooms]);
+  }, [query, reservations, guests]);
 
   const groups = useMemo(() => {
     const map = new Map<string, ResultItem[]>();

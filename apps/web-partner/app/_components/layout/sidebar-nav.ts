@@ -1,6 +1,5 @@
 import {
   BarChart3,
-  BedDouble,
   CalendarDays,
   CalendarRange,
   ConciergeBell,
@@ -36,7 +35,6 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Bronlar", href: "/reservations", icon: CalendarRange },
       { label: "Kalendar", href: "/calendar", icon: CalendarDays },
-      { label: "Xonalar", href: "/rooms", icon: BedDouble },
     ],
   },
   {

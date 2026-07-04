@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Building2, BedDouble } from "lucide-react";
+import { Building2 } from "lucide-react";
 import { SettingsTabLink } from "./_components/settings-tab-link";
 
 const TABS = [
@@ -8,12 +8,6 @@ const TABS = [
     label: "Mehmonxona",
     icon: Building2,
     desc: "Asosiy ma'lumotlar",
-  },
-  {
-    href: "/settings/rooms",
-    label: "Xonalar",
-    icon: BedDouble,
-    desc: "Xona turlari va xonalar",
   },
 ];
 
@@ -28,7 +22,7 @@ export default function SettingsLayout({ children }: { children: ReactNode }) {
           Mehmonxonangizni sozlang
         </h1>
         <p className="text-sm text-[var(--muted-foreground)]">
-          Asosiy ma'lumotlar, xonalar va boshqa sozlamalar.
+          Asosiy ma'lumotlar va mehmonxona sozlamalari.
         </p>
       </header>
 
