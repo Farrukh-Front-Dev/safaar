@@ -93,7 +93,7 @@ Ishni boshlashda qaysi dasturchi ekaningni **o'zing aniqla**:
 ```bash
 gh api user --jq .login     # yoki: git config user.name
 ```
-Bu papka (`apps/web-admin/`) egasi — **@scarygun** (`CODEOWNERS`). Agar aniqlangan
+Bu papka (`apps/web-admin/`) egasi — **@adhambek7717** (`CODEOWNERS`). Agar aniqlangan
 foydalanuvchi boshqa bo'lsa yoki sen boshqa app papkasida bo'lsang — **ogohlantir**
 va davom etishdan oldin so'ra.
 
