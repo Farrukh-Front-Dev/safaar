@@ -1,0 +1,159 @@
+"use client";
+
+import Link from "next/link";
+import type { ReactNode } from "react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowLeft, Building2, CheckCircle2 } from "lucide-react";
+import { Button } from "../../_components/ui/button";
+import { Input } from "../../_components/ui/input";
+import { Label } from "../../_components/ui/label";
+import { access } from "../../_lib/api";
+import { isValidPhone, maskPhone, normalizePhone } from "../../_lib/utils/phone";
+
+const schema = z.object({
+  companyName: z.string().min(2, "Mehmonxona nomini kiriting"),
+  contactPerson: z.string().min(2, "Mas'ul shaxsni kiriting"),
+  phone: z.string().min(1, "Telefon raqamni kiriting").refine(isValidPhone, "Telefon noto'g'ri formatda"),
+  email: z.string().email("Email noto'g'ri"),
+  city: z.string().min(2, "Shaharni kiriting"),
+  address: z.string().min(5, "Manzilni kiriting"),
+  taxId: z.string().optional(),
+  note: z.string().optional(),
+});
+
+type FormValues = z.infer<typeof schema>;
+
+export default function RegisterPage() {
+  const [submitted, setSubmitted] = useState<{ id: string } | null>(null);
+  const [error, setError] = useState("");
+  const form = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      companyName: "",
+      contactPerson: "",
+      phone: "+998 ",
+      email: "",
+      city: "",
+      address: "",
+      taxId: "",
+      note: "",
+    },
+  });
+
+  const onSubmit = form.handleSubmit(async (values) => {
+    setError("");
+    try {
+      const result = await access.submitPartnerApplication({
+        ...values,
+        type: "hotel",
+        phone: normalizePhone(values.phone),
+      });
+      setSubmitted({ id: result.item.id });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Ariza yuborishda xatolik");
+    }
+  });
+
+  if (submitted) {
+    return (
+      <div className="flex flex-col gap-5 text-center">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+          <CheckCircle2 className="h-7 w-7" aria-hidden />
+        </div>
+        <div>
+          <h2 className="text-xl font-semibold tracking-tight">Ariza yuborildi</h2>
+          <p className="mt-2 text-sm text-[var(--muted-foreground)]">
+            Arizangiz web-admin paneliga tushdi. Admin tasdiqlagandan keyin shu telefon raqam bilan tizimga kira olasiz.
+          </p>
+        </div>
+        <Link href="/login">
+          <Button className="w-full" size="lg">Login sahifasiga o'tish</Button>
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <form className="flex flex-col gap-4" onSubmit={onSubmit} noValidate>
+      <div className="flex flex-col gap-1">
+        <Link
+          href="/login"
+          className="mb-2 inline-flex items-center gap-1 text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+          Login sahifasi
+        </Link>
+        <div className="flex items-center gap-2">
+          <Building2 className="h-5 w-5 text-brand-700" aria-hidden />
+          <h2 className="text-xl font-semibold tracking-tight">Hamkorlik arizasi</h2>
+        </div>
+        <p className="text-sm text-[var(--muted-foreground)]">
+          Ma'lumotlarni yuboring. Admin tasdiqlagandan keyin kabinet ochiladi.
+        </p>
+      </div>
+
+      <Field label="Mehmonxona nomi" error={form.formState.errors.companyName?.message}>
+        <Input {...form.register("companyName")} placeholder="Grand Samarkand Hotel" />
+      </Field>
+      <Field label="Mas'ul shaxs" error={form.formState.errors.contactPerson?.message}>
+        <Input {...form.register("contactPerson")} placeholder="Ali Valiyev" />
+      </Field>
+      <Field label="Telefon" error={form.formState.errors.phone?.message}>
+        <Input
+          type="tel"
+          {...form.register("phone", {
+            onChange: (e) => {
+              e.target.value = maskPhone(e.target.value);
+            },
+          })}
+        />
+      </Field>
+      <Field label="Email" error={form.formState.errors.email?.message}>
+        <Input type="email" {...form.register("email")} placeholder="hotel@example.com" />
+      </Field>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Shahar" error={form.formState.errors.city?.message}>
+          <Input {...form.register("city")} placeholder="Samarqand" />
+        </Field>
+        <Field label="STIR" error={form.formState.errors.taxId?.message}>
+          <Input {...form.register("taxId")} placeholder="123456789" />
+        </Field>
+      </div>
+      <Field label="Manzil" error={form.formState.errors.address?.message}>
+        <Input {...form.register("address")} placeholder="Registon ko'chasi 10" />
+      </Field>
+      <Field label="Izoh" error={form.formState.errors.note?.message}>
+        <Input {...form.register("note")} placeholder="Qo'shimcha ma'lumot" />
+      </Field>
+
+      {error ? (
+        <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+      ) : null}
+
+      <Button type="submit" size="lg" loading={form.formState.isSubmitting}>
+        Arizani yuborish
+      </Button>
+    </form>
+  );
+}
+
+function Field({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label>{label}</Label>
+      {children}
+      {error ? <p className="text-xs text-red-600">{error}</p> : null}
+    </div>
+  );
+}

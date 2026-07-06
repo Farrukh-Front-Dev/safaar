@@ -3,42 +3,26 @@
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { access } from "../_lib/api";
 import { buildPartnerSession } from "../_lib/auth/session";
-import { mockDelay } from "../_lib/mocks/data";
 import { useAuthStore } from "../_stores/auth-store";
 
-// Demo rejim — backendsiz ishlaydi.
-// Real API tayyor bo'lganda `mockDelay` o'rniga
-// `requestOtp(phone)` va `verifyOtp({phone, code})` chaqiramiz.
-
-export function useRequestOtp() {
-  return useMutation({
-    mutationFn: async (phone: string) => {
-      // Demo rejim: real backend chaqirilmaydi
-      void phone;
-      await mockDelay({ sent: true });
-      return { sent: true } as const;
-    },
-    onSuccess: () => {
-      toast.success("Demo rejim: istalgan 6 raqamli kod ishlaydi");
-    },
-    onError: (error) => {
-      toast.error(error.message || "Kod yuborishda xato yuz berdi");
-    },
-  });
-}
-
-export function useVerifyOtp() {
+export function usePartnerPhoneLogin() {
   const router = useRouter();
   const setSession = useAuthStore((s) => s.setSession);
 
   return useMutation({
-    mutationFn: async ({ phone, code }: { phone: string; code: string }) => {
-      // Mock validatsiya: istalgan 6 raqam OK
-      if (!/^\d{6}$/.test(code)) {
-        throw new Error("Kod 6 ta raqamdan iborat bo'lishi kerak");
+    mutationFn: async (phone: string) => {
+      const accessStatus = await access.getPartnerAccessStatus(phone);
+      if (accessStatus.status !== "approved") {
+        if (accessStatus.status === "rejected") {
+          throw new Error("Arizangiz rad etilgan. Admin bilan bog'laning.");
+        }
+        if (accessStatus.status === "new" || accessStatus.status === "reviewing") {
+          throw new Error("Arizangiz hali admin tomonidan tasdiqlanmagan.");
+        }
+        throw new Error("Bu telefon uchun hamkorlik access topilmadi. Avval ariza yuboring.");
       }
-      await mockDelay(null);
       const tokens = {
         accessToken: "demo-access-token",
         refreshToken: "demo-refresh-token",
@@ -52,7 +36,7 @@ export function useVerifyOtp() {
       router.replace("/");
     },
     onError: (error) => {
-      toast.error(error.message || "Kod noto'g'ri yoki muddati o'tgan");
+      toast.error(error.message || "Kirish uchun access topilmadi");
     },
   });
 }

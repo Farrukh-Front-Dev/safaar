@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Building2 } from "lucide-react";
+import { Building2, UserCircle2 } from "lucide-react";
 import { SettingsTabLink } from "./_components/settings-tab-link";
 
 const TABS = [
@@ -8,6 +8,12 @@ const TABS = [
     label: "Mehmonxona",
     icon: Building2,
     desc: "Asosiy ma'lumotlar",
+  },
+  {
+    href: "/settings/profile",
+    label: "Profil",
+    icon: UserCircle2,
+    desc: "Foydalanuvchi accessi",
   },
 ];
 

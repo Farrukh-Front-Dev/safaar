@@ -102,6 +102,7 @@ interface DataState {
   listing: Listing;
 
   // Reservation mutations
+  setReservations: (reservations: ReservationView[]) => void;
   confirmReservation: (id: string) => void;
   rejectReservation: (id: string) => void;
   checkIn: (id: string) => void;
@@ -164,6 +165,8 @@ export const useDataStore = create<DataState>((set, get) => ({
   roomTypes: mockRoomTypes,
   guests: mockGuests,
   listing: mockListing,
+
+  setReservations: (reservations) => set({ reservations }),
 
   confirmReservation: (id) =>
     set((state) => ({

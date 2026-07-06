@@ -192,10 +192,6 @@ export function ReservationsView() {
   };
 
   const handleCheckIn = (reservation: ReservationView) => {
-    if (!reservation.roomNumber) {
-      setAssignTarget(reservation);
-      return;
-    }
     checkIn(reservation.id);
     toast.success(`Check-in qilindi: ${reservation.guest.fullName}`);
   };
@@ -591,7 +587,7 @@ function ReservationCard({
                   }}
                 >
                   <CalendarCheck className="h-4 w-4" aria-hidden />
-                  {reservation.roomNumber ? "Check-in" : "Xona tayinlash"}
+                  Check-in
                 </Button>
               )}
             </div>

@@ -1,7 +1,15 @@
 import type { ApiError } from "@agoda/types";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/v1";
+
+interface ApiEnvelope<T> {
+  success: true;
+  data: T;
+  meta?: {
+    request_id?: string;
+  };
+}
 
 export class HttpError extends Error {
   constructor(
@@ -17,6 +25,8 @@ export class HttpError extends Error {
 interface RequestOptions extends Omit<RequestInit, "body"> {
   body?: unknown;
   token?: string | null;
+  role?: "PARTNER" | "ADMIN" | "SUPER_ADMIN";
+  organizationId?: string;
   /** Skelet bosqichida headerlarni keng moslash uchun. */
   searchParams?: Record<string, string | number | boolean | undefined>;
 }
@@ -51,7 +61,15 @@ export async function request<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  const { body, token, searchParams, headers, ...rest } = options;
+  const {
+    body,
+    token,
+    role = "PARTNER",
+    organizationId = "demo-partner-org-id",
+    searchParams,
+    headers,
+    ...rest
+  } = options;
 
   const init: RequestInit = {
     ...rest,
@@ -59,6 +77,8 @@ export async function request<T>(
       Accept: "application/json",
       ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      "x-user-role": role,
+      "x-organization-id": organizationId,
       ...headers,
     },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
@@ -95,5 +115,15 @@ export async function request<T>(
     return undefined as T;
   }
 
-  return (await response.json()) as T;
+  const payload = (await response.json()) as T | ApiEnvelope<T>;
+  if (
+    typeof payload === "object" &&
+    payload !== null &&
+    "success" in payload &&
+    "data" in payload
+  ) {
+    return (payload as ApiEnvelope<T>).data;
+  }
+
+  return payload as T;
 }

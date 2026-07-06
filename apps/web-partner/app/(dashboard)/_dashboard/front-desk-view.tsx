@@ -161,10 +161,6 @@ export function FrontDeskView() {
   );
 
   const handleCheckIn = (reservation: ReservationView) => {
-    if (!reservation.roomNumber) {
-      setAssignReservation(reservation);
-      return;
-    }
     checkIn(reservation.id);
     toast.success(`Check-in qilindi: ${reservation.guest.fullName}`);
   };
@@ -597,7 +593,7 @@ function TaskCard({
           {kind === "arrival" && (
             <Button size="sm" onClick={onCheckIn}>
               <LogIn className="h-4 w-4" aria-hidden />
-              {reservation.roomNumber ? "Check-in" : "Xona tayinlash"}
+              Check-in
             </Button>
           )}
           {kind === "departure" && (

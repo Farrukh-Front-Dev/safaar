@@ -1,5 +1,7 @@
 import { Info } from "lucide-react";
+import Link from "next/link";
 import { LoginForm } from "./login-form";
+import { Button } from "../../_components/ui/button";
 
 export default function LoginPage() {
   return (
@@ -9,7 +11,7 @@ export default function LoginPage() {
           Tizimga kirish
         </h2>
         <p className="text-sm text-[var(--muted-foreground)]">
-          Hamkor sifatida kirish uchun telefon raqamingizni kiriting.
+          Admin tasdiqlagan telefon raqam bilan kabinetga kiring.
         </p>
       </div>
 
@@ -22,12 +24,23 @@ export default function LoginPage() {
           aria-hidden
         />
         <p>
-          <strong>Demo rejim:</strong> istalgan O'zbekiston raqami va istalgan 6
-          raqamli kod bilan kirasiz.
+          <strong>Access:</strong> avval hamkorlik arizasi yuboriladi, admin
+          tasdiqlagandan keyin kabinet ochiladi.
         </p>
       </div>
 
       <LoginForm />
+
+      <div className="border-t border-[var(--border)] pt-4 text-center">
+        <p className="mb-3 text-sm text-[var(--muted-foreground)]">
+          Hali access yo'qmi?
+        </p>
+        <Link href="/register">
+          <Button variant="outline" className="w-full">
+            Hamkorlik arizasini yuborish
+          </Button>
+        </Link>
+      </div>
     </div>
   );
 }

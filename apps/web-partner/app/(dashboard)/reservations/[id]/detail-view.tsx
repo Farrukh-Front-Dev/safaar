@@ -121,15 +121,11 @@ export function ReservationDetailView({ id }: { id: string }) {
               <Button
                 size="sm"
                 onClick={() => {
-                  if (!data.roomNumber) {
-                    setAssignOpen(true);
-                    return;
-                  }
                   checkIn(data.id);
                   toast.success("Check-in qilindi");
                 }}
               >
-                {data.roomNumber ? "Check-in qilish" : "Xona tayinlash"}
+                Check-in qilish
               </Button>
             )}
             {canCheckOut && (
