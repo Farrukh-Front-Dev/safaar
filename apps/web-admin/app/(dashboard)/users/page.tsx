@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import DataTable from "@/components/ui/DataTable";
 import type { Column } from "@/components/ui/DataTable";
@@ -9,7 +9,7 @@ import Select from "@/components/ui/Select";
 import StatusBadge from "@/components/ui/StatusBadge";
 import Pagination from "@/components/ui/Pagination";
 import Button from "@/components/ui/Button";
-import { mockUsers } from "@/lib/mock-data";
+import { MockApi } from "@/lib/api/mock-api";
 import { formatDate, formatPrice } from "@/lib/utils";
 import { USER_STATUS_MAP } from "@/lib/constants";
 import { Download, Mail } from "lucide-react";
@@ -20,12 +20,17 @@ const ITEMS_PER_PAGE = 12;
 
 export default function UsersPage() {
   const router = useRouter();
+  const [users, setUsers] = useState<AdminManagedUser[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
 
+  useEffect(() => {
+    MockApi.getUsers().then(setUsers);
+  }, []);
+
   const filtered = useMemo(() => {
-    let result = mockUsers;
+    let result = users;
     if (search) {
       const q = search.toLowerCase();
       result = result.filter(
@@ -39,7 +44,7 @@ export default function UsersPage() {
       result = result.filter((u) => u.status === statusFilter);
     }
     return result;
-  }, [search, statusFilter]);
+  }, [search, statusFilter, users]);
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);

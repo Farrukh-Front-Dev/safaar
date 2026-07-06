@@ -2,7 +2,7 @@ import axios from "axios";
 import Cookies from "js-cookie";
 
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api",
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/v1",
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
@@ -16,6 +16,10 @@ apiClient.interceptors.request.use(
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    if (config.headers) {
+      config.headers["x-user-role"] = "SUPER_ADMIN";
+      config.headers["x-user-id"] = "demo-admin-id";
+    }
     return config;
   },
   (error) => Promise.reject(error)
@@ -23,7 +27,17 @@ apiClient.interceptors.request.use(
 
 // Response interceptor: handle 401 Unauthorized
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      "success" in response.data &&
+      "data" in response.data
+    ) {
+      response.data = response.data.data;
+    }
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401) {
       // Token is expired or invalid

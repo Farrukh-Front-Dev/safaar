@@ -1,20 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import StatusBadge from "@/components/ui/StatusBadge";
 import Modal from "@/components/ui/Modal";
-import { mockPartnerRequests } from "@/lib/mock-data";
+import { MockApi } from "@/lib/api/mock-api";
 import { formatDate } from "@/lib/utils";
 import { PARTNER_REQUEST_STATUS_MAP } from "@/lib/constants";
 import { CheckCircle, XCircle, Phone, MessageSquare, FileText, Hotel, Bus } from "lucide-react";
 import type { PartnerRequest } from "@/types/admin";
 
 export default function PartnerRequestsPage() {
+  const [requests, setRequests] = useState<PartnerRequest[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<PartnerRequest | null>(null);
 
-  const newCount = mockPartnerRequests.filter((r) => r.status === "new").length;
+  useEffect(() => {
+    MockApi.getPartnerRequests().then(setRequests);
+  }, []);
+
+  const handleDecision = async (id: string, decision: "approve" | "reject") => {
+    if (decision === "approve") {
+      await MockApi.approvePartner(id);
+    } else {
+      await MockApi.rejectPartner(id);
+    }
+    setRequests((current) =>
+      current.map((item) =>
+        item.id === id
+          ? { ...item, status: decision === "approve" ? "approved" : "rejected" }
+          : item,
+      ),
+    );
+    setSelectedRequest(null);
+  };
 
   return (
     <div className="max-w-[1400px] mx-auto flex flex-col gap-6">
@@ -37,7 +56,7 @@ export default function PartnerRequestsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border-light)]">
-            {mockPartnerRequests.map((req) => (
+            {requests.map((req) => (
               <tr key={req.id} className="hover:bg-[var(--bg-tertiary)] transition-colors">
                 <td className="px-4 py-3 font-mono text-xs text-[var(--text-muted)]">{req.id}</td>
                 <td className="px-4 py-3">
@@ -89,10 +108,10 @@ export default function PartnerRequestsPage() {
         footer={
           selectedRequest && selectedRequest.status === "new" ? (
             <>
-              <Button variant="danger" size="sm" icon={<XCircle size={14} />} onClick={() => setSelectedRequest(null)}>
+              <Button variant="danger" size="sm" icon={<XCircle size={14} />} onClick={() => handleDecision(selectedRequest.id, "reject")}>
                 Rad etish
               </Button>
-              <Button variant="accent" size="sm" icon={<CheckCircle size={14} />} onClick={() => setSelectedRequest(null)}>
+              <Button variant="accent" size="sm" icon={<CheckCircle size={14} />} onClick={() => handleDecision(selectedRequest.id, "approve")}>
                 Tasdiqlash
               </Button>
             </>

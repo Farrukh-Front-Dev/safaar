@@ -30,7 +30,7 @@ export default function LoginPage() {
       // API orqali feyk login
       const data = await MockApi.login(username, password);
       // Cookiega yozish (middleware uchun)
-      Cookies.set("admin_token", data.token, { expires: 1 });
+      Cookies.set("admin_token", data.token, { expires: 1, path: "/" });
       // Zustandga saqlash
       login(data.user);
       router.push("/dashboard");

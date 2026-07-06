@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import DataTable from "@/components/ui/DataTable";
 import type { Column } from "@/components/ui/DataTable";
@@ -8,7 +8,7 @@ import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import StatusBadge from "@/components/ui/StatusBadge";
 import Pagination from "@/components/ui/Pagination";
-import { mockPartners } from "@/lib/mock-data";
+import { MockApi } from "@/lib/api/mock-api";
 import { formatPrice } from "@/lib/utils";
 import { PARTNER_STATUS_MAP } from "@/lib/constants";
 import { Hotel, Bus, Star, Download } from "lucide-react";
@@ -20,13 +20,18 @@ const ITEMS_PER_PAGE = 12;
 
 export default function PartnersListPage() {
   const router = useRouter();
+  const [partners, setPartners] = useState<Partner[]>([]);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
 
+  useEffect(() => {
+    MockApi.getPartners().then(setPartners);
+  }, []);
+
   const filtered = useMemo(() => {
-    let result = mockPartners;
+    let result = partners;
     if (search) {
       const q = search.toLowerCase();
       result = result.filter(
@@ -43,7 +48,7 @@ export default function PartnersListPage() {
       result = result.filter((p) => p.status === statusFilter);
     }
     return result;
-  }, [search, typeFilter, statusFilter]);
+  }, [search, typeFilter, statusFilter, partners]);
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
