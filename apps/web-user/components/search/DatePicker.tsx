@@ -33,6 +33,7 @@ export function DatePicker({
   onChange,
   min,
   icon,
+  compact,
 }: {
   locale: Locale;
   label: string;
@@ -41,6 +42,8 @@ export function DatePicker({
   /** Eng erta tanlanadigan sana (ISO). */
   min?: string;
   icon: React.ReactNode;
+  /** Compact rejim: wrapper border/shadow yo'q, mobil karta ichida ishlatish uchun. */
+  compact?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -125,17 +128,29 @@ export function DatePicker({
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="group flex w-full items-center gap-3 rounded-full border border-slate-200 px-4 py-2.5 text-left transition-all hover:border-primary-300 hover:bg-slate-50"
-        style={{
-          boxShadow:
-            "0 1px 3px rgba(15,23,42,0.08), 0 4px 10px -2px rgba(15,23,42,0.1), inset 0 1px 0 rgba(255,255,255,0.6)",
-        }}
+        className={
+          compact
+            ? "flex w-full items-center gap-2 text-left"
+            : "group flex w-full items-center gap-3 rounded-full border border-slate-200 px-4 py-2.5 text-left transition-all hover:border-primary-300 hover:bg-slate-50"
+        }
+        style={
+          compact
+            ? undefined
+            : {
+                boxShadow:
+                  "0 1px 3px rgba(15,23,42,0.08), 0 4px 10px -2px rgba(15,23,42,0.1), inset 0 1px 0 rgba(255,255,255,0.6)",
+              }
+        }
       >
-        <span className="shrink-0 text-slate-400 transition-colors group-hover:text-primary-600">
-          {icon}
-        </span>
+        {!compact && (
+          <span className="shrink-0 text-slate-400 transition-colors group-hover:text-primary-600">
+            {icon}
+          </span>
+        )}
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="text-[11px] font-medium text-slate-400">{label}</span>
+          {!compact && (
+            <span className="text-[11px] font-medium text-slate-400">{label}</span>
+          )}
           <span
             className={`truncate text-sm font-medium ${
               displayValue ? "text-slate-900" : "text-slate-400"
