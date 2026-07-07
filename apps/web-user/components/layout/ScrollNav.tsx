@@ -63,7 +63,7 @@ export function ScrollNav({
           {/* Nav — PillNav (gsap hover-fill) */}
           <PillNav
             items={pillItems}
-            baseColor="#059669"
+            baseColor="#16a34a"
             pillColor="#f1f5f9"
             hoveredPillTextColor="#ffffff"
             pillTextColor="#1e293b"

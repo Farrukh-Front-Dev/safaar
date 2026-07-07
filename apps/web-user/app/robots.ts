@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://uzbron.uz";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://safaar.uz";
 
 /**
  * robots.txt — public sahifalarni indekslashga ruxsat, shaxsiy/auth

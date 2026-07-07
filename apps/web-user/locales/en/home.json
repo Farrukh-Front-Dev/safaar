@@ -1,7 +1,7 @@
 {
   "hero": {
     "title": "Find your perfect stay across Uzbekistan",
-    "subtitle": "Best prices, instant confirmation — all on UzBron."
+    "subtitle": "Best prices, instant confirmation — all on Safaar."
   },
   "popularCities": {
     "title": "Popular destinations",
@@ -27,7 +27,7 @@
     "all": "View all"
   },
   "why": {
-    "title": "Why UzBron?",
+    "title": "Why Safaar?",
     "items": {
       "instant": {
         "title": "Instant confirmation",

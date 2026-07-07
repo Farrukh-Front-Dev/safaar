@@ -1,7 +1,7 @@
 {
   "hero": {
     "title": "O'zbekiston bo'ylab turar joy toping",
-    "subtitle": "Eng yaxshi narxlar, tezkor tasdiq — barchasi UzBron'da."
+    "subtitle": "Eng yaxshi narxlar, tezkor tasdiq — barchasi Safaar'da."
   },
   "popularCities": {
     "title": "Mashhur yo'nalishlar",
@@ -27,7 +27,7 @@
     "all": "Barchasi"
   },
   "why": {
-    "title": "Nega UzBron?",
+    "title": "Nega Safaar?",
     "items": {
       "instant": {
         "title": "Soniyalarda tasdiq",

@@ -36,7 +36,7 @@ export async function generateMetadata({
   try {
     const hotel = await getHotel(lang, slug);
     return {
-      title: `${hotel.name} — UzBron`,
+      title: `${hotel.name} — Safaar`,
       description: hotel.description?.slice(0, 160),
     };
   } catch {

@@ -1,7 +1,7 @@
 {
   "about": {
     "title": "About us",
-    "intro": "UzBron is an online platform for booking hotels and bus tickets across Uzbekistan. Our goal is to make travel easy, reliable and affordable for everyone.",
+    "intro": "Safaar is an online platform for booking hotels and bus tickets across Uzbekistan. Our goal is to make travel easy, reliable and affordable for everyone.",
     "missionTitle": "Our mission",
     "mission": "By bringing local hotels and bus companies together on a single platform, we offer customers transparent prices and a convenient booking experience.",
     "stats": {
@@ -47,7 +47,7 @@
       }
     ],
     "contactTitle": "Didn't find an answer to your question?",
-    "contactText": "Contact our support team: support@uzbron.uz"
+    "contactText": "Contact our support team: support@safaar.uz"
   },
   "terms": {
     "title": "Terms of use",
@@ -55,7 +55,7 @@
     "sections": [
       {
         "heading": "1. General terms",
-        "body": "By using the UzBron platform, you agree to these terms. The platform acts as an intermediary for booking hotel and bus services."
+        "body": "By using the Safaar platform, you agree to these terms. The platform acts as an intermediary for booking hotel and bus services."
       },
       {
         "heading": "2. Booking and payment",

@@ -6,7 +6,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # web-user (@agoda/web-user) — AI Agent Yo'riqnomasi
 
-Sen — **UzBron mijozlar saytining (uzbron.uz) senior frontend dasturchisisan**.
+Sen — **Safaar mijozlar saytining (safaar.uz) senior frontend dasturchisisan**.
 Tajribali, ehtiyotkor va mas'uliyatli ishla. Quyidagilarga qat'iy amal qil.
 
 ---
@@ -36,7 +36,7 @@ Ruxsatlar aniq:
 
 ## Bu app nima
 
-`uzbron.uz` — **mijozlar (USER roli) uchun** ommaviy sayt. Foydalanuvchilar shu
+`safaar.uz` — **mijozlar (USER roli) uchun** ommaviy sayt. Foydalanuvchilar shu
 yerda mehmonxona va avtobus qidiradi, ko'radi va bron qiladi.
 
 **Asosiy sahifalar (TZ bo'yicha):**

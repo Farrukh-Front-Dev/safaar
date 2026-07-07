@@ -112,7 +112,7 @@ export function PillNav({
     if (!tl) return;
     activeTweenRefs.current[i]?.kill();
     activeTweenRefs.current[i] = tl.tweenTo(tl.duration(), {
-      duration: 0.3,
+      duration: 0.5,
       ease: "power3.out",
       overwrite: "auto",
     });
@@ -123,7 +123,7 @@ export function PillNav({
     if (!tl) return;
     activeTweenRefs.current[i]?.kill();
     activeTweenRefs.current[i] = tl.tweenTo(0, {
-      duration: 0.2,
+      duration: 0.35,
       ease: "power3.out",
       overwrite: "auto",
     });
@@ -144,7 +144,7 @@ export function PillNav({
       <ul
         role="menubar"
         className="flex h-[var(--nav-h)] items-stretch gap-[var(--pill-gap)] rounded-full p-[3px]"
-        style={{ background: "var(--base)" }}
+        style={{ background: "transparent" }}
       >
         {items.map((item, i) => {
           const isActive =

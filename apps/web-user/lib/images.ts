@@ -16,8 +16,8 @@ export function placeholderPhoto(
   width = 600,
   height = 450,
 ): string {
-  const safe = encodeURIComponent(seed || "uzbron");
-  return `https://picsum.photos/seed/uzbron-${safe}/${width}/${height}`;
+  const safe = encodeURIComponent(seed || "safaar");
+  return `https://picsum.photos/seed/safaar-${safe}/${width}/${height}`;
 }
 
 /**

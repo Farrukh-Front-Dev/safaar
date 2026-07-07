@@ -1,7 +1,7 @@
 {
   "about": {
     "title": "Biz haqimizda",
-    "intro": "UzBron — O'zbekiston bo'ylab mehmonxona va avtobus chiptalarini onlayn bron qilish platformasi. Bizning maqsadimiz — sayohatni har bir inson uchun oson, ishonchli va arzon qilish.",
+    "intro": "Safaar — O'zbekiston bo'ylab mehmonxona va avtobus chiptalarini onlayn bron qilish platformasi. Bizning maqsadimiz — sayohatni har bir inson uchun oson, ishonchli va arzon qilish.",
     "missionTitle": "Bizning maqsad",
     "mission": "Mahalliy mehmonxonalar va avtobus kompaniyalarini yagona platformada birlashtirib, mijozlarga shaffof narxlar va qulay bron tajribasini taqdim etamiz.",
     "stats": {
@@ -47,7 +47,7 @@
       }
     ],
     "contactTitle": "Savolingizga javob topmadingizmi?",
-    "contactText": "Qo'llab-quvvatlash xizmatiga murojaat qiling: support@uzbron.uz"
+    "contactText": "Qo'llab-quvvatlash xizmatiga murojaat qiling: support@safaar.uz"
   },
   "terms": {
     "title": "Foydalanish shartlari",
@@ -55,7 +55,7 @@
     "sections": [
       {
         "heading": "1. Umumiy qoidalar",
-        "body": "UzBron platformasidan foydalanish orqali siz ushbu shartlarga rozilik bildirasiz. Platforma mehmonxona va avtobus xizmatlarini bron qilish uchun vositachi sifatida xizmat qiladi."
+        "body": "Safaar platformasidan foydalanish orqali siz ushbu shartlarga rozilik bildirasiz. Platforma mehmonxona va avtobus xizmatlarini bron qilish uchun vositachi sifatida xizmat qiladi."
       },
       {
         "heading": "2. Bron va to'lov",

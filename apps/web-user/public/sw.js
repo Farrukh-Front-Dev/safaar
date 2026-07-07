@@ -1,4 +1,4 @@
-/* UzBron service worker — KONSERVATIV, offline-friendly.
+/* Safaar service worker — KONSERVATIV, offline-friendly.
  * Maqsad: online ishni BUZMASLIK. Faqat sahifa navigatsiyasi (navigate)
  * tarmoqsiz qolganda offline fallback ko'rsatamiz. Qolgan hamma narsa
  * (API, _next/data, RSC, POST va h.k.) tarmoqqa to'g'ridan-to'g'ri o'tadi.
@@ -6,7 +6,7 @@
  * Bu oddiy JS (TS emas) — to'g'ridan-to'g'ri brauzerda ishlaydi.
  */
 
-const CACHE_NAME = "uzbron-v1";
+const CACHE_NAME = "safaar-v1";
 
 // Tilga mos offline sahifalar oldindan keshlanadi.
 const OFFLINE_URLS = ["/uz/offline", "/ru/offline", "/en/offline"];

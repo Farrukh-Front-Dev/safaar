@@ -14,7 +14,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { Role } from "@agoda/types";
 
-const COOKIE_NAME = "uzbron_session";
+const COOKIE_NAME = "safaar_session";
 const MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 kun
 
 export interface Session {

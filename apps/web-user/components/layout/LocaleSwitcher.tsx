@@ -59,7 +59,7 @@ export function LocaleSwitcher({ current }: { current: Locale }) {
           "inline-flex h-8 items-center rounded-full border px-3.5 text-xs font-bold uppercase tracking-wide transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 active:scale-95",
           open
             ? "border-primary-200 bg-primary-50 text-primary-700 shadow-sm"
-            : "border-slate-200 bg-white text-slate-700 shadow-[0_2px_4px_rgba(0,0,0,0.08),0_4px_12px_-2px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.9)] hover:shadow-[0_3px_8px_rgba(0,0,0,0.12),0_6px_16px_-3px_rgba(0,0,0,0.16),inset_0_1px_0_rgba(255,255,255,0.9)]",
+            : "border-slate-300 bg-white text-slate-700 shadow-[0_0_0_1px_rgba(15,23,42,0.25),0_2px_4px_rgba(0,0,0,0.2),0_4px_8px_-1px_rgba(0,0,0,0.15),inset_0_-2px_3px_rgba(0,0,0,0.08)] hover:shadow-[0_0_0_1px_rgba(15,23,42,0.3),0_4px_8px_rgba(0,0,0,0.25),0_8px_16px_-2px_rgba(0,0,0,0.2),inset_0_-2px_3px_rgba(0,0,0,0.08)]",
         )}
       >
         {current}

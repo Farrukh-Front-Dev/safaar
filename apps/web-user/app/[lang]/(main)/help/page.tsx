@@ -70,10 +70,10 @@ export default async function HelpPage({
             {help.contactText}
           </p>
           <a
-            href="mailto:support@uzbron.uz"
+            href="mailto:support@safaar.uz"
             className="text-sm font-medium text-primary-600 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
           >
-            support@uzbron.uz
+            support@safaar.uz
           </a>
         </CardBody>
       </Card>

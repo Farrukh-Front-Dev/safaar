@@ -86,7 +86,7 @@ function ThemeCard({ theme }: { theme: ThemeConfig }) {
           className="text-lg font-bold"
           style={{ color: theme.primary }}
         >
-          UzBron
+          Safaar
         </span>
         <div className="flex gap-3 text-sm" style={{ color: theme.textSecondary }}>
           <span>Hotels</span>

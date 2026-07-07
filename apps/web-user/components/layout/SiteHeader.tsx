@@ -66,7 +66,7 @@ export function SiteHeader({
       ) : (
         <Link
           href={`/${locale}/login`}
-          className="inline-flex h-8 items-center justify-center rounded-full bg-primary-600 px-4 text-xs font-bold text-white shadow-[0_2px_4px_rgba(0,0,0,0.1),0_4px_12px_-2px_rgba(22,163,74,0.4),inset_0_1px_0_rgba(255,255,255,0.2)] transition-all duration-150 hover:bg-primary-500 hover:shadow-[0_3px_8px_rgba(0,0,0,0.12),0_6px_16px_-3px_rgba(22,163,74,0.5),inset_0_1px_0_rgba(255,255,255,0.25)] active:scale-95 active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+          className="inline-flex h-8 items-center justify-center rounded-full bg-primary-600 px-4 text-xs font-bold text-white shadow-[0_0_0_1px_rgba(0,0,0,0.25),0_2px_4px_rgba(0,0,0,0.25),0_4px_8px_-1px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.2),inset_0_-2px_3px_rgba(0,0,0,0.15)] transition-all duration-150 hover:bg-primary-500 hover:shadow-[0_0_0_1px_rgba(0,0,0,0.3),0_4px_8px_rgba(0,0,0,0.3),0_8px_16px_-2px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-2px_3px_rgba(0,0,0,0.15)] active:scale-95 active:shadow-[inset_0_2px_6px_rgba(0,0,0,0.3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
         >
           {dict.actions.login}
         </Link>

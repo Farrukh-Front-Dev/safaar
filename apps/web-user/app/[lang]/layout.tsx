@@ -23,7 +23,7 @@ const manrope = Manrope({
   display: "swap",
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://uzbron.uz";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://safaar.uz";
 
 const OG_LOCALE: Record<Locale, string> = {
   uz: "uz_UZ",
@@ -47,16 +47,16 @@ export async function generateMetadata({
     metadataBase: new URL(SITE_URL),
     title: { default: title, template: `%s — ${common.brand}` },
     description,
-    applicationName: "UzBron",
+    applicationName: "Safaar",
     manifest: "/manifest.webmanifest",
-    appleWebApp: { capable: true, title: "UzBron", statusBarStyle: "default" },
+    appleWebApp: { capable: true, title: "Safaar", statusBarStyle: "default" },
     alternates: {
       canonical: `/${locale}`,
       languages: Object.fromEntries(locales.map((l) => [l, `/${l}`])) as Record<string, string>,
     },
     openGraph: {
       type: "website",
-      siteName: "UzBron",
+      siteName: "Safaar",
       locale: OG_LOCALE[locale],
       title,
       description,

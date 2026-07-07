@@ -20,7 +20,7 @@ export async function generateMetadata({
   try {
     const trip = await getBusTrip(lang, id);
     return {
-      title: `${trip.fromCity} → ${trip.toCity} — UzBron`,
+      title: `${trip.fromCity} → ${trip.toCity} — Safaar`,
     };
   } catch {
     return {};

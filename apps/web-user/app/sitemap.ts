@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { locales } from "@/i18n/config";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://uzbron.uz";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://safaar.uz";
 
 /** Indekslanadigan public yo'llar (har til uchun takrorlanadi). */
 const PUBLIC_PATHS = ["", "/hotels", "/transport", "/attractions", "/about", "/help", "/terms"];

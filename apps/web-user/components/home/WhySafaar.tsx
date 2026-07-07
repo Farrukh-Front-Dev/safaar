@@ -1,8 +1,8 @@
 import { Zap, ShieldCheck, MessageSquare } from "lucide-react";
 import type { HomeDict } from "@/i18n/dictionaries";
 
-/** "Nega UzBron?" trust bloki — 3 ta afzallik ikonka + matn bilan. */
-export function WhyUzBron({ dict }: { dict: HomeDict["why"] }) {
+/** "Nega Safaar?" trust bloki — 3 ta afzallik ikonka + matn bilan. */
+export function WhySafaar({ dict }: { dict: HomeDict["why"] }) {
   const items = [
     { key: "instant", icon: <Zap className="h-6 w-6" aria-hidden /> },
     { key: "secure", icon: <ShieldCheck className="h-6 w-6" aria-hidden /> },
