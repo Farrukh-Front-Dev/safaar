@@ -10,9 +10,44 @@ import {
   parsePagination,
   type QueryLike,
 } from '../common/pagination';
-import { InMemoryDbService } from '../infrastructure/in-memory-db.service';
+import {
+  type BookingRecord,
+  InMemoryDbService,
+} from '../infrastructure/in-memory-db.service';
 import { JobQueueService } from '../infrastructure/job-queue.service';
 import { hashSecret, partnerApiPepper, randomToken } from '../auth/security';
+
+type HotelListingStatus = 'draft' | 'pending_review' | 'published' | 'hidden';
+
+function localizedText(
+  body: Record<string, unknown>,
+  key: string,
+  fallback: string,
+) {
+  const value = String(body[key] ?? body.name ?? fallback);
+  return {
+    uz: String(body[`${key}_uz`] ?? body.name_uz ?? value),
+    ru: String(body[`${key}_ru`] ?? body.name_ru ?? value),
+    en: String(body[`${key}_en`] ?? body.name_en ?? value),
+  };
+}
+
+function listingStatus(value: unknown): HotelListingStatus {
+  const status = String(value ?? 'pending_review').toLowerCase();
+  if (status === 'published') {
+    return 'published';
+  }
+  if (status === 'hidden') {
+    return 'hidden';
+  }
+  if (status === 'draft') {
+    return 'draft';
+  }
+  if (status === 'under_review' || status === 'pending_review') {
+    return 'pending_review';
+  }
+  return 'pending_review';
+}
 
 /**
  * Hamkor (mehmonxona/avtobus kompaniyasi) kabineti xizmati.
@@ -262,27 +297,96 @@ export class PartnersService {
     return this.db.rooms.filter((room) => room.hotel_id === id);
   }
 
+  roomTypes(actor: RequestActor | undefined, id: string) {
+    this.assertHotel(id, actor);
+    return this.db.roomTypes;
+  }
+
+  createRoomType(
+    actor: RequestActor | undefined,
+    id: string,
+    body: Record<string, unknown>,
+  ) {
+    this.assertHotel(id, actor);
+    const roomType = {
+      id: this.db.id('room_type'),
+      name: localizedText(body, 'name', 'Yangi xona turi'),
+    };
+    this.db.roomTypes.unshift(roomType);
+    return roomType;
+  }
+
+  updateRoomType(
+    actor: RequestActor | undefined,
+    id: string,
+    roomTypeId: string,
+    body: Record<string, unknown>,
+  ) {
+    this.assertHotel(id, actor);
+    const roomType = this.db.roomTypes.find((item) => item.id === roomTypeId);
+    if (!roomType) {
+      throw new NotFoundException({
+        code: 'ROOM_TYPE_NOT_FOUND',
+        message: 'Xona turi topilmadi',
+      });
+    }
+    roomType.name = localizedText(body, 'name', roomType.name.uz);
+    return roomType;
+  }
+
+  deleteRoomType(
+    actor: RequestActor | undefined,
+    id: string,
+    roomTypeId: string,
+  ) {
+    this.assertHotel(id, actor);
+    const inUse = this.db.rooms.some(
+      (room) => room.hotel_id === id && room.room_type_id === roomTypeId,
+    );
+    if (inUse) {
+      return {
+        ok: false,
+        reason:
+          "Bu turdan foydalanayotgan xonalar bor. Avval ularni boshqa turga o'tkazing.",
+      };
+    }
+
+    const index = this.db.roomTypes.findIndex((item) => item.id === roomTypeId);
+    if (index >= 0) {
+      this.db.roomTypes.splice(index, 1);
+    }
+    return { ok: true, room_type_id: roomTypeId, deleted: true };
+  }
+
   createRoom(
     actor: RequestActor | undefined,
     id: string,
     body: Record<string, unknown>,
   ) {
     this.assertHotel(id, actor);
+    const code = String(
+      body.code ?? body.number ?? body.room_number ?? `R-${Date.now()}`,
+    );
+    const roomTypeId = String(
+      body.room_type_id ?? body.roomTypeId ?? body.room_type ?? 'standard',
+    );
     const room = {
       id: this.db.id('room'),
       hotel_id: id,
-      room_type_id: String(body.room_type_id ?? 'standard'),
-      code: String(body.code ?? `R-${Date.now()}`),
+      room_type_id: roomTypeId,
+      code,
       name: {
-        uz: String(body.name_uz ?? body.name ?? 'Yangi xona'),
-        ru: String(body.name_ru ?? body.name ?? 'Новый номер'),
-        en: String(body.name_en ?? body.name ?? 'New room'),
+        uz: String(body.name_uz ?? body.name ?? `${code}-xona`),
+        ru: String(body.name_ru ?? body.name ?? `Номер ${code}`),
+        en: String(body.name_en ?? body.name ?? `Room ${code}`),
       },
-      base_occupancy: Number(body.base_occupancy ?? 2),
-      max_adults: Number(body.max_adults ?? 2),
+      base_occupancy: Number(body.base_occupancy ?? body.capacity ?? 2),
+      max_adults: Number(body.max_adults ?? body.capacity ?? 2),
       max_children: Number(body.max_children ?? 1),
-      total_inventory: Number(body.total_inventory ?? 1),
-      base_price: Number(body.base_price ?? 30000000),
+      total_inventory: Number(body.total_inventory ?? body.inventory ?? 1),
+      base_price: Number(
+        body.base_price ?? body.basePrice ?? body.nightlyPrice ?? 30000000,
+      ),
       status: 'active' as const,
     };
     this.db.rooms.unshift(room);
@@ -305,13 +409,86 @@ export class PartnersService {
         message: 'Xona topilmadi',
       });
     }
+    room.code =
+      body.code || body.number ? String(body.code ?? body.number) : room.code;
+    room.room_type_id =
+      body.room_type_id || body.roomTypeId
+        ? String(body.room_type_id ?? body.roomTypeId)
+        : room.room_type_id;
     room.base_price = body.base_price
       ? Number(body.base_price)
-      : room.base_price;
+      : body.basePrice
+        ? Number(body.basePrice)
+        : body.nightlyPrice
+          ? Number(body.nightlyPrice)
+          : room.base_price;
     room.total_inventory = body.total_inventory
       ? Number(body.total_inventory)
-      : room.total_inventory;
+      : body.inventory
+        ? Number(body.inventory)
+        : room.total_inventory;
+    room.base_occupancy = body.base_occupancy
+      ? Number(body.base_occupancy)
+      : body.capacity
+        ? Number(body.capacity)
+        : room.base_occupancy;
+    room.max_adults = body.max_adults
+      ? Number(body.max_adults)
+      : body.capacity
+        ? Number(body.capacity)
+        : room.max_adults;
+    room.name =
+      body.name || body.name_uz
+        ? localizedText(body, 'name', room.name.uz)
+        : room.name;
     return room;
+  }
+
+  createRoomsBulk(
+    actor: RequestActor | undefined,
+    id: string,
+    body: Record<string, unknown>,
+  ) {
+    this.assertHotel(id, actor);
+    const floor = Number(body.floor ?? 1);
+    const startNumber = Number(body.startNumber ?? body.start_number ?? 101);
+    const count = Math.max(0, Math.min(Number(body.count ?? 0), 200));
+    const roomTypeId = String(
+      body.roomTypeId ?? body.room_type_id ?? body.room_type ?? 'standard',
+    );
+    const created: Array<(typeof this.db.rooms)[number]> = [];
+    const existingCodes = new Set(
+      this.db.rooms
+        .filter((room) => room.hotel_id === id)
+        .map((room) => room.code),
+    );
+
+    for (let index = 0; index < count; index += 1) {
+      const code = String(startNumber + index);
+      if (existingCodes.has(code)) {
+        continue;
+      }
+      created.push(
+        this.createRoom(actor, id, {
+          ...body,
+          code,
+          number: code,
+          floor,
+          room_type_id: roomTypeId,
+        }),
+      );
+      existingCodes.add(code);
+    }
+
+    return {
+      ok: created.length === count,
+      added: created.length,
+      rooms: created,
+      reason:
+        created.length === count
+          ? undefined
+          : "Ba'zi xona raqamlari oldindan mavjud bo'lgani uchun o'tkazib yuborildi.",
+    };
   }
 
   deleteRoom(actor: RequestActor | undefined, id: string, roomId: string) {
@@ -361,6 +538,90 @@ export class PartnersService {
       dates: body.dates ?? [],
       closed: true,
     };
+  }
+
+  updateListingGeneral(
+    actor: RequestActor | undefined,
+    id: string,
+    body: Record<string, unknown>,
+  ) {
+    const hotel = this.assertHotel(id, actor);
+    hotel.name = localizedText(body, 'name', hotel.name.uz);
+    hotel.description = localizedText(
+      body,
+      'description',
+      hotel.description.uz,
+    );
+    hotel.stars = body.stars ? Number(body.stars) : hotel.stars;
+    return hotel;
+  }
+
+  updateListingLocation(
+    actor: RequestActor | undefined,
+    id: string,
+    body: Record<string, unknown>,
+  ) {
+    const hotel = this.assertHotel(id, actor);
+    hotel.address = body.address ? String(body.address) : hotel.address;
+    hotel.latitude =
+      body.latitude === undefined ? hotel.latitude : Number(body.latitude);
+    hotel.longitude =
+      body.longitude === undefined ? hotel.longitude : Number(body.longitude);
+    return hotel;
+  }
+
+  updateListingRules(
+    actor: RequestActor | undefined,
+    id: string,
+    body: Record<string, unknown>,
+  ) {
+    const hotel = this.assertHotel(id, actor);
+    hotel.check_in_time = body.checkInTime
+      ? String(body.checkInTime)
+      : body.check_in_time
+        ? String(body.check_in_time)
+        : hotel.check_in_time;
+    hotel.check_out_time = body.checkOutTime
+      ? String(body.checkOutTime)
+      : body.check_out_time
+        ? String(body.check_out_time)
+        : hotel.check_out_time;
+    return {
+      ...hotel,
+      cancellation_policy: body.cancellationPolicy ?? body.cancellation_policy,
+      smoking_allowed: body.smokingAllowed ?? body.smoking_allowed,
+      pets_allowed: body.petsAllowed ?? body.pets_allowed,
+      children_allowed: body.childrenAllowed ?? body.children_allowed,
+      extra_fees: body.extraFees ?? body.extra_fees ?? [],
+    };
+  }
+
+  updateListingAmenities(
+    actor: RequestActor | undefined,
+    id: string,
+    body: Record<string, unknown>,
+  ) {
+    const hotel = this.assertHotel(id, actor);
+    hotel.amenities = Array.isArray(body.amenities)
+      ? body.amenities.map(String)
+      : hotel.amenities;
+    return hotel;
+  }
+
+  updateListingStatus(
+    actor: RequestActor | undefined,
+    id: string,
+    body: Record<string, unknown>,
+  ) {
+    const hotel = this.assertHotel(id, actor);
+    hotel.status = listingStatus(body.status);
+    return hotel;
+  }
+
+  publishListing(actor: RequestActor | undefined, id: string) {
+    const hotel = this.assertHotel(id, actor);
+    hotel.status = 'pending_review';
+    return hotel;
   }
 
   vehicles() {
@@ -471,6 +732,88 @@ export class PartnersService {
     );
   }
 
+  createBooking(
+    actor: RequestActor | undefined,
+    body: Record<string, unknown>,
+  ) {
+    const organizationId = this.organizationId(actor);
+    const hotelId = String(
+      body.hotel_id ??
+        body.hotelId ??
+        this.db.hotels.find(
+          (hotel) => hotel.partner_organization_id === organizationId,
+        )?.id ??
+        '',
+    );
+    const hotel = this.assertHotel(hotelId, actor);
+    const roomTypeId = String(body.roomTypeId ?? body.room_type_id ?? '');
+    const room =
+      this.db.rooms.find(
+        (item) =>
+          item.hotel_id === hotel.id &&
+          (roomTypeId ? item.room_type_id === roomTypeId : true),
+      ) ?? this.db.rooms.find((item) => item.hotel_id === hotel.id);
+
+    if (!room) {
+      throw new NotFoundException({
+        code: 'ROOM_NOT_AVAILABLE',
+        message: 'Tanlangan hotel uchun xona topilmadi',
+      });
+    }
+
+    const checkIn = String(
+      body.checkIn ?? body.check_in ?? new Date().toISOString().slice(0, 10),
+    );
+    const checkOut = String(body.checkOut ?? body.check_out ?? checkIn);
+    const nights = Math.max(1, Number(body.nights ?? 1));
+    const totalAmount = Number(
+      body.totalPrice ?? body.total_amount ?? room.base_price * nights,
+    );
+    const commissionAmount = Math.round(totalAmount * 0.12);
+    const now = this.db.now();
+    const booking: BookingRecord = {
+      id: this.db.id('booking'),
+      booking_number: this.db.bookingNumber(),
+      user_id: 'demo-user-id',
+      partner_organization_id: organizationId,
+      type: 'hotel',
+      confirmation_mode: 'instant_confirmation',
+      payment_method: 'cash',
+      status: BookingStatus.CONFIRMED,
+      currency: 'UZS',
+      subtotal: totalAmount,
+      discount_amount: 0,
+      bonus_amount: 0,
+      service_fee: 0,
+      total_amount: totalAmount,
+      commission_amount: commissionAmount,
+      partner_payable: totalAmount - commissionAmount,
+      confirmed_at: now,
+      item: {
+        hotel_id: hotel.id,
+        room_id: room.id,
+        room_type_id: room.room_type_id,
+        room_number: body.roomNumber ?? body.room_number,
+        source: String(body.source ?? 'walk_in'),
+        guest: {
+          fullName: String(body.fullName ?? body.full_name ?? 'Walk-in mijoz'),
+          phone: String(body.phone ?? ''),
+        },
+        check_in: checkIn,
+        check_out: checkOut,
+        nights,
+        adults: Number(body.adults ?? 1),
+        children: Number(body.children ?? 0),
+      },
+      created_at: now,
+      updated_at: now,
+    };
+
+    this.db.bookings.unshift(booking);
+    this.db.createPayment(booking, 'cash');
+    return booking;
+  }
+
   booking(actor: RequestActor | undefined, id: string) {
     const organizationId = this.organizationId(actor);
     const booking = this.db.findBooking(id);
@@ -489,14 +832,45 @@ export class PartnersService {
     return booking;
   }
 
+  assignRoom(
+    actor: RequestActor | undefined,
+    id: string,
+    body: Record<string, unknown>,
+  ) {
+    const booking = this.booking(actor, id);
+    booking.item = {
+      ...booking.item,
+      room_number: String(body.roomNumber ?? body.room_number ?? ''),
+    };
+    booking.updated_at = this.db.now();
+    return booking;
+  }
+
   bookingStatus(actor: RequestActor | undefined, id: string, status: string) {
     const booking = this.booking(actor, id);
     if (status === 'confirmed') {
       booking.status = BookingStatus.CONFIRMED;
       booking.confirmed_at = this.db.now();
     }
+    if (status === 'checked_in') {
+      booking.status = BookingStatus.CONFIRMED;
+      booking.item = {
+        ...booking.item,
+        checked_in_at: this.db.now(),
+      };
+    }
+    if (status === 'boarded') {
+      booking.item = {
+        ...booking.item,
+        boarded_at: this.db.now(),
+      };
+    }
     if (status === 'completed') {
       booking.status = BookingStatus.COMPLETED;
+      booking.item = {
+        ...booking.item,
+        checked_out_at: this.db.now(),
+      };
     }
     booking.updated_at = this.db.now();
     return booking;

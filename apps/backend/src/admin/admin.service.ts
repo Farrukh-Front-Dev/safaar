@@ -36,13 +36,54 @@ function cmsTypesForResource(resource: string): string[] {
 }
 
 function isUuid(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
     value,
   );
 }
 
 function field(item: object, key: string): unknown {
   return (item as Record<string, unknown>)[key];
+}
+
+function adminActorUuid(actor: RequestActor | undefined): string {
+  return actor && isUuid(actor.id)
+    ? actor.id
+    : '00000000-0000-0000-0000-000000000000';
+}
+
+function normalizeUserStatus(
+  value: unknown,
+): 'active' | 'blocked' | 'deleted' | 'unverified' {
+  const status = String(value ?? 'active').toLowerCase();
+  if (
+    status === 'active' ||
+    status === 'blocked' ||
+    status === 'deleted' ||
+    status === 'unverified'
+  ) {
+    return status;
+  }
+  return 'active';
+}
+
+function normalizeSupportStatus(
+  value: unknown,
+): 'open' | 'in_progress' | 'closed' {
+  const status = String(value ?? 'open').toLowerCase();
+  if (status === 'closed' || status === 'in_progress') {
+    return status;
+  }
+  return 'open';
+}
+
+function normalizeWithdrawalStatus(
+  value: unknown,
+): 'approved' | 'rejected' | 'paid' | 'requested' {
+  const status = String(value ?? 'requested').toLowerCase();
+  if (status === 'approved' || status === 'rejected' || status === 'paid') {
+    return status;
+  }
+  return 'requested';
 }
 
 /**
@@ -302,9 +343,88 @@ export class AdminService {
   }
 
   async userStatus(id: string, body: Record<string, unknown>) {
+    const status = normalizeUserStatus(body.status);
+    if (isUuid(id)) {
+      const rows = await this.rows(
+        `
+          update users
+          set status = $2::"UserStatus",
+              blocked_reason = case
+                when $2 = 'blocked' then nullif($3, '')
+                else blocked_reason
+              end,
+              deleted_at = case
+                when $2 = 'deleted' then coalesce(deleted_at, now())
+                else deleted_at
+              end,
+              updated_at = now()
+          where id = $1::uuid
+          returning
+            id::text,
+            phone,
+            email,
+            first_name,
+            last_name,
+            concat_ws(' ', first_name, last_name) as full_name,
+            status::text,
+            preferred_language,
+            blocked_reason,
+            last_login_at,
+            created_at,
+            updated_at
+        `,
+        [id, status, String(body.reason ?? '')],
+      );
+      if (rows?.[0]) {
+        this.invalidateAdminCache();
+        return rows[0];
+      }
+    }
+
     const user = await this.user(id);
-    user.status = String(body.status ?? 'active');
+    user.status = status;
     user.updated_at = this.db.now();
+    this.invalidateAdminCache();
+    return user;
+  }
+
+  async userDelete(actor: RequestActor | undefined, id: string) {
+    if (isUuid(id)) {
+      const rows = await this.rows(
+        `
+          update users
+          set status = 'deleted'::"UserStatus",
+              deleted_at = coalesce(deleted_at, now()),
+              updated_at = now()
+          where id = $1::uuid
+          returning
+            id::text,
+            phone,
+            email,
+            first_name,
+            last_name,
+            concat_ws(' ', first_name, last_name) as full_name,
+            status::text,
+            preferred_language,
+            blocked_reason,
+            last_login_at,
+            created_at,
+            updated_at,
+            deleted_at
+        `,
+        [id],
+      );
+      if (rows?.[0]) {
+        this.db.audit('user.admin_delete', actor, { user_id: id });
+        this.invalidateAdminCache();
+        return rows[0];
+      }
+    }
+
+    const user = await this.user(id);
+    user.status = 'deleted';
+    user.updated_at = this.db.now();
+    this.db.audit('user.admin_delete', actor, { user_id: id });
     this.invalidateAdminCache();
     return user;
   }
@@ -365,16 +485,73 @@ export class AdminService {
     );
   }
 
-  userMessage(id: string, body: Record<string, unknown>) {
+  async userMessage(
+    actor: RequestActor | undefined,
+    id: string,
+    body: Record<string, unknown>,
+  ) {
+    const title = String(body.title ?? 'Admin xabari');
+    const message = String(body.message ?? body.body ?? '');
+
+    if (isUuid(id)) {
+      const rows = await this.rows(
+        `
+          insert into notifications (user_id, owner_type, owner_id, title, body)
+          values ($1::uuid, 'user', $1::uuid, $2, $3)
+          returning
+            id::text,
+            user_id::text,
+            owner_type,
+            owner_id::text,
+            title,
+            body,
+            read_at,
+            created_at
+        `,
+        [id, title, message],
+      );
+      if (rows?.[0]) {
+        this.db.audit('user.admin_message', actor, { user_id: id });
+        return rows[0];
+      }
+    }
+
     const notification = {
       id: this.db.id('notification'),
       owner_id: id,
-      title: String(body.title ?? 'Admin xabari'),
-      body: String(body.body ?? ''),
+      title,
+      body: message,
       created_at: this.db.now(),
     };
     this.db.notifications.unshift(notification);
+    this.db.audit('user.admin_message', actor, { user_id: id });
     return notification;
+  }
+
+  async usersMessage(
+    actor: RequestActor | undefined,
+    body: Record<string, unknown>,
+  ) {
+    const ids = Array.isArray(body.user_ids)
+      ? body.user_ids.map(String)
+      : Array.isArray(body.ids)
+        ? body.ids.map(String)
+        : [];
+    const title = String(body.title ?? 'Admin xabari');
+    const message = String(body.message ?? body.body ?? '');
+    const targets = ids.length ? ids : this.db.users.map((user) => user.id);
+    const sent: unknown[] = [];
+
+    for (const userId of targets) {
+      sent.push(
+        await this.userMessage(actor, userId, { title, body: message }),
+      );
+    }
+
+    return {
+      sent: sent.length,
+      notifications: sent,
+    };
   }
 
   async exportJob(
@@ -1028,8 +1205,39 @@ export class AdminService {
     return rows?.[0] ?? { id, status: 'requested' };
   }
 
-  withdrawalStatus(id: string, status: string) {
-    return { id, status, updated_at: this.db.now() };
+  async withdrawalStatus(id: string, status: string) {
+    const nextStatus = normalizeWithdrawalStatus(status);
+    if (isUuid(id)) {
+      const rows = await this.rows(
+        `
+          update withdrawal_requests wr
+          set status = $2,
+              updated_at = now()
+          from partner_organizations po
+          where wr.id = $1::uuid
+            and po.id = wr.organization_id
+          returning
+            wr.id::text,
+            wr.organization_id::text as partner_id,
+            po.brand_name as partner_name,
+            wr.amount::float8,
+            wr.currency,
+            wr.status,
+            wr.created_at as request_date,
+            wr.created_at,
+            wr.updated_at,
+            coalesce(po.tax_id, po.id::text) as bank_account
+        `,
+        [id, nextStatus],
+      );
+      if (rows?.[0]) {
+        this.invalidateAdminCache();
+        return rows[0];
+      }
+    }
+
+    this.invalidateAdminCache();
+    return { id, status: nextStatus, updated_at: this.db.now() };
   }
 
   async cmsList(resource: string, query: QueryLike = {}) {
@@ -1149,6 +1357,12 @@ export class AdminService {
   }
 
   async supportTicket(id: string) {
+    if (!isUuid(id)) {
+      return (
+        this.db.supportTickets.find((ticket) => ticket['id'] === id) ?? { id }
+      );
+    }
+
     const rows = await this.rows(
       `
         select
@@ -1195,7 +1409,116 @@ export class AdminService {
     );
   }
 
-  supportAction(id: string, action: string, body: Record<string, unknown>) {
+  async supportStatus(id: string, body: Record<string, unknown>) {
+    const status = normalizeSupportStatus(body.status ?? body.action);
+    if (isUuid(id)) {
+      const rows = await this.rows(
+        `
+          update support_tickets
+          set status = $2,
+              updated_at = now()
+          where id = $1::uuid
+          returning
+            id::text,
+            user_id::text,
+            subject,
+            priority,
+            status,
+            created_at,
+            updated_at
+        `,
+        [id, status],
+      );
+      if (rows?.[0]) {
+        this.invalidateAdminCache();
+        return rows[0];
+      }
+    }
+
+    const ticket = this.db.supportTickets.find((item) => item['id'] === id);
+    if (!ticket) {
+      throw new NotFoundException({
+        code: 'SUPPORT_TICKET_NOT_FOUND',
+        message: 'Murojaat topilmadi',
+      });
+    }
+    ticket['status'] = status;
+    ticket['updated_at'] = this.db.now();
+    this.invalidateAdminCache();
+    return ticket;
+  }
+
+  async supportMessage(
+    actor: RequestActor | undefined,
+    id: string,
+    body: Record<string, unknown>,
+  ) {
+    const message = String(body.message ?? body.body ?? '').trim();
+    if (isUuid(id)) {
+      const rows = await this.rows(
+        `
+          insert into support_messages (ticket_id, sender_type, sender_id, body)
+          values ($1::uuid, 'admin', $2::uuid, $3)
+          returning
+            id::text,
+            ticket_id::text,
+            sender_type,
+            sender_id::text,
+            'Admin' as sender_name,
+            body as message,
+            created_at
+        `,
+        [id, adminActorUuid(actor), message],
+      );
+      if (rows?.[0]) {
+        await this.supportStatus(id, { status: 'in_progress' });
+        return rows[0];
+      }
+    }
+
+    const ticket = this.db.supportTickets.find((item) => item['id'] === id);
+    if (!ticket) {
+      throw new NotFoundException({
+        code: 'SUPPORT_TICKET_NOT_FOUND',
+        message: 'Murojaat topilmadi',
+      });
+    }
+
+    const currentActor = this.db.actorOrDemo(actor);
+    const row = {
+      id: this.db.id('support_msg'),
+      ticket_id: id,
+      sender_type: 'admin',
+      sender_id: currentActor.id,
+      sender_name: 'Admin',
+      message,
+      body: message,
+      created_at: this.db.now(),
+    };
+    this.db.supportMessages.push(row);
+    ticket['status'] = 'in_progress';
+    ticket['updated_at'] = this.db.now();
+    return row;
+  }
+
+  async supportAction(
+    actor: RequestActor | undefined,
+    id: string,
+    action: string,
+    body: Record<string, unknown>,
+  ) {
+    if (action === 'close') {
+      return this.supportStatus(id, { status: 'closed' });
+    }
+    if (action === 'reopen') {
+      return this.supportStatus(id, { status: 'open' });
+    }
+    if (action === 'status') {
+      return this.supportStatus(id, body);
+    }
+    if (action === 'message' || action === 'reply') {
+      return this.supportMessage(actor, id, body);
+    }
     return { id, action, body, updated_at: this.db.now() };
   }
 

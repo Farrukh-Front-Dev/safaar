@@ -161,6 +161,42 @@ export class PartnersController {
     return this.partnersService.rooms(actor, id);
   }
 
+  @Get('hotels/:id/room-types')
+  roomTypes(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.partnersService.roomTypes(actor, id);
+  }
+
+  @Post('hotels/:id/room-types')
+  createRoomType(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.partnersService.createRoomType(actor, id, body);
+  }
+
+  @Patch('hotels/:id/room-types/:roomTypeId')
+  updateRoomType(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Param('roomTypeId') roomTypeId: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.partnersService.updateRoomType(actor, id, roomTypeId, body);
+  }
+
+  @Delete('hotels/:id/room-types/:roomTypeId')
+  deleteRoomType(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Param('roomTypeId') roomTypeId: string,
+  ) {
+    return this.partnersService.deleteRoomType(actor, id, roomTypeId);
+  }
+
   @Post('hotels/:id/rooms')
   createRoom(
     @CurrentActor() actor: RequestActor | undefined,
@@ -168,6 +204,15 @@ export class PartnersController {
     @Body() body: Record<string, unknown>,
   ) {
     return this.partnersService.createRoom(actor, id, body);
+  }
+
+  @Post('hotels/:id/rooms/bulk')
+  createRoomsBulk(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.partnersService.createRoomsBulk(actor, id, body);
   }
 
   @Patch('hotels/:id/rooms/:roomId')
@@ -213,6 +258,59 @@ export class PartnersController {
     @Body() body: Record<string, unknown>,
   ) {
     return this.partnersService.blackoutDates(actor, id, body);
+  }
+
+  @Patch('hotels/:id/listing/general')
+  updateListingGeneral(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.partnersService.updateListingGeneral(actor, id, body);
+  }
+
+  @Patch('hotels/:id/listing/location')
+  updateListingLocation(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.partnersService.updateListingLocation(actor, id, body);
+  }
+
+  @Patch('hotels/:id/listing/rules')
+  updateListingRules(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.partnersService.updateListingRules(actor, id, body);
+  }
+
+  @Patch('hotels/:id/listing/amenities')
+  updateListingAmenities(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.partnersService.updateListingAmenities(actor, id, body);
+  }
+
+  @Patch('hotels/:id/listing/status')
+  updateListingStatus(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.partnersService.updateListingStatus(actor, id, body);
+  }
+
+  @Post('hotels/:id/listing/publish')
+  publishListing(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.partnersService.publishListing(actor, id);
   }
 
   @Get('vehicles')
@@ -286,6 +384,14 @@ export class PartnersController {
     return this.partnersService.bookings(actor, query);
   }
 
+  @Post('bookings')
+  createBooking(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.partnersService.createBooking(actor, body);
+  }
+
   @Get('bookings/:id')
   booking(
     @CurrentActor() actor: RequestActor | undefined,
@@ -317,6 +423,15 @@ export class PartnersController {
     @Param('id') id: string,
   ) {
     return this.partnersService.bookingStatus(actor, id, 'checked_in');
+  }
+
+  @Post('bookings/:id/assign-room')
+  assignRoom(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.partnersService.assignRoom(actor, id, body);
   }
 
   @Post('bookings/:id/board')

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -58,6 +59,15 @@ export class AdminController {
     return this.adminService.userStatus(id, body);
   }
 
+  @Delete('users/:id')
+  @Permissions(Permission.UsersWrite)
+  userDelete(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.adminService.userDelete(actor, id);
+  }
+
   @Post('users/:id/bonus-adjustment')
   @Permissions(Permission.FinanceWrite)
   bonusAdjustment(
@@ -84,8 +94,22 @@ export class AdminController {
   }
 
   @Post('users/:id/message')
-  userMessage(@Param('id') id: string, @Body() body: Record<string, unknown>) {
-    return this.adminService.userMessage(id, body);
+  @Permissions(Permission.UsersWrite)
+  userMessage(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.userMessage(actor, id, body);
+  }
+
+  @Post('users/message')
+  @Permissions(Permission.UsersWrite)
+  usersMessage(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.usersMessage(actor, body);
   }
 
   @Post('users/export')
@@ -478,14 +502,34 @@ export class AdminController {
     return this.adminService.supportTicket(id);
   }
 
+  @Patch('support/tickets/:id/status')
+  @Permissions(Permission.SupportWrite)
+  supportStatus(
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.supportStatus(id, body);
+  }
+
+  @Post('support/tickets/:id/messages')
+  @Permissions(Permission.SupportWrite)
+  supportMessage(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.supportMessage(actor, id, body);
+  }
+
   @Post('support/tickets/:id/:action')
   @Permissions(Permission.SupportWrite)
   supportAction(
+    @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
     @Param('action') action: string,
     @Body() body: Record<string, unknown>,
   ) {
-    return this.adminService.supportAction(id, action, body);
+    return this.adminService.supportAction(actor, id, action, body);
   }
 
   @Get('support/stats')
