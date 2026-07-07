@@ -45,7 +45,7 @@ export class HotelsService {
 
     if (pgResult) {
       const mapped = pgResult.map((row: Record<string, unknown>) => {
-        const r = row as Record<string, unknown>;
+        const r = row;
         return {
           id: r.id,
           partner_organization_id: r.partner_organization_id,
@@ -63,7 +63,11 @@ export class HotelsService {
           created_at: r.created_at,
           updated_at: r.updated_at,
           name: { uz: r.name, ru: r.name, en: r.name },
-          description: { uz: r.description, ru: r.description, en: r.description },
+          description: {
+            uz: r.description,
+            ru: r.description,
+            en: r.description,
+          },
           city: { id: r.city_id, region_id: r.region_id, name: r.city_name },
           amenities: [],
           images: [],
@@ -213,7 +217,11 @@ export class HotelsService {
         created_at: h.created_at,
         updated_at: h.updated_at,
         name: { uz: h.name, ru: h.name, en: h.name },
-        description: { uz: h.description, ru: h.description, en: h.description },
+        description: {
+          uz: h.description,
+          ru: h.description,
+          en: h.description,
+        },
         city: { id: h.city_id, region_id: h.region_id, name: h.city_name },
         amenities: [],
         images: [],
@@ -338,15 +346,17 @@ export class HotelsService {
   }
 
   async map(query: QueryLike) {
-    const hotels = await this.findAll(query);
+    const hotels = (await this.findAll(query)) as {
+      items: Array<Record<string, unknown>>;
+    };
     return hotels.items.map((hotel) => ({
-      id: hotel.id,
-      slug: hotel.slug,
-      name: hotel.name,
-      latitude: hotel.latitude,
-      longitude: hotel.longitude,
-      rating_average: hotel.rating_average,
-      min_price: hotel.min_price,
+      id: hotel['id'],
+      slug: hotel['slug'],
+      name: hotel['name'],
+      latitude: hotel['latitude'],
+      longitude: hotel['longitude'],
+      rating_average: hotel['rating_average'],
+      min_price: hotel['min_price'],
     }));
   }
 
