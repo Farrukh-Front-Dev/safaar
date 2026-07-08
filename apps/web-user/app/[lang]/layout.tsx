@@ -87,7 +87,7 @@ export default async function LangLayout({
       lang={lang}
       className={`${inter.variable} ${manrope.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col bg-white text-slate-900">
+      <body className="flex min-h-full flex-col bg-slate-50 text-slate-900">
         {children}
         <ServiceWorkerRegister />
       </body>

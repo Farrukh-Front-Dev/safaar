@@ -6,12 +6,11 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { getCities } from "@/lib/api/catalog";
 import { getHotels } from "@/lib/api/hotels";
 import { Hero } from "@/components/home/Hero";
-import { SearchTabs } from "@/components/search/SearchTabs";
+import { SearchBar } from "@/components/search/SearchBar";
 import { CityCards, type CityCardData } from "@/components/home/CityCards";
 import { TrustBar } from "@/components/home/TrustBar";
 import { FeaturedHotelCard } from "@/components/home/FeaturedHotelCard";
 import { DealsSection, type DealItem } from "@/components/home/DealsSection";
-import { PartnersSection } from "@/components/home/PartnersSection";
 import type { HotelListItem } from "@/types/view";
 
 export async function generateMetadata({
@@ -82,7 +81,7 @@ export default async function HomePage({
 
         {/* SearchTabs (Mehmonxona / Avtobus) */}
         <div className="relative z-10 mx-auto mt-4 w-full max-w-4xl px-3 sm:mt-6 sm:px-6">
-          <SearchTabs locale={locale} dict={common.search} cities={cities} />
+          <SearchBar locale={locale} dict={common.search} cities={cities} />
 
           {/* Quick city chips */}
           {cities.length > 0 && (
@@ -150,12 +149,7 @@ export default async function HomePage({
         <CityCards cities={cityCards} dict={dict.popularCities} />
       </div>
 
-      {/* ═══ EKRAN 4: Hamkorlar ═══ */}
-      <div className="py-10 sm:py-14">
-        <PartnersSection dict={dict.partners} />
-      </div>
-
-      {/* ═══ EKRAN 5: Trust Bar ═══ */}
+      {/* ═══ EKRAN 4: Trust Bar ═══ */}
       <TrustBar dict={dict.trust} />
     </main>
   );

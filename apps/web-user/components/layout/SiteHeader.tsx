@@ -4,6 +4,7 @@ import type { Locale } from "@/i18n/config";
 import type { CommonDict } from "@/i18n/dictionaries";
 import { logoutAction } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/Button";
+import ShinyText from "@/components/ui/ShinyText";
 import { ScrollNav } from "./ScrollNav";
 import { LocaleSwitcher } from "./LocaleSwitcher";
 
@@ -66,9 +67,15 @@ export function SiteHeader({
       ) : (
         <Link
           href={`/${locale}/login`}
-          className="inline-flex h-8 items-center justify-center rounded-full bg-primary-600 px-4 text-xs font-bold text-white shadow-[0_0_0_1px_rgba(0,0,0,0.25),0_2px_4px_rgba(0,0,0,0.25),0_4px_8px_-1px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.2),inset_0_-2px_3px_rgba(0,0,0,0.15)] transition-all duration-150 hover:bg-primary-500 hover:shadow-[0_0_0_1px_rgba(0,0,0,0.3),0_4px_8px_rgba(0,0,0,0.3),0_8px_16px_-2px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.25),inset_0_-2px_3px_rgba(0,0,0,0.15)] active:scale-95 active:shadow-[inset_0_2px_6px_rgba(0,0,0,0.3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+          className="inline-flex h-9 items-center justify-center rounded-full bg-primary-600 px-5 text-sm font-medium text-white shadow-btn transition-all duration-150 hover:bg-primary-500 hover:shadow-btn-hover active:bg-primary-700 active:shadow-btn-active active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2"
         >
-          {dict.actions.login}
+          <ShinyText
+            text={dict.actions.login}
+            speed={3}
+            color="#ffffff"
+            shineColor="#bbf7d0"
+            className="text-sm font-medium"
+          />
         </Link>
       )}
     </>

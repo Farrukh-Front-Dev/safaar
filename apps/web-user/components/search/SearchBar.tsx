@@ -51,10 +51,10 @@ export function SearchBar({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-3 md:flex-row md:items-stretch md:gap-2 md:rounded-full md:border md:border-white/60 md:bg-white md:p-1.5 md:shadow-[0_2px_4px_rgba(0,0,0,0.7),0_5px_12px_-2px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.5)]"
+      className="flex flex-col gap-3 md:flex-row md:items-stretch md:gap-2 md:rounded-full md:border md:border-slate-200 md:bg-slate-50 md:p-1.5 md:shadow-btn"
     >
       {/* ═══ Mobil: birlashgan karta ═══ */}
-      <div className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm md:hidden">
+      <div className="divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white shadow-btn md:hidden">
         {/* Shahar */}
         <MobileCityPicker
           cities={cities}
@@ -66,9 +66,9 @@ export function SearchBar({
 
         {/* Sanalar — 2 ta yon-yoniga */}
         <div className="grid grid-cols-2 divide-x divide-slate-100">
-          <div className="p-3">
+          <div className="px-4 py-3">
             <label className="flex flex-col gap-1">
-              <span className="text-[11px] font-medium text-slate-400">
+              <span className="text-xs font-medium text-slate-600">
                 {dict.checkIn}
               </span>
               <DatePicker
@@ -85,9 +85,9 @@ export function SearchBar({
               />
             </label>
           </div>
-          <div className="p-3">
+          <div className="px-4 py-3">
             <label className="flex flex-col gap-1">
-              <span className="text-[11px] font-medium text-slate-400">
+              <span className="text-xs font-medium text-slate-600">
                 {dict.checkOut}
               </span>
               <DatePicker
@@ -104,12 +104,12 @@ export function SearchBar({
         </div>
 
         {/* Mehmonlar */}
-        <div className="flex items-center justify-between p-3">
-          <div className="flex items-center gap-2">
-            <span className="text-slate-400">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-2.5">
+            <span className="text-slate-600">
               <GuestsIcon />
             </span>
-            <span className="text-sm font-medium text-slate-700">
+            <span className="text-sm font-medium text-slate-900">
               {dict.guests}
             </span>
           </div>
@@ -118,19 +118,19 @@ export function SearchBar({
               type="button"
               onClick={() => setGuests((g) => Math.max(1, g - 1))}
               aria-label="-"
-              className="grid h-8 w-8 place-items-center rounded-full border border-slate-300 text-slate-600 transition-colors hover:border-primary-500 hover:text-primary-600 active:scale-90 disabled:opacity-40"
+              className="grid h-9 w-9 place-items-center rounded-full border border-slate-300 text-slate-700 transition-colors hover:border-primary-500 hover:text-primary-600 active:scale-90 disabled:opacity-40"
               disabled={guests <= 1}
             >
               <MinusIcon />
             </button>
-            <span className="w-5 text-center text-sm font-bold tabular-nums text-slate-900">
+            <span className="w-6 text-center text-base font-bold tabular-nums text-slate-900">
               {guests}
             </span>
             <button
               type="button"
               onClick={() => setGuests((g) => Math.min(20, g + 1))}
               aria-label="+"
-              className="grid h-8 w-8 place-items-center rounded-full border border-slate-300 text-slate-600 transition-colors hover:border-primary-500 hover:text-primary-600 active:scale-90 disabled:opacity-40"
+              className="grid h-9 w-9 place-items-center rounded-full border border-slate-300 text-slate-700 transition-colors hover:border-primary-500 hover:text-primary-600 active:scale-90 disabled:opacity-40"
               disabled={guests >= 20}
             >
               <PlusIcon />
@@ -142,7 +142,7 @@ export function SearchBar({
       {/* Mobil: Qidirish tugmasi — to'liq kenglik */}
       <button
         type="submit"
-        className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary-600 text-sm font-semibold text-white shadow-[0_2px_6px_rgba(0,0,0,0.1),0_8px_20px_-4px_rgba(13,148,136,0.4)] transition-all duration-150 hover:bg-primary-500 active:scale-[0.98] md:hidden"
+        className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary-600 text-sm font-semibold text-white shadow-btn transition-all duration-150 hover:bg-primary-500 hover:shadow-btn-hover active:bg-primary-700 active:shadow-btn-active active:scale-[0.97] md:hidden"
       >
         <SearchIcon />
         <span>{dict.submit}</span>
@@ -212,7 +212,7 @@ export function SearchBar({
         {/* Qidirish tugmasi */}
         <button
           type="submit"
-          className="group inline-flex h-auto flex-1 items-center justify-center gap-2 rounded-full bg-primary-600 px-7 text-sm font-semibold text-white shadow-[0_2px_6px_rgba(0,0,0,0.1),0_8px_20px_-4px_rgba(13,148,136,0.4),inset_0_1px_0_rgba(255,255,255,0.2)] transition-all duration-150 hover:bg-primary-500 active:scale-95"
+          className="group inline-flex h-auto flex-1 items-center justify-center gap-2 rounded-full bg-primary-600 px-7 text-sm font-semibold text-white shadow-btn transition-all duration-150 hover:bg-primary-500 hover:shadow-btn-hover active:bg-primary-700 active:shadow-btn-active active:scale-[0.97]"
         >
           <SearchIcon />
           <span>{dict.submit}</span>
@@ -328,17 +328,13 @@ function Field({
 }) {
   return (
     <div
-      className="group flex flex-1 items-center gap-3 rounded-full border border-slate-200 px-4 py-2.5 transition-all hover:border-primary-300 hover:bg-slate-50"
-      style={{
-        boxShadow:
-          "0 0 3px rgba(0,0,0,0.7), 0 0 6px -1px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.5)",
-      }}
+      className="group flex flex-1 items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-3 shadow-btn transition-all duration-150 hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:shadow-btn-active active:scale-[0.97]"
     >
-      <span className="shrink-0 text-slate-400 transition-colors group-hover:text-primary-600">
+      <span className="shrink-0 text-slate-700 transition-colors group-hover:text-primary-600">
         {icon}
       </span>
       <div className="flex min-w-0 flex-1 flex-col">
-        <span className="text-[11px] font-medium text-slate-400">{label}</span>
+        <span className="text-xs font-medium text-slate-600">{label}</span>
         {children}
       </div>
     </div>
@@ -388,19 +384,15 @@ function CityPicker({
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className="group flex w-full items-center gap-3 rounded-full border border-slate-200 px-4 py-2.5 text-left transition-all hover:border-primary-300 hover:bg-slate-50"
-        style={{
-          boxShadow:
-            "0 0 3px rgba(0,0,0,0.7), 0 0 6px -1px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.5)",
-        }}
+        className="group flex w-full items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-3 text-left shadow-btn transition-all duration-150 hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:shadow-btn-active active:scale-[0.97]"
       >
-        <span className="shrink-0 text-slate-400 transition-colors group-hover:text-primary-600">
+        <span className="shrink-0 text-slate-700 transition-colors group-hover:text-primary-600">
           <PinIcon />
         </span>
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="text-[11px] font-medium text-slate-400">{label}</span>
+          <span className="text-xs font-medium text-slate-600">{label}</span>
           <span
-            className={`truncate text-sm font-medium ${
+            className={`truncate text-base font-medium ${
               selected ? "text-slate-900" : "text-slate-400"
             }`}
           >

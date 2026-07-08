@@ -131,28 +131,21 @@ export function DatePicker({
         className={
           compact
             ? "flex w-full items-center gap-2 text-left"
-            : "group flex w-full items-center gap-3 rounded-full border border-slate-200 px-4 py-2.5 text-left transition-all hover:border-primary-300 hover:bg-slate-50"
+            : "group flex w-full items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-3 text-left shadow-btn transition-all duration-150 hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:shadow-btn-active active:scale-[0.97]"
         }
-        style={
-          compact
-            ? undefined
-            : {
-                boxShadow:
-                  "0 0 3px rgba(0,0,0,0.7), 0 0 6px -1px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.5)",
-              }
-        }
+        style={undefined}
       >
         {!compact && (
-          <span className="shrink-0 text-slate-400 transition-colors group-hover:text-primary-600">
+          <span className="shrink-0 text-slate-700 transition-colors group-hover:text-primary-600">
             {icon}
           </span>
         )}
         <span className="flex min-w-0 flex-1 flex-col">
           {!compact && (
-            <span className="text-[11px] font-medium text-slate-400">{label}</span>
+            <span className="text-xs font-medium text-slate-600">{label}</span>
           )}
           <span
-            className={`truncate text-sm font-medium ${
+            className={`truncate text-base font-medium ${
               displayValue ? "text-slate-900" : "text-slate-400"
             }`}
           >
@@ -162,7 +155,10 @@ export function DatePicker({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-2 w-72 rounded-3xl border border-slate-200 bg-white p-4 shadow-xl">
+        <>
+          {/* Mobilda overlay */}
+          <div className="fixed inset-0 z-40 bg-black/20 md:hidden" aria-hidden />
+          <div className="fixed inset-x-4 top-1/2 z-50 -translate-y-1/2 rounded-3xl border border-slate-200 bg-white p-4 shadow-xl md:absolute md:inset-auto md:left-0 md:top-full md:mt-2 md:w-72 md:translate-y-0">
           {/* Oy navigatsiyasi */}
           <div className="mb-3 flex items-center justify-between">
             <button
@@ -237,6 +233,7 @@ export function DatePicker({
             })}
           </div>
         </div>
+        </>
       )}
     </div>
   );
