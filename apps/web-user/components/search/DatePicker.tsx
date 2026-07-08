@@ -138,7 +138,7 @@ export function DatePicker({
             ? undefined
             : {
                 boxShadow:
-                  "0 1px 3px rgba(15,23,42,0.08), 0 4px 10px -2px rgba(15,23,42,0.1), inset 0 1px 0 rgba(255,255,255,0.6)",
+                  "0 0 3px rgba(0,0,0,0.7), 0 0 6px -1px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.5)",
               }
         }
       >

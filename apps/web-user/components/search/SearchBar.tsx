@@ -51,7 +51,7 @@ export function SearchBar({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-3 md:flex-row md:items-stretch md:gap-0 md:rounded-full md:border md:border-white/60 md:bg-white md:p-1.5 md:shadow-[0_4px_12px_rgba(0,0,0,0.08),0_16px_40px_-8px_rgba(0,0,0,0.15),inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_2px_rgba(0,0,0,0.04)]"
+      className="flex flex-col gap-3 md:flex-row md:items-stretch md:gap-2 md:rounded-full md:border md:border-white/60 md:bg-white md:p-1.5 md:shadow-[0_2px_4px_rgba(0,0,0,0.7),0_5px_12px_-2px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.5)]"
     >
       {/* ═══ Mobil: birlashgan karta ═══ */}
       <div className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm md:hidden">
@@ -159,8 +159,6 @@ export function SearchBar({
           placeholder={dict.cityPlaceholder}
         />
 
-        <Divider />
-
         {/* Kirish sanasi */}
         <DatePicker
           locale={locale}
@@ -174,8 +172,6 @@ export function SearchBar({
           }}
         />
 
-        <Divider />
-
         {/* Chiqish sanasi */}
         <DatePicker
           locale={locale}
@@ -185,8 +181,6 @@ export function SearchBar({
           icon={<CalendarIcon />}
           onChange={setCheckOut}
         />
-
-        <Divider />
 
         {/* Mehmonlar */}
         <Field icon={<GuestsIcon />} label={dict.guests}>
@@ -218,7 +212,7 @@ export function SearchBar({
         {/* Qidirish tugmasi */}
         <button
           type="submit"
-          className="group inline-flex h-auto shrink-0 items-center justify-center gap-2 rounded-full bg-primary-600 px-7 text-sm font-semibold text-white shadow-[0_2px_6px_rgba(0,0,0,0.1),0_8px_20px_-4px_rgba(13,148,136,0.4),inset_0_1px_0_rgba(255,255,255,0.2)] transition-all duration-150 hover:bg-primary-500 active:scale-95"
+          className="group inline-flex h-auto flex-1 items-center justify-center gap-2 rounded-full bg-primary-600 px-7 text-sm font-semibold text-white shadow-[0_2px_6px_rgba(0,0,0,0.1),0_8px_20px_-4px_rgba(13,148,136,0.4),inset_0_1px_0_rgba(255,255,255,0.2)] transition-all duration-150 hover:bg-primary-500 active:scale-95"
         >
           <SearchIcon />
           <span>{dict.submit}</span>
@@ -337,7 +331,7 @@ function Field({
       className="group flex flex-1 items-center gap-3 rounded-full border border-slate-200 px-4 py-2.5 transition-all hover:border-primary-300 hover:bg-slate-50"
       style={{
         boxShadow:
-          "0 1px 3px rgba(15,23,42,0.08), 0 4px 10px -2px rgba(15,23,42,0.1), inset 0 1px 0 rgba(255,255,255,0.6)",
+          "0 0 3px rgba(0,0,0,0.7), 0 0 6px -1px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.5)",
       }}
     >
       <span className="shrink-0 text-slate-400 transition-colors group-hover:text-primary-600">
@@ -349,10 +343,6 @@ function Field({
       </div>
     </div>
   );
-}
-
-function Divider() {
-  return <div className="hidden w-px self-center bg-slate-200 md:block md:h-8" />;
 }
 
 /* ── Desktop shahar tanlash ── */
@@ -392,7 +382,7 @@ function CityPicker({
   }, [open]);
 
   return (
-    <div ref={ref} className="relative flex-[1.5]">
+    <div ref={ref} className="relative flex-1">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -401,7 +391,7 @@ function CityPicker({
         className="group flex w-full items-center gap-3 rounded-full border border-slate-200 px-4 py-2.5 text-left transition-all hover:border-primary-300 hover:bg-slate-50"
         style={{
           boxShadow:
-            "0 1px 3px rgba(15,23,42,0.08), 0 4px 10px -2px rgba(15,23,42,0.1), inset 0 1px 0 rgba(255,255,255,0.6)",
+            "0 0 3px rgba(0,0,0,0.7), 0 0 6px -1px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.5)",
         }}
       >
         <span className="shrink-0 text-slate-400 transition-colors group-hover:text-primary-600">

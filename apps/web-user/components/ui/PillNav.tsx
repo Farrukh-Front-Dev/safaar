@@ -159,8 +159,10 @@ export function PillNav({
                 aria-current={isActive ? "page" : undefined}
                 className="relative box-border inline-flex h-full cursor-pointer items-center justify-center overflow-hidden whitespace-nowrap rounded-full px-[var(--pill-pad-x)] text-sm font-semibold uppercase leading-none tracking-wide"
                 style={{
-                  background: "var(--pill-bg)",
-                  color: "var(--pill-text)",
+                  background: isActive ? "var(--base)" : "var(--pill-bg)",
+                  color: isActive ? "var(--hover-text)" : "var(--pill-text)",
+                  boxShadow:
+                    "0 0 3px rgba(0,0,0,0.7), 0 0 6px -1px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.5)",
                 }}
                 onMouseEnter={() => handleEnter(i)}
                 onMouseLeave={() => handleLeave(i)}
@@ -194,13 +196,6 @@ export function PillNav({
                     {item.label}
                   </span>
                 </span>
-                {isActive && (
-                  <span
-                    className="absolute -bottom-1.5 left-1/2 z-[4] h-2 w-2 -translate-x-1/2 rounded-full"
-                    style={{ background: "var(--base)" }}
-                    aria-hidden
-                  />
-                )}
               </Link>
             </li>
           );
