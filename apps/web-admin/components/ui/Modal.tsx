@@ -61,7 +61,7 @@ export default function Modal({
       {/* Content */}
       <div
         className={cn(
-          "fixed left-1/2 top-1/2 w-[calc(100%-2rem)]",
+          "fixed left-1/2 top-1/2 w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2",
           sizeStyles[size],
           "bg-white rounded-2xl shadow-xl",
           "flex flex-col max-h-[85vh]"

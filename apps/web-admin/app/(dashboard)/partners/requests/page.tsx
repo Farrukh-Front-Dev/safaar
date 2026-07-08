@@ -11,12 +11,18 @@ import { PARTNER_REQUEST_STATUS_MAP } from "@/lib/constants";
 import { CheckCircle, XCircle, Phone, MessageSquare, FileText, Hotel, Bus } from "lucide-react";
 import type { PartnerRequest } from "@/types/admin";
 
+function isActiveRequest(request: PartnerRequest) {
+  return request.status === "new" || request.status === "reviewing";
+}
+
 export default function PartnerRequestsPage() {
   const [requests, setRequests] = useState<PartnerRequest[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<PartnerRequest | null>(null);
 
   useEffect(() => {
-    MockApi.getPartnerRequests().then(setRequests);
+    MockApi.getPartnerRequests().then((items) => {
+      setRequests(items.filter(isActiveRequest));
+    });
   }, []);
 
   const handleDecision = async (id: string, decision: "approve" | "reject") => {
@@ -25,13 +31,7 @@ export default function PartnerRequestsPage() {
     } else {
       await MockApi.rejectPartner(id);
     }
-    setRequests((current) =>
-      current.map((item) =>
-        item.id === id
-          ? { ...item, status: decision === "approve" ? "approved" : "rejected" }
-          : item,
-      ),
-    );
+    setRequests((current) => current.filter((item) => item.id !== id));
     setSelectedRequest(null);
   };
 
