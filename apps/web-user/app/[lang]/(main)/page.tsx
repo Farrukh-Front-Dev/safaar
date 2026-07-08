@@ -6,10 +6,12 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { getCities } from "@/lib/api/catalog";
 import { getHotels } from "@/lib/api/hotels";
 import { Hero } from "@/components/home/Hero";
-import { SearchBar } from "@/components/search/SearchBar";
+import { SearchTabs } from "@/components/search/SearchTabs";
 import { CityCards, type CityCardData } from "@/components/home/CityCards";
 import { TrustBar } from "@/components/home/TrustBar";
 import { FeaturedHotelCard } from "@/components/home/FeaturedHotelCard";
+import { DealsSection, type DealItem } from "@/components/home/DealsSection";
+import { PartnersSection } from "@/components/home/PartnersSection";
 import type { HotelListItem } from "@/types/view";
 
 export async function generateMetadata({
@@ -52,6 +54,14 @@ export default async function HomePage({
   ];
   const hotels: HotelListItem[] = realHotels.length >= 4 ? realHotels : [...realHotels, ...demoHotels].slice(0, 6);
 
+  // Chegirmadagi takliflar (demo) — backend promo endpointi tayyor bo'lganda almashtiriladi.
+  const deals: DealItem[] = [
+    { id: "deal-1", slug: "samarkand-plaza", name: "Samarkand Plaza", cityName: "Samarqand", imageUrl: "/Samarkand-Registan-cinematic.jpeg", oldPriceSum: 450000, newPriceSum: 315000, discountPercent: 30, endsInDays: 3 },
+    { id: "deal-2", slug: "grand-bukhara", name: "Grand Bukhara Hotel", cityName: "Buxoro", imageUrl: "/Bukhara-old-city-golden-hour.jpeg", oldPriceSum: 380000, newPriceSum: 285000, discountPercent: 25, endsInDays: 5 },
+    { id: "deal-3", slug: "charvak-resort", name: "Charvak Oromgohi", cityName: "Charvak", imageUrl: "/Charvak-Lake-drone.jpeg", oldPriceSum: 520000, newPriceSum: 364000, discountPercent: 30, endsInDays: 2 },
+    { id: "deal-4", slug: "tashkent-city-palace", name: "Tashkent City Palace", cityName: "Toshkent", imageUrl: "/Tashkent-city-skyline.jpeg", oldPriceSum: 650000, newPriceSum: 520000, discountPercent: 20, endsInDays: 7 },
+  ];
+
   const cityCards: CityCardData[] = [
     { name: "Toshkent",   image: "/Tashkent-city-skyline.jpeg",          hotelCount: "200+", href: `/${locale}/hotels?city=tashkent` },
     { name: "Samarqand",  image: "/Samarkand-Registan-cinematic.jpeg",   hotelCount: "120+", href: `/${locale}/hotels?city=samarqand` },
@@ -70,9 +80,9 @@ export default async function HomePage({
       <div className="flex min-h-svh flex-col justify-between">
         <Hero dict={dict.hero} />
 
-        {/* SearchBar */}
+        {/* SearchTabs (Mehmonxona / Avtobus) */}
         <div className="relative z-10 mx-auto mt-4 w-full max-w-4xl px-3 sm:mt-6 sm:px-6">
-          <SearchBar locale={locale} dict={common.search} cities={cities} />
+          <SearchTabs locale={locale} dict={common.search} cities={cities} />
 
           {/* Quick city chips */}
           {cities.length > 0 && (
@@ -130,12 +140,22 @@ export default async function HomePage({
         </div>
       </div>
 
-      {/* ═══ EKRAN 2: City Cards (scroll qilganda) ═══ */}
+      {/* ═══ EKRAN 2: Chegirmadagi takliflar ═══ */}
+      <div className="py-10 sm:py-14">
+        <DealsSection deals={deals} dict={dict.deals} locale={locale} />
+      </div>
+
+      {/* ═══ EKRAN 3: City Cards (scroll qilganda) ═══ */}
       <div className="py-10 sm:py-16 md:py-20">
         <CityCards cities={cityCards} dict={dict.popularCities} />
       </div>
 
-      {/* ═══ EKRAN 3: Trust Bar ═══ */}
+      {/* ═══ EKRAN 4: Hamkorlar ═══ */}
+      <div className="py-10 sm:py-14">
+        <PartnersSection dict={dict.partners} />
+      </div>
+
+      {/* ═══ EKRAN 5: Trust Bar ═══ */}
       <TrustBar dict={dict.trust} />
     </main>
   );

@@ -26,6 +26,21 @@
     "reviews": "review",
     "all": "View all"
   },
+  "deals": {
+    "title": "Hot Deals",
+    "subtitle": "Special prices on selected stays",
+    "badge": "Deal",
+    "oldPrice": "from",
+    "perNight": "/ night",
+    "book": "Book now",
+    "endsIn": "Ends in",
+    "days": "days"
+  },
+  "partners": {
+    "title": "Trusted Partners",
+    "subtitle": "Working with 500+ hotels and transport companies"
+  },
+
   "why": {
     "title": "Why Safaar?",
     "items": {

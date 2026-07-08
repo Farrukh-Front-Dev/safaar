@@ -26,6 +26,21 @@
     "reviews": "sharh",
     "all": "Barchasi"
   },
+  "deals": {
+    "title": "Chegirmadagi takliflar",
+    "subtitle": "Eng yaxshi narxlardagi maxsus takliflar",
+    "badge": "Chegirma",
+    "oldPrice": "dan",
+    "perNight": "/ kecha",
+    "book": "Bron qilish",
+    "endsIn": "Tugashiga",
+    "days": "kun"
+  },
+  "partners": {
+    "title": "Ishonchli hamkorlar",
+    "subtitle": "500+ mehmonxona va transport kompaniyalari bilan hamkorlikda"
+  },
+
   "why": {
     "title": "Nega Safaar?",
     "items": {
