@@ -14,17 +14,17 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<Variant, string> = {
   primary:
-    "bg-gradient-to-b from-brand-600 to-brand-700 text-white shadow-sm shadow-brand-900/15 hover:from-brand-500 hover:to-brand-700 active:from-brand-700 active:to-brand-800 disabled:from-brand-300 disabled:to-brand-300 disabled:text-white/80 disabled:shadow-none",
+    "bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800 disabled:bg-brand-300 disabled:text-white/80",
   secondary:
-    "bg-gradient-to-b from-accent-500 to-accent-600 text-white shadow-sm shadow-accent-900/10 hover:from-accent-400 hover:to-accent-600 active:from-accent-600 active:to-accent-700 disabled:from-accent-300 disabled:to-accent-300",
+    "bg-zinc-800 text-white hover:bg-zinc-900 active:bg-zinc-950 disabled:bg-zinc-400",
   outline:
-    "border border-[var(--border-strong)] bg-[var(--panel-gradient)] text-[var(--foreground)] shadow-sm shadow-slate-950/5 hover:border-brand-300 hover:bg-[var(--surface-hover)] active:bg-[var(--surface-muted)] dark:hover:border-brand-700",
+    "border border-[var(--border)] bg-transparent text-[var(--foreground)] hover:bg-[var(--surface-muted)] active:bg-[var(--surface-hover)]",
   ghost:
-    "bg-[var(--surface-muted)] text-[var(--foreground)] hover:bg-[var(--surface-hover)] active:bg-[var(--surface-muted)]",
+    "bg-transparent text-[var(--foreground)] hover:bg-[var(--surface-muted)] active:bg-[var(--surface-hover)]",
   subtle:
     "bg-[var(--surface-muted)] text-[var(--foreground)] hover:bg-[var(--surface-hover)]",
   danger:
-    "bg-gradient-to-b from-red-500 to-red-600 text-white shadow-sm shadow-red-900/10 hover:from-red-500 hover:to-red-700 active:from-red-600 active:to-red-800 disabled:from-red-300 disabled:to-red-300",
+    "bg-red-600 text-white hover:bg-red-700 active:bg-red-800 disabled:bg-red-300",
 };
 
 const sizeClasses: Record<Size, string> = {
@@ -53,10 +53,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       type={type}
       disabled={disabled || loading}
       className={cn(
-        "inline-flex items-center justify-center rounded-md font-medium transition-all duration-150",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]",
-        "hover:-translate-y-px active:translate-y-0 active:scale-[0.99]",
-        "disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60",
+        "inline-flex items-center justify-center rounded-md font-medium transition-colors duration-150",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2",
+        "disabled:cursor-not-allowed disabled:opacity-60",
         variantClasses[variant],
         sizeClasses[size],
         className,

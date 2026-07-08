@@ -161,8 +161,7 @@ export function FrontDeskView() {
   );
 
   const handleCheckIn = (reservation: ReservationView) => {
-    checkIn(reservation.id);
-    toast.success(`Check-in qilindi: ${reservation.guest.fullName}`);
+    setAssignReservation(reservation);
   };
 
   const handleCheckOut = (reservation: ReservationView) => {
@@ -260,7 +259,7 @@ export function FrontDeskView() {
               <div
                 role="tablist"
                 aria-label="Vazifa turi"
-                className="flex flex-wrap gap-1 rounded-card bg-[var(--surface-muted)] p-1"
+                className="flex border-b border-[var(--border)] mt-2"
               >
                 <FilterTab
                   active={filter === "all"}
@@ -274,7 +273,6 @@ export function FrontDeskView() {
                   onClick={() => setFilter("pending")}
                   label="Zudlik"
                   tone="warning"
-                  icon={<Clock3 className="h-3.5 w-3.5" aria-hidden />}
                 />
                 <FilterTab
                   active={filter === "arrival"}
@@ -282,7 +280,6 @@ export function FrontDeskView() {
                   onClick={() => setFilter("arrival")}
                   label="Keladi"
                   tone="brand"
-                  icon={<LogIn className="h-3.5 w-3.5" aria-hidden />}
                 />
                 <FilterTab
                   active={filter === "departure"}
@@ -290,7 +287,6 @@ export function FrontDeskView() {
                   onClick={() => setFilter("departure")}
                   label="Ketadi"
                   tone="accent"
-                  icon={<LogOut className="h-3.5 w-3.5" aria-hidden />}
                 />
               </div>
             </CardBody>
@@ -410,39 +406,25 @@ function FrontMetric({
   children?: React.ReactNode;
 }) {
   const toneClass = {
-    neutral: "bg-[var(--surface-muted)] text-[var(--muted-foreground)]",
-    brand: "bg-brand-50 text-brand-700 dark:bg-brand-950/35 dark:text-brand-200",
-    accent:
-      "bg-accent-50 text-accent-700 dark:bg-accent-950/35 dark:text-accent-200",
-    warning: "bg-amber-50 text-amber-700 dark:bg-amber-950/35 dark:text-amber-200",
-    danger: "bg-red-50 text-red-700 dark:bg-red-950/35 dark:text-red-200",
+    neutral: "text-zinc-500",
+    brand: "text-brand-600",
+    accent: "text-accent-600",
+    warning: "text-amber-600",
+    danger: "text-red-600",
   }[tone];
 
   return (
-    <Card interactive>
-      <CardBody className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
-            {label}
-          </p>
-          <span
-            className={cn(
-              "flex h-9 w-9 items-center justify-center rounded-md [&>svg]:h-4 [&>svg]:w-4",
-              toneClass,
-            )}
-          >
-            {icon}
-          </span>
-        </div>
-        <div>
-          <p className="truncate text-2xl font-bold tracking-tight">{value}</p>
-          <p className="mt-1 text-xs leading-5 text-[var(--muted-foreground)]">
-            {hint}
-          </p>
-        </div>
-        {children}
-      </CardBody>
-    </Card>
+    <div className="flex flex-col gap-2 p-4 border border-[var(--border-light)] rounded-lg bg-white">
+      <div className="flex items-center gap-2">
+        <span className={cn("[&>svg]:h-4 [&>svg]:w-4", toneClass)}>{icon}</span>
+        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{label}</p>
+      </div>
+      <div>
+        <p className="truncate text-2xl font-medium tracking-tight text-zinc-900">{value}</p>
+        <p className="mt-1 text-xs text-zinc-400">{hint}</p>
+      </div>
+      {children}
+    </div>
   );
 }
 
@@ -461,13 +443,6 @@ function FilterTab({
   icon?: React.ReactNode;
   tone?: "brand" | "accent" | "warning";
 }) {
-  const activeClass = {
-    brand: "bg-brand-700",
-    accent: "bg-accent-600",
-    warning: "bg-amber-500",
-    undefined: "bg-zinc-700",
-  }[tone ?? "undefined"];
-
   return (
     <button
       type="button"
@@ -475,24 +450,15 @@ function FilterTab({
       aria-selected={active}
       onClick={onClick}
       className={cn(
-        "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-150",
+        "flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-all duration-150",
         active
-          ? `${activeClass} text-white shadow-sm`
-          : "text-zinc-600 hover:bg-[var(--surface)] dark:text-zinc-300",
+          ? "border-brand-600 text-brand-700"
+          : "border-transparent text-zinc-500 hover:text-zinc-800",
       )}
     >
       {icon}
       {label}
-      <span
-        className={cn(
-          "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
-          active
-            ? "bg-white/20 text-white"
-            : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
-        )}
-      >
-        {count}
-      </span>
+      <span className="ml-1 text-[11px] font-mono text-zinc-400">({count})</span>
     </button>
   );
 }
@@ -516,95 +482,75 @@ function TaskCard({
   const meta = TASK_META[kind];
 
   return (
-    <Card interactive>
-      <CardBody className="grid gap-4 md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center">
-        <span
-          className={cn(
-            "flex h-11 w-11 items-center justify-center rounded-md [&>svg]:h-5 [&>svg]:w-5",
-            meta.iconClass,
-          )}
-          aria-label={meta.label}
-        >
-          {meta.icon}
-        </span>
+    <div className="grid gap-4 py-4 border-b border-[var(--border-light)] md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center last:border-b-0 hover:bg-zinc-50 transition-colors px-4 -mx-4">
+      <span
+        className={cn(
+          "flex items-center justify-center [&>svg]:h-4 [&>svg]:w-4",
+          meta.iconClass,
+        )}
+        aria-label={meta.label}
+      >
+        {meta.icon}
+      </span>
 
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href={`/reservations/${reservation.id}`}
-              className="truncate text-base font-semibold hover:text-brand-700 dark:hover:text-brand-300"
-            >
-              {reservation.guest.fullName}
-            </Link>
-            <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold", meta.badgeClass)}>
-              {meta.label}
-            </span>
-            <SourceBadge source={reservation.source} />
-          </div>
-
-          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--muted-foreground)]">
-            <span className="inline-flex items-center gap-1">
-              <BedDouble className="h-3.5 w-3.5" aria-hidden />
-              {reservation.roomTypeName}
-              {reservation.roomNumber && (
-                <span className="font-mono text-brand-700 dark:text-brand-300">
-                  · {reservation.roomNumber}
-                </span>
-              )}
-            </span>
-            <span>{reservation.nights} kech.</span>
-            <span>{formatMoney(reservation.totalPrice)}</span>
-            {kind === "departure" &&
-              (balance > 0 ? (
-                <span className="font-semibold text-red-600">
-                  Qoldiq: {formatMoney(balance)}
-                </span>
-              ) : (
-                <span className="font-medium text-accent-600">
-                  To'liq to'langan
-                </span>
-              ))}
-          </div>
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href={`/reservations/${reservation.id}`}
+            className="truncate text-sm font-semibold hover:underline"
+          >
+            {reservation.guest.fullName}
+          </Link>
+          <span className={cn("text-[10px] font-medium uppercase tracking-wide", meta.badgeClass)}>
+            {meta.label}
+          </span>
+          <SourceBadge source={reservation.source} />
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 md:justify-end">
-          <Tooltip content="Qo'ng'iroq" side="bottom">
-            <a
-              href={`tel:+${reservation.guest.phone}`}
-              aria-label={`Qo'ng'iroq: ${formatPhone(reservation.guest.phone)}`}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-900/40 dark:hover:text-brand-300"
-            >
-              <Phone className="h-4 w-4" aria-hidden />
-            </a>
-          </Tooltip>
-
-          {kind === "pending" && (
-            <>
-              <Button size="sm" variant="outline" onClick={onReject}>
-                <XCircle className="h-4 w-4" aria-hidden />
-                Rad
-              </Button>
-              <Button size="sm" variant="secondary" onClick={onConfirm}>
-                <CheckCircle2 className="h-4 w-4" aria-hidden />
-                Tasdiqlash
-              </Button>
-            </>
-          )}
-          {kind === "arrival" && (
-            <Button size="sm" onClick={onCheckIn}>
-              <LogIn className="h-4 w-4" aria-hidden />
-              Check-in
-            </Button>
-          )}
-          {kind === "departure" && (
-            <Button size="sm" variant="secondary" onClick={onCheckOut}>
-              <LogOut className="h-4 w-4" aria-hidden />
-              Check-out
-            </Button>
-          )}
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-zinc-500">
+          <span className="inline-flex items-center gap-1">
+            <BedDouble className="h-3 w-3" aria-hidden />
+            {reservation.roomTypeName}
+            {reservation.roomNumber && (
+              <span className="font-mono">· {reservation.roomNumber}</span>
+            )}
+          </span>
+          <span>{reservation.nights} kech.</span>
+          <span>{formatMoney(reservation.totalPrice)}</span>
+          {kind === "departure" &&
+            (balance > 0 ? (
+              <span className="font-semibold text-red-600">Qoldiq: {formatMoney(balance)}</span>
+            ) : (
+              <span className="text-zinc-400">To'liq to'langan</span>
+            ))}
         </div>
-      </CardBody>
-    </Card>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3 md:justify-end">
+        <Tooltip content="Qo'ng'iroq" side="bottom">
+          <a
+            href={`tel:+${reservation.guest.phone}`}
+            aria-label={`Qo'ng'iroq: ${formatPhone(reservation.guest.phone)}`}
+            className="text-zinc-400 hover:text-brand-600 transition-colors"
+          >
+            <Phone className="h-4 w-4" aria-hidden />
+          </a>
+        </Tooltip>
+
+        {kind === "pending" && (
+          <div className="flex gap-2">
+            <button className="text-xs font-medium text-red-600 hover:underline" onClick={onReject}>Rad</button>
+            <button className="text-xs font-medium text-brand-600 hover:underline" onClick={onConfirm}>Tasdiqlash</button>
+          </div>
+        )}
+        {kind === "arrival" && (
+          <button className="text-xs font-medium text-brand-600 hover:underline" onClick={onCheckIn}>Check-in</button>
+        )}
+        {kind === "departure" && (
+          <button className="text-xs font-medium text-zinc-600 hover:underline" onClick={onCheckOut}>Check-out</button>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -620,26 +566,20 @@ const TASK_META: Record<
   pending: {
     label: "Yangi",
     icon: <AlertCircle aria-hidden />,
-    iconClass:
-      "bg-amber-50 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/35 dark:text-amber-200 dark:ring-amber-900/60",
-    badgeClass:
-      "bg-amber-50 text-amber-700 dark:bg-amber-950/35 dark:text-amber-200",
+    iconClass: "text-amber-500",
+    badgeClass: "text-amber-600",
   },
   arrival: {
     label: "Keladi",
     icon: <LogIn aria-hidden />,
-    iconClass:
-      "bg-brand-50 text-brand-700 ring-1 ring-brand-200 dark:bg-brand-950/35 dark:text-brand-200 dark:ring-brand-900/60",
-    badgeClass:
-      "bg-brand-50 text-brand-700 dark:bg-brand-950/35 dark:text-brand-200",
+    iconClass: "text-brand-600",
+    badgeClass: "text-brand-600",
   },
   departure: {
     label: "Ketadi",
     icon: <LogOut aria-hidden />,
-    iconClass:
-      "bg-accent-50 text-accent-700 ring-1 ring-accent-200 dark:bg-accent-950/35 dark:text-accent-200 dark:ring-accent-900/60",
-    badgeClass:
-      "bg-accent-50 text-accent-700 dark:bg-accent-950/35 dark:text-accent-200",
+    iconClass: "text-zinc-400",
+    badgeClass: "text-zinc-500",
   },
 };
 

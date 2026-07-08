@@ -192,8 +192,7 @@ export function ReservationsView() {
   };
 
   const handleCheckIn = (reservation: ReservationView) => {
-    checkIn(reservation.id);
-    toast.success(`Check-in qilindi: ${reservation.guest.fullName}`);
+    setAssignTarget(reservation);
   };
 
   return (
