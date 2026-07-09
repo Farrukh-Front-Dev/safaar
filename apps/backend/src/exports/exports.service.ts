@@ -4,47 +4,80 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Role } from '@agoda/types';
+import { randomUUID } from 'node:crypto';
 import type { RequestActor } from '../common/actor';
-import { InMemoryDbService } from '../infrastructure/in-memory-db.service';
+import { PostgresService } from '../infrastructure/postgres.service';
 
 @Injectable()
 export class ExportsService {
-  constructor(private readonly db: InMemoryDbService) {}
+  constructor(private readonly pg: PostgresService) {}
 
-  create(ownerId: string, type: string, format: 'csv' | 'xlsx' | 'pdf') {
-    const job = {
-      id: this.db.id('export'),
-      owner_id: ownerId,
-      type,
-      format,
-      status: 'queued' as const,
-      created_at: this.db.now(),
-      updated_at: this.db.now(),
-    };
-    this.db.exportJobs.unshift(job);
+  async create(ownerId: string, type: string, format: 'csv' | 'xlsx' | 'pdf') {
+    const now = new Date().toISOString();
+    const id = randomUUID();
+
+    const [job] = await this.pg.query(
+      `INSERT INTO export_jobs (id, owner_type, owner_id, type, format, status, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING *`,
+      [id, 'system', ownerId, type, format, 'queued', now, now],
+    );
+
     return job;
   }
 
-  findOne(actor: RequestActor | undefined, id: string) {
+  async findOne(actor: RequestActor | undefined, id: string) {
     return this.assertJob(actor, id);
   }
 
-  download(actor: RequestActor | undefined, id: string) {
-    const job = this.assertJob(actor, id);
-    job.status = 'ready';
-    job.download_url = `https://api.uzbron.uz/v1/exports/${id}/mock-download`;
+  async download(actor: RequestActor | undefined, id: string) {
+    await this.assertJob(actor, id);
+    const now = new Date().toISOString();
+
+    const [job] = await this.pg.query(
+      `UPDATE export_jobs
+       SET status = $1, download_key = $2, updated_at = $3
+       WHERE id = $4
+       RETURNING *`,
+      [
+        'ready',
+        `https://api.uzbron.uz/v1/exports/${id}/mock-download`,
+        now,
+        id,
+      ],
+    );
+
     return job;
   }
 
-  delete(actor: RequestActor | undefined, id: string) {
-    const job = this.assertJob(actor, id);
-    job.status = 'deleted';
+  async delete(actor: RequestActor | undefined, id: string) {
+    await this.assertJob(actor, id);
+    const now = new Date().toISOString();
+
+    const [job] = await this.pg.query(
+      `UPDATE export_jobs
+       SET status = $1, updated_at = $2
+       WHERE id = $3
+       RETURNING *`,
+      ['deleted', now, id],
+    );
+
     return job;
   }
 
-  private assertJob(actor: RequestActor | undefined, id: string) {
-    const currentActor = this.db.actorOrDemo(actor);
-    const job = this.db.exportJobs.find((item) => item.id === id);
+  private async assertJob(actor: RequestActor | undefined, id: string) {
+    const currentActor: RequestActor = actor ?? {
+      id: '00000000-0000-0000-0000-000000000000',
+      actorType: 'user',
+      role: Role.USER,
+      roles: [Role.USER],
+    };
+
+    const [job] = await this.pg.query(
+      'SELECT * FROM export_jobs WHERE id = $1',
+      [id],
+    );
+
     if (!job) {
       throw new NotFoundException({
         code: 'EXPORT_NOT_READY',

@@ -61,14 +61,6 @@ export function mockPaymentsEnabled(): boolean {
   return boolFromEnv(process.env.ENABLE_MOCK_PAYMENTS, !isProduction());
 }
 
-export function inMemoryDataEnabled(): boolean {
-  const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
-  return boolFromEnv(
-    process.env.ENABLE_IN_MEMORY_DATA,
-    !hasDatabaseUrl && !isProduction(),
-  );
-}
-
 export function jwtSecurityConfig(): JwtSecurityConfig {
   const config: JwtSecurityConfig = {
     accessSecret:

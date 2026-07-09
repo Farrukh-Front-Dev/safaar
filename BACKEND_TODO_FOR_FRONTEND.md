@@ -1,113 +1,16 @@
 # Backend Uchun Kerakli Endpointlar (Frontend So'rovi)
 
-> **Mualif:** web-user frontend dev
-> **Yangilangan:** 2026-07-09
-> **Maqsad:** Frontend sahifalardagi hardcoded/demo datalarni real backend dataga almashtirish.
+> **Mualif:** web-user frontend dev  
+> **Sana:** 2026-07-07  
+> **Maqsad:** Bosh sahifa va boshqa sahifalar uchun frontendda hozirda **hardcoded/demo** data ishlatilmoqda. Quyidagi endpointlar tayyor bo'lganda real dataga almashtiriladi.
 
 ---
 
-## Bosh sahifa holati (2026-07-09)
+## 1. `GET /deals` yoki `GET /cms/deals` — Chegirmadagi Takliflar
 
-| Bo'lim | Backendga ulanganmi? | Izoh |
-|--------|---------------------|------|
-| Hero (sarlavha) | ✅ Ha | i18n dict'dan keladi |
-| SearchBar (shahar) | ✅ Ha | `GET /v1/catalog/cities` |
-| Featured Hotels (tanlangan) | ⚠️ Qisman | `GET /v1/hotels?limit=6` ishlatiladi, lekin 4 tadan kam bo'lsa **6 ta hardcoded demo** bilan to'ldiriladi |
-| Chegirmadagi takliflar | ❌ Yo'q | **4 ta hardcoded demo** — backendda `GET /v1/cms/offers` bor lekin bo'sh `[]` qaytaradi, DB yo'q |
-| Mashhur shaharlar | ❌ Yo'q | **8 ta hardcoded demo** — `GET /v1/catalog/cities` faqat `id + name` qaytaradi, `hotel_count`, `image_url`, `slug` yo'q |
-| TrustBar (statistika) | ❌ Yo'q | **Statik i18n text** — backendda `GET /v1/stats/public` yo'q |
+**Kerak bo'lgan joy:** Bosh sahifa "Chegirmadagi takliflar" bo'limi
 
----
-
-## Hotels sahifasi holati (2026-07-09)
-
-### `/hotels` — Mehmonxonalar ro'yxati
-
-| Komponent | Backendga ulanganmi? | Izoh |
-|-----------|---------------------|------|
-| SearchBar (shahar tanlash) | ✅ Ha | `GET /v1/catalog/cities` |
-| Mehmonxonalar ro'yxati | ✅ Ha | `GET /v1/hotels` |
-| Filtr (yulduz, narx) | ⚠️ Frontend | Backend filter qo'llamaydi, frontend client-side filterlaydi |
-| Saralash (narx, reyting) | ⚠️ Frontend | Backend sort qo'llamaydi, frontend client-side saralaydi |
-| Pagination | ⚠️ Frontend | Backend barcha mehmonxonalarni qaytaradi, frontend 9 tadan bo'lib ko'rsatadi |
-
-**Muammo:** Backend `GET /v1/hotels` barcha mehmonxonalarni to'liq qaytaradi. Filter, sort, pagination frontendda client-side bajariladi. Bu katta ma'lumot bilan ishlashda muammo bo'lishi mumkin.
-
-**Kerakli:** Backend tomonidan server-side filter/sort/pagination qo'llash.
-
-### `/hotels/[slug]` — Mehmonxona tafsiloti
-
-| Komponent | Backendga ulanganmi? | Izoh |
-|-----------|---------------------|------|
-| Mehmonxona ma'lumotlari | ✅ Ha | `GET /v1/hotels/:slug` |
-| Galereya (rasmlar) | ✅ Ha | Hotel images array'dan |
-| Xonalar ro'yxati | ✅ Ha | `GET /v1/hotels/:id/rooms` |
-| Sharhlar | ✅ Ha | `GET /v1/hotels/:id/reviews` |
-| Sevimlilar | ✅ Ha | `findFavoriteId` — auth talab qiladi |
-| Qulayliklar (amenities) | ✅ Ha | `GET /v1/catalog/amenities` |
-
-**Hotels detail sahifasi to'liq backendga ulangan ✅**
-
----
-
-## Kerakli o'zgartirishlar (backend dev uchun)
-
-### 1. `GET /v1/catalog/cities` — qo'shimcha maydonlar
-
-**Hozirgi holat:** Faqat `id`, `name` qaytaradi.
-
-**Kerakli qo'shimchalar:**
-- `slug` — URL uchun (masalan `toshkent`)
-- `image_url` — shahar rasmi
-- `hotel_count` — haqiqiy mehmonxona soni (subquery/JOIN bilan hisoblash)
-
-**Kutilgan javob:**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": "city-uuid",
-      "name": { "uz": "Toshkent", "ru": "Ташкент", "en": "Tashkent" },
-      "slug": "toshkent",
-      "image_url": "https://...",
-      "hotel_count": 215
-    }
-  ]
-}
-```
-
-**Backend fayllari:**
-- `apps/backend/src/catalog/catalog.controller.ts`
-- `apps/backend/src/catalog/catalog.service.ts`
-- `apps/backend/prisma/schema.prisma` — `cities` jadvalida `slug`, `image_url` ustunlari + `hotels` jadvalidan `hotel_count` hisoblash
-
----
-
-### 2. `GET /v1/hotels/featured` — Tanlangan mehmonxonalar
-
-**Hozirgi holat:** Maxsus endpoint yo'q. `GET /v1/hotels?limit=6` ishlatiladi, lekin "featured" degan tushuncha yo'q.
-
-**Kerakli:**
-- `hotels` jadvalida `is_featured` boolean ustuni (admin tomonidan boshqariladi)
-- `GET /v1/hotels/featured?limit=6` endpoint — faqat `is_featured=true` bo'lganlarni qaytaradi
-
-**Kutilgan javob:** Hozirgi `GET /v1/hotels` javobi bilan bir xil format.
-
-**Backend fayllari:**
-- `apps/backend/src/hotels/hotels.controller.ts` — `@Get('featured')` qo'shish
-- `apps/backend/src/hotels/hotels.service.ts` — `findFeatured()` metodi
-- `apps/backend/prisma/schema.prisma` — `hotels` jadvalida `is_featured Boolean @default(false)`
-
----
-
-### 3. `GET /v1/cms/deals` — Chegirmadagi takliflar (yoki `GET /v1/promos/public`)
-
-**Hozirgi holat:** `GET /v1/cms/offers` mavjud lekin bo'sh `[]` qaytaradi. DB jadvalida offers/deals yo'q.
-
-**Kerakli:**
-- `promos` jadvalida yoki yangi `deals` jadvalida takliflar saqlansin
-- `GET /v1/promos/public` yoki `GET /v1/cms/deals` endpoint — faqat faol takliflarni qaytarsin
+**Hozirgi holat:** Frontend'da 4 ta hardcoded demo deal bor. Backend'da `GET /cms/offers` mavjud lekin **bo'sh massiv** qaytaradi. `POST /promos/validate` faqat promo-kod tekshiradi, deals ro'yxatini bermaydi.
 
 **Kutilgan javob:**
 ```json
@@ -131,13 +34,68 @@
 }
 ```
 
-**Eslatma:** Narxlar tiyinda. `ends_at` — ISO datetime, frontend o'zi "3 kun qoldi" hisoblaydi.
+**Eslatma:** Narxlar tiyinda (× 100). `ends_at` — ISO datetime, frontend o'zi "3 kun qoldi" hisoblaydi.
 
 ---
 
-### 4. `GET /v1/stats/public` — Platforma statistikasi
+## 2. `GET /catalog/popular-cities` — Mashhur Shaharlar (statistika bilan)
 
-**Hozirgi holat:** Yo'q. TrustBar'dagi raqamlar statik i18n text.
+**Kerak bo'lgan joy:** Bosh sahifa "Mashhur yo'nalishlar" bo'limi
+
+**Hozirgi holat:** 8 ta shahar qo'lda yozilgan (nomi, rasm, "200+ mehmonxona" — barchasi soxta). `GET /catalog/cities` faqat id + name qaytaradi, mehmonxona soni va rasm yo'q.
+
+**Kutilgan javob:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "city-uuid",
+      "name": { "uz": "Toshkent", "ru": "Ташкент", "en": "Tashkent" },
+      "slug": "tashkent",
+      "image_url": "https://...",
+      "hotel_count": 215,
+      "sort_order": 1
+    }
+  ]
+}
+```
+
+**Eslatma:** `hotel_count` — haqiqiy e'lon qilingan mehmonxonalar soni. `sort_order` — admin paneldan boshqariladigan tartib.
+
+---
+
+## 3. `GET /catalog/partners-showcase` — Hamkorlar Logolari
+
+**Kerak bo'lgan joy:** Bosh sahifa "Ishonchli hamkorlar" bo'limi
+
+**Hozirgi holat:** Frontend'da 6 ta statik demo hamkor logosi bor. Backend'da hamkorlar boshqaruvi mavjud (`admin/partners`), lekin **frontga ko'rsatish uchun ochiq endpoint yo'q**.
+
+**Kutilgan javob:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "partner-uuid",
+      "company_name": "Hyatt Regency Tashkent",
+      "logo_url": "https://...",
+      "type": "hotel",
+      "sort_order": 1
+    }
+  ]
+}
+```
+
+**Eslatma:** Faqat `status: approved` bo'lgan va `showcase: true` belgilangan hamkorlarni qaytarsin. Auth talab qilinmasin (ochiq endpoint).
+
+---
+
+## 4. `GET /stats/public` — Platforma Statistikasi
+
+**Kerak bo'lgan joy:** Bosh sahifa "TrustBar" (raqamlar: mehmonxonalar soni, shaharlar, reyting, ...)
+
+**Hozirgi holat:** "12,000+", "50+", "4.8★" — barchasi i18n JSON faylida statik yozilgan.
 
 **Kutilgan javob:**
 ```json
@@ -153,49 +111,40 @@
 }
 ```
 
-**Eslatma:** Keshlanishi mumkin (1 soat). Auth talab qilinmasin.
+**Eslatma:** Keshlanishi mumkin (1 soat). Auth talab qilinmasin. Frontend o'zi "500+" formatga aylantiradi.
 
 ---
 
-### 5. `GET /v1/hotels` — Server-side filter/sort/pagination
+## 5. `GET /hotels/featured` — Tanlangan Mehmonxonalar
 
-**Hozirgi holat:** Backend barcha mehmonxonalarni to'liq qaytaradi. Filter, sort, pagination frontendda client-side bajariladi.
+**Kerak bo'lgan joy:** Bosh sahifa "Mashhur takliflar" (horizontal scroll kartalar)
 
-**Kerakli qo'shimchalar:**
-- `stars` query param — yulduz bo'yicha filter (masalan `?stars=4`)
-- `min_price`, `max_price` query param — narx bo'yicha filter
-- `sort` query param — saralash (masalan `?sort=price_asc`, `?sort=rating`)
-- `page`, `limit` query param — pagination
-- Javobda `meta.total` — jami natijalar soni (pagination uchun)
+**Hozirgi holat:** `GET /hotels?limit=6` chaqiriladi. Agar 4 tadan kam kelsa, **6 ta hardcoded demo mehmonxona** bilan to'ldiriladi.
 
-**Kutilgan javob:**
-```json
-{
-  "success": true,
-  "data": {
-    "items": [...],
-    "total": 150,
-    "page": 1,
-    "limit": 9
-  }
-}
-```
+**Kerakli o'zgartirish:** Yoki `GET /hotels?featured=true&limit=6` parametri qo'shilsin, yoki alohida `GET /hotels/featured` endpoint bo'lsin. Admin panelda mehmonxonani "featured" deb belgilash imkoniyati kerak.
 
-**Backend fayllari:**
-- `apps/backend/src/hotels/hotels.controller.ts` — query parametrlarni qabul qilish
-- `apps/backend/src/hotels/hotels.service.ts` — Prisma `where`, `orderBy`, `skip`, `take` qo'llash
+**Kutilgan javob:** Hozirgi `GET /hotels` javobi bilan bir xil format, lekin faqat featured=true bo'lganlari.
 
 ---
 
-## Ustuvorlik Tartibi
+## 6. `GET /cms/offers` ni to'ldirish (yoki `GET /deals` bilan almashtirish)
+
+**Hozirgi holat:** `GET /cms/offers` mavjud lekin **bo'sh massiv** `[]` qaytaradi. Admin panelda offer yaratish logikasi yo'q.
+
+**Kerakli:** Admin paneldan maxsus taklif (deal/offer) yaratish va u frontda ko'rinishi.
+
+---
+
+## Ustuvorlik Tartibi (Frontend Nuqtai Nazaridan)
 
 | # | Endpoint | Ustuvorlik | Sabab |
 |---|----------|-----------|-------|
-| 1 | `catalog/cities` ga `slug`, `image_url`, `hotel_count` qo'shish | 🔴 Yuqori | Bosh sahifadagi 8 ta shahar kartasi hozir hardcoded |
-| 2 | `GET /hotels/featured` endpoint | 🔴 Yuqori | Tanlangan mehmonxonalar, hardcoded fallback bor |
-| 3 | `GET /hotels` ga server-side filter/sort/pagination | 🔴 Yuqori | Katta ma'lumot bilan ishlashda muammo |
-| 4 | `GET /promos/public` yoki `GET /cms/deals` | 🟡 O'rta | Chegirmali takliflar, demo bilan ham ishlaydi |
-| 5 | `GET /stats/public` | 🟡 O'rta | TrustBar — statik ham bo'ladi |
+| 1 | `GET /hotels/featured` | 🔴 Yuqori | Bosh sahifada birinchi ko'rinadigan narsa |
+| 2 | `GET /catalog/popular-cities` | 🔴 Yuqori | Bosh sahifa asosiy navigatsiya |
+| 3 | `GET /deals` | 🟡 O'rta | Muhim lekin demo bilan ham ishlaydi |
+| 4 | `GET /stats/public` | 🟡 O'rta | TrustBar — ishonch uchun, lekin statik ham bo'ladi |
+| 5 | `GET /catalog/partners-showcase` | 🟢 Past | Chiroyli ko'rinish, lekin hali oz hamkor bor |
+| 6 | `GET /cms/offers` to'ldirish | 🟢 Past | Admin panel funksiyasi kerak avval |
 
 ---
 
@@ -204,7 +153,8 @@
 - Barcha javoblar `ApiSuccess<T>` formatida bo'lsin (`{ success: true, data: ..., meta: { request_id } }`).
 - Ko'p tilli maydonlar `{ uz: "...", ru: "...", en: "..." }` formatda.
 - Narxlar **tiyin**da (1 so'm = 100 tiyin).
-- Yuqoridagi endpointlar **ochiq** (auth talab qilinmasin).
+- Yuqoridagi endpointlar **ochiq** (auth talab qilinmasin) — bosh sahifada login bo'lmagan foydalanuvchi ham ko'radi.
+- ISR (Incremental Static Regeneration) uchun `Cache-Control` headerlari qo'shilsa yaxshi bo'lardi.
 
 ---
 

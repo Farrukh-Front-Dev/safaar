@@ -1,4 +1,4 @@
-import type { PaymentMethod } from '../../infrastructure/in-memory-db.service';
+export type PaymentMethod = 'click' | 'payme' | 'uzcard' | 'humo' | 'cash';
 
 export interface PaymentIntentInput {
   bookingId: string;

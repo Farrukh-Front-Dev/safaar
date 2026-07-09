@@ -13,23 +13,40 @@ import {
   type AuthTokens,
 } from '@agoda/types';
 import type { RequestActor } from '../common/actor';
-import {
-  type AdminUserRecord,
-  InMemoryDbService,
-  type PartnerUserRecord,
-} from '../infrastructure/in-memory-db.service';
 import { PostgresService } from '../infrastructure/postgres.service';
 import { otpStore, type OtpPurpose } from './otp-store';
 import { authSessionStore } from './session-store';
-import {
-  demoAuthEnabled,
-  inMemoryDataEnabled,
-  signJwt,
-  verifyJwt,
-} from './security';
+import { demoAuthEnabled, signJwt, verifyJwt } from './security';
 import { createTotpSetup, verifyTotpCode, type TotpSetup } from './totp';
 
 type DbRow = Record<string, unknown>;
+
+interface AdminUserRecord {
+  id: string;
+  email: string;
+  username: string;
+  password_hash: string;
+  full_name?: string;
+  role: Role;
+  roles: Role[];
+  status: string;
+  totp_secret?: string;
+  recovery_code_hashes?: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+interface PartnerUserRecord {
+  id: string;
+  organization_id: string;
+  email: string;
+  password_hash: string;
+  full_name?: string;
+  status: string;
+  role: string;
+  created_at: string;
+  updated_at: string;
+}
 
 interface IssueTokenInput {
   actorId: string;
@@ -54,10 +71,7 @@ export class AuthService {
     { adminId: string; setup: TotpSetup; expiresAt: number }
   >();
 
-  constructor(
-    private readonly db: InMemoryDbService,
-    private readonly postgres: PostgresService,
-  ) {}
+  constructor(private readonly pg: PostgresService) {}
 
   sendUserOtp(phone: string) {
     return this.createOtpChallenge(phone, 'user_login');
@@ -67,7 +81,9 @@ export class AuthService {
     return this.createOtpChallenge(phone, 'partner_login');
   }
 
-  verifyUserOtp(dto: VerifyOtpDto): AuthTokens & { user: unknown } {
+  async verifyUserOtp(
+    dto: VerifyOtpDto,
+  ): Promise<AuthTokens & { user: unknown }> {
     const phone = this.normalizePhone(dto.phone);
     this.consumeOtp({
       challengeId: dto.challenge_id,
@@ -76,23 +92,46 @@ export class AuthService {
       code: dto.code,
     });
 
-    let user = this.db.users.find((item) => item.phone === phone);
-    if (!user) {
+    const rows = await this.pg.query<DbRow>(
+      `SELECT id::text, phone, status, preferred_language, bonus_balance,
+              first_name, last_name, email, phone_verified_at, last_login_at,
+              created_at, updated_at
+       FROM users
+       WHERE phone = $1
+       LIMIT 1`,
+      [phone],
+    );
+
+    let user: DbRow;
+    if (rows.length === 0) {
+      const id = randomUUID();
+      const now = new Date().toISOString();
+      await this.pg.query(
+        `INSERT INTO users (id, phone, status, preferred_language, bonus_balance, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [id, phone, 'active', 'uz', 0, now, now],
+      );
       user = {
-        id: this.db.id('user'),
+        id,
         phone,
         status: 'active',
         preferred_language: 'uz',
         bonus_balance: 0,
-        created_at: this.db.now(),
-        updated_at: this.db.now(),
+        first_name: null,
+        last_name: null,
+        email: null,
+        phone_verified_at: null,
+        last_login_at: null,
+        created_at: now,
+        updated_at: now,
       };
-      this.db.users.push(user);
+    } else {
+      user = rows[0];
     }
 
     return {
       ...this.issueTokens({
-        actorId: user.id,
+        actorId: String(user['id']),
         actorType: 'user',
         role: Role.USER,
       }),
@@ -109,13 +148,6 @@ export class AuthService {
       code: dto.code,
     });
 
-    if (!inMemoryDataEnabled()) {
-      throw new ServiceUnavailableException({
-        code: 'PARTNER_OTP_NOT_CONFIGURED',
-        message: 'Partner OTP login provider ulanmagan',
-      });
-    }
-
     return this.issueTokens({
       actorId: 'demo-partner-user-id',
       actorType: 'partner',
@@ -124,35 +156,64 @@ export class AuthService {
     });
   }
 
-  completeProfile(
+  async completeProfile(
     actor: RequestActor | undefined,
     body: Record<string, unknown>,
   ) {
-    const currentActor = this.db.actorOrDemo(actor);
-    const user = this.db.findUser(currentActor.id);
+    const currentActor = actor ?? {
+      id: '00000000-0000-0000-0000-000000000000',
+      actorType: 'user',
+      role: Role.USER,
+      roles: [Role.USER],
+    };
 
-    if (!user) {
+    const rows = await this.pg.query<DbRow>(
+      `SELECT id::text, phone, status, preferred_language, bonus_balance,
+              first_name, last_name, email, created_at, updated_at
+       FROM users
+       WHERE id = $1
+       LIMIT 1`,
+      [currentActor.id],
+    );
+
+    if (rows.length === 0) {
       throw new UnauthorizedException({
         code: 'AUTH_INVALID_CREDENTIALS',
         message: 'User topilmadi',
       });
     }
 
-    user.first_name = String(
-      body.first_name ?? body.firstName ?? user.first_name ?? '',
+    const firstName = String(
+      body.first_name ?? body.firstName ?? rows[0]['first_name'] ?? '',
     );
-    user.last_name = String(
-      body.last_name ?? body.lastName ?? user.last_name ?? '',
+    const lastName = String(
+      body.last_name ?? body.lastName ?? rows[0]['last_name'] ?? '',
     );
-    user.email = body.email ? String(body.email).toLowerCase() : user.email;
-    user.preferred_language = ['uz', 'ru', 'en'].includes(
+    const email = body.email
+      ? String(body.email).toLowerCase()
+      : rows[0]['email'];
+    const preferredLanguage = ['uz', 'ru', 'en'].includes(
       String(body.preferred_language),
     )
-      ? (String(body.preferred_language) as 'uz' | 'ru' | 'en')
-      : user.preferred_language;
-    user.updated_at = this.db.now();
+      ? String(body.preferred_language)
+      : rows[0]['preferred_language'];
+    const now = new Date().toISOString();
 
-    return user;
+    await this.pg.query(
+      `UPDATE users
+       SET first_name = $1, last_name = $2, email = $3, preferred_language = $4, updated_at = $5
+       WHERE id = $6`,
+      [firstName, lastName, email, preferredLanguage, now, currentActor.id],
+    );
+
+    return {
+      ...rows[0],
+      first_name: firstName,
+      last_name: lastName,
+      email,
+      preferred_language: preferredLanguage,
+      updated_at: now,
+    };
   }
 
   oauthRedirect(provider: 'google' | 'facebook') {
@@ -176,7 +237,10 @@ export class AuthService {
     });
   }
 
-  oauthToken(provider: 'google' | 'facebook', body: Record<string, unknown>) {
+  async oauthToken(
+    provider: 'google' | 'facebook',
+    body: Record<string, unknown>,
+  ) {
     if (!demoAuthEnabled()) {
       throw new ServiceUnavailableException({
         code: 'OAUTH_PROVIDER_NOT_CONFIGURED',
@@ -187,22 +251,29 @@ export class AuthService {
     const providerUserId = String(
       body.provider_user_id ?? body.sub ?? `${provider}-demo-id`,
     );
-    const user = this.db.users[0];
+
+    const rows = await this.pg.query<DbRow>(
+      `SELECT id::text, phone, status, preferred_language, bonus_balance,
+              first_name, last_name, email, created_at, updated_at
+       FROM users
+       LIMIT 1`,
+    );
+    const user = rows[0];
     const social = {
-      id: this.db.id('social'),
-      user_id: user.id,
+      id: randomUUID(),
+      user_id: user['id'],
       provider,
       provider_user_id: providerUserId,
       provider_email: body.email
         ? String(body.email).toLowerCase()
-        : user.email,
+        : user['email'],
       email_verified: Boolean(body.email_verified ?? true),
-      created_at: this.db.now(),
+      created_at: new Date().toISOString(),
     };
     this.socialAccountStore.push(social);
     return {
       ...this.issueTokens({
-        actorId: user.id,
+        actorId: String(user['id']),
         actorType: 'user',
         role: Role.USER,
       }),
@@ -212,14 +283,24 @@ export class AuthService {
   }
 
   socialAccounts(actor: RequestActor | undefined) {
-    const currentActor = this.db.actorOrDemo(actor);
+    const currentActor = actor ?? {
+      id: '00000000-0000-0000-0000-000000000000',
+      actorType: 'user',
+      role: Role.USER,
+      roles: [Role.USER],
+    };
     return this.socialAccountStore.filter(
       (account) => account['user_id'] === currentActor.id,
     );
   }
 
   unlinkSocialAccount(actor: RequestActor | undefined, id: string) {
-    const currentActor = this.db.actorOrDemo(actor);
+    const currentActor = actor ?? {
+      id: '00000000-0000-0000-0000-000000000000',
+      actorType: 'user',
+      role: Role.USER,
+      roles: [Role.USER],
+    };
     const index = this.socialAccountStore.findIndex(
       (account) =>
         account['id'] === id && account['user_id'] === currentActor.id,
@@ -248,10 +329,16 @@ export class AuthService {
       throw this.invalidCredentials();
     }
 
-    const organization = this.db.partnerOrganizations.find(
-      (item) => item.id === partnerUser.organization_id,
+    const orgRows = await this.pg.query<DbRow>(
+      `SELECT id::text, status
+       FROM partner_organizations
+       WHERE id = $1
+       LIMIT 1`,
+      [partnerUser.organization_id],
     );
-    if (!organization || organization.status !== 'approved') {
+    const organization = orgRows[0];
+
+    if (!organization || organization['status'] !== 'approved') {
       throw new UnauthorizedException({
         code: 'PARTNER_NOT_ACTIVE',
         message: 'Hamkor tashkilot faol emas',
@@ -286,23 +373,10 @@ export class AuthService {
     }
 
     if (!admin.totp_secret) {
-      if (!inMemoryDataEnabled()) {
-        throw new UnauthorizedException({
-          code: 'AUTH_2FA_REQUIRED',
-          message: 'Admin uchun 2FA sozlanishi majburiy',
-        });
-      }
-
-      return {
-        ...this.issueTokens({
-          actorId: admin.id,
-          actorType: 'admin',
-          role: admin.role,
-          roles: admin.roles,
-        }),
-        requires_2fa: false,
-        admin: this.publicAdmin(admin),
-      };
+      throw new UnauthorizedException({
+        code: 'AUTH_2FA_REQUIRED',
+        message: 'Admin uchun 2FA sozlanishi majburiy',
+      });
     }
 
     const challengeId = randomUUID();
@@ -337,7 +411,7 @@ export class AuthService {
     ) {
       throw new UnauthorizedException({
         code: 'AUTH_2FA_INVALID',
-        message: '2FA kod noto‘g‘ri',
+        message: '2FA kod noto\u2018g\u2018ri',
       });
     }
 
@@ -353,19 +427,33 @@ export class AuthService {
     };
   }
 
-  admin2faSetup(actor: RequestActor | undefined) {
-    const currentActor = this.db.actorOrDemo(actor);
-    const admin = this.db.adminUsers.find(
-      (item) => item.id === currentActor.id,
+  async admin2faSetup(actor: RequestActor | undefined) {
+    const currentActor = actor ?? {
+      id: '00000000-0000-0000-0000-000000000000',
+      actorType: 'admin',
+      role: Role.ADMIN,
+      roles: [Role.ADMIN],
+    };
+
+    const rows = await this.pg.query<DbRow>(
+      `SELECT id::text, email, password_hash, full_name, role, status,
+              totp_secret, recovery_code_hashes, created_at, updated_at
+       FROM admin_users
+       WHERE id = $1
+       LIMIT 1`,
+      [currentActor.id],
     );
-    if (!admin) {
+
+    if (rows.length === 0) {
       throw this.invalidCredentials();
     }
 
-    const setup = createTotpSetup(admin.email);
+    const admin = rows[0];
+    const email = String(admin['email']);
+    const setup = createTotpSetup(email);
     const setupId = randomUUID();
     this.pendingTotpSetups.set(setupId, {
-      adminId: admin.id,
+      adminId: currentActor.id,
       setup,
       expiresAt: Date.now() + 10 * 60_000,
     });
@@ -379,11 +467,16 @@ export class AuthService {
     };
   }
 
-  admin2faConfirm(
+  async admin2faConfirm(
     actor: RequestActor | undefined,
     body: Record<string, unknown>,
   ) {
-    const currentActor = this.db.actorOrDemo(actor);
+    const currentActor = actor ?? {
+      id: '00000000-0000-0000-0000-000000000000',
+      actorType: 'admin',
+      role: Role.ADMIN,
+      roles: [Role.ADMIN],
+    };
     const setupId = String(body.setup_id ?? '');
     const code = String(body.code ?? '');
     const pending = this.pendingTotpSetups.get(setupId);
@@ -402,38 +495,68 @@ export class AuthService {
     if (!verifyTotpCode(pending.setup.encryptedSecret, code)) {
       throw new UnauthorizedException({
         code: 'AUTH_2FA_INVALID',
-        message: '2FA kod noto‘g‘ri',
+        message: '2FA kod noto\u2018g\u2018ri',
       });
     }
 
-    const admin = this.db.adminUsers.find(
-      (item) => item.id === currentActor.id,
+    const rows = await this.pg.query<DbRow>(
+      `SELECT id::text
+       FROM admin_users
+       WHERE id = $1
+       LIMIT 1`,
+      [currentActor.id],
     );
-    if (!admin) {
+
+    if (rows.length === 0) {
       throw this.invalidCredentials();
     }
 
-    admin.totp_secret = pending.setup.encryptedSecret;
-    admin.recovery_code_hashes = pending.setup.recoveryCodeHashes;
-    admin.updated_at = this.db.now();
-    this.pendingTotpSetups.delete(setupId);
+    const now = new Date().toISOString();
+    await this.pg.query(
+      `UPDATE admin_users
+       SET totp_secret = $1, recovery_code_hashes = $2, updated_at = $3
+       WHERE id = $4`,
+      [
+        pending.setup.encryptedSecret,
+        pending.setup.recoveryCodeHashes,
+        now,
+        currentActor.id,
+      ],
+    );
 
+    this.pendingTotpSetups.delete(setupId);
     return { enabled: true };
   }
 
-  admin2faDisable(actor: RequestActor | undefined) {
-    const currentActor = this.db.actorOrDemo(actor);
-    const admin = this.db.adminUsers.find(
-      (item) => item.id === currentActor.id,
+  async admin2faDisable(actor: RequestActor | undefined) {
+    const currentActor = actor ?? {
+      id: '00000000-0000-0000-0000-000000000000',
+      actorType: 'admin',
+      role: Role.ADMIN,
+      roles: [Role.ADMIN],
+    };
+
+    const rows = await this.pg.query<DbRow>(
+      `SELECT id::text
+       FROM admin_users
+       WHERE id = $1
+       LIMIT 1`,
+      [currentActor.id],
     );
-    if (!admin) {
+
+    if (rows.length === 0) {
       throw this.invalidCredentials();
     }
 
-    admin.totp_secret = undefined;
-    admin.recovery_code_hashes = [];
-    admin.updated_at = this.db.now();
-    authSessionStore.revokeActor(admin.id);
+    const now = new Date().toISOString();
+    await this.pg.query(
+      `UPDATE admin_users
+       SET totp_secret = NULL, recovery_code_hashes = '{}', updated_at = $1
+       WHERE id = $2`,
+      [now, currentActor.id],
+    );
+
+    authSessionStore.revokeActor(currentActor.id);
     return { disabled: true, sessions_revoked: true };
   }
 
@@ -501,7 +624,12 @@ export class AuthService {
   }
 
   logout(actor: RequestActor | undefined) {
-    const currentActor = this.db.actorOrDemo(actor);
+    const currentActor = actor ?? {
+      id: '00000000-0000-0000-0000-000000000000',
+      actorType: 'user',
+      role: Role.USER,
+      roles: [Role.USER],
+    };
     if (currentActor.sessionId) {
       authSessionStore.revokeSession(currentActor.sessionId);
     }
@@ -509,13 +637,23 @@ export class AuthService {
   }
 
   logoutAll(actor: RequestActor | undefined) {
-    const currentActor = this.db.actorOrDemo(actor);
+    const currentActor = actor ?? {
+      id: '00000000-0000-0000-0000-000000000000',
+      actorType: 'user',
+      role: Role.USER,
+      roles: [Role.USER],
+    };
     const revoked = authSessionStore.revokeActor(currentActor.id);
     return { actor_id: currentActor.id, revoked_sessions: revoked };
   }
 
   sessions(actor: RequestActor | undefined) {
-    const currentActor = this.db.actorOrDemo(actor);
+    const currentActor = actor ?? {
+      id: '00000000-0000-0000-0000-000000000000',
+      actorType: 'user',
+      role: Role.USER,
+      roles: [Role.USER],
+    };
     return authSessionStore.listForActor(currentActor.id).map((session) => ({
       id: session.id,
       actor_id: session.actorId,
@@ -530,7 +668,12 @@ export class AuthService {
   }
 
   revokeSession(actor: RequestActor | undefined, id: string) {
-    const currentActor = this.db.actorOrDemo(actor);
+    const currentActor = actor ?? {
+      id: '00000000-0000-0000-0000-000000000000',
+      actorType: 'user',
+      role: Role.USER,
+      roles: [Role.USER],
+    };
     const session = authSessionStore.get(id);
 
     if (!session || session.actorId !== currentActor.id) {
@@ -571,7 +714,7 @@ export class AuthService {
       if (error instanceof Error && error.message === 'OTP_RATE_LIMITED') {
         throw new BadRequestException({
           code: 'OTP_RATE_LIMITED',
-          message: 'OTP so‘rovlar limiti oshdi',
+          message: 'OTP so\u2018rovlar limiti oshdi',
         });
       }
       throw error;
@@ -594,7 +737,9 @@ export class AuthService {
       throw new UnauthorizedException({
         code,
         message:
-          code === 'OTP_EXPIRED' ? 'OTP muddati tugagan' : 'OTP noto‘g‘ri',
+          code === 'OTP_EXPIRED'
+            ? 'OTP muddati tugagan'
+            : 'OTP noto\u2018g\u2018ri',
       });
     }
   }
@@ -648,7 +793,7 @@ export class AuthService {
   private async findPartnerUser(
     email: string,
   ): Promise<PartnerUserRecord | undefined> {
-    const rows = await this.postgres.tryQuery<DbRow>(
+    const rows = await this.pg.query<DbRow>(
       `
         select pu.id::text, pu.organization_id::text, pu.email, pu.password_hash,
                pu.full_name, pu.status, pu.created_at, pu.updated_at
@@ -668,23 +813,21 @@ export class AuthService {
         full_name: rows[0]['full_name']
           ? String(rows[0]['full_name'])
           : undefined,
-        status: String(rows[0]['status']) as PartnerUserRecord['status'],
+        status: String(rows[0]['status']),
         role: 'owner',
         created_at: String(rows[0]['created_at']),
         updated_at: String(rows[0]['updated_at']),
       };
     }
 
-    return inMemoryDataEnabled()
-      ? this.db.findPartnerUserByEmail(email)
-      : undefined;
+    return undefined;
   }
 
   private async findAdminUser(
     login: string,
   ): Promise<AdminUserRecord | undefined> {
     const email = login === 'admin' ? 'admin@uzbron.uz' : login;
-    const rows = await this.postgres.tryQuery<DbRow>(
+    const rows = await this.pg.query<DbRow>(
       `
         select id::text, email, password_hash, full_name, role, status,
                totp_secret, created_at, updated_at
@@ -707,7 +850,7 @@ export class AuthService {
           : undefined,
         role,
         roles: [role],
-        status: String(rows[0]['status']) as AdminUserRecord['status'],
+        status: String(rows[0]['status']),
         totp_secret: rows[0]['totp_secret']
           ? String(rows[0]['totp_secret'])
           : undefined,
@@ -716,7 +859,7 @@ export class AuthService {
       };
     }
 
-    return inMemoryDataEnabled() ? this.db.findAdminByLogin(login) : undefined;
+    return undefined;
   }
 
   private normalizeAdminRole(value: unknown): Role {
@@ -760,7 +903,7 @@ export class AuthService {
   private invalidCredentials() {
     return new UnauthorizedException({
       code: 'AUTH_INVALID_CREDENTIALS',
-      message: 'Login/parol noto‘g‘ri',
+      message: 'Login/parol noto\u2018g\u2018ri',
     });
   }
 

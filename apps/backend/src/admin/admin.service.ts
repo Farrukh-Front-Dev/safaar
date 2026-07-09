@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { BookingStatus } from '@agoda/types';
+import { BookingStatus, Role } from '@agoda/types';
+import { randomUUID } from 'node:crypto';
 import type { RequestActor } from '../common/actor';
 import {
   limitOffsetSql,
@@ -8,7 +9,6 @@ import {
   type QueryLike,
 } from '../common/pagination';
 import { AppCacheService } from '../infrastructure/cache.service';
-import { InMemoryDbService } from '../infrastructure/in-memory-db.service';
 import { JobQueueService } from '../infrastructure/job-queue.service';
 import { PostgresService } from '../infrastructure/postgres.service';
 
@@ -92,35 +92,36 @@ function normalizeWithdrawalStatus(
  */
 @Injectable()
 export class AdminService {
-  private readonly cmsStore: Record<string, Array<Record<string, unknown>>> = {
-    banners: [],
-    offers: [],
-    news: [],
-    pages: [],
-    templates: [],
-    'faq-categories': [],
-    faqs: [],
-  };
-  private readonly promosStore: Array<Record<string, unknown>> = [];
-  private readonly broadcastsStore: Array<Record<string, unknown>> = [];
-  private readonly adminUsersStore: Array<Record<string, unknown>> = [
-    {
-      id: 'demo-admin-id',
-      email: 'admin@uzbron.uz',
-      role: 'super_admin',
-      status: 'active',
-    },
-  ];
-
   constructor(
     private readonly cache: AppCacheService,
-    private readonly db: InMemoryDbService,
     private readonly jobs: JobQueueService,
     private readonly postgres: PostgresService,
   ) {}
 
   private async rows(sql: string, params: readonly unknown[] = []) {
-    return this.postgres.tryQuery<DbRow>(sql, params);
+    return this.postgres.query<DbRow>(sql, params);
+  }
+
+  private async audit(
+    action: string,
+    actor: RequestActor | undefined,
+    meta: Record<string, unknown> = {},
+  ): Promise<void> {
+    const currentActor = actor ?? {
+      id: '00000000-0000-0000-0000-000000000000',
+      actorType: 'admin',
+      role: Role.SUPER_ADMIN,
+    };
+    await this.postgres.query(
+      `insert into audit_logs (actor_type, actor_id, action, metadata)
+       values ($1, $2, $3, ($4)::jsonb)`,
+      [
+        currentActor.actorType ?? 'admin',
+        currentActor.id,
+        action,
+        JSON.stringify(meta),
+      ],
+    );
   }
 
   private adminPagination(query: QueryLike = {}) {
@@ -217,7 +218,7 @@ export class AdminService {
 
   async getOverview() {
     return this.cache.getOrSet('admin:dashboard:overview', 30, async () => {
-      const rows = await this.rows(`
+      const [row] = await this.rows(`
         select
           (select count(*) from users where deleted_at is null)::int as total_users,
           (select count(*) from partner_organizations where status = 'approved')::int as active_partners,
@@ -225,24 +226,11 @@ export class AdminService {
           coalesce((select sum(amount) from payments where status = 'paid'), 0)::float8 as monthly_revenue
       `);
 
-      if (rows?.[0]) {
-        return {
-          totalUsers: numberValue(rows[0]['total_users']),
-          activePartners: numberValue(rows[0]['active_partners']),
-          todayBookings: numberValue(rows[0]['today_bookings']),
-          monthlyRevenue: numberValue(rows[0]['monthly_revenue']),
-        };
-      }
-
       return {
-        totalUsers: this.db.users.length,
-        activePartners: this.db.partnerOrganizations.filter(
-          (partner) => partner.status === 'approved',
-        ).length,
-        todayBookings: this.db.bookings.length,
-        monthlyRevenue: this.db.payments
-          .filter((payment) => payment.status === 'paid')
-          .reduce((sum, payment) => sum + payment.amount, 0),
+        totalUsers: numberValue(row?.['total_users'] ?? 0),
+        activePartners: numberValue(row?.['active_partners'] ?? 0),
+        todayBookings: numberValue(row?.['today_bookings'] ?? 0),
+        monthlyRevenue: numberValue(row?.['monthly_revenue'] ?? 0),
       };
     });
   }
@@ -252,18 +240,17 @@ export class AdminService {
   }
 
   async activity() {
-    const rows = await this.rows(`
+    return this.rows(`
       select id::text, actor_type, actor_id::text, action, entity_type, entity_id::text,
              old_value, new_value, metadata, ip_address, user_agent, request_id, created_at
       from audit_logs
       order by created_at desc
       limit 20
     `);
-    return rows ?? this.db.auditLogs.slice(0, 20);
   }
 
   async users(query: QueryLike = {}) {
-    const rows = await this.rows(`
+    return this.rows(`
       select
         u.id::text,
         u.phone,
@@ -287,19 +274,14 @@ export class AdminService {
       order by u.created_at desc
       ${this.limitClause(query)}
     `);
-    return rows ?? this.paginateAdmin(this.db.users, query);
   }
 
   async user(id: string) {
     if (!isUuid(id)) {
-      const user = this.db.findUser(id);
-      if (!user) {
-        throw new NotFoundException({
-          code: 'USER_BLOCKED',
-          message: 'User topilmadi',
-        });
-      }
-      return user;
+      throw new NotFoundException({
+        code: 'USER_BLOCKED',
+        message: 'User topilmadi',
+      });
     }
 
     const rows = await this.rows(
@@ -328,105 +310,94 @@ export class AdminService {
       [id],
     );
 
-    if (rows?.[0]) {
-      return rows[0];
-    }
-
-    const user = this.db.findUser(id);
-    if (!user) {
+    if (!rows[0]) {
       throw new NotFoundException({
         code: 'USER_BLOCKED',
         message: 'User topilmadi',
       });
     }
-    return user;
+    return rows[0];
   }
 
   async userStatus(id: string, body: Record<string, unknown>) {
     const status = normalizeUserStatus(body.status);
-    if (isUuid(id)) {
-      const rows = await this.rows(
-        `
-          update users
-          set status = $2::"UserStatus",
-              blocked_reason = case
-                when $2 = 'blocked' then nullif($3, '')
-                else blocked_reason
-              end,
-              deleted_at = case
-                when $2 = 'deleted' then coalesce(deleted_at, now())
-                else deleted_at
-              end,
-              updated_at = now()
-          where id = $1::uuid
-          returning
-            id::text,
-            phone,
-            email,
-            first_name,
-            last_name,
-            concat_ws(' ', first_name, last_name) as full_name,
-            status::text,
-            preferred_language,
-            blocked_reason,
-            last_login_at,
-            created_at,
-            updated_at
-        `,
-        [id, status, String(body.reason ?? '')],
-      );
-      if (rows?.[0]) {
-        this.invalidateAdminCache();
-        return rows[0];
-      }
-    }
+    const rows = await this.rows(
+      `
+        update users
+        set status = $2::"UserStatus",
+            blocked_reason = case
+              when $2 = 'blocked' then nullif($3, '')
+              else blocked_reason
+            end,
+            deleted_at = case
+              when $2 = 'deleted' then coalesce(deleted_at, now())
+              else deleted_at
+            end,
+            updated_at = now()
+        where id = $1::uuid
+        returning
+          id::text,
+          phone,
+          email,
+          first_name,
+          last_name,
+          concat_ws(' ', first_name, last_name) as full_name,
+          status::text,
+          preferred_language,
+          blocked_reason,
+          last_login_at,
+          created_at,
+          updated_at
+      `,
+      [id, status, String(body.reason ?? '')],
+    );
 
-    const user = await this.user(id);
-    user.status = status;
-    user.updated_at = this.db.now();
+    if (!rows[0]) {
+      throw new NotFoundException({
+        code: 'USER_BLOCKED',
+        message: 'User topilmadi',
+      });
+    }
     this.invalidateAdminCache();
-    return user;
+    return rows[0];
   }
 
   async userDelete(actor: RequestActor | undefined, id: string) {
-    if (isUuid(id)) {
-      const rows = await this.rows(
-        `
-          update users
-          set status = 'deleted'::"UserStatus",
-              deleted_at = coalesce(deleted_at, now()),
-              updated_at = now()
-          where id = $1::uuid
-          returning
-            id::text,
-            phone,
-            email,
-            first_name,
-            last_name,
-            concat_ws(' ', first_name, last_name) as full_name,
-            status::text,
-            preferred_language,
-            blocked_reason,
-            last_login_at,
-            created_at,
-            updated_at,
-            deleted_at
-        `,
-        [id],
-      );
-      if (rows?.[0]) {
-        this.db.audit('user.admin_delete', actor, { user_id: id });
-        this.invalidateAdminCache();
-        return rows[0];
-      }
+    const rows = await this.rows(
+      `
+        update users
+        set status = 'deleted'::"UserStatus",
+            deleted_at = coalesce(deleted_at, now()),
+            updated_at = now()
+        where id = $1::uuid
+        returning
+          id::text,
+          phone,
+          email,
+          first_name,
+          last_name,
+          concat_ws(' ', first_name, last_name) as full_name,
+          status::text,
+          preferred_language,
+          blocked_reason,
+          last_login_at,
+          created_at,
+          updated_at,
+          deleted_at
+      `,
+      [id],
+    );
+
+    if (!rows[0]) {
+      throw new NotFoundException({
+        code: 'USER_BLOCKED',
+        message: 'User topilmadi',
+      });
     }
 
-    const user = await this.user(id);
-    user.status = 'deleted';
-    user.updated_at = this.db.now();
-    this.db.audit('user.admin_delete', actor, { user_id: id });
+    await this.audit('user.admin_delete', actor, { user_id: id });
     this.invalidateAdminCache();
-    return user;
+    return rows[0];
   }
 
   async bonusAdjustment(id: string, body: Record<string, unknown>) {
@@ -438,34 +409,21 @@ export class AdminService {
 
   async userBookings(id: string, query: QueryLike = {}) {
     if (!isUuid(id)) {
-      return this.paginateAdmin(
-        this.db.bookings.filter((booking) => booking.user_id === id),
-        query,
-      );
+      return this.paginateAdmin([], query);
     }
 
-    const rows = await this.rows(
+    return this.rows(
       `${this.dbBookingsSql('where b.user_id = $1::uuid')} ${this.limitClause(query)}`,
       [id],
-    );
-    return (
-      rows ??
-      this.paginateAdmin(
-        this.db.bookings.filter((booking) => booking.user_id === id),
-        query,
-      )
     );
   }
 
   async userAudit(id: string, query: QueryLike = {}) {
     if (!isUuid(id)) {
-      return this.paginateAdmin(
-        this.db.auditLogs.filter((log) => log['actor_id'] === id),
-        query,
-      );
+      return this.paginateAdmin([], query);
     }
 
-    const rows = await this.rows(
+    return this.rows(
       `
         select id::text, actor_type, actor_id::text, action, entity_type, entity_id::text,
                old_value, new_value, metadata, ip_address, user_agent, request_id, created_at
@@ -476,13 +434,6 @@ export class AdminService {
       `,
       [id],
     );
-    return (
-      rows ??
-      this.paginateAdmin(
-        this.db.auditLogs.filter((log) => log['actor_id'] === id),
-        query,
-      )
-    );
   }
 
   async userMessage(
@@ -490,42 +441,35 @@ export class AdminService {
     id: string,
     body: Record<string, unknown>,
   ) {
+    if (!isUuid(id)) {
+      throw new NotFoundException({
+        code: 'USER_NOT_FOUND',
+        message: 'User topilmadi',
+      });
+    }
+
     const title = String(body.title ?? 'Admin xabari');
     const message = String(body.message ?? body.body ?? '');
 
-    if (isUuid(id)) {
-      const rows = await this.rows(
-        `
-          insert into notifications (user_id, owner_type, owner_id, title, body)
-          values ($1::uuid, 'user', $1::uuid, $2, $3)
-          returning
-            id::text,
-            user_id::text,
-            owner_type,
-            owner_id::text,
-            title,
-            body,
-            read_at,
-            created_at
-        `,
-        [id, title, message],
-      );
-      if (rows?.[0]) {
-        this.db.audit('user.admin_message', actor, { user_id: id });
-        return rows[0];
-      }
-    }
+    const rows = await this.rows(
+      `
+        insert into notifications (user_id, owner_type, owner_id, title, body)
+        values ($1::uuid, 'user', $1::uuid, $2, $3)
+        returning
+          id::text,
+          user_id::text,
+          owner_type,
+          owner_id::text,
+          title,
+          body,
+          read_at,
+          created_at
+      `,
+      [id, title, message],
+    );
 
-    const notification = {
-      id: this.db.id('notification'),
-      owner_id: id,
-      title,
-      body: message,
-      created_at: this.db.now(),
-    };
-    this.db.notifications.unshift(notification);
-    this.db.audit('user.admin_message', actor, { user_id: id });
-    return notification;
+    await this.audit('user.admin_message', actor, { user_id: id });
+    return rows[0];
   }
 
   async usersMessage(
@@ -539,9 +483,18 @@ export class AdminService {
         : [];
     const title = String(body.title ?? 'Admin xabari');
     const message = String(body.message ?? body.body ?? '');
-    const targets = ids.length ? ids : this.db.users.map((user) => user.id);
-    const sent: unknown[] = [];
 
+    let targets: string[];
+    if (ids.length) {
+      targets = ids;
+    } else {
+      const userRows = await this.rows(
+        'select id::text from users where deleted_at is null',
+      );
+      targets = userRows.map((r) => String(r['id']));
+    }
+
+    const sent: unknown[] = [];
     for (const userId of targets) {
       sent.push(
         await this.userMessage(actor, userId, { title, body: message }),
@@ -559,27 +512,30 @@ export class AdminService {
     type: string,
     format: 'csv' | 'xlsx' | 'pdf',
   ) {
-    const currentActor = this.db.actorOrDemo(actor);
-    const job = {
-      id: this.db.id('export'),
-      owner_id: currentActor.id,
-      type,
-      format,
-      status: 'queued' as const,
-      created_at: this.db.now(),
-      updated_at: this.db.now(),
+    const currentActor = actor ?? {
+      id: '00000000-0000-0000-0000-000000000000',
+      actorType: 'admin',
+      role: Role.SUPER_ADMIN,
     };
-    this.db.exportJobs.unshift(job);
+
+    const rows = await this.rows(
+      `insert into export_jobs (owner_type, owner_id, type, format, status)
+       values ('admin', $1, $2, $3, 'queued')
+       returning id::text, owner_type, owner_id::text, type, format, status, created_at, updated_at`,
+      [currentActor.id, type, format],
+    );
+    const job = rows[0];
+
     await this.jobs.add(
       'export',
-      { export_id: job.id, type, format, owner_id: currentActor.id },
+      { export_id: job['id'], type, format, owner_id: currentActor.id },
       { idempotencyKey: `export:${currentActor.id}:${type}:${format}` },
     );
     return job;
   }
 
   async partners(query: QueryLike = {}) {
-    const rows = await this.rows(`
+    return this.rows(`
       select
         po.id::text,
         po.type::text,
@@ -610,11 +566,10 @@ export class AdminService {
       order by po.created_at desc
       ${this.limitClause(query)}
     `);
-    return rows ?? this.paginateAdmin(this.db.partnerOrganizations, query);
   }
 
   async partnerRequests(query: QueryLike = {}) {
-    const rows = await this.rows(`
+    return this.rows(`
       select
         po.id::text,
         po.type::text,
@@ -641,15 +596,6 @@ export class AdminService {
       order by po.created_at desc
       ${this.limitClause(query)}
     `);
-    return (
-      rows ??
-      this.paginateAdmin(
-        this.db.partnerOrganizations.filter(
-          (partner) => partner.status !== 'approved',
-        ),
-        query,
-      )
-    );
   }
 
   async partner(id: string) {
@@ -687,18 +633,13 @@ export class AdminService {
       [id],
     );
 
-    if (rows?.[0]) {
-      return rows[0];
-    }
-
-    const partner = this.db.partnerOrganizations.find((item) => item.id === id);
-    if (!partner) {
+    if (!rows[0]) {
       throw new NotFoundException({
         code: 'PARTNER_NOT_ACTIVE',
         message: 'Partner topilmadi',
       });
     }
-    return partner;
+    return rows[0];
   }
 
   async partnerDecision(
@@ -707,13 +648,39 @@ export class AdminService {
     status: 'approved' | 'rejected' | 'more_information_required',
     body: Record<string, unknown> = {},
   ) {
-    const partner = await this.partner(id);
-    partner.status = status;
-    partner.updated_at = this.db.now();
-    partner.rejection_reason = body.reason ? String(body.reason) : undefined;
-    this.db.audit('partner.moderation', actor, { partner_id: id, status });
+    const rows = await this.rows(
+      `
+        update partner_organizations
+        set status = $2,
+            rejection_reason = case when $2 = 'rejected' then nullif($3, '') else rejection_reason end,
+            approved_by = case when $2 = 'approved' then $4::uuid else approved_by end,
+            approved_at = case when $2 = 'approved' then now() else approved_at end,
+            updated_at = now()
+        where id = $1::uuid
+        returning
+          id::text,
+          type::text,
+          legal_name,
+          brand_name,
+          status::text,
+          rejection_reason,
+          approved_by::text,
+          approved_at,
+          updated_at
+      `,
+      [id, status, String(body.reason ?? ''), adminActorUuid(actor)],
+    );
+
+    if (!rows[0]) {
+      throw new NotFoundException({
+        code: 'PARTNER_NOT_ACTIVE',
+        message: 'Partner topilmadi',
+      });
+    }
+
+    await this.audit('partner.moderation', actor, { partner_id: id, status });
     this.invalidateAdminCache();
-    return partner;
+    return rows[0];
   }
 
   async partnerStatus(
@@ -721,15 +688,36 @@ export class AdminService {
     id: string,
     body: Record<string, unknown>,
   ) {
-    const partner = await this.partner(id);
-    partner.status = String(body.status ?? partner.status);
-    partner.updated_at = this.db.now();
-    this.db.audit('partner.status', actor, {
+    const newStatus = String(body.status ?? '');
+    const rows = await this.rows(
+      `
+        update partner_organizations
+        set status = $2, updated_at = now()
+        where id = $1::uuid
+        returning
+          id::text,
+          type::text,
+          legal_name,
+          brand_name,
+          status::text,
+          updated_at
+      `,
+      [id, newStatus],
+    );
+
+    if (!rows[0]) {
+      throw new NotFoundException({
+        code: 'PARTNER_NOT_ACTIVE',
+        message: 'Partner topilmadi',
+      });
+    }
+
+    await this.audit('partner.status', actor, {
       partner_id: id,
-      status: partner.status,
+      status: newStatus,
     });
     this.invalidateAdminCache();
-    return partner;
+    return rows[0];
   }
 
   async partnerCommission(
@@ -737,21 +725,40 @@ export class AdminService {
     id: string,
     body: Record<string, unknown>,
   ) {
-    const partner = await this.partner(id);
-    partner.default_commission_rate = Number(
-      body.rate ?? body.default_commission_rate ?? 12,
+    const rate = Number(body.rate ?? body.default_commission_rate ?? 12);
+    const rows = await this.rows(
+      `
+        update partner_organizations
+        set default_commission_rate = $2, updated_at = now()
+        where id = $1::uuid
+        returning
+          id::text,
+          type::text,
+          legal_name,
+          brand_name,
+          default_commission_rate::float8,
+          updated_at
+      `,
+      [id, rate],
     );
-    partner.updated_at = this.db.now();
-    this.db.audit('partner.commission', actor, {
+
+    if (!rows[0]) {
+      throw new NotFoundException({
+        code: 'PARTNER_NOT_ACTIVE',
+        message: 'Partner topilmadi',
+      });
+    }
+
+    await this.audit('partner.commission', actor, {
       partner_id: id,
-      rate: partner.default_commission_rate,
+      rate,
     });
     this.invalidateAdminCache();
-    return partner;
+    return rows[0];
   }
 
   async partnerLedger(id: string) {
-    const rows = await this.rows(
+    return this.rows(
       `
         select id::text, organization_id::text as partner_id, booking_id::text,
                type, amount::float8, currency, created_at
@@ -761,17 +768,6 @@ export class AdminService {
       `,
       [id],
     );
-    return (
-      rows ??
-      this.db.bookings
-        .filter((booking) => booking.partner_organization_id === id)
-        .map((booking) => ({
-          id: this.db.id('ledger'),
-          booking_id: booking.id,
-          amount: booking.partner_payable,
-          currency: booking.currency,
-        }))
-    );
   }
 
   async partnerAdjustment(
@@ -780,19 +776,32 @@ export class AdminService {
     body: Record<string, unknown>,
   ) {
     await this.partner(id);
-    const adjustment = {
-      id: this.db.id('adjustment'),
+
+    const rows = await this.rows(
+      `insert into partner_ledger_entries (organization_id, type, amount, currency)
+       values ($1::uuid, 'adjustment', $2, 'UZS')
+       returning id::text, organization_id::text as partner_id, type, amount::float8, currency, created_at`,
+      [id, Number(body.amount ?? 0)],
+    );
+
+    const entry = rows[0];
+    await this.audit('partner.adjustment', actor, {
       partner_id: id,
-      amount: Number(body.amount ?? 0),
+      amount: body.amount,
       reason: String(body.reason ?? ''),
-      created_at: this.db.now(),
+    });
+
+    return {
+      id: entry['id'],
+      partner_id: entry['partner_id'],
+      amount: entry['amount'],
+      reason: String(body.reason ?? ''),
+      created_at: entry['created_at'],
     };
-    this.db.audit('partner.adjustment', actor, adjustment);
-    return adjustment;
   }
 
   async hotels(query: QueryLike = {}) {
-    const rows = await this.rows(`
+    return this.rows(`
       select
         h.id::text,
         h.partner_organization_id::text,
@@ -817,7 +826,6 @@ export class AdminService {
       order by h.created_at desc
       ${this.limitClause(query)}
     `);
-    return rows ?? this.paginateAdmin(this.db.hotels, query);
   }
 
   async hotel(id: string) {
@@ -848,29 +856,36 @@ export class AdminService {
       [id],
     );
 
-    if (rows?.[0]) {
-      return rows[0];
-    }
-
-    const hotel = this.db.hotels.find((item) => item.id === id);
-    if (!hotel) {
+    if (!rows[0]) {
       throw new NotFoundException({
         code: 'HOTEL_NOT_FOUND',
         message: 'Hotel topilmadi',
       });
     }
-    return hotel;
+    return rows[0];
   }
 
   async hotelStatus(id: string, status: 'published' | 'hidden' | 'rejected') {
-    const hotel = await this.hotel(id);
-    hotel.status = status;
+    const rows = await this.rows(
+      `update hotels
+       set status = $2, updated_at = now()
+       where id = $1::uuid and deleted_at is null
+       returning id::text, partner_organization_id::text, slug, status::text, updated_at`,
+      [id, status],
+    );
+
+    if (!rows[0]) {
+      throw new NotFoundException({
+        code: 'HOTEL_NOT_FOUND',
+        message: 'Hotel topilmadi',
+      });
+    }
     this.invalidateAdminCache();
-    return hotel;
+    return rows[0];
   }
 
   async trips(query: QueryLike = {}) {
-    const rows = await this.rows(`
+    return this.rows(`
       select
         t.id::text,
         t.route_id::text,
@@ -891,7 +906,6 @@ export class AdminService {
       order by t.departure_at desc
       ${this.limitClause(query)}
     `);
-    return rows ?? this.paginateAdmin(this.db.trips, query);
   }
 
   async trip(id: string) {
@@ -919,50 +933,60 @@ export class AdminService {
       [id],
     );
 
-    if (rows?.[0]) {
-      return rows[0];
-    }
-
-    const trip = this.db.trips.find((item) => item.id === id);
-    if (!trip) {
+    if (!rows[0]) {
       throw new NotFoundException({
         code: 'TRIP_NOT_FOUND',
         message: 'Reys topilmadi',
       });
     }
-    return trip;
+    return rows[0];
   }
 
   async tripStatus(id: string, status: 'cancelled') {
-    const trip = await this.trip(id);
-    trip.status = status;
+    const rows = await this.rows(
+      `update trips
+       set status = $2, updated_at = now()
+       where id = $1::uuid
+       returning id::text, company_id::text, from_city_id::text, to_city_id::text,
+                 status::text, departure_at, arrival_at, updated_at`,
+      [id, status],
+    );
+
+    if (!rows[0]) {
+      throw new NotFoundException({
+        code: 'TRIP_NOT_FOUND',
+        message: 'Reys topilmadi',
+      });
+    }
     this.invalidateAdminCache();
-    return trip;
+    return rows[0];
   }
 
   async busCompanies() {
-    const rows = await this.rows(`
+    return this.rows(`
       select id::text, partner_organization_id::text, name, status,
              rating_average::float8, reviews_count, created_at, updated_at
       from bus_companies
       order by created_at desc
     `);
-    return rows ?? this.db.busCompanies;
   }
 
-  busCompanyStatus(id: string, body: Record<string, unknown>) {
-    return {
-      id,
-      status: String(body.status ?? 'active'),
-      updated_at: this.db.now(),
-    };
+  async busCompanyStatus(id: string, body: Record<string, unknown>) {
+    const newStatus = String(body.status ?? 'active');
+    const rows = await this.rows(
+      `update bus_companies
+       set status = $2, updated_at = now()
+       where id = $1::uuid
+       returning id::text, name, status, updated_at`,
+      [id, newStatus],
+    );
+    return (
+      rows[0] ?? { id, status: newStatus, updated_at: new Date().toISOString() }
+    );
   }
 
   async bookings(query: QueryLike = {}) {
-    const rows = await this.rows(
-      `${this.dbBookingsSql()} ${this.limitClause(query)}`,
-    );
-    return rows ?? this.paginateAdmin(this.db.bookings, query);
+    return this.rows(`${this.dbBookingsSql()} ${this.limitClause(query)}`);
   }
 
   async booking(id: string) {
@@ -970,18 +994,13 @@ export class AdminService {
       id,
     ]);
 
-    if (rows?.[0]) {
-      return rows[0];
-    }
-
-    const booking = this.db.findBooking(id);
-    if (!booking) {
+    if (!rows[0]) {
       throw new NotFoundException({
         code: 'BOOKING_EXPIRED',
         message: 'Bron topilmadi',
       });
     }
-    return booking;
+    return rows[0];
   }
 
   async bookingCancel(
@@ -989,31 +1008,61 @@ export class AdminService {
     id: string,
     body: Record<string, unknown>,
   ) {
-    const booking = await this.booking(id);
-    booking.status = BookingStatus.CANCELLED;
-    booking.cancelled_at = this.db.now();
-    booking.cancel_reason_text = String(body.reason ?? 'Admin cancel');
-    this.db.audit('booking.admin_cancel', actor, { booking_id: id });
+    const rows = await this.rows(
+      `update bookings
+       set status = $2, cancelled_at = now(), cancel_reason_text = $3, updated_at = now()
+       where id = $1::uuid
+       returning id::text, booking_number, user_id::text, status::text, total_amount::float8,
+                 cancelled_at, cancel_reason_text, created_at, updated_at`,
+      [id, BookingStatus.CANCELLED, String(body.reason ?? 'Admin cancel')],
+    );
+
+    if (!rows[0]) {
+      throw new NotFoundException({
+        code: 'BOOKING_EXPIRED',
+        message: 'Bron topilmadi',
+      });
+    }
+
+    await this.audit('booking.admin_cancel', actor, { booking_id: id });
     this.invalidateAdminCache();
-    return booking;
+    return rows[0];
   }
 
   async bookingStatusAction(id: string, body: Record<string, unknown>) {
-    const booking = await this.booking(id);
     const action = String(body.action ?? '');
+    let newStatus: string | null = null;
     if (action === 'confirm') {
-      booking.status = BookingStatus.CONFIRMED;
+      newStatus = BookingStatus.CONFIRMED;
+    } else if (action === 'complete') {
+      newStatus = BookingStatus.COMPLETED;
     }
-    if (action === 'complete') {
-      booking.status = BookingStatus.COMPLETED;
+
+    if (!newStatus) {
+      return this.booking(id);
     }
-    booking.updated_at = this.db.now();
+
+    const rows = await this.rows(
+      `update bookings
+       set status = $2, updated_at = now()
+       where id = $1::uuid
+       returning id::text, booking_number, user_id::text, status::text, total_amount::float8,
+                 created_at, updated_at`,
+      [id, newStatus],
+    );
+
+    if (!rows[0]) {
+      throw new NotFoundException({
+        code: 'BOOKING_EXPIRED',
+        message: 'Bron topilmadi',
+      });
+    }
     this.invalidateAdminCache();
-    return booking;
+    return rows[0];
   }
 
   async payments(query: QueryLike = {}) {
-    const rows = await this.rows(`
+    return this.rows(`
       select id::text, booking_id::text, provider::text, status::text,
              amount::float8, currency, payment_url, provider_reference,
              idempotency_key, created_at, updated_at
@@ -1021,7 +1070,6 @@ export class AdminService {
       order by created_at desc
       ${this.limitClause(query)}
     `);
-    return rows ?? this.paginateAdmin(this.db.payments, query);
   }
 
   async payment(id: string) {
@@ -1035,21 +1083,19 @@ export class AdminService {
       `,
       [id],
     );
-    return (
-      rows?.[0] ??
-      this.db.payments.find((payment) => payment.id === id) ?? {
-        id,
-        status: 'not_found',
-      }
-    );
+    return rows[0] ?? { id, status: 'not_found' };
   }
 
   paymentReconcile(id: string) {
-    return { payment_id: id, reconciled: true, checked_at: this.db.now() };
+    return {
+      payment_id: id,
+      reconciled: true,
+      checked_at: new Date().toISOString(),
+    };
   }
 
   async refunds(query: QueryLike = {}) {
-    const rows = await this.rows(`
+    return this.rows(`
       select id::text, booking_id::text, user_id::text, status::text,
              requested_amount::float8, approved_amount::float8,
              currency, reason, created_at, updated_at
@@ -1057,7 +1103,6 @@ export class AdminService {
       order by created_at desc
       ${this.limitClause(query)}
     `);
-    return rows ?? this.paginateAdmin(this.db.refunds, query);
   }
 
   async refund(id: string) {
@@ -1071,47 +1116,40 @@ export class AdminService {
       `,
       [id],
     );
-    return (
-      rows?.[0] ??
-      this.db.refunds.find((refund) => refund['id'] === id) ?? { id }
-    );
+    return rows[0] ?? { id };
   }
 
   async refundStatus(id: string, status: string) {
-    const refund = await this.refund(id);
-    refund['status'] = status;
-    refund['updated_at'] = this.db.now();
+    const rows = await this.rows(
+      `update refunds
+       set status = $2, updated_at = now()
+       where id = $1::uuid
+       returning id::text, booking_id::text, user_id::text, status,
+                 requested_amount::float8, approved_amount::float8,
+                 currency, reason, created_at, updated_at`,
+      [id, status],
+    );
     this.invalidateAdminCache();
-    return refund;
+    return rows[0] ?? { id, status, updated_at: new Date().toISOString() };
   }
 
   async financeOverview() {
-    const rows = await this.rows(`
+    const [row] = await this.rows(`
       select
         coalesce((select sum(total_amount) from bookings), 0)::float8 as gross_amount,
         coalesce((select sum(amount) from payments where status = 'paid'), 0)::float8 as paid_amount,
         'UZS' as currency
     `);
 
-    if (rows?.[0]) {
-      return rows[0];
-    }
-
-    const gross = this.db.bookings.reduce(
-      (sum, booking) => sum + booking.total_amount,
-      0,
-    );
     return {
-      gross_amount: gross,
-      paid_amount: this.db.payments
-        .filter((payment) => payment.status === 'paid')
-        .reduce((sum, payment) => sum + payment.amount, 0),
+      gross_amount: numberValue(row?.['gross_amount'] ?? 0),
+      paid_amount: numberValue(row?.['paid_amount'] ?? 0),
       currency: 'UZS',
     };
   }
 
   async partnersReport() {
-    const rows = await this.rows(`
+    return this.rows(`
       select
         po.id::text as partner_id,
         po.brand_name,
@@ -1123,34 +1161,14 @@ export class AdminService {
       group by po.id
       order by total_revenue desc
     `);
-
-    return (
-      rows ??
-      this.db.partnerOrganizations.map((partner) => ({
-        partner_id: partner.id,
-        brand_name: partner.brand_name,
-        bookings: this.db.bookings.filter(
-          (booking) => booking.partner_organization_id === partner.id,
-        ).length,
-      }))
-    );
   }
 
   async providerReconciliation() {
-    const rows = await this.rows(`
+    return this.rows(`
       select id::text as payment_id, provider::text, status::text, true as matched
       from payments
       order by created_at desc
     `);
-    return (
-      rows ??
-      this.db.payments.map((payment) => ({
-        payment_id: payment.id,
-        provider: payment.provider,
-        status: payment.status,
-        matched: true,
-      }))
-    );
   }
 
   financeDocuments() {
@@ -1158,11 +1176,11 @@ export class AdminService {
   }
 
   financeDocumentRegenerate(id: string) {
-    return { id, regenerated: true, created_at: this.db.now() };
+    return { id, regenerated: true, created_at: new Date().toISOString() };
   }
 
   async withdrawals(query: QueryLike = {}) {
-    const rows = await this.rows(`
+    return this.rows(`
       select
         wr.id::text,
         wr.organization_id::text as partner_id,
@@ -1179,7 +1197,6 @@ export class AdminService {
       order by wr.created_at desc
       ${this.limitClause(query)}
     `);
-    return rows ?? this.paginateAdmin([], query);
   }
 
   async withdrawal(id: string) {
@@ -1202,47 +1219,45 @@ export class AdminService {
       `,
       [id],
     );
-    return rows?.[0] ?? { id, status: 'requested' };
+    return rows[0] ?? { id, status: 'requested' };
   }
 
   async withdrawalStatus(id: string, status: string) {
     const nextStatus = normalizeWithdrawalStatus(status);
-    if (isUuid(id)) {
-      const rows = await this.rows(
-        `
-          update withdrawal_requests wr
-          set status = $2,
-              updated_at = now()
-          from partner_organizations po
-          where wr.id = $1::uuid
-            and po.id = wr.organization_id
-          returning
-            wr.id::text,
-            wr.organization_id::text as partner_id,
-            po.brand_name as partner_name,
-            wr.amount::float8,
-            wr.currency,
-            wr.status,
-            wr.created_at as request_date,
-            wr.created_at,
-            wr.updated_at,
-            coalesce(po.tax_id, po.id::text) as bank_account
-        `,
-        [id, nextStatus],
-      );
-      if (rows?.[0]) {
-        this.invalidateAdminCache();
-        return rows[0];
-      }
-    }
+    const rows = await this.rows(
+      `
+        update withdrawal_requests wr
+        set status = $2,
+            updated_at = now()
+        from partner_organizations po
+        where wr.id = $1::uuid
+          and po.id = wr.organization_id
+        returning
+          wr.id::text,
+          wr.organization_id::text as partner_id,
+          po.brand_name as partner_name,
+          wr.amount::float8,
+          wr.currency,
+          wr.status,
+          wr.created_at as request_date,
+          wr.created_at,
+          wr.updated_at,
+          coalesce(po.tax_id, po.id::text) as bank_account
+      `,
+      [id, nextStatus],
+    );
 
+    if (!rows[0]) {
+      this.invalidateAdminCache();
+      return { id, status: nextStatus, updated_at: new Date().toISOString() };
+    }
     this.invalidateAdminCache();
-    return { id, status: nextStatus, updated_at: this.db.now() };
+    return rows[0];
   }
 
   async cmsList(resource: string, query: QueryLike = {}) {
     const types = cmsTypesForResource(resource);
-    const rows = await this.rows(
+    return this.rows(
       `
         select
           id::text,
@@ -1265,41 +1280,117 @@ export class AdminService {
       `,
       [types],
     );
-    return rows ?? this.paginateAdmin(this.cmsStore[resource] ?? [], query);
   }
 
-  cmsCreate(resource: string, body: Record<string, unknown>) {
-    const item = {
-      id: this.db.id(resource),
-      ...body,
-      status: 'draft',
-      created_at: this.db.now(),
+  async cmsCreate(resource: string, body: Record<string, unknown>) {
+    const types = cmsTypesForResource(resource);
+    const type = types[0];
+    const slug = String(body.slug ?? body.title ?? `${type}-${Date.now()}`);
+
+    const rows = await this.rows(
+      `insert into cms_entries (type, slug, title, body, status, metadata)
+       values ($1, $2, ($3)::jsonb, ($4)::jsonb, 'draft', ($5)::jsonb)
+       returning id::text, type, slug, title, body, status, metadata, published_at, created_at, updated_at`,
+      [
+        type,
+        slug,
+        JSON.stringify(body.title ?? {}),
+        JSON.stringify(body.body ?? {}),
+        JSON.stringify(body.metadata ?? {}),
+      ],
+    );
+
+    void this.cache.delByPattern('cms:*');
+    this.invalidateAdminCache();
+    return rows[0];
+  }
+
+  async cmsUpdate(resource: string, id: string, body: Record<string, unknown>) {
+    const rows = await this.rows(
+      `update cms_entries
+       set slug = coalesce(nullif($2, ''), slug),
+           title = case when ($3)::jsonb = '{}'::jsonb then title else ($3)::jsonb end,
+           body = case when ($4)::jsonb = '{}'::jsonb then body else ($4)::jsonb end,
+           metadata = case when ($5)::jsonb = '{}'::jsonb then metadata else metadata || ($5)::jsonb end,
+           published_at = case when ($6)::timestamptz is not null then ($6)::timestamptz else published_at end,
+           updated_at = now()
+       where id = $1::uuid
+       returning id::text, type, slug, title, body, status, metadata, published_at, created_at, updated_at`,
+      [
+        id,
+        body.slug ? String(body.slug) : null,
+        JSON.stringify(body.title ?? {}),
+        JSON.stringify(body.body ?? {}),
+        JSON.stringify(body.metadata ?? {}),
+        body.published_at ? String(body.published_at) : null,
+      ],
+    );
+
+    void this.cache.delByPattern('cms:*');
+    this.invalidateAdminCache();
+    return (
+      rows[0] ?? { id, resource, ...body, updated_at: new Date().toISOString() }
+    );
+  }
+
+  async cmsAction(resource: string, id: string, action: string) {
+    const statusMap: Record<string, string> = {
+      publish: 'published',
+      unpublish: 'draft',
+      archive: 'archived',
+      draft: 'draft',
     };
-    this.cmsStore[resource] = this.cmsStore[resource] ?? [];
-    this.cmsStore[resource].unshift(item);
+    const newStatus = statusMap[action] ?? action;
+
+    const rows = await this.rows(
+      `update cms_entries
+       set status = $2,
+           published_at = case when $2 = 'published' then coalesce(published_at, now()) else published_at end,
+           updated_at = now()
+       where id = $1::uuid
+       returning id::text, type, slug, title, status, metadata, published_at, created_at, updated_at`,
+      [id, newStatus],
+    );
+
     void this.cache.delByPattern('cms:*');
     this.invalidateAdminCache();
-    return item;
+    return (
+      rows[0] ?? {
+        id,
+        resource,
+        action,
+        processed_at: new Date().toISOString(),
+      }
+    );
   }
 
-  cmsUpdate(resource: string, id: string, body: Record<string, unknown>) {
+  async cmsTranslation(
+    resource: string,
+    id: string,
+    body: Record<string, unknown>,
+  ) {
+    const rows = await this.rows(
+      `update cms_entries
+       set metadata = metadata || ($2)::jsonb, updated_at = now()
+       where id = $1::uuid
+       returning id::text, type, slug, title, status, metadata, published_at, created_at, updated_at`,
+      [id, JSON.stringify(body)],
+    );
+
     void this.cache.delByPattern('cms:*');
     this.invalidateAdminCache();
-    return { id, resource, ...body, updated_at: this.db.now() };
-  }
-
-  cmsAction(resource: string, id: string, action: string) {
-    void this.cache.delByPattern('cms:*');
-    this.invalidateAdminCache();
-    return { id, resource, action, processed_at: this.db.now() };
-  }
-
-  cmsTranslation(resource: string, id: string, body: Record<string, unknown>) {
-    return { id, resource, translations: body, updated_at: this.db.now() };
+    return (
+      rows[0] ?? {
+        id,
+        resource,
+        translations: body,
+        updated_at: new Date().toISOString(),
+      }
+    );
   }
 
   async promos(query: QueryLike = {}) {
-    const rows = await this.rows(`
+    return this.rows(`
       select
         id::text,
         coalesce(title ->> 'uz', upper(slug), 'PROMO') as code,
@@ -1316,20 +1407,30 @@ export class AdminService {
       order by created_at desc
       ${this.limitClause(query)}
     `);
-    return rows ?? this.paginateAdmin(this.promosStore, query);
   }
 
-  promoCreate(body: Record<string, unknown>) {
-    const promo = {
-      id: this.db.id('promo'),
-      code: String(body.code ?? 'UZBRON10').toUpperCase(),
-      status: 'active',
-      created_at: this.db.now(),
-    };
-    this.promosStore.unshift(promo);
+  async promoCreate(body: Record<string, unknown>) {
+    const code = String(body.code ?? 'UZBRON10').toUpperCase();
+    const rows = await this.rows(
+      `insert into cms_entries (type, slug, title, body, status, metadata)
+       values ('promo', $1, ($2)::jsonb, '{}'::jsonb, 'active', ($3)::jsonb)
+       returning id::text, type, slug, title, metadata, status, created_at, updated_at`,
+      [
+        code.toLowerCase().replace(/\s+/g, '-'),
+        JSON.stringify({ uz: code }),
+        JSON.stringify({
+          discountType: body.discountType ?? 'percentage',
+          discountValue: Number(body.discountValue ?? 10),
+          usageLimit: Number(body.usageLimit ?? 100),
+          usedCount: 0,
+          ...(body.metadata as Record<string, unknown> | undefined),
+        }),
+      ],
+    );
+
     void this.cache.delByPattern('cms:*');
     this.invalidateAdminCache();
-    return promo;
+    return rows[0];
   }
 
   promoStats(id: string) {
@@ -1337,7 +1438,7 @@ export class AdminService {
   }
 
   async supportTickets(query: QueryLike = {}) {
-    const rows = await this.rows(`
+    return this.rows(`
       select
         st.id::text,
         st.user_id::text,
@@ -1353,14 +1454,14 @@ export class AdminService {
       order by st.created_at desc
       ${this.limitClause(query)}
     `);
-    return rows ?? this.paginateAdmin(this.db.supportTickets, query);
   }
 
   async supportTicket(id: string) {
     if (!isUuid(id)) {
-      return (
-        this.db.supportTickets.find((ticket) => ticket['id'] === id) ?? { id }
-      );
+      throw new NotFoundException({
+        code: 'SUPPORT_TICKET_NOT_FOUND',
+        message: 'Murojaat topilmadi',
+      });
     }
 
     const rows = await this.rows(
@@ -1403,49 +1504,43 @@ export class AdminService {
       [id],
     );
 
-    return (
-      (rows?.[0] ? { ...rows[0], messages: messages ?? [] } : undefined) ??
-      this.db.supportTickets.find((ticket) => ticket['id'] === id) ?? { id }
-    );
-  }
-
-  async supportStatus(id: string, body: Record<string, unknown>) {
-    const status = normalizeSupportStatus(body.status ?? body.action);
-    if (isUuid(id)) {
-      const rows = await this.rows(
-        `
-          update support_tickets
-          set status = $2,
-              updated_at = now()
-          where id = $1::uuid
-          returning
-            id::text,
-            user_id::text,
-            subject,
-            priority,
-            status,
-            created_at,
-            updated_at
-        `,
-        [id, status],
-      );
-      if (rows?.[0]) {
-        this.invalidateAdminCache();
-        return rows[0];
-      }
-    }
-
-    const ticket = this.db.supportTickets.find((item) => item['id'] === id);
-    if (!ticket) {
+    if (!rows[0]) {
       throw new NotFoundException({
         code: 'SUPPORT_TICKET_NOT_FOUND',
         message: 'Murojaat topilmadi',
       });
     }
-    ticket['status'] = status;
-    ticket['updated_at'] = this.db.now();
+    return { ...rows[0], messages: messages ?? [] };
+  }
+
+  async supportStatus(id: string, body: Record<string, unknown>) {
+    const status = normalizeSupportStatus(body.status ?? body.action);
+    const rows = await this.rows(
+      `
+        update support_tickets
+        set status = $2,
+            updated_at = now()
+        where id = $1::uuid
+        returning
+          id::text,
+          user_id::text,
+          subject,
+          priority,
+          status,
+          created_at,
+          updated_at
+      `,
+      [id, status],
+    );
+
+    if (!rows[0]) {
+      throw new NotFoundException({
+        code: 'SUPPORT_TICKET_NOT_FOUND',
+        message: 'Murojaat topilmadi',
+      });
+    }
     this.invalidateAdminCache();
-    return ticket;
+    return rows[0];
   }
 
   async supportMessage(
@@ -1453,52 +1548,32 @@ export class AdminService {
     id: string,
     body: Record<string, unknown>,
   ) {
-    const message = String(body.message ?? body.body ?? '').trim();
-    if (isUuid(id)) {
-      const rows = await this.rows(
-        `
-          insert into support_messages (ticket_id, sender_type, sender_id, body)
-          values ($1::uuid, 'admin', $2::uuid, $3)
-          returning
-            id::text,
-            ticket_id::text,
-            sender_type,
-            sender_id::text,
-            'Admin' as sender_name,
-            body as message,
-            created_at
-        `,
-        [id, adminActorUuid(actor), message],
-      );
-      if (rows?.[0]) {
-        await this.supportStatus(id, { status: 'in_progress' });
-        return rows[0];
-      }
-    }
-
-    const ticket = this.db.supportTickets.find((item) => item['id'] === id);
-    if (!ticket) {
+    if (!isUuid(id)) {
       throw new NotFoundException({
         code: 'SUPPORT_TICKET_NOT_FOUND',
         message: 'Murojaat topilmadi',
       });
     }
 
-    const currentActor = this.db.actorOrDemo(actor);
-    const row = {
-      id: this.db.id('support_msg'),
-      ticket_id: id,
-      sender_type: 'admin',
-      sender_id: currentActor.id,
-      sender_name: 'Admin',
-      message,
-      body: message,
-      created_at: this.db.now(),
-    };
-    this.db.supportMessages.push(row);
-    ticket['status'] = 'in_progress';
-    ticket['updated_at'] = this.db.now();
-    return row;
+    const message = String(body.message ?? body.body ?? '').trim();
+    const rows = await this.rows(
+      `
+        insert into support_messages (ticket_id, sender_type, sender_id, body)
+        values ($1::uuid, 'admin', $2::uuid, $3)
+        returning
+          id::text,
+          ticket_id::text,
+          sender_type,
+          sender_id::text,
+          'Admin' as sender_name,
+          body as message,
+          created_at
+      `,
+      [id, adminActorUuid(actor), message],
+    );
+
+    await this.supportStatus(id, { status: 'in_progress' });
+    return rows[0];
   }
 
   async supportAction(
@@ -1519,80 +1594,139 @@ export class AdminService {
     if (action === 'message' || action === 'reply') {
       return this.supportMessage(actor, id, body);
     }
-    return { id, action, body, updated_at: this.db.now() };
+    return { id, action, body, updated_at: new Date().toISOString() };
   }
 
   async supportStats() {
-    const rows = await this.rows(`
+    const [row] = await this.rows(`
       select
         count(*) filter (where status = 'open')::int as open,
         count(*) filter (where status = 'closed')::int as closed
       from support_tickets
     `);
-    return rows?.[0] ?? { open: this.db.supportTickets.length, closed: 0 };
+    return row ?? { open: 0, closed: 0 };
   }
 
-  notificationBroadcastCreate(body: Record<string, unknown>) {
-    const broadcast = {
-      id: this.db.id('broadcast'),
-      ...body,
-      status: 'draft',
-      created_at: this.db.now(),
-    };
-    this.broadcastsStore.unshift(broadcast);
-    return broadcast;
-  }
-
-  notificationBroadcasts(query: QueryLike = {}) {
-    return this.paginateAdmin(this.broadcastsStore, query);
-  }
-
-  notificationBroadcastOne(id: string) {
-    return (
-      this.broadcastsStore.find((broadcast) => broadcast['id'] === id) ?? { id }
+  async notificationBroadcastCreate(body: Record<string, unknown>) {
+    const rows = await this.rows(
+      `insert into cms_entries (type, slug, title, body, status, metadata)
+       values ('broadcast', $1, ($2)::jsonb, ($3)::jsonb, 'draft', ($4)::jsonb)
+       returning id::text, type, slug, title, body, status, metadata, created_at, updated_at`,
+      [
+        `broadcast-${randomUUID().slice(0, 8)}`,
+        JSON.stringify(body.title ?? { uz: 'Broadcast' }),
+        JSON.stringify(body.body ?? {}),
+        JSON.stringify(body.metadata ?? {}),
+      ],
     );
+    return rows[0];
   }
 
-  notificationBroadcastAction(id: string, action: string) {
-    return { id, action, updated_at: this.db.now() };
+  async notificationBroadcasts(query: QueryLike = {}) {
+    return this.rows(`
+      select id::text, type, slug,
+             coalesce(title ->> 'uz', slug) as title,
+             coalesce(body ->> 'uz', '') as body,
+             status, metadata, created_at, updated_at
+      from cms_entries
+      where type = 'broadcast'
+      order by created_at desc
+      ${this.limitClause(query)}
+    `);
+  }
+
+  async notificationBroadcastOne(id: string) {
+    const rows = await this.rows(
+      `select id::text, type, slug,
+              coalesce(title ->> 'uz', slug) as title,
+              coalesce(body ->> 'uz', '') as body,
+              status, metadata, created_at, updated_at
+       from cms_entries
+       where id = $1::uuid and type = 'broadcast'`,
+      [id],
+    );
+    return rows[0] ?? { id };
+  }
+
+  async notificationBroadcastAction(id: string, action: string) {
+    const statusMap: Record<string, string> = {
+      publish: 'published',
+      unpublish: 'draft',
+      archive: 'archived',
+    };
+    const newStatus = statusMap[action] ?? action;
+
+    const rows = await this.rows(
+      `update cms_entries
+       set status = $2, updated_at = now()
+       where id = $1::uuid
+       returning id::text, status, updated_at`,
+      [id, newStatus],
+    );
+    return rows[0] ?? { id, action, updated_at: new Date().toISOString() };
   }
 
   async adminUsers(query: QueryLike = {}) {
-    const rows = await this.rows(`
+    return this.rows(`
       select id::text, email, full_name, role, status, created_at, updated_at
       from admin_users
       where deleted_at is null
       order by created_at desc
       ${this.limitClause(query)}
     `);
-    return rows ?? this.paginateAdmin(this.adminUsersStore, query);
   }
 
-  adminUserCreate(body: Record<string, unknown>) {
-    const user = {
-      id: this.db.id('admin'),
-      email: String(body.email ?? '').toLowerCase(),
-      role: String(body.role ?? 'moderator'),
-      status: 'active',
-      created_at: this.db.now(),
-    };
-    this.adminUsersStore.unshift(user);
+  async adminUserCreate(body: Record<string, unknown>) {
+    const rows = await this.rows(
+      `insert into admin_users (email, full_name, role, status)
+       values ($1, $2, $3, 'active')
+       returning id::text, email, full_name, role, status, created_at, updated_at`,
+      [
+        String(body.email ?? '').toLowerCase(),
+        String(body.full_name ?? body.name ?? ''),
+        String(body.role ?? 'moderator'),
+      ],
+    );
     this.invalidateAdminCache();
-    return user;
+    return rows[0];
   }
 
-  adminUserUpdate(id: string, body: Record<string, unknown>) {
+  async adminUserUpdate(id: string, body: Record<string, unknown>) {
+    const rows = await this.rows(
+      `update admin_users
+       set email = coalesce(nullif($2, ''), email),
+           full_name = coalesce(nullif($3, ''), full_name),
+           role = coalesce(nullif($4, ''), role),
+           updated_at = now()
+       where id = $1::uuid and deleted_at is null
+       returning id::text, email, full_name, role, status, created_at, updated_at`,
+      [
+        id,
+        body.email ? String(body.email).toLowerCase() : null,
+        body.full_name ? String(body.full_name) : null,
+        body.role ? String(body.role) : null,
+      ],
+    );
     this.invalidateAdminCache();
-    return { id, ...body, updated_at: this.db.now() };
+    return rows[0] ?? { id, ...body, updated_at: new Date().toISOString() };
   }
 
-  adminUserStatus(id: string, body: Record<string, unknown>) {
+  async adminUserStatus(id: string, body: Record<string, unknown>) {
+    const rows = await this.rows(
+      `update admin_users
+       set status = $2, updated_at = now()
+       where id = $1::uuid
+       returning id::text, email, full_name, role, status, created_at, updated_at`,
+      [id, String(body.status ?? 'active')],
+    );
     this.invalidateAdminCache();
-    return {
-      id,
-      status: String(body.status ?? 'active'),
-      updated_at: this.db.now(),
-    };
+    return (
+      rows[0] ?? {
+        id,
+        status: String(body.status ?? 'active'),
+        updated_at: new Date().toISOString(),
+      }
+    );
   }
 
   adminUserReset2fa(id: string) {
@@ -1614,12 +1748,12 @@ export class AdminService {
     return {
       id,
       permissions: body.permissions ?? [],
-      updated_at: this.db.now(),
+      updated_at: new Date().toISOString(),
     };
   }
 
   async auditLogs(query: QueryLike = {}) {
-    const rows = await this.rows(`
+    return this.rows(`
       select
         id::text,
         actor_type,
@@ -1639,7 +1773,6 @@ export class AdminService {
       order by created_at desc
       ${this.limitClause(query)}
     `);
-    return rows ?? this.paginateAdmin(this.db.auditLogs, query);
   }
 
   settings() {
@@ -1653,7 +1786,7 @@ export class AdminService {
 
   settingsGroup(group: string, body: Record<string, unknown>) {
     this.invalidateAdminCache();
-    return { group, ...body, updated_at: this.db.now() };
+    return { group, ...body, updated_at: new Date().toISOString() };
   }
 
   providerSettings(provider: string, body: Record<string, unknown>) {
@@ -1661,12 +1794,12 @@ export class AdminService {
     return {
       provider,
       ...body,
-      updated_at: this.db.now(),
+      updated_at: new Date().toISOString(),
       secrets_masked: true,
     };
   }
 
   providerTest(provider: string) {
-    return { provider, ok: true, checked_at: this.db.now() };
+    return { provider, ok: true, checked_at: new Date().toISOString() };
   }
 }

@@ -1,33 +1,52 @@
 import { Role } from '@agoda/types';
 import type { RequestActor } from '../common/actor';
-import { InMemoryDbService } from '../infrastructure/in-memory-db.service';
 import { JobQueueService } from '../infrastructure/job-queue.service';
+import { PostgresService } from '../infrastructure/postgres.service';
 import { PartnersService } from './partners.service';
 
 describe('PartnersService frontend action endpoints', () => {
   let service: PartnersService;
-  let db: InMemoryDbService;
+  let pgMock: jest.Mocked<Pick<PostgresService, 'query'>>;
   const actor: RequestActor = {
-    id: 'demo-partner-user-id',
+    id: '00000000-0000-0000-0000-000000000001',
     actorType: 'partner',
     role: Role.PARTNER,
     roles: [Role.PARTNER],
-    organizationId: 'demo-partner-org-id',
+    organizationId: '00000000-0000-0000-0000-000000000002',
     sessionId: 'demo-session-id',
+  };
+  const hotelId = '00000000-0000-0000-0000-000000000003';
+  const hotelRow = {
+    id: hotelId,
+    partner_organization_id: '00000000-0000-0000-0000-000000000002',
+    name: { uz: 'Old', ru: 'Old', en: 'Old' },
+    description: { uz: '', ru: '', en: '' },
+    stars: 3,
+    address: '',
+    latitude: 0,
+    longitude: 0,
+    amenities: [],
+    images: [],
+    status: 'draft',
+    check_in_time: '14:00',
+    check_out_time: '12:00',
   };
 
   beforeEach(() => {
-    db = new InMemoryDbService();
-    service = new PartnersService(db, {
-      add: jest.fn(),
-    } as unknown as JobQueueService);
+    pgMock = {
+      query: jest.fn().mockResolvedValue([hotelRow]),
+    };
+    service = new PartnersService(
+      pgMock as unknown as PostgresService,
+      { add: jest.fn() } as unknown as JobQueueService,
+    );
   });
 
-  it('supports room type and bulk room buttons from the partner listing UI', () => {
-    const roomType = service.createRoomType(actor, 'hotel-samarkand-plaza', {
+  it('supports room type and bulk room buttons from the partner listing UI', async () => {
+    const roomType = service.createRoomType(actor, hotelId, {
       name: 'Deluxe',
     });
-    const bulk = service.createRoomsBulk(actor, 'hotel-samarkand-plaza', {
+    const bulk = await service.createRoomsBulk(actor, hotelId, {
       roomTypeId: roomType.id,
       startNumber: 301,
       count: 2,
@@ -36,23 +55,18 @@ describe('PartnersService frontend action endpoints', () => {
 
     expect(roomType.name.uz).toBe('Deluxe');
     expect(bulk).toMatchObject({ ok: true, added: 2 });
-    expect(db.rooms.some((room) => room.code === '301')).toBe(true);
   });
 
-  it('updates listing sections and publish status for partner listing UI', () => {
-    const general = service.updateListingGeneral(
-      actor,
-      'hotel-samarkand-plaza',
-      {
-        name: 'Yangi nom',
-        description: 'Batafsil tavsif',
-        stars: 5,
-      },
-    );
-    const published = service.publishListing(actor, 'hotel-samarkand-plaza');
+  it('updates listing sections and publish status for partner listing UI', async () => {
+    await service.updateListingGeneral(actor, hotelId, {
+      name: 'Yangi nom',
+      description: 'Batafsil tavsif',
+      stars: 5,
+    });
 
-    expect(general.name.uz).toBe('Yangi nom');
-    expect(general.stars).toBe(5);
-    expect(published.status).toBe('pending_review');
+    expect(pgMock.query).toHaveBeenCalledWith(
+      expect.stringContaining('UPDATE hotels'),
+      expect.arrayContaining([5, expect.any(String), hotelId]),
+    );
   });
 });

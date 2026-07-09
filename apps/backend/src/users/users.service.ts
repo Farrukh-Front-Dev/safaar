@@ -1,74 +1,118 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import { Role } from '@agoda/types';
 import type { RequestActor } from '../common/actor';
 import {
-  paginateArray,
   parsePagination,
+  limitOffsetSql,
   type QueryLike,
 } from '../common/pagination';
-import { InMemoryDbService } from '../infrastructure/in-memory-db.service';
+import { PostgresService } from '../infrastructure/postgres.service';
 import { JobQueueService } from '../infrastructure/job-queue.service';
 
 @Injectable()
 export class UsersService {
-  private readonly favoritesStore: Array<Record<string, unknown>> = [];
   private readonly notificationPreferencesStore = new Map<
     string,
     Record<string, boolean>
   >();
 
   constructor(
-    private readonly db: InMemoryDbService,
+    private readonly pg: PostgresService,
     private readonly jobs: JobQueueService,
   ) {}
 
-  profile(actor: RequestActor | undefined) {
-    const currentActor = this.db.actorOrDemo(actor);
+  private actorOrDemo(actor: RequestActor | undefined): RequestActor {
+    return (
+      actor ?? {
+        id: '00000000-0000-0000-0000-000000000000',
+        actorType: 'user',
+        role: Role.USER,
+        roles: [Role.USER],
+      }
+    );
+  }
+
+  async profile(actor: RequestActor | undefined) {
+    const currentActor = this.actorOrDemo(actor);
     return this.assertUser(currentActor.id);
   }
 
-  updateProfile(
+  async updateProfile(
     actor: RequestActor | undefined,
     body: Record<string, unknown>,
   ) {
-    const user = this.profile(actor);
-    user.first_name = body.first_name
-      ? String(body.first_name)
-      : user.first_name;
-    user.last_name = body.last_name ? String(body.last_name) : user.last_name;
-    user.email = body.email ? String(body.email).toLowerCase() : user.email;
-    user.updated_at = this.db.now();
+    const currentActor = this.actorOrDemo(actor);
+    const sets: string[] = [];
+    const params: unknown[] = [];
+    let idx = 1;
+
+    if (body.first_name !== undefined) {
+      sets.push(`first_name = $${idx++}`);
+      params.push(String(body.first_name));
+    }
+    if (body.last_name !== undefined) {
+      sets.push(`last_name = $${idx++}`);
+      params.push(String(body.last_name));
+    }
+    if (body.email !== undefined) {
+      sets.push(`email = $${idx++}`);
+      params.push(String(body.email).toLowerCase());
+    }
+    sets.push(`updated_at = $${idx++}`);
+    params.push(new Date().toISOString());
+    params.push(currentActor.id);
+
+    const sql = `UPDATE users SET ${sets.join(', ')} WHERE id = $${idx} RETURNING *`;
+    const [user] = await this.pg.query(sql, params);
+
+    if (!user) {
+      throw new NotFoundException({
+        code: 'USER_BLOCKED',
+        message: 'User topilmadi',
+      });
+    }
+
     return user;
   }
 
   setAvatar(actor: RequestActor | undefined, body: Record<string, unknown>) {
-    const user = this.profile(actor);
+    const currentActor = this.actorOrDemo(actor);
     return {
-      user_id: user.id,
-      avatar_media_id: String(body.media_id ?? this.db.id('media')),
+      user_id: currentActor.id,
+      avatar_media_id: String(body.media_id ?? randomUUID()),
       uploaded: true,
     };
   }
 
   deleteAvatar(actor: RequestActor | undefined) {
-    const user = this.profile(actor);
-    return { user_id: user.id, deleted: true };
+    const currentActor = this.actorOrDemo(actor);
+    return { user_id: currentActor.id, deleted: true };
   }
 
-  bookings(actor: RequestActor | undefined, query: QueryLike = {}) {
-    const currentActor = this.db.actorOrDemo(actor);
-    return this.paginate(
-      this.db.bookings.filter((booking) => booking.user_id === currentActor.id),
-      query,
+  async bookings(actor: RequestActor | undefined, query: QueryLike = {}) {
+    const currentActor = this.actorOrDemo(actor);
+    const pagination = parsePagination(query, 'public', {
+      defaultLimit: 20,
+      allowedSortBy: ['created_at', 'updated_at', 'status'],
+    });
+    const orderDir = pagination.order === 'asc' ? 'ASC' : 'DESC';
+    const allowedSort = ['created_at', 'updated_at', 'status'];
+    const sortCol = allowedSort.includes(pagination.sortBy)
+      ? pagination.sortBy
+      : 'created_at';
+
+    const sql = `SELECT * FROM bookings WHERE user_id = $1 ORDER BY ${sortCol} ${orderDir} ${limitOffsetSql(pagination)}`;
+    return this.pg.query(sql, [currentActor.id]);
+  }
+
+  async booking(actor: RequestActor | undefined, id: string) {
+    const currentActor = this.actorOrDemo(actor);
+    const [booking] = await this.pg.query(
+      'SELECT * FROM bookings WHERE id = $1 AND user_id = $2',
+      [id, currentActor.id],
     );
-  }
 
-  booking(actor: RequestActor | undefined, id: string) {
-    const currentActor = this.db.actorOrDemo(actor);
-    const booking = this.db.findBooking(id);
     if (!booking) {
       throw new NotFoundException({
         code: 'BOOKING_EXPIRED',
@@ -76,59 +120,64 @@ export class UsersService {
       });
     }
 
-    if (booking.user_id !== currentActor.id) {
-      throw new ForbiddenException({
-        code: 'BOOKING_FORBIDDEN',
-        message: 'Bu bron sizga tegishli emas',
-      });
-    }
-
     return booking;
   }
 
-  bonuses(actor: RequestActor | undefined) {
-    const user = this.profile(actor);
+  bonuses(_actor: RequestActor | undefined) {
     return {
-      balance: user.bonus_balance,
+      balance: 0,
       currency: 'UZS',
       ledger: [],
     };
   }
 
-  favorites(actor: RequestActor | undefined, query: QueryLike = {}) {
-    const currentActor = this.db.actorOrDemo(actor);
-    return this.paginate(
-      this.favoritesStore.filter(
-        (favorite) => favorite['user_id'] === currentActor.id,
-      ),
-      query,
+  async favorites(actor: RequestActor | undefined, query: QueryLike = {}) {
+    const currentActor = this.actorOrDemo(actor);
+    const pagination = parsePagination(query, 'public', {
+      defaultLimit: 20,
+      allowedSortBy: ['created_at'],
+    });
+    const orderDir = pagination.order === 'asc' ? 'ASC' : 'DESC';
+
+    const sql = `SELECT * FROM favorites WHERE user_id = $1 ORDER BY created_at ${orderDir} ${limitOffsetSql(pagination)}`;
+    return this.pg.query(sql, [currentActor.id]);
+  }
+
+  async addFavorite(
+    actor: RequestActor | undefined,
+    body: Record<string, unknown>,
+  ) {
+    const currentActor = this.actorOrDemo(actor);
+    const id = randomUUID();
+    const targetType = String(body.target_type ?? 'hotel');
+    const targetId = String(body.target_id ?? body.hotel_id ?? '');
+    const createdAt = new Date().toISOString();
+
+    await this.pg.query(
+      'INSERT INTO favorites (id, user_id, target_type, target_id, created_at) VALUES ($1, $2, $3, $4, $5)',
+      [id, currentActor.id, targetType, targetId, createdAt],
     );
-  }
 
-  addFavorite(actor: RequestActor | undefined, body: Record<string, unknown>) {
-    const currentActor = this.db.actorOrDemo(actor);
-    const favorite = {
-      id: this.db.id('fav'),
-      user_id: currentActor.id,
-      target_type: String(body.target_type ?? 'hotel'),
-      target_id: String(body.target_id ?? body.hotel_id ?? ''),
-      created_at: this.db.now(),
-    };
-    this.favoritesStore.unshift(favorite);
-    return favorite;
-  }
-
-  deleteFavorite(actor: RequestActor | undefined, id: string) {
-    const currentActor = this.db.actorOrDemo(actor);
     return {
       id,
       user_id: currentActor.id,
-      deleted: true,
+      target_type: targetType,
+      target_id: targetId,
+      created_at: createdAt,
     };
   }
 
+  async deleteFavorite(actor: RequestActor | undefined, id: string) {
+    const currentActor = this.actorOrDemo(actor);
+    await this.pg.query(
+      'DELETE FROM favorites WHERE id = $1 AND user_id = $2',
+      [id, currentActor.id],
+    );
+    return { id, user_id: currentActor.id, deleted: true };
+  }
+
   notificationPreferences(actor: RequestActor | undefined) {
-    const currentActor = this.db.actorOrDemo(actor);
+    const currentActor = this.actorOrDemo(actor);
     return (
       this.notificationPreferencesStore.get(currentActor.id) ?? {
         sms: true,
@@ -143,7 +192,7 @@ export class UsersService {
     actor: RequestActor | undefined,
     body: Record<string, unknown>,
   ) {
-    const currentActor = this.db.actorOrDemo(actor);
+    const currentActor = this.actorOrDemo(actor);
     const preferences = {
       sms: Boolean(body.sms ?? true),
       email: Boolean(body.email ?? true),
@@ -155,14 +204,14 @@ export class UsersService {
   }
 
   async dataExport(actor: RequestActor | undefined) {
-    const currentActor = this.db.actorOrDemo(actor);
+    const currentActor = this.actorOrDemo(actor);
     const job = {
-      id: this.db.id('export'),
+      id: randomUUID(),
       owner_id: currentActor.id,
       type: 'personal-data',
       format: 'json',
       status: 'queued',
-      created_at: this.db.now(),
+      created_at: new Date().toISOString(),
     };
     await this.jobs.add(
       'user-data-export',
@@ -172,17 +221,21 @@ export class UsersService {
     return job;
   }
 
-  deleteRequest(actor: RequestActor | undefined) {
-    const currentActor = this.db.actorOrDemo(actor);
+  async deleteRequest(actor: RequestActor | undefined) {
+    const currentActor = this.actorOrDemo(actor);
     return {
       user_id: currentActor.id,
       status: 'requested',
-      created_at: this.db.now(),
+      created_at: new Date().toISOString(),
     };
   }
 
-  private assertUser(id: string) {
-    const user = this.db.findUser(id);
+  private async assertUser(id: string) {
+    const [user] = await this.pg.query(
+      'SELECT * FROM users WHERE id = $1 AND deleted_at IS NULL',
+      [id],
+    );
+
     if (!user) {
       throw new NotFoundException({
         code: 'USER_BLOCKED',
@@ -192,20 +245,4 @@ export class UsersService {
 
     return user;
   }
-
-  private paginate<T extends object>(items: readonly T[], query: QueryLike) {
-    const pagination = parsePagination(query, 'public', {
-      defaultLimit: 20,
-      allowedSortBy: ['created_at', 'updated_at', 'status'],
-    });
-    return paginateArray(items, pagination, {
-      created_at: (item) => field(item, 'created_at'),
-      updated_at: (item) => field(item, 'updated_at'),
-      status: (item) => field(item, 'status'),
-    });
-  }
-}
-
-function field(item: object, key: string): unknown {
-  return (item as Record<string, unknown>)[key];
 }

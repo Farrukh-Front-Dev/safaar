@@ -4,26 +4,44 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { BookingStatus, Role } from '@agoda/types';
 import type { RequestActor } from '../common/actor';
-import {
-  type BookingRecord,
-  type ConfirmationMode,
-  InMemoryDbService,
-  type PaymentMethod,
-} from '../infrastructure/in-memory-db.service';
+import { PostgresService } from '../infrastructure/postgres.service';
+
+/**
+ * DB-level booking status constants (lowercase, matching pg enum values).
+ */
+const BS = {
+  PENDING: BookingStatus.PENDING.toLowerCase(),
+  AWAITING_PAYMENT: BookingStatus.AWAITING_PAYMENT.toLowerCase(),
+  AWAITING_PARTNER_CONFIRMATION:
+    BookingStatus.AWAITING_PARTNER_CONFIRMATION.toLowerCase(),
+  CONFIRMED: BookingStatus.CONFIRMED.toLowerCase(),
+  CANCELLED: BookingStatus.CANCELLED.toLowerCase(),
+  COMPLETED: BookingStatus.COMPLETED.toLowerCase(),
+  EXPIRED: BookingStatus.EXPIRED.toLowerCase(),
+} as const;
 
 @Injectable()
 export class BookingsService {
-  constructor(private readonly db: InMemoryDbService) {}
+  constructor(private readonly pg: PostgresService) {}
 
-  createHotel(actor: RequestActor | undefined, dto: Record<string, unknown>) {
-    const currentActor = this.db.actorOrDemo(actor);
+  async createHotel(
+    actor: RequestActor | undefined,
+    dto: Record<string, unknown>,
+  ) {
+    const currentActor = this.actorOrDemo(actor);
     const hotelId = String(dto.hotel_id ?? dto.hotelId ?? '');
     const roomId = String(dto.room_id ?? dto.roomTypeId ?? '');
-    const hotel = this.db.hotels.find((item) => item.id === hotelId);
-    const room = this.db.rooms.find(
-      (item) => item.id === roomId && item.hotel_id === hotelId,
+
+    const [hotel] = await this.pg.query(
+      "SELECT id, partner_organization_id FROM hotels WHERE id = $1 AND deleted_at IS NULL AND status = 'published'",
+      [hotelId],
+    );
+    const [room] = await this.pg.query(
+      "SELECT id, base_price, hotel_id FROM hotel_rooms WHERE id = $1 AND hotel_id = $2 AND status = 'active'",
+      [roomId, hotelId],
     );
 
     if (!hotel || !room) {
@@ -37,15 +55,17 @@ export class BookingsService {
     const checkOut = String(dto.check_out ?? dto.checkOut ?? '');
     const nights = this.calculateNights(checkIn, checkOut);
     const rooms = Number(dto.rooms ?? 1);
-    const subtotal = room.base_price * nights * rooms;
-    const booking = this.createBooking(currentActor.id, {
+    const subtotal = Number(room.base_price) * nights * rooms;
+
+    const booking = await this.createBooking(currentActor.id, {
       type: 'hotel',
       partner_organization_id: hotel.partner_organization_id,
       payment_method: this.paymentMethod(dto.payment_method),
       confirmation_mode: this.confirmationMode(dto.confirmation_mode),
       subtotal,
-      item: {
-        hotel_id: hotel.id,
+      hotel_id: hotel.id,
+      trip_id: null,
+      price_snapshot: {
         room_id: room.id,
         check_in: checkIn,
         check_out: checkOut,
@@ -56,14 +76,21 @@ export class BookingsService {
       },
     });
 
-    const payment = this.db.createPayment(booking);
+    const payment = await this.createPayment(booking);
     return { booking, payment };
   }
 
-  createBus(actor: RequestActor | undefined, dto: Record<string, unknown>) {
-    const currentActor = this.db.actorOrDemo(actor);
+  async createBus(
+    actor: RequestActor | undefined,
+    dto: Record<string, unknown>,
+  ) {
+    const currentActor = this.actorOrDemo(actor);
     const tripId = String(dto.trip_id ?? dto.tripId ?? '');
-    const trip = this.db.trips.find((item) => item.id === tripId);
+
+    const [trip] = await this.pg.query(
+      "SELECT id, company_id, base_price FROM trips WHERE id = $1 AND status = 'scheduled'",
+      [tripId],
+    );
 
     if (!trip) {
       throw new NotFoundException({
@@ -74,14 +101,16 @@ export class BookingsService {
 
     const seatCodes = Array.isArray(dto.seats)
       ? dto.seats.map(String)
-      : this.db.tripSeats
-          .filter(
-            (seat) => seat.trip_id === trip.id && seat.status === 'available',
+      : (
+          await this.pg.query(
+            "SELECT seat_code FROM trip_seats WHERE trip_id = $1 AND status = 'available' ORDER BY seat_code LIMIT 1",
+            [tripId],
           )
-          .slice(0, 1)
-          .map((seat) => seat.seat_code);
-    const seats = this.db.tripSeats.filter(
-      (seat) => seat.trip_id === trip.id && seatCodes.includes(seat.seat_code),
+        ).map((s) => s.seat_code);
+
+    const seats = await this.pg.query(
+      'SELECT * FROM trip_seats WHERE trip_id = $1 AND seat_code = ANY($2::text[])',
+      [tripId, seatCodes],
     );
 
     if (
@@ -90,94 +119,115 @@ export class BookingsService {
     ) {
       throw new UnprocessableEntityException({
         code: 'SEAT_NOT_AVAILABLE',
-        message: 'O‘rindiq band',
+        message: "O'rindiq band",
       });
     }
 
+    const [company] = await this.pg.query(
+      'SELECT partner_organization_id FROM bus_companies WHERE id = $1',
+      [trip.company_id],
+    );
     const partnerOrganizationId =
-      this.db.busCompanies.find((company) => company.id === trip.company_id)
-        ?.partner_organization_id ?? 'demo-partner-org-id';
-    const subtotal = seats.reduce((sum, seat) => sum + seat.price, 0);
-    const booking = this.createBooking(currentActor.id, {
+      company?.partner_organization_id ?? 'demo-partner-org-id';
+
+    const subtotal = seats.reduce((sum, seat) => sum + Number(seat.price), 0);
+
+    const expiresAt = new Date(Date.now() + 15 * 60_000);
+
+    const booking = await this.createBooking(currentActor.id, {
       type: 'bus',
       partner_organization_id: partnerOrganizationId,
       payment_method: this.paymentMethod(dto.payment_method),
       confirmation_mode: this.confirmationMode(dto.confirmation_mode),
       subtotal,
-      item: {
-        trip_id: trip.id,
-        seats: seats.map((seat) => seat.seat_code),
+      hotel_id: null,
+      trip_id: trip.id,
+      expires_at: expiresAt.toISOString(),
+      price_snapshot: {
+        seats: seats.map((s) => s.seat_code),
         passengers: dto.passengers ?? [],
       },
     });
 
+    // Mark seats as held
     for (const seat of seats) {
-      seat.status = 'held';
-      seat.held_by_booking_id = booking.id;
-      seat.held_until = booking.expires_at;
+      await this.pg.query(
+        'UPDATE trip_seats SET status = $1, held_by_booking_id = $2, held_until = $3 WHERE id = $4',
+        ['held', booking.id, booking.expires_at, seat.id],
+      );
     }
 
-    const payment = this.db.createPayment(booking);
+    const payment = await this.createPayment(booking);
     return { booking, payment };
   }
 
-  findOne(actor: RequestActor | undefined, id: string) {
-    const booking = this.assertBooking(id, actor);
-    return {
-      ...booking,
-      payment: this.db.findPaymentByBooking(id),
-    };
+  async findOne(actor: RequestActor | undefined, id: string) {
+    const booking = await this.assertBooking(id, actor);
+    const [payment] = await this.pg.query(
+      'SELECT * FROM payments WHERE booking_id = $1 ORDER BY created_at DESC LIMIT 1',
+      [id],
+    );
+    return { ...booking, payment: payment ?? null };
   }
 
-  retryPayment(actor: RequestActor | undefined, id: string) {
-    const booking = this.assertBooking(id, actor);
-    return this.db.createPayment(booking);
+  async retryPayment(actor: RequestActor | undefined, id: string) {
+    const booking = await this.assertBooking(id, actor);
+    return this.createPayment(
+      booking as Parameters<typeof this.createPayment>[0],
+    );
   }
 
-  cancelPreview(actor: RequestActor | undefined, id: string) {
-    const booking = this.assertBooking(id, actor);
-    const refundAmount = Math.round(booking.total_amount * 0.8);
+  async cancelPreview(actor: RequestActor | undefined, id: string) {
+    const booking = await this.assertBooking(id, actor);
+    const total = Number(booking.total_amount);
+    const refundAmount = Math.round(total * 0.8);
 
     return {
       booking_id: id,
       currency: booking.currency,
-      paid_amount: booking.total_amount,
+      paid_amount: total,
       refund_amount: refundAmount,
-      penalty_amount: booking.total_amount - refundAmount,
+      penalty_amount: total - refundAmount,
       policy: 'Flexible: 24 soatgacha 80% refund',
     };
   }
 
-  cancel(
+  async cancel(
     actor: RequestActor | undefined,
     id: string,
     body: Record<string, unknown>,
   ) {
-    const booking = this.assertBooking(id, actor);
+    const booking = await this.assertBooking(id, actor);
 
-    if (booking.status === BookingStatus.CANCELLED) {
+    if (booking.status === BS.CANCELLED) {
       throw new UnprocessableEntityException({
         code: 'BOOKING_INVALID_STATUS',
         message: 'Bron allaqachon bekor qilingan',
       });
     }
 
-    booking.status = BookingStatus.CANCELLED;
-    booking.cancelled_at = this.db.now();
-    booking.cancel_reason_text = String(body.reason ?? 'Bekor qilindi');
-    booking.updated_at = this.db.now();
-    this.addStatusHistory(booking, 'cancelled', actor);
-    this.db.audit('booking.cancel', actor, {
-      booking_id: id,
-      reason: booking.cancel_reason_text,
-    });
+    const now = new Date().toISOString();
+    const reason = String(body.reason ?? 'Bekor qilindi');
 
-    return booking;
+    const [updated] = await this.pg.query(
+      `UPDATE bookings
+       SET status = $1, cancelled_at = $2, cancel_reason_text = $3, updated_at = $4
+       WHERE id = $5
+       RETURNING *`,
+      [BS.CANCELLED, now, reason, now, id],
+    );
+
+    await this.addStatusHistory(
+      updated as Parameters<typeof this.addStatusHistory>[0],
+      'cancelled',
+      actor,
+    );
+
+    return updated;
   }
 
-  voucher(actor: RequestActor | undefined, id: string) {
-    const booking = this.assertBooking(id, actor);
-
+  async voucher(actor: RequestActor | undefined, id: string) {
+    const booking = await this.assertBooking(id, actor);
     return {
       booking_id: id,
       booking_number: booking.booking_number,
@@ -186,57 +236,74 @@ export class BookingsService {
     };
   }
 
-  statusHistory(actor: RequestActor | undefined, id: string) {
-    this.assertBooking(id, actor);
-    return this.db.bookingStatusHistory.filter(
-      (entry) => entry['booking_id'] === id,
+  async statusHistory(actor: RequestActor | undefined, id: string) {
+    await this.assertBooking(id, actor);
+    return this.pg.query(
+      'SELECT * FROM booking_status_history WHERE booking_id = $1 ORDER BY created_at DESC',
+      [id],
     );
   }
 
-  conversation(actor: RequestActor | undefined, id: string) {
-    const booking = this.assertBooking(id, actor);
+  conversation(_actor: RequestActor | undefined, id: string) {
     return {
       id: `conversation_${id}`,
       booking_id: id,
-      participants: [
-        { type: 'user', id: booking.user_id },
-        { type: 'partner', id: booking.partner_organization_id },
-      ],
+      participants: [],
     };
   }
 
-  messages(actor: RequestActor | undefined, id: string) {
-    this.assertBooking(id, actor);
-    return this.db.bookingMessages.filter(
-      (message) => message['booking_id'] === id,
+  async messages(actor: RequestActor | undefined, id: string) {
+    await this.assertBooking(id, actor);
+    return this.pg.query(
+      'SELECT * FROM booking_messages WHERE booking_id = $1 AND hidden_at IS NULL ORDER BY created_at ASC',
+      [id],
     );
   }
 
-  sendMessage(
+  async sendMessage(
     actor: RequestActor | undefined,
     id: string,
     body: Record<string, unknown>,
   ) {
-    this.assertBooking(id, actor);
-    const currentActor = this.db.actorOrDemo(actor);
-    const message = {
-      id: this.db.id('msg'),
+    await this.assertBooking(id, actor);
+    const currentActor = this.actorOrDemo(actor);
+    const messageId = randomUUID();
+    const now = new Date().toISOString();
+
+    await this.pg.query(
+      `INSERT INTO booking_messages (id, booking_id, sender_type, sender_id, message_type, body, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        messageId,
+        id,
+        currentActor.actorType,
+        currentActor.id,
+        'text',
+        String(body.body ?? ''),
+        now,
+      ],
+    );
+
+    return {
+      id: messageId,
       booking_id: id,
       sender_type: currentActor.actorType,
       sender_id: currentActor.id,
       message_type: 'text',
       body: String(body.body ?? ''),
-      created_at: this.db.now(),
-      read_by: [currentActor.id],
+      created_at: now,
     };
-    this.db.bookingMessages.push(message);
-    return message;
   }
 
-  readMessage(actor: RequestActor | undefined, id: string, messageId: string) {
-    this.assertBooking(id, actor);
-    const message = this.db.bookingMessages.find(
-      (item) => item['id'] === messageId && item['booking_id'] === id,
+  async readMessage(
+    actor: RequestActor | undefined,
+    id: string,
+    messageId: string,
+  ) {
+    await this.assertBooking(id, actor);
+    const [message] = await this.pg.query(
+      'SELECT * FROM booking_messages WHERE id = $1 AND booking_id = $2',
+      [messageId, id],
     );
 
     if (!message) {
@@ -246,75 +313,210 @@ export class BookingsService {
       });
     }
 
-    message['read_at'] = this.db.now();
     return message;
   }
 
-  findByUser(userId: string): BookingRecord[] {
-    return this.db.bookings.filter((booking) => booking.user_id === userId);
+  async findByUser(userId: string) {
+    return this.pg.query(
+      'SELECT * FROM bookings WHERE user_id = $1 ORDER BY created_at DESC',
+      [userId],
+    );
   }
 
-  private createBooking(
+  // ---------------------------------------------------------------------------
+  // Private helpers
+  // ---------------------------------------------------------------------------
+
+  private actorOrDemo(actor: RequestActor | undefined): RequestActor {
+    return (
+      actor ?? {
+        id: '00000000-0000-0000-0000-000000000000',
+        actorType: 'user',
+        role: Role.USER,
+        roles: [Role.USER],
+      }
+    );
+  }
+
+  private async createBooking(
     userId: string,
     input: {
       type: 'hotel' | 'bus';
       partner_organization_id: string;
-      payment_method: PaymentMethod;
-      confirmation_mode: ConfirmationMode;
+      payment_method: string;
+      confirmation_mode: string;
       subtotal: number;
-      item: Record<string, unknown>;
+      hotel_id: string | null;
+      trip_id: string | null;
+      expires_at?: string;
+      price_snapshot: Record<string, unknown>;
     },
-  ): BookingRecord {
+  ) {
+    const id = randomUUID();
+    const now = new Date().toISOString();
     const commission = Math.round(input.subtotal * 0.12);
-    const booking: BookingRecord = {
-      id: this.db.id('booking'),
-      booking_number: this.db.bookingNumber(),
+    const totalAmount = input.subtotal;
+    const partnerPayable = input.subtotal - commission;
+    const expiresAt =
+      input.expires_at ?? new Date(Date.now() + 15 * 60_000).toISOString();
+    const partnerConfirmationDeadline =
+      input.confirmation_mode === 'request_confirmation'
+        ? new Date(Date.now() + 30 * 60_000).toISOString()
+        : null;
+
+    const bookingRow = {
+      id,
+      booking_number: bookingNumber(),
       user_id: userId,
       partner_organization_id: input.partner_organization_id,
       type: input.type,
       confirmation_mode: input.confirmation_mode,
       payment_method: input.payment_method,
-      status: BookingStatus.PENDING,
+      status: BS.PENDING,
       currency: 'UZS',
       subtotal: input.subtotal,
       discount_amount: 0,
       bonus_amount: 0,
       service_fee: 0,
-      total_amount: input.subtotal,
+      total_amount: totalAmount,
       commission_amount: commission,
-      partner_payable: input.subtotal - commission,
-      partner_confirmation_deadline:
-        input.confirmation_mode === 'request_confirmation'
-          ? new Date(Date.now() + 30 * 60_000).toISOString()
-          : undefined,
-      expires_at: new Date(Date.now() + 15 * 60_000).toISOString(),
-      confirmed_at: undefined,
-      item: input.item,
-      created_at: this.db.now(),
-      updated_at: this.db.now(),
+      partner_payable: partnerPayable,
+      hotel_id: input.hotel_id,
+      trip_id: input.trip_id,
+      partner_confirmation_deadline: partnerConfirmationDeadline,
+      expires_at: expiresAt,
+      confirmed_at: null,
+      cancelled_at: null,
+      cancel_reason_text: null,
+      policy_snapshot: {},
+      price_snapshot: input.price_snapshot,
+      created_at: now,
+      updated_at: now,
     };
-    this.db.bookings.unshift(booking);
-    this.addStatusHistory(booking, 'created');
-    return booking;
+
+    await this.pg.query(
+      `INSERT INTO bookings (
+        id, booking_number, user_id, partner_organization_id,
+        type, confirmation_mode, payment_method, status,
+        currency, subtotal, discount_amount, bonus_amount, service_fee,
+        total_amount, commission_amount, partner_payable,
+        hotel_id, trip_id,
+        partner_confirmation_deadline, expires_at,
+        confirmed_at, cancelled_at, cancel_reason_text,
+        policy_snapshot, price_snapshot,
+        created_at, updated_at
+      ) VALUES (
+        $1, $2, $3, $4,
+        $5, $6, $7, $8,
+        $9, $10, $11, $12, $13,
+        $14, $15, $16,
+        $17, $18,
+        $19, $20,
+        $21, $22, $23,
+        $24, $25,
+        $26, $27
+      )`,
+      [
+        bookingRow.id,
+        bookingRow.booking_number,
+        bookingRow.user_id,
+        bookingRow.partner_organization_id,
+        bookingRow.type,
+        bookingRow.confirmation_mode,
+        bookingRow.payment_method,
+        bookingRow.status,
+        bookingRow.currency,
+        bookingRow.subtotal,
+        bookingRow.discount_amount,
+        bookingRow.bonus_amount,
+        bookingRow.service_fee,
+        bookingRow.total_amount,
+        bookingRow.commission_amount,
+        bookingRow.partner_payable,
+        bookingRow.hotel_id,
+        bookingRow.trip_id,
+        bookingRow.partner_confirmation_deadline,
+        bookingRow.expires_at,
+        bookingRow.confirmed_at,
+        bookingRow.cancelled_at,
+        bookingRow.cancel_reason_text,
+        JSON.stringify(bookingRow.policy_snapshot),
+        JSON.stringify(bookingRow.price_snapshot),
+        bookingRow.created_at,
+        bookingRow.updated_at,
+      ],
+    );
+
+    await this.addStatusHistory(bookingRow, 'created');
+
+    return bookingRow;
   }
 
-  private addStatusHistory(
-    booking: BookingRecord,
+  private async addStatusHistory(
+    booking: { id: string; status: string },
     action: string,
     actor?: RequestActor,
   ) {
-    this.db.bookingStatusHistory.unshift({
-      id: this.db.id('bsh'),
-      booking_id: booking.id,
-      status: booking.status,
-      action,
-      actor_id: actor?.id ?? 'system',
-      created_at: this.db.now(),
-    });
+    const now = new Date().toISOString();
+    await this.pg.query(
+      `INSERT INTO booking_status_history (id, booking_id, status, action, actor_type, actor_id, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        randomUUID(),
+        booking.id,
+        booking.status,
+        action,
+        actor?.actorType ?? null,
+        actor?.id ?? null,
+        now,
+      ],
+    );
   }
 
-  private assertBooking(id: string, actor?: RequestActor): BookingRecord {
-    const booking = this.db.findBooking(id);
+  private async createPayment(booking: {
+    id: string;
+    total_amount: number | string;
+    currency: string;
+    payment_method: string;
+  }) {
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    const payment = {
+      id,
+      booking_id: booking.id,
+      provider: booking.payment_method,
+      status: 'pending',
+      amount: Number(booking.total_amount),
+      currency: booking.currency,
+      payment_url: `https://pay.uzbron.uz/pay/${randomUUID().slice(0, 8)}`,
+      created_at: now,
+      updated_at: now,
+    };
+
+    await this.pg.query(
+      `INSERT INTO payments (id, booking_id, provider, status, amount, currency, payment_url, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        payment.id,
+        payment.booking_id,
+        payment.provider,
+        payment.status,
+        payment.amount,
+        payment.currency,
+        payment.payment_url,
+        payment.created_at,
+        payment.updated_at,
+      ],
+    );
+
+    return payment;
+  }
+
+  private async assertBooking(id: string, actor?: RequestActor) {
+    const [booking] = await this.pg.query(
+      'SELECT * FROM bookings WHERE id = $1',
+      [id],
+    );
 
     if (!booking) {
       throw new NotFoundException({
@@ -348,22 +550,19 @@ export class BookingsService {
     });
   }
 
-  assertBookingForActor(
-    actor: RequestActor | undefined,
-    id: string,
-  ): BookingRecord {
+  async assertBookingForActor(actor: RequestActor | undefined, id: string) {
     return this.assertBooking(id, actor);
   }
 
-  private paymentMethod(value: unknown): PaymentMethod {
-    const method = String(value ?? 'click') as PaymentMethod;
+  private paymentMethod(value: unknown): string {
+    const method = String(value ?? 'click');
     return ['click', 'payme', 'uzcard', 'humo', 'cash'].includes(method)
       ? method
       : 'click';
   }
 
-  private confirmationMode(value: unknown): ConfirmationMode {
-    const mode = String(value ?? 'instant_confirmation') as ConfirmationMode;
+  private confirmationMode(value: unknown): string {
+    const mode = String(value ?? 'instant_confirmation');
     return mode === 'request_confirmation' ? mode : 'instant_confirmation';
   }
 
@@ -377,4 +576,8 @@ export class BookingsService {
 
     return Math.max(1, Math.ceil((end - start) / 86_400_000));
   }
+}
+
+function bookingNumber(): string {
+  return `UZB-${Date.now().toString(36).toUpperCase()}`;
 }
