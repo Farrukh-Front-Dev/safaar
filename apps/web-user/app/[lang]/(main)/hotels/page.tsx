@@ -81,33 +81,26 @@ export default async function HotelsPage({
     console.error("[hotels] getCities failed:", e);
     return [];
   });
-  const hotelsResult = await getHotels(locale, { cityId }).catch(
-    (e: unknown) => {
-      console.error("[hotels] getHotels failed:", e);
-      return null;
-    },
-  );
+  const hotelsResult = await getHotels(locale, {
+    cityId,
+    stars,
+    minPrice,
+    maxPrice,
+    sort,
+    page,
+    limit: PAGE_SIZE,
+  }).catch((e: unknown) => {
+    console.error("[hotels] getHotels failed:", e);
+    return null;
+  });
   const loadFailed = hotelsResult === null;
 
-  // ── Filtr + saralash + pagination — to'liq ro'yxat ustida (izchil) ──
-  // Backend `findAll` narx/saralash/haqiqiy pagination qo'llamaydi, to'liq
-  // ro'yxat qaytaradi; shuning uchun hammasini shu yerda izchil bajaramiz.
-  let all: HotelListItem[] = hotelsResult?.items ?? [];
-  if (stars !== undefined) all = all.filter((h) => h.stars >= stars);
-  if (minPrice !== undefined) all = all.filter((h) => h.minPriceSum >= minPrice);
-  if (maxPrice !== undefined) all = all.filter((h) => h.minPriceSum <= maxPrice);
-  if (sort === "price_asc") {
-    all = [...all].sort((a, b) => a.minPriceSum - b.minPriceSum);
-  } else if (sort === "price_desc") {
-    all = [...all].sort((a, b) => b.minPriceSum - a.minPriceSum);
-  } else if (sort === "rating") {
-    all = [...all].sort((a, b) => b.rating - a.rating);
-  }
-
-  const total = all.length;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  // Backend server-side filter/sort/pagination qo'llaydi.
+  const all: HotelListItem[] = hotelsResult?.items ?? [];
+  const total = hotelsResult?.total ?? all.length;
+  const totalPages = Math.max(1, hotelsResult?.totalPages ?? Math.ceil(total / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
-  const items = all.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const items = all;
 
   // Pagination/CTA havolalari uchun joriy parametrlar.
   const basePath = `/${locale}/hotels`;

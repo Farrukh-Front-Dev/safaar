@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
-import { getCities } from "@/lib/api/catalog";
-import { getHotels } from "@/lib/api/hotels";
+import { getCities, getPopularCities } from "@/lib/api/catalog";
+import { getFeaturedHotels } from "@/lib/api/hotels";
+import { getDeals, getPublicStats } from "@/lib/api/cms";
 import { Hero } from "@/components/home/Hero";
 import { SearchBar } from "@/components/search/SearchBar";
 import { CityCards, type CityCardData } from "@/components/home/CityCards";
@@ -38,38 +39,49 @@ export default async function HomePage({
   ]);
 
   const cities = await getCities(locale).catch(() => []);
-  const hotelsResult = await getHotels(locale, { limit: 6 }).catch(() => null);
-  const realHotels: HotelListItem[] = hotelsResult?.items ?? [];
+  const featuredResult = await getFeaturedHotels(locale, { limit: 6 }).catch(
+    () => null,
+  );
+  const hotels: HotelListItem[] = featuredResult?.items ?? [];
 
-  // Backend 6 dan kam qaytarsa, demo mehmonxonalar bilan to'ldiramiz.
-  const demoHotels: HotelListItem[] = [
-    { id: "demo-1", slug: "samarkand-plaza", name: "Samarkand Plaza", cityName: "Samarqand", stars: 4, rating: 4.7, reviewsCount: 128, minPriceSum: 450000, imageUrl: "/Samarkand-Registan-cinematic.jpeg" },
-    { id: "demo-2", slug: "grand-bukhara", name: "Grand Bukhara Hotel", cityName: "Buxoro", stars: 4, rating: 4.5, reviewsCount: 89, minPriceSum: 380000, imageUrl: "/Bukhara-old-city-golden-hour.jpeg" },
-    { id: "demo-3", slug: "tashkent-city-palace", name: "Tashkent City Palace", cityName: "Toshkent", stars: 5, rating: 4.8, reviewsCount: 215, minPriceSum: 650000, imageUrl: "/Tashkent-city-skyline.jpeg" },
-    { id: "demo-4", slug: "khiva-orient-star", name: "Orient Star Khiva", cityName: "Xiva", stars: 3, rating: 4.3, reviewsCount: 67, minPriceSum: 280000, imageUrl: "/Khiva-Ichan-Kala-aerial.jpeg" },
-    { id: "demo-5", slug: "charvak-resort", name: "Charvak Oromgohi", cityName: "Charvak", stars: 4, rating: 4.6, reviewsCount: 54, minPriceSum: 520000, imageUrl: "/Charvak-Lake-drone.jpeg" },
-    { id: "demo-6", slug: "chimgan-lodge", name: "Chimgan Mountain Lodge", cityName: "Chimgan", stars: 3, rating: 4.4, reviewsCount: 42, minPriceSum: 320000, imageUrl: "/Chimgan-mountains-landscape.jpeg" },
-  ];
-  const hotels: HotelListItem[] = realHotels.length >= 4 ? realHotels : [...realHotels, ...demoHotels].slice(0, 6);
+  const dealsResult = await getDeals(locale).catch(() => []);
+  const deals: DealItem[] = dealsResult.map((d) => ({
+    id: d.id,
+    slug: d.slug,
+    name: d.name,
+    cityName: d.cityName,
+    imageUrl: d.imageUrl,
+    oldPriceSum: d.oldPriceSum,
+    newPriceSum: d.newPriceSum,
+    discountPercent: d.discountPercent,
+    endsAt: d.endsAt,
+  }));
 
-  // Chegirmadagi takliflar (demo) — backend promo endpointi tayyor bo'lganda almashtiriladi.
-  const deals: DealItem[] = [
-    { id: "deal-1", slug: "samarkand-plaza", name: "Samarkand Plaza", cityName: "Samarqand", imageUrl: "/Samarkand-Registan-cinematic.jpeg", oldPriceSum: 450000, newPriceSum: 315000, discountPercent: 30, endsInDays: 3 },
-    { id: "deal-2", slug: "grand-bukhara", name: "Grand Bukhara Hotel", cityName: "Buxoro", imageUrl: "/Bukhara-old-city-golden-hour.jpeg", oldPriceSum: 380000, newPriceSum: 285000, discountPercent: 25, endsInDays: 5 },
-    { id: "deal-3", slug: "charvak-resort", name: "Charvak Oromgohi", cityName: "Charvak", imageUrl: "/Charvak-Lake-drone.jpeg", oldPriceSum: 520000, newPriceSum: 364000, discountPercent: 30, endsInDays: 2 },
-    { id: "deal-4", slug: "tashkent-city-palace", name: "Tashkent City Palace", cityName: "Toshkent", imageUrl: "/Tashkent-city-skyline.jpeg", oldPriceSum: 650000, newPriceSum: 520000, discountPercent: 20, endsInDays: 7 },
-  ];
+  const popularCities = await getPopularCities(locale).catch(() => []);
+  const cityCards: CityCardData[] = popularCities
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((c) => ({
+      name: c.name,
+      image: c.imageUrl,
+      hotelCount: String(c.hotelCount),
+      href: `/${locale}/hotels?city=${encodeURIComponent(c.slug)}`,
+    }));
 
-  const cityCards: CityCardData[] = [
-    { name: "Toshkent",   image: "/Tashkent-city-skyline.jpeg",          hotelCount: "200+", href: `/${locale}/hotels?city=tashkent` },
-    { name: "Samarqand",  image: "/Samarkand-Registan-cinematic.jpeg",   hotelCount: "120+", href: `/${locale}/hotels?city=samarqand` },
-    { name: "Buxoro",     image: "/Bukhara-old-city-golden-hour.jpeg",   hotelCount: "85+",  href: `/${locale}/hotels?city=bukhara` },
-    { name: "Xiva",       image: "/Khiva-Ichan-Kala-aerial.jpeg",        hotelCount: "45+",  href: `/${locale}/hotels?city=khiva` },
-    { name: "Charvak",    image: "/Charvak-Lake-drone.jpeg",             hotelCount: "30+",  href: `/${locale}/hotels?city=charvak` },
-    { name: "Chimgan",    image: "/Chimgan-mountains-landscape.jpeg",    hotelCount: "25+",  href: `/${locale}/hotels?city=chimgan` },
-    { name: "Zaamin",     image: "/Zaamin.jpeg",                         hotelCount: "15+",  href: `/${locale}/hotels?city=zaamin` },
-    { name: "Nukus",      image: "/Uzbekistan-travel.jpeg",              hotelCount: "20+",  href: `/${locale}/hotels?city=nukus` },
-  ];
+  const stats = await getPublicStats().catch(() => null);
+
+  const cityCardsFinal =
+    cityCards.length > 0
+      ? cityCards
+      : [
+          { name: "Toshkent", image: "/Tashkent-city-skyline.jpeg", hotelCount: "200+", href: `/${locale}/hotels?city=tashkent` },
+          { name: "Samarqand", image: "/Samarkand-Registan-cinematic.jpeg", hotelCount: "120+", href: `/${locale}/hotels?city=samarqand` },
+          { name: "Buxoro", image: "/Bukhara-old-city-golden-hour.jpeg", hotelCount: "85+", href: `/${locale}/hotels?city=bukhara` },
+          { name: "Xiva", image: "/Khiva-Ichan-Kala-aerial.jpeg", hotelCount: "45+", href: `/${locale}/hotels?city=khiva` },
+          { name: "Charvak", image: "/Charvak-Lake-drone.jpeg", hotelCount: "30+", href: `/${locale}/hotels?city=charvak` },
+          { name: "Chimgan", image: "/Chimgan-mountains-landscape.jpeg", hotelCount: "25+", href: `/${locale}/hotels?city=chimgan` },
+          { name: "Zaamin", image: "/Zaamin.jpeg", hotelCount: "15+", href: `/${locale}/hotels?city=zaamin` },
+          { name: "Nukus", image: "/Uzbekistan-travel.jpeg", hotelCount: "20+", href: `/${locale}/hotels?city=nukus` },
+        ];
 
   return (
     <main className="relative flex flex-1 flex-col">
@@ -127,11 +139,11 @@ export default async function HomePage({
 
       {/* ═══ EKRAN 3: City Cards (scroll qilganda) ═══ */}
       <div className="py-10 sm:py-16 md:py-20">
-        <CityCards cities={cityCards} dict={dict.popularCities} />
+        <CityCards cities={cityCardsFinal} dict={dict.popularCities} />
       </div>
 
       {/* ═══ EKRAN 4: Trust Bar ═══ */}
-      <TrustBar dict={dict.trust} />
+      <TrustBar dict={dict.trust} stats={stats} />
     </main>
   );
 }

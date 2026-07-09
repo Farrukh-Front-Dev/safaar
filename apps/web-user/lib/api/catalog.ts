@@ -9,11 +9,45 @@ import { camelizeKeys } from "@/lib/case";
 import type { Locale } from "@/i18n/config";
 import type { AmenityOption, CityOption } from "@/types/view";
 
+export interface PopularCityView {
+  id: string;
+  name: string;
+  slug: string;
+  imageUrl: string;
+  hotelCount: number;
+  sortOrder: number;
+}
+
+export interface PartnerShowcaseView {
+  id: string;
+  companyName: string;
+  logoUrl: string;
+  type: string;
+  sortOrder: number;
+}
+
 type Localized = Partial<Record<Locale, string>> & Record<string, string>;
 
 interface RawCatalogItem {
   id: string;
   name: Localized;
+}
+
+interface RawPopularCity {
+  id: string;
+  name: Localized;
+  slug?: string;
+  imageUrl?: string;
+  hotelCount?: number;
+  sortOrder?: number;
+}
+
+interface RawPartnerShowcase {
+  id: string;
+  companyName?: string;
+  logoUrl?: string;
+  type?: string;
+  sortOrder?: number;
 }
 
 function pickLocale(value: Localized | undefined, locale: Locale): string {
@@ -41,4 +75,37 @@ export async function getCities(locale: Locale): Promise<CityOption[]> {
 /** `GET /catalog/amenities` — qulaylik id → nom (tilga moslangan). */
 export async function getAmenities(locale: Locale): Promise<AmenityOption[]> {
   return fetchCatalog("/catalog/amenities", locale);
+}
+
+/** `GET /catalog/popular-cities` — bosh sahifa uchun mashhur shaharlar. */
+export async function getPopularCities(
+  locale: Locale,
+): Promise<PopularCityView[]> {
+  const raw = await api.get<unknown>("/catalog/popular-cities", {
+    next: { revalidate: 3600 },
+  });
+  const items = camelizeKeys<RawPopularCity[]>(raw);
+  return (items ?? []).map((item) => ({
+    id: item.id,
+    name: pickLocale(item.name, locale),
+    slug: item.slug ?? "",
+    imageUrl: item.imageUrl ?? "",
+    hotelCount: item.hotelCount ?? 0,
+    sortOrder: item.sortOrder ?? 0,
+  }));
+}
+
+/** `GET /catalog/partners-showcase` — bosh sahifa uchun hamkor logolari. */
+export async function getPartnersShowcase(): Promise<PartnerShowcaseView[]> {
+  const raw = await api.get<unknown>("/catalog/partners-showcase", {
+    next: { revalidate: 3600 },
+  });
+  const items = camelizeKeys<RawPartnerShowcase[]>(raw);
+  return (items ?? []).map((item) => ({
+    id: item.id,
+    companyName: item.companyName ?? "",
+    logoUrl: item.logoUrl ?? "",
+    type: item.type ?? "",
+    sortOrder: item.sortOrder ?? 0,
+  }));
 }

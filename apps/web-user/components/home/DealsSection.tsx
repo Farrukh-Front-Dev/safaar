@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Tag, Clock } from "lucide-react";
 import type { Locale } from "@/i18n/config";
@@ -20,8 +20,8 @@ export interface DealItem {
   newPriceSum: number;
   /** Chegirma foizi. */
   discountPercent: number;
-  /** Tugash sanasigacha qolgan kunlar. */
-  endsInDays: number;
+  /** Tugash sanasi (ISO). Tugash kunini frontend hisoblaydi. */
+  endsAt: string;
 }
 
 /**
@@ -38,6 +38,8 @@ export function DealsSection({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Tugash vaqtini hisoblash uchun bir marta olingan timestamp (impure call emas).
+  const [now] = useState(() => Date.now());
 
   useEffect(() => {
     const el = ref.current;
@@ -76,7 +78,14 @@ export function DealsSection({
         ref={ref}
         className="scrollbar-none flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory sm:gap-4"
       >
-        {deals.map((deal) => (
+        {deals.map((deal) => {
+          const endsInDays = deal.endsAt
+            ? Math.max(
+                0,
+                Math.ceil((Date.parse(deal.endsAt) - now) / 86_400_000),
+              )
+            : 0;
+          return (
           <Link
             key={deal.id}
             href={`/${locale}/hotels/${deal.slug}`}
@@ -101,7 +110,7 @@ export function DealsSection({
                 {/* Timer badge */}
                 <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-medium text-slate-700 shadow-btn">
                   <Clock className="h-3 w-3" aria-hidden />
-                  {deal.endsInDays} {dict.days}
+                  {endsInDays} {dict.days}
                 </span>
               </div>
 
@@ -125,7 +134,8 @@ export function DealsSection({
               </div>
             </article>
           </Link>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
