@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
@@ -9,7 +8,7 @@ import { Hero } from "@/components/home/Hero";
 import { SearchBar } from "@/components/search/SearchBar";
 import { CityCards, type CityCardData } from "@/components/home/CityCards";
 import { TrustBar } from "@/components/home/TrustBar";
-import { FeaturedHotelCard } from "@/components/home/FeaturedHotelCard";
+import { FeaturedHotelsCarousel } from "@/components/home/FeaturedHotelsCarousel";
 import { DealsSection, type DealItem } from "@/components/home/DealsSection";
 import type { HotelListItem } from "@/types/view";
 
@@ -99,31 +98,13 @@ export default async function HomePage({
           )}
         </div>
 
-        {/* Tanlangan mehmonxonalar — gorizontal scroll */}
+        {/* Tanlangan mehmonxonalar — auto-scroll carousel */}
         {hotels.length > 0 && (
-          <section className="mx-auto mt-6 w-full max-w-6xl px-4 sm:mt-8 sm:px-6">
-            <div className="mb-3 flex items-center justify-between gap-4">
-              <h2 className="text-base font-bold tracking-tight sm:text-lg">
-                {dict.featured.title}
-              </h2>
-              <Link
-                href={`/${locale}/hotels`}
-                className="shrink-0 text-xs font-semibold text-primary-600 transition-colors hover:text-primary-700 sm:text-sm"
-              >
-                {dict.featured.all} →
-              </Link>
-            </div>
-            <div className="scrollbar-none flex gap-3 overflow-x-auto pb-2">
-              {hotels.slice(0, 4).map((hotel) => (
-                <div key={hotel.id} className="min-w-[220px] flex-1">
-                  <FeaturedHotelCard
-                    hotel={hotel}
-                    locale={locale}
-                  />
-                </div>
-              ))}
-            </div>
-          </section>
+          <FeaturedHotelsCarousel
+            hotels={hotels}
+            dict={dict.featured}
+            locale={locale}
+          />
         )}
 
         {/* Scroll ishora — birinchi ekran eng pastida */}

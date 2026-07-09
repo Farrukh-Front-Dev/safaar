@@ -36,7 +36,7 @@ export function TrustBar({ dict }: { dict: HomeDict["trust"] }) {
         <div className="grid grid-cols-2 gap-5 sm:flex sm:flex-wrap sm:items-center sm:gap-10">
           {stats.map((stat) => (
             <div key={stat.label} className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-primary-600 shadow-btn">
                 {stat.icon}
               </span>
               <div className="flex flex-col">
@@ -54,7 +54,7 @@ export function TrustBar({ dict }: { dict: HomeDict["trust"] }) {
           {["Payme", "Click", "Uzcard", "Humo"].map((name) => (
             <span
               key={name}
-              className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-bold text-slate-600"
+              className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-bold text-slate-600 shadow-btn"
             >
               {name}
             </span>

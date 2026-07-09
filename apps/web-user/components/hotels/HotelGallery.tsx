@@ -40,7 +40,7 @@ export function HotelGallery({
   return (
     <div
       className={cn(
-        "grid gap-2 overflow-hidden rounded-2xl",
+        "grid gap-2 overflow-hidden rounded-2xl shadow-btn",
         shots.length > 1 ? "grid-cols-2" : "grid-cols-1",
       )}
     >

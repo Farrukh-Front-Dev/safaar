@@ -162,14 +162,14 @@ export default async function HotelsPage({
 
         <section aria-label={dict.title}>
           {loadFailed ? (
-            <div className="flex flex-col items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-800">
+            <div className="flex flex-col items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm font-medium text-amber-800 shadow-btn">
               <p>{dict.error}</p>
               <Link href={retryHref}>
                 <Button variant="secondary">{dict.retry}</Button>
               </Link>
             </div>
           ) : items.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200/80 bg-white py-16 text-center" style={{ boxShadow: "0 2px 8px rgba(15,23,42,0.06), inset 0 1px 0 rgba(255,255,255,0.7)" }}>
+            <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-white py-16 text-center shadow-btn">
               <p className="font-medium text-slate-700">{dict.empty}</p>
               <p className="text-sm text-slate-500">{dict.emptyHint}</p>
               <Link href={clearedHref}>

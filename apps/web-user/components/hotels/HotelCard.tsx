@@ -32,7 +32,7 @@ export function HotelCard({
       href={`/${locale}/hotels/${hotel.slug}`}
       className="group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
     >
-      <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card transition-all duration-200 group-hover:-translate-y-1 group-hover:shadow-card-hover">
+      <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-btn transition-all duration-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:scale-[0.97] active:shadow-btn-active">
         <div className="relative aspect-4/3 overflow-hidden bg-linear-to-br from-primary-100 to-primary-300">
           {imageUrl ? (
             <img
@@ -47,7 +47,7 @@ export function HotelCard({
             </span>
           )}
           {hotel.rating > 0 && (
-            <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-sm font-bold text-amber-600 shadow-sm backdrop-blur">
+            <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-sm font-bold text-amber-600 shadow-btn">
               <Star className="h-4 w-4 fill-current" aria-hidden />
               {hotel.rating.toFixed(1)}
             </span>

@@ -107,7 +107,7 @@ export function ScrollNav({
           paddingBottom: "env(safe-area-inset-bottom, 0px)",
         }}
       >
-        <ul className="flex items-center justify-around px-2 py-1.5">
+        <ul className="flex items-center justify-around px-1 py-1">
           {(mobileItems ?? items).map((item) => {
             const isActive = item.exact
               ? pathname === item.href
@@ -115,21 +115,21 @@ export function ScrollNav({
                 pathname.startsWith(`${item.href}/`);
 
             return (
-              <li key={item.href}>
+              <li key={item.href} className="flex-1">
                 <Link
                   href={item.href}
                   aria-current={isActive ? "page" : undefined}
-                  className={`flex min-w-[3rem] flex-col items-center gap-0.5 rounded-xl px-2 py-1.5 text-[11px] font-medium transition-all duration-200 active:scale-90 ${
+                  className={`flex flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-[11px] font-medium transition-all duration-200 hover:bg-slate-50 active:bg-slate-100 active:scale-[0.97] ${
                     isActive
                       ? "text-primary-700"
-                      : "text-slate-400 hover:text-slate-600"
+                      : "text-slate-400 hover:text-primary-600"
                   }`}
                 >
                   <span
                     className={`flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200 ${
                       isActive
                         ? "bg-primary-600 text-white shadow-sm"
-                        : "text-slate-400"
+                        : "text-slate-400 hover:bg-slate-100 hover:text-primary-600 active:bg-slate-200"
                     }`}
                   >
                     {item.icon}

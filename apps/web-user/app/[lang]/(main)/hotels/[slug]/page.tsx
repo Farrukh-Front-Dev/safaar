@@ -69,7 +69,7 @@ export default async function HotelDetailPage({
   if (!hotel) {
     return (
       <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-16">
-        <p className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
+        <p className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-800 shadow-btn">
           {dict.error}
         </p>
       </main>
@@ -141,7 +141,7 @@ export default async function HotelDetailPage({
                 {hotel.amenities.map((id) => (
                   <li
                     key={id}
-                    className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-700"
+                    className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-medium text-slate-700 shadow-btn"
                   >
                     {amenityName.get(id) ?? id}
                   </li>
@@ -183,7 +183,7 @@ export default async function HotelDetailPage({
           </section>
         </div>
 
-        <aside className="flex h-fit flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-24">
+        <aside className="flex h-fit flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-btn lg:sticky lg:top-24">
           <div>
             <span className="text-xs text-slate-400">{dict.from}</span>
             <p className="text-2xl font-bold text-slate-900">
@@ -206,7 +206,7 @@ export default async function HotelDetailPage({
           </div>
           <a
             href="#rooms"
-            className="inline-flex h-12 items-center justify-center rounded-full bg-accent-600 px-6 font-bold text-white shadow-sm transition-colors hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+            className="inline-flex h-12 items-center justify-center rounded-full bg-accent-600 px-6 font-bold text-white shadow-btn transition-all hover:bg-accent-500 hover:shadow-btn-hover active:bg-accent-700 active:scale-[0.97] active:shadow-btn-active focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
           >
             {dict.selectRoom}
           </a>
