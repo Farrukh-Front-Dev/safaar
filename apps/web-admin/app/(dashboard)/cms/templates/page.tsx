@@ -45,7 +45,7 @@ const INITIAL_TEMPLATES: CmsTemplate[] = [
     type: "sms",
     code: "auth_otp_sms",
     description: "Foydalanuvchini ro'yxatdan o'tish yoki kirish uchun SMS tasdiqlash kodi",
-    body: "UzBron: Sizning kirish kodingiz: {otp}. Bu kodni hech kimga bermang.",
+    body: "Safaar: Sizning kirish kodingiz: {otp}. Bu kodni hech kimga bermang.",
     isActive: true,
     variables: ["otp"],
     lastModified: "2026-07-01T12:00:00Z"
@@ -78,8 +78,8 @@ const INITIAL_TEMPLATES: CmsTemplate[] = [
     type: "email",
     code: "partner_approved_email",
     description: "Hamkor arizasi tasdiqlanganda emailga yuboriladigan xat",
-    subject: "UzBron: Hamkorlik arizangiz tasdiqlandi! 🎉",
-    body: "Hurmatli {partnerName},\n\nUzBron platformasiga yuborgan hamkorlik arizangiz muvaffaqiyatli tasdiqlandi.\nEndi siz o'z parolingiz bilan partner.uzbron.uz paneliga kirib, xizmatlaringizni joylashtirishingiz mumkin.\n\nSizga omadli faoliyat tilaymiz!\n\nHurmat bilan,\nUzBron Jamoasi",
+    subject: "Safaar: Hamkorlik arizangiz tasdiqlandi! 🎉",
+    body: "Hurmatli {partnerName},\n\nSafaar platformasiga yuborgan hamkorlik arizangiz muvaffaqiyatli tasdiqlandi.\nEndi siz o'z parolingiz bilan partner.safaar.uz paneliga kirib, xizmatlaringizni joylashtirishingiz mumkin.\n\nSizga omadli faoliyat tilaymiz!\n\nHurmat bilan,\nSafaar Jamoasi",
     isActive: true,
     variables: ["partnerName"],
     lastModified: "2026-07-05T09:00:00Z"
@@ -90,8 +90,8 @@ const INITIAL_TEMPLATES: CmsTemplate[] = [
     type: "email",
     code: "customer_welcome_email",
     description: "Mijoz ro'yxatdan o'tganda yuboriladigan xush kelibsiz xati",
-    subject: "UzBron.uz platformasiga xush kelibsiz!",
-    body: "Assalomu alaykum {customerName},\n\nUzBron platformasida ro'yxatdan o'tganingizdan xursandmiz. Biz bilan O'zbekiston bo'ylab eng yaxshi mehmonxonalar va qulay avtobus reyslarini oson va tez bron qiling!\n\nSizga yoqimli sayohatlar tilaymiz!\n\nHurmat bilan,\nUzBron Development Team",
+    subject: "Safaar.uz platformasiga xush kelibsiz!",
+    body: "Assalomu alaykum {customerName},\n\nSafaar platformasida ro'yxatdan o'tganingizdan xursandmiz. Biz bilan O'zbekiston bo'ylab eng yaxshi mehmonxonalar va qulay avtobus reyslarini oson va tez bron qiling!\n\nSizga yoqimli sayohatlar tilaymiz!\n\nHurmat bilan,\nSafaar Development Team",
     isActive: true,
     variables: ["customerName"],
     lastModified: "2026-07-06T14:45:00Z"
@@ -664,8 +664,8 @@ export default function CmsTemplatesPage() {
                   </label>
                   <div className="flex gap-2">
                     <Input
-                      placeholder="admin@uzbron.uz"
-                      defaultValue="admin@uzbron.uz"
+                      placeholder="admin@safaar.uz"
+                      defaultValue="admin@safaar.uz"
                       className="w-full"
                     />
                   </div>

@@ -23,20 +23,18 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-700 text-white shadow-lg shadow-brand-700/20">
             <Hotel className="h-6 w-6" aria-hidden />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">
-              UzBron Hamkor Kabineti
-            </h1>
-            <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-              Mehmonxona va avtobus hamkorlari uchun
-            </p>
+          <div className="flex items-center gap-2">
+            <span className="text-xl font-bold tracking-tight">Safaar Hamkor Kabineti</span>
           </div>
+          <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+            Mehmonxona va avtobus hamkorlari uchun
+          </p>
         </div>
         <div className="rounded-card border border-[var(--border)] bg-[var(--surface)] p-6 shadow-xl shadow-zinc-900/5 dark:shadow-black/20">
           {children}
         </div>
         <p className="mt-6 text-center text-xs text-[var(--muted-foreground)]">
-          © {new Date().getFullYear()} UzBron. Barcha huquqlar himoyalangan.
+          © {new Date().getFullYear()} Safaar. Barcha huquqlar himoyalangan.
         </p>
       </div>
     </div>

@@ -14,7 +14,8 @@ import { access } from "../../_lib/api";
 import { isValidPhone, maskPhone, normalizePhone } from "../../_lib/utils/phone";
 
 const schema = z.object({
-  companyName: z.string().min(2, "Mehmonxona nomini kiriting"),
+  type: z.enum(["hotel", "bus", "hostel", "guesthouse", "motel", "dacha"]),
+  companyName: z.string().min(2, "Obyekt/Kompaniya nomini kiriting"),
   contactPerson: z.string().min(2, "Mas'ul shaxsni kiriting"),
   phone: z.string().min(1, "Telefon raqamni kiriting").refine(isValidPhone, "Telefon noto'g'ri formatda"),
   email: z.string().email("Email noto'g'ri"),
@@ -32,6 +33,7 @@ export default function RegisterPage() {
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
+      type: "hotel",
       companyName: "",
       contactPerson: "",
       phone: "+998 ",
@@ -48,7 +50,7 @@ export default function RegisterPage() {
     try {
       const result = await access.submitPartnerApplication({
         ...values,
-        type: "hotel",
+        type: values.type as any,
         phone: normalizePhone(values.phone),
       });
       setSubmitted({ id: result.item.id });
@@ -95,7 +97,20 @@ export default function RegisterPage() {
         </p>
       </div>
 
-      <Field label="Mehmonxona nomi" error={form.formState.errors.companyName?.message}>
+      <Field label="Obyekt turi" error={form.formState.errors.type?.message}>
+        <select
+          {...form.register("type")}
+          className="h-9 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 text-sm shadow-sm transition-all focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+        >
+          <option value="hotel">Mehmonxona</option>
+          <option value="hostel">Yotoqxona (Hostel)</option>
+          <option value="guesthouse">Mehmon uyi</option>
+          <option value="motel">Motel</option>
+          <option value="dacha">Dacha</option>
+          <option value="bus">Avtobus</option>
+        </select>
+      </Field>
+      <Field label="Obyekt yoki Kompaniya nomi" error={form.formState.errors.companyName?.message}>
         <Input {...form.register("companyName")} placeholder="Grand Samarkand Hotel" />
       </Field>
       <Field label="Mas'ul shaxs" error={form.formState.errors.contactPerson?.message}>

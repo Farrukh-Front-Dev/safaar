@@ -36,7 +36,7 @@ export default function TopBar() {
   };
 
   const displayName = user?.name || "Admin";
-  const displayEmail = user?.email || "admin@uzbron.uz";
+  const displayEmail = user?.email || "admin@safaar.uz";
   const displayRole = user?.role === "SUPER_ADMIN" ? "Super Admin" : "Admin";
   const initials = displayName.split(" ").map((n: string) => n[0]).join("").substring(0, 2);
 

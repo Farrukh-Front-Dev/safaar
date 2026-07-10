@@ -14,6 +14,7 @@ import { PARTNER_STATUS_MAP } from "@/lib/constants";
 import { Hotel, Bus, Star, Download } from "lucide-react";
 import Button from "@/components/ui/Button";
 import type { Partner } from "@/types/admin";
+import { PartnerTypeDisplay } from "@/components/ui/PartnerTypeDisplay";
 import { exportToExcel } from "@/lib/export";
 
 const ITEMS_PER_PAGE = 12;
@@ -74,13 +75,7 @@ export default function PartnersListPage() {
       key: "type",
       label: "Turi",
       render: (row) => (
-        <span className="inline-flex items-center gap-1.5 text-sm">
-          {row.type === "hotel" ? (
-            <><Hotel size={14} className="text-[var(--primary)]" /> Mehmonxona</>
-          ) : (
-            <><Bus size={14} className="text-[var(--accent)]" /> Avtobus</>
-          )}
-        </span>
+        <PartnerTypeDisplay type={row.type} />
       ),
     },
     {
@@ -147,6 +142,10 @@ export default function PartnersListPage() {
             onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
             options={[
               { value: "hotel", label: "Mehmonxona" },
+              { value: "hostel", label: "Yotoqxona (Hostel)" },
+              { value: "guesthouse", label: "Mehmon uyi" },
+              { value: "motel", label: "Motel" },
+              { value: "dacha", label: "Dacha" },
               { value: "bus", label: "Avtobus" },
             ]}
           />

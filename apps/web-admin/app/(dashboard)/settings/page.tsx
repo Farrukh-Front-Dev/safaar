@@ -10,7 +10,7 @@ export default function SettingsPage() {
     commissionRate: "15",
     busCommissionRate: "10",
     maintenanceMode: false,
-    contactEmail: "support@uzbron.uz",
+    contactEmail: "support@safaar.uz",
   });
 
   const handleSave = async () => {

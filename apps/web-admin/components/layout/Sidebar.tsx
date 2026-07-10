@@ -68,7 +68,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
           </div>
           {!collapsed && (
             <div className="flex flex-col animate-fade-in">
-              <span className="text-white font-bold text-base tracking-tight">UzBron</span>
+              <span className="text-white font-bold text-base tracking-tight">Safaar</span>
               <span className="text-[var(--sidebar-text)] text-[10px] uppercase tracking-widest">Admin Panel</span>
             </div>
           )}

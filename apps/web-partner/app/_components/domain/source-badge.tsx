@@ -6,7 +6,7 @@ const config: Record<
   { label: string; icon: typeof Globe; className: string }
 > = {
   [ReservationSource.UZBRON]: {
-    label: "UzBron",
+    label: "Safaar",
     icon: Globe,
     className: "bg-brand-50 text-brand-800 dark:bg-brand-900/40 dark:text-brand-200",
   },

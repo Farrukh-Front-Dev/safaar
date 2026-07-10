@@ -15,10 +15,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "UzBron Admin — Boshqaruv paneli",
-    template: "%s | UzBron Admin",
+    default: "Safaar Admin — Boshqaruv paneli",
+    template: "%s | Safaar Admin",
   },
-  description: "UzBron.uz platformasining super admin boshqaruv paneli. Foydalanuvchilar, hamkorlar, bronlar va moliyani boshqaring.",
+  description: "Safaar platformasining super admin boshqaruv paneli. Foydalanuvchilar, hamkorlar, bronlar va moliyani boshqaring.",
 };
 
 export default function RootLayout({

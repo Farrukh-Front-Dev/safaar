@@ -48,7 +48,7 @@ export default function LoginPage() {
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent-dark)] mb-4 shadow-lg shadow-[var(--accent)]/20">
           <Shield className="text-white" size={28} />
         </div>
-        <h1 className="text-2xl font-bold text-white">UzBron Admin</h1>
+        <h1 className="text-2xl font-bold text-white">Safaar Admin</h1>
         <p className="text-white/50 text-sm mt-1">Boshqaruv paneliga kirish</p>
       </div>
 
@@ -112,7 +112,7 @@ export default function LoginPage() {
 
       {/* Footer */}
       <p className="text-center text-white/20 text-xs mt-6">
-        © 2026 UzBron.uz — Barcha huquqlar himoyalangan
+        © 2026 Safaar.uz — Barcha huquqlar himoyalangan
       </p>
     </div>
   );

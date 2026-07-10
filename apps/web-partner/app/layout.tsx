@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "UzBron — Hamkor Kabineti",
+  title: "Safaar — Hamkor Kabineti",
   description:
-    "UzBron platformasidagi mehmonxona va avtobus hamkorlari uchun boshqaruv paneli.",
+    "Safaar platformasidagi mehmonxona va avtobus hamkorlari uchun boshqaruv paneli.",
 };
 
 export default function RootLayout({

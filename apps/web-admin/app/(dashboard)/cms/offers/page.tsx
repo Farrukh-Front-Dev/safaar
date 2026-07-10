@@ -8,6 +8,7 @@ import type { Column } from "@/components/ui/DataTable";
 import Button from "@/components/ui/Button";
 import { Plus, Edit2, Eye } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { toast } from "sonner";
 
 export default function CmsOffersPage() {
   const [data, setData] = useState<CmsArticle[]>([]);
@@ -39,10 +40,10 @@ export default function CmsOffersPage() {
       label: "",
       render: () => (
         <div className="flex justify-end gap-2">
-          <button className="w-8 h-8 rounded flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]">
+          <button onClick={() => toast.info("Ko'rish funksiyasi tez orada qo'shiladi")} className="w-8 h-8 rounded flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]">
             <Eye size={14} />
           </button>
-          <button className="w-8 h-8 rounded flex items-center justify-center text-[var(--primary)] hover:bg-[var(--primary)]/10">
+          <button onClick={() => toast.info("Tahrirlash funksiyasi tez orada qo'shiladi")} className="w-8 h-8 rounded flex items-center justify-center text-[var(--primary)] hover:bg-[var(--primary)]/10">
             <Edit2 size={14} />
           </button>
         </div>

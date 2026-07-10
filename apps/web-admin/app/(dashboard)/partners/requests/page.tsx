@@ -10,6 +10,8 @@ import { formatDate } from "@/lib/utils";
 import { PARTNER_REQUEST_STATUS_MAP } from "@/lib/constants";
 import { CheckCircle, XCircle, Phone, MessageSquare, FileText, Hotel, Bus } from "lucide-react";
 import type { PartnerRequest } from "@/types/admin";
+import { PartnerTypeDisplay } from "@/components/ui/PartnerTypeDisplay";
+import { toast } from "sonner";
 
 function isActiveRequest(request: PartnerRequest) {
   return request.status === "new" || request.status === "reviewing";
@@ -26,13 +28,19 @@ export default function PartnerRequestsPage() {
   }, []);
 
   const handleDecision = async (id: string, decision: "approve" | "reject") => {
-    if (decision === "approve") {
-      await MockApi.approvePartner(id);
-    } else {
-      await MockApi.rejectPartner(id);
+    try {
+      if (decision === "approve") {
+        await MockApi.approvePartner(id);
+        toast.success("Ariza muvaffaqiyatli tasdiqlandi!");
+      } else {
+        await MockApi.rejectPartner(id);
+        toast.success("Ariza rad etildi!");
+      }
+      setRequests((current) => current.filter((item) => item.id !== id));
+      setSelectedRequest(null);
+    } catch (e) {
+      toast.error("Xatolik yuz berdi. Iltimos qaytadan urinib ko'ring.");
     }
-    setRequests((current) => current.filter((item) => item.id !== id));
-    setSelectedRequest(null);
   };
 
   return (
@@ -66,13 +74,7 @@ export default function PartnerRequestsPage() {
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  <span className="inline-flex items-center gap-1.5 text-sm">
-                    {req.type === "hotel" ? (
-                      <><Hotel size={14} className="text-[var(--primary)]" /> Mehmonxona</>
-                    ) : (
-                      <><Bus size={14} className="text-[var(--accent)]" /> Avtobus</>
-                    )}
-                  </span>
+                  <PartnerTypeDisplay type={req.type} />
                 </td>
                 <td className="px-4 py-3 text-sm">{req.phone}</td>
                 <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">{formatDate(req.createdAt)}</td>
@@ -129,11 +131,7 @@ export default function PartnerRequestsPage() {
               <div>
                 <p className="text-xs text-[var(--text-muted)] mb-1">Turi</p>
                 <p className="text-sm font-medium flex items-center gap-1.5">
-                  {selectedRequest.type === "hotel" ? (
-                    <><Hotel size={14} className="text-[var(--primary)]" /> Mehmonxona</>
-                  ) : (
-                    <><Bus size={14} className="text-[var(--accent)]" /> Avtobus</>
-                  )}
+                  <PartnerTypeDisplay type={selectedRequest.type} />
                 </p>
               </div>
               <div>
@@ -165,7 +163,10 @@ export default function PartnerRequestsPage() {
                       <p className="text-sm font-medium">{doc.name}</p>
                       <p className="text-xs text-[var(--text-muted)] capitalize">{doc.type.replace("_", " ")}</p>
                     </div>
-                    <Button variant="ghost" size="sm">Yuklab olish</Button>
+                    <Button variant="ghost" size="sm" onClick={() => {
+                      if (doc.url) window.open(doc.url, "_blank");
+                      else toast.error("Hujjat fayli topilmadi!");
+                    }}>Yuklab olish</Button>
                   </div>
                 ))}
               </div>
@@ -183,8 +184,8 @@ export default function PartnerRequestsPage() {
 
             {/* Quick actions */}
             <div className="flex items-center gap-2 pt-2 border-t border-[var(--border)]">
-              <Button variant="secondary" size="sm" icon={<Phone size={14} />}>Qo&apos;ng&apos;iroq</Button>
-              <Button variant="secondary" size="sm" icon={<MessageSquare size={14} />}>Izoh qoldirish</Button>
+              <Button variant="secondary" size="sm" icon={<Phone size={14} />} onClick={() => window.open(`tel:${selectedRequest.phone}`, "_self")}>Qo&apos;ng&apos;iroq</Button>
+              <Button variant="secondary" size="sm" icon={<MessageSquare size={14} />} onClick={() => toast.info("Izoh qoldirish funksiyasi tez orada ishga tushadi.")}>Izoh qoldirish</Button>
             </div>
           </div>
         )}

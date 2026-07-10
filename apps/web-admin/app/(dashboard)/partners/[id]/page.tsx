@@ -11,8 +11,9 @@ import { formatDate, formatPrice } from "@/lib/utils";
 import { PARTNER_STATUS_MAP, BOOKING_STATUS_MAP } from "@/lib/constants";
 import {
   ArrowLeft, Ban, CheckCircle, Pause, Mail, MessageSquare, Trash2,
-  Hotel, Bus, Star, CalendarCheck, CreditCard, Pencil, MessageCircle,
+  Hotel, Bus, Star, CalendarCheck, CreditCard, Pencil, MessageCircle, Home, Bed, Trees
 } from "lucide-react";
+import { PartnerTypeDisplay } from "@/components/ui/PartnerTypeDisplay";
 
 export default function PartnerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -47,19 +48,23 @@ export default function PartnerDetailPage({ params }: { params: Promise<{ id: st
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-5">
             <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-xl"
+              className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-xl shrink-0"
               style={{
-                background: partner.type === "hotel"
-                  ? "linear-gradient(135deg, #1E3A5F, #2B5278)"
-                  : "linear-gradient(135deg, #2ECC71, #25A85C)",
+                background: partner.type === "bus"
+                  ? "linear-gradient(135deg, #2ECC71, #25A85C)"
+                  : "linear-gradient(135deg, #1E3A5F, #2B5278)",
               }}
             >
-              {partner.type === "hotel" ? <Hotel size={28} /> : <Bus size={28} />}
+              {partner.type === "bus" ? <Bus size={28} /> : 
+               partner.type === "hostel" ? <Bed size={28} /> :
+               partner.type === "guesthouse" ? <Home size={28} /> :
+               partner.type === "dacha" ? <Trees size={28} /> :
+               <Hotel size={28} />}
             </div>
             <div>
               <h1 className="text-xl font-bold text-[var(--text-primary)]">{partner.companyName}</h1>
-              <p className="text-sm text-[var(--text-muted)] mt-0.5">
-                {partner.city} · {partner.contactPerson}
+              <p className="text-sm text-[var(--text-muted)] mt-0.5 flex items-center gap-1.5">
+                {partner.city} · {partner.contactPerson} · <PartnerTypeDisplay type={partner.type} />
               </p>
               <div className="flex items-center gap-3 mt-2">
                 <StatusBadge status={partner.status} statusMap={PARTNER_STATUS_MAP} />

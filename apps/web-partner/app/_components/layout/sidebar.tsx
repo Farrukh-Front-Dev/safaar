@@ -65,14 +65,14 @@ export function Sidebar() {
           <Link
             href="/"
             className="flex items-center gap-2 overflow-hidden"
-            aria-label="UzBron bosh sahifa"
+            aria-label="Safaar bosh sahifa"
           >
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-brand-700 text-white shadow-sm">
               <Hotel className="h-4 w-4" aria-hidden />
             </span>
             {(!collapsed || mobileOpen) && (
               <span className="flex flex-col leading-tight">
-                <span className="text-sm font-bold tracking-tight">UzBron</span>
+                <span className="text-sm font-bold tracking-tight">Safaar</span>
                 <span className="text-[10px] uppercase tracking-widest text-[var(--muted-foreground)]">
                   Hamkor
                 </span>
@@ -171,9 +171,9 @@ export function Sidebar() {
         {(!collapsed || mobileOpen) && (
           <div className="border-t border-[var(--border)] p-4 text-xs leading-tight text-[var(--muted-foreground)]">
             <p className="font-semibold text-[var(--foreground)]">
-              UzBron Hamkor v0.1
+              Safaar Hamkor v0.1
             </p>
-            <p>partner.uzbron.uz</p>
+            <p>partner.safaar.uz</p>
           </div>
         )}
       </aside>

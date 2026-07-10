@@ -19,7 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@agoda/types": ["../../packages/types/src/index.ts"],
+      "@agoda/types/*": ["../../packages/types/src/*"]
     }
   },
   "include": [
