@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
-import { Star, Flame } from "lucide-react";
+import { Star } from "lucide-react";
 import type { Locale } from "@/i18n/config";
 import { formatSum } from "@/lib/money";
 import { resolveImage } from "@/lib/images";
@@ -35,12 +35,6 @@ export function FeaturedHotelCard({
               <Star className="h-8 w-8" />
             </div>
           )}
-
-          {/* "Mashhur" badge — yuqori o'ng */}
-          <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-primary-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
-            <Flame className="h-3 w-3" aria-hidden />
-            Mashhur
-          </span>
 
           {/* Reyting badge — yuqori chap */}
           {hotel.rating > 0 && (

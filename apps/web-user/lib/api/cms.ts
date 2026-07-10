@@ -84,7 +84,7 @@ export async function getPublicStats(): Promise<PublicStatsView | null> {
   return {
     totalHotels: data.totalHotels ?? 0,
     totalCities: data.totalCities ?? 0,
-    averageRating: data.averageRating ?? 0,
+    averageRating: Number(data.averageRating) || 0,
     totalBookings: data.totalBookings ?? 0,
     totalPartners: data.totalPartners ?? 0,
   };

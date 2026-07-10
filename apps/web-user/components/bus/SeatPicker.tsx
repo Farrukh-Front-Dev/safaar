@@ -10,8 +10,10 @@ import {
 import { formatSum } from "@/lib/money";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/Button";
-import { Select } from "@/components/ui/Select";
 import type { BusSeatView } from "@/types/view";
+
+const SELECT_CLASS =
+  "h-10 w-full rounded-full border border-slate-200 bg-white px-4 text-sm text-slate-900 shadow-btn transition-all hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover focus-visible:border-primary-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 active:bg-slate-100";
 
 const PAYMENT_METHODS = ["click", "payme", "uzcard", "humo", "cash"] as const;
 
@@ -167,13 +169,13 @@ export function SeatPicker({
           <span className="text-sm font-medium">
             {dict.summary.paymentMethod}
           </span>
-          <Select name="paymentMethod" defaultValue="click">
+          <select name="paymentMethod" defaultValue="click" className={SELECT_CLASS}>
             {PAYMENT_METHODS.map((m) => (
               <option key={m} value={m}>
                 {methods[m] ?? m}
               </option>
             ))}
-          </Select>
+          </select>
         </label>
 
         <div className="flex justify-between border-t border-slate-200 pt-3 font-semibold">

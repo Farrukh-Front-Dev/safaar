@@ -58,16 +58,16 @@ export function BusSearchBar({
           </span>
           <Select
             value={fromCityId}
-            onChange={(e) => setFromCityId(e.target.value)}
-            aria-label={dict.from}
-          >
-            <option value="">{dict.cityPlaceholder}</option>
-            {cities.map((city) => (
-              <option key={city.id} value={city.id}>
-                {city.name}
-              </option>
-            ))}
-          </Select>
+            onChange={setFromCityId}
+            ariaLabel={dict.from}
+            options={[
+              { value: "", label: dict.cityPlaceholder },
+              ...cities.map((city) => ({
+                value: city.id,
+                label: city.name,
+              })),
+            ]}
+          />
         </label>
 
         <label className="flex flex-col gap-1">
@@ -76,16 +76,16 @@ export function BusSearchBar({
           </span>
           <Select
             value={toCityId}
-            onChange={(e) => setToCityId(e.target.value)}
-            aria-label={dict.to}
-          >
-            <option value="">{dict.cityPlaceholder}</option>
-            {cities.map((city) => (
-              <option key={city.id} value={city.id}>
-                {city.name}
-              </option>
-            ))}
-          </Select>
+            onChange={setToCityId}
+            ariaLabel={dict.to}
+            options={[
+              { value: "", label: dict.cityPlaceholder },
+              ...cities.map((city) => ({
+                value: city.id,
+                label: city.name,
+              })),
+            ]}
+          />
         </label>
 
         <label className="flex flex-col gap-1">

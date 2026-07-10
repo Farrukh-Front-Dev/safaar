@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getHotels } from "@/lib/api/hotels";
@@ -145,13 +146,21 @@ export default async function HotelsPage({
               </p>
             )}
           </div>
-          {!loadFailed && total > 0 && <HotelSortSelect dict={dict.sort} />}
+          {!loadFailed && total > 0 && (
+            <Suspense fallback={null}>
+              <HotelSortSelect dict={dict.sort} />
+            </Suspense>
+          )}
         </div>
-        <ActiveFilters dict={dict} />
+        <Suspense fallback={null}>
+          <ActiveFilters dict={dict} />
+        </Suspense>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr]">
-        <HotelFilters dict={{ filters: dict.filters }} />
+        <Suspense fallback={null}>
+          <HotelFilters dict={{ filters: dict.filters }} />
+        </Suspense>
 
         <section aria-label={dict.title}>
           {loadFailed ? (
@@ -171,7 +180,7 @@ export default async function HotelsPage({
             </div>
           ) : (
             <>
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-4 grid-cols-2">
                 {items.map((hotel) => (
                   <HotelCard
                     key={hotel.id}

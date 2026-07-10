@@ -28,7 +28,7 @@ export function TrustBar({
         },
         {
           icon: <Star className="h-5 w-5" aria-hidden />,
-          value: stats.averageRating.toFixed(1),
+          value: Number(stats.averageRating).toFixed(1),
           label: dict.ratingLabel,
         },
         {

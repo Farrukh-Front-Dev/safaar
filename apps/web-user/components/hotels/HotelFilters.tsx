@@ -75,14 +75,17 @@ export function HotelFilters({ dict }: { dict: Pick<HotelsDict, "filters"> }) {
 
         <label className="flex flex-col gap-1">
           <span className="text-sm text-slate-600">{dict.filters.stars}</span>
-          <Select value={stars} onChange={(e) => setStars(e.target.value)}>
-            <option value="">{dict.filters.anyStars}</option>
-            {[5, 4, 3, 2, 1].map((s) => (
-              <option key={s} value={s}>
-                {dict.filters.starsValue.replace("{n}", String(s))}
-              </option>
-            ))}
-          </Select>
+          <Select
+            value={stars}
+            onChange={setStars}
+            options={[
+              { value: "", label: dict.filters.anyStars },
+              ...[5, 4, 3, 2, 1].map((s) => ({
+                value: String(s),
+                label: dict.filters.starsValue.replace("{n}", String(s)),
+              })),
+            ]}
+          />
         </label>
 
         <label className="flex flex-col gap-1">

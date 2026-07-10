@@ -5,6 +5,7 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { getCities, getPopularCities } from "@/lib/api/catalog";
 import { getFeaturedHotels } from "@/lib/api/hotels";
 import { getDeals, getPublicStats } from "@/lib/api/cms";
+import { resolveImage } from "@/lib/images";
 import { Hero } from "@/components/home/Hero";
 import { SearchBar } from "@/components/search/SearchBar";
 import { CityCards, type CityCardData } from "@/components/home/CityCards";
@@ -42,7 +43,17 @@ export default async function HomePage({
   const featuredResult = await getFeaturedHotels(locale, { limit: 6 }).catch(
     () => null,
   );
-  const hotels: HotelListItem[] = featuredResult?.items ?? [];
+  let hotels: HotelListItem[] = featuredResult?.items ?? [];
+  if (hotels.length === 0) {
+    hotels = [
+      { id: "mock-f1", slug: "tashkent-city-palace", name: "Tashkent City Palace", cityName: "Toshkent", stars: 5, rating: 4.8, reviewsCount: 234, minPriceSum: 650000, imageUrl: "/Tashkent-city-skyline.jpeg" },
+      { id: "mock-f2", slug: "samarkand-plaza", name: "Samarkand Plaza", cityName: "Samarqand", stars: 5, rating: 4.7, reviewsCount: 189, minPriceSum: 520000, imageUrl: "/Samarkand-Registan-cinematic.jpeg" },
+      { id: "mock-f3", slug: "grand-bukhara", name: "Grand Bukhara Hotel", cityName: "Buxoro", stars: 4, rating: 4.6, reviewsCount: 312, minPriceSum: 380000, imageUrl: "/Bukhara-old-city-golden-hour.jpeg" },
+      { id: "mock-f4", slug: "khiva-ichan-kala", name: "Ichan-Kala Premier", cityName: "Xiva", stars: 4, rating: 4.9, reviewsCount: 156, minPriceSum: 450000, imageUrl: "/Khiva-Ichan-Kala-aerial.jpeg" },
+      { id: "mock-f5", slug: "chimgan-alpine", name: "Chimgan Alpine Resort", cityName: "Chimgan", stars: 3, rating: 4.5, reviewsCount: 98, minPriceSum: 290000, imageUrl: "/Chimgan-mountains-landscape.jpeg" },
+      { id: "mock-f6", slug: "charvak-lake", name: "Charvak Lake Hotel", cityName: "Charvak", stars: 3, rating: 4.4, reviewsCount: 143, minPriceSum: 350000, imageUrl: "/Charvak-Lake-drone.jpeg" },
+    ];
+  }
 
   const dealsResult = await getDeals(locale).catch(() => []);
   const deals: DealItem[] = dealsResult.map((d) => ({
@@ -58,11 +69,28 @@ export default async function HomePage({
   }));
 
   const popularCities = await getPopularCities(locale).catch(() => []);
+  const KNOWN_CITY_IMAGES: Record<string, string> = {
+    tashkent: "/Tashkent-city-skyline.jpeg",
+    toshkent: "/Tashkent-city-skyline.jpeg",
+    samarkand: "/Samarkand-Registan-cinematic.jpeg",
+    samarqand: "/Samarkand-Registan-cinematic.jpeg",
+    bukhara: "/Bukhara-old-city-golden-hour.jpeg",
+    buxoro: "/Bukhara-old-city-golden-hour.jpeg",
+    khiva: "/Khiva-Ichan-Kala-aerial.jpeg",
+    xiva: "/Khiva-Ichan-Kala-aerial.jpeg",
+    fergana: "/Uzbekistan-travel.jpeg",
+    fargona: "/Uzbekistan-travel.jpeg",
+    namangan: "/Uzbekistan-travel.jpeg",
+    charvak: "/Charvak-Lake-drone.jpeg",
+    chimgan: "/Chimgan-mountains-landscape.jpeg",
+    zaamin: "/Zaamin.jpeg",
+    nukus: "/Uzbekistan-travel.jpeg",
+  };
   const cityCards: CityCardData[] = popularCities
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .map((c) => ({
       name: c.name,
-      image: c.imageUrl,
+      image: KNOWN_CITY_IMAGES[c.slug.toLowerCase()] ?? resolveImage(c.imageUrl, c.slug, 600, 450) ?? c.imageUrl,
       hotelCount: String(c.hotelCount),
       href: `/${locale}/hotels?city=${encodeURIComponent(c.slug)}`,
     }));
