@@ -7,7 +7,6 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { getHotels } from "@/lib/api/hotels";
 import { getCities } from "@/lib/api/catalog";
 import { SearchBar } from "@/components/search/SearchBar";
-import { PropertyTypeTabs } from "@/components/search/PropertyTypeTabs";
 import { HotelFilters } from "@/components/hotels/HotelFilters";
 import { HotelSortSelect } from "@/components/hotels/HotelSortSelect";
 import { ActiveFilters } from "@/components/hotels/ActiveFilters";
@@ -130,17 +129,15 @@ export default async function HotelsPage({
   const retryHref = `${basePath}${retryQuery ? `?${retryQuery}` : ""}`;
 
   return (
-    <main className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 pb-8 pt-20 sm:px-6 md:pt-28">
+    <main className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 pb-8 pt-4 sm:px-6 sm:pt-6">
 
-      <PropertyTypeTabs labels={common.propertyTypes} />
-      <div className="mt-3">
-        <SearchBar
-          locale={locale}
-          dict={common.search}
-          cities={cities}
-          defaults={{ cityId, checkIn, checkOut, guests }}
-        />
-      </div>
+      <SearchBar
+        locale={locale}
+        dict={common.search}
+        cities={cities}
+        defaults={{ cityId, checkIn, checkOut, guests }}
+        propertyTypeLabels={common.propertyTypes}
+      />
 
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-end justify-between gap-3">

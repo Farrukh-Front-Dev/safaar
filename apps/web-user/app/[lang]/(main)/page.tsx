@@ -8,7 +8,6 @@ import { getDeals, getPublicStats } from "@/lib/api/cms";
 import { resolveImage } from "@/lib/images";
 import { Hero } from "@/components/home/Hero";
 import { SearchBar } from "@/components/search/SearchBar";
-import { PropertyTypeTabs } from "@/components/search/PropertyTypeTabs";
 import { CityCards, type CityCardData } from "@/components/home/CityCards";
 import { TrustBar } from "@/components/home/TrustBar";
 import { FeaturedHotelsCarousel } from "@/components/home/FeaturedHotelsCarousel";
@@ -120,15 +119,17 @@ export default async function HomePage({
         <Hero dict={dict.hero} />
 
         {/* Turar joy turlari filteri */}
-        <div className="relative z-10 mx-auto mt-4 w-full max-w-4xl px-3 sm:mt-6 sm:px-6">
-          <PropertyTypeTabs labels={common.propertyTypes} />
-          <div className="mt-3">
-            <SearchBar locale={locale} dict={common.search} cities={cities} />
-          </div>
+        <div className="relative z-10">
+          <SearchBar
+            locale={locale}
+            dict={common.search}
+            cities={cities}
+            propertyTypeLabels={common.propertyTypes}
+          />
 
           {/* Quick city chips */}
           {cities.length > 0 && (
-            <div className="mt-3 flex flex-wrap justify-center gap-1.5 sm:mt-5 sm:gap-2">
+            <div className="mx-auto mt-4 flex max-w-4xl flex-wrap justify-center gap-1.5 px-4 sm:mt-6 sm:gap-2">
               {cities.slice(0, 6).map((city) => (
                 <a
                   key={city.id}
