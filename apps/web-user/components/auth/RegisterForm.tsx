@@ -149,15 +149,6 @@ export function RegisterForm({
           />
         </label>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">{dict.email}</span>
-          <Input
-            name="email"
-            type="email"
-            placeholder={dict.emailPlaceholder}
-          />
-        </label>
-
         {/* Password */}
         <label className="flex flex-col gap-1">
           <span className="text-sm font-medium">{dict.password}</span>
