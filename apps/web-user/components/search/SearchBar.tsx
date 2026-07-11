@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { Locale } from "@/i18n/config";
 import type { CommonDict } from "@/i18n/dictionaries";
 import type { CityOption } from "@/types/view";
@@ -30,6 +30,7 @@ export function SearchBar({
   defaults?: SearchDefaults;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [cityId, setCityId] = useState(defaults?.cityId ?? "");
   const [checkIn, setCheckIn] = useState(defaults?.checkIn ?? "");
   const [checkOut, setCheckOut] = useState(defaults?.checkOut ?? "");
@@ -42,6 +43,8 @@ export function SearchBar({
     if (checkIn) params.set("check_in", checkIn);
     if (checkOut) params.set("check_out", checkOut);
     if (guests) params.set("guests", String(guests));
+    const type = searchParams.get("type");
+    if (type && type !== "all") params.set("type", type);
     const query = params.toString();
     router.push(`/${locale}/hotels${query ? `?${query}` : ""}`);
   }

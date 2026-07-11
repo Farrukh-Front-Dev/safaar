@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 
 export type PropertyType = "all" | "hotel" | "dacha" | "guesthouse" | "sanatorium" | "resort";
 
@@ -20,8 +20,9 @@ export function PropertyTypeTabs({
 }: {
   labels: Record<PropertyType, string>;
 }) {
-  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const active = (searchParams.get("type") as PropertyType) || "all";
 
   function handleClick(type: PropertyType) {
@@ -32,7 +33,7 @@ export function PropertyTypeTabs({
       params.set("type", type);
     }
     const qs = params.toString();
-    router.push(qs ? `?${qs}` : window.location.pathname, { scroll: false });
+    router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }
 
   return (
