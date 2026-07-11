@@ -5,6 +5,7 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { getSession } from "@/lib/auth/session";
 import { getHotel } from "@/lib/api/hotels";
 import { CheckoutForm } from "@/components/checkout/CheckoutForm";
+import { BackButton } from "@/components/ui/BackButton";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -59,6 +60,7 @@ export default async function CheckoutPage({
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-6 py-8">
+      <BackButton className="fixed left-4 top-16 z-50 md:left-8 md:top-20" />
       <h1 className="text-2xl font-bold tracking-tight">{dict.title}</h1>
       <CheckoutForm
         locale={locale}

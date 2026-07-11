@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
+import { BackButton } from "@/components/ui/BackButton";
 import { LocaleSwitcher } from "@/components/layout/LocaleSwitcher";
 
 /**
@@ -23,12 +24,15 @@ export default async function AuthLayout({
     <div className="flex min-h-svh flex-col bg-slate-50">
       {/* Minimal header */}
       <header className="flex items-center justify-between px-4 py-4 sm:px-6">
-        <Link
-          href={`/${locale}`}
-          className="text-lg font-bold text-slate-900 transition-colors hover:text-primary-600"
-        >
-          {common.brand}
-        </Link>
+        <div className="flex items-center gap-3">
+          <BackButton />
+          <Link
+            href={`/${locale}`}
+            className="text-lg font-bold text-slate-900 transition-colors hover:text-primary-600"
+          >
+            {common.brand}
+          </Link>
+        </div>
         <LocaleSwitcher current={locale} />
       </header>
 

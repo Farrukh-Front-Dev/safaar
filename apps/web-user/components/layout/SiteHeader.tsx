@@ -1,19 +1,12 @@
 import Link from "next/link";
-import { Home, Hotel, Bus, MountainSnow, UserCircle } from "lucide-react";
+import { Home, Hotel, Bus, MountainSnow, HelpCircle, UserCircle } from "lucide-react";
 import type { Locale } from "@/i18n/config";
 import type { CommonDict } from "@/i18n/dictionaries";
 import { logoutAction } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/Button";
 import ShinyText from "@/components/ui/ShinyText";
-import { ScrollNav } from "./ScrollNav";
+import { ScrollNav, type ScrollNavItem } from "./ScrollNav";
 import { LocaleSwitcher } from "./LocaleSwitcher";
-
-/* Ikonlar (lucide-react) */
-const HomeIcon = <Home className="h-5 w-5" aria-hidden />;
-const HotelIcon = <Hotel className="h-5 w-5" aria-hidden />;
-const TransportIcon = <Bus className="h-5 w-5" aria-hidden />;
-const AttractionsIcon = <MountainSnow className="h-5 w-5" aria-hidden />;
-const AccountIcon = <UserCircle className="h-5 w-5" aria-hidden />;
 
 export function SiteHeader({
   locale,
@@ -26,23 +19,22 @@ export function SiteHeader({
 }) {
   const base = `/${locale}`;
 
-  // Desktop navbar items
-  const navItems = [
-    { href: base, label: dict.nav.home, icon: HomeIcon, exact: true },
-    { href: `${base}/hotels`, label: dict.nav.hotels, icon: HotelIcon },
-    { href: `${base}/buses`, label: dict.nav.transport, icon: TransportIcon },
-    { href: `${base}/attractions`, label: dict.nav.attractions, icon: AttractionsIcon },
+  const desktopItems: ScrollNavItem[] = [
+    { href: base, label: dict.nav.home, icon: <Home className="h-4 w-4" />, exact: true },
+    { href: `${base}/hotels`, label: dict.nav.hotels, icon: <Hotel className="h-4 w-4" /> },
+    { href: `${base}/buses`, label: dict.nav.transport, icon: <Bus className="h-4 w-4" /> },
+    { href: `${base}/attractions`, label: dict.nav.attractions, icon: <MountainSnow className="h-4 w-4" /> },
+    { href: `${base}/help`, label: dict.nav.help, icon: <HelpCircle className="h-4 w-4" /> },
   ];
 
-  // Mobil bottom bar — 4 ta: Home, Hotels, Transport, Account/Login
-  const mobileItems = [
-    { href: base, label: dict.nav.home, icon: HomeIcon, exact: true },
-    { href: `${base}/hotels`, label: dict.nav.hotels, icon: HotelIcon },
-    { href: `${base}/buses`, label: dict.nav.transport, icon: TransportIcon },
+  const mobileItems: ScrollNavItem[] = [
+    { href: base, label: dict.nav.home, icon: <Home className="h-5 w-5" />, exact: true },
+    { href: `${base}/hotels`, label: dict.nav.hotels, icon: <Hotel className="h-5 w-5" /> },
+    { href: `${base}/buses`, label: dict.nav.transport, icon: <Bus className="h-5 w-5" /> },
     {
       href: authed ? `${base}/account` : `${base}/login`,
       label: authed ? dict.actions.account : dict.actions.login,
-      icon: AccountIcon,
+      icon: <UserCircle className="h-5 w-5" />,
       exact: true,
     },
   ];
@@ -83,7 +75,7 @@ export function SiteHeader({
 
   return (
     <ScrollNav
-      items={navItems}
+      items={desktopItems}
       mobileItems={mobileItems}
       brand={dict.brand}
       brandHref={base}
