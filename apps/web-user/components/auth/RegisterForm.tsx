@@ -1,19 +1,21 @@
 "use client";
 
-import { useEffect, useActionState, useState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import type { Locale } from "@/i18n/config";
 import type { AuthDict } from "@/i18n/dictionaries";
 import {
   requestOtpAction,
   verifyOtpAction,
+  completeProfileAction,
   type OtpState,
   type VerifyState,
+  type CompleteProfileState,
 } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
-export function LoginForm({
+export function RegisterForm({
   locale,
   next,
   dict,
@@ -31,22 +33,21 @@ export function LoginForm({
     VerifyState,
     FormData
   >(verifyOtpAction, {});
+  const [profileState, profileAction, saving] = useActionState<
+    CompleteProfileState,
+    FormData
+  >(completeProfileAction, {});
 
-  // Yangi foydalanuvchi — profil to'ldirish sahifasiga yo'naltirish
-  useEffect(() => {
-    if (verifyState.needsProfile && verifyState.locale) {
-      const target = `/${verifyState.locale}/register?phone=${encodeURIComponent(phone)}&next=${encodeURIComponent(next)}`;
-      window.location.href = target;
-    }
-  }, [verifyState.needsProfile, verifyState.locale, phone, next]);
+  // OTP tasdiqlangandan keyin profil to'ldirish bosqichi
+  const showProfile = verifyState.needsProfile || otpState.ok === false;
 
   return (
     <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6 px-6 py-16">
-      {!otpState.ok ? (
+      {!otpState.ok && !verifyState.needsProfile && (
         <form action={requestAction} className="flex flex-col gap-4">
           <header className="flex flex-col gap-1">
-            <h1 className="text-2xl font-bold">{dict.title}</h1>
-            <p className="text-sm text-slate-500">{dict.subtitle}</p>
+            <h1 className="text-2xl font-bold">{dict.registerTitle}</h1>
+            <p className="text-sm text-slate-500">{dict.registerSubtitle}</p>
           </header>
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium">{dict.phone}</span>
@@ -68,16 +69,18 @@ export function LoginForm({
           </Button>
 
           <p className="text-center text-sm text-slate-500">
-            {dict.noAccount}{" "}
+            {dict.hasAccount}{" "}
             <Link
-              href={`/${locale}/register${next ? `?next=${encodeURIComponent(next)}` : ""}`}
+              href={`/${locale}/login${next ? `?next=${encodeURIComponent(next)}` : ""}`}
               className="font-medium text-primary-600 hover:text-primary-500"
             >
-              {dict.register}
+              {dict.login}
             </Link>
           </p>
         </form>
-      ) : (
+      )}
+
+      {otpState.ok && !verifyState.needsProfile && (
         <form action={verifyAction} className="flex flex-col gap-4">
           <header className="flex flex-col gap-1">
             <h1 className="text-2xl font-bold">{dict.codeTitle}</h1>
@@ -111,7 +114,54 @@ export function LoginForm({
           )}
 
           <Button type="submit" size="lg" loading={verifying}>
-            {dict.verify}
+            {dict.verifyAndRegister}
+          </Button>
+        </form>
+      )}
+
+      {verifyState.needsProfile && (
+        <form action={profileAction} className="flex flex-col gap-4">
+          <header className="flex flex-col gap-1">
+            <h1 className="text-2xl font-bold">{dict.completeProfileTitle}</h1>
+            <p className="text-sm text-slate-500">{dict.completeProfileSubtitle}</p>
+          </header>
+
+          <input type="hidden" name="locale" value={locale} />
+
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-medium">{dict.firstName}</span>
+            <Input
+              name="firstName"
+              required
+              placeholder={dict.firstNamePlaceholder}
+            />
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-medium">{dict.lastName}</span>
+            <Input
+              name="lastName"
+              placeholder={dict.lastNamePlaceholder}
+            />
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-medium">{dict.email}</span>
+            <Input
+              name="email"
+              type="email"
+              placeholder={dict.emailPlaceholder}
+            />
+          </label>
+
+          {profileState.error && (
+            <p className="text-sm text-red-600">
+              {profileState.error === "FIRST_NAME_REQUIRED" ? dict.firstNameRequired : dict.error}
+            </p>
+          )}
+
+          <Button type="submit" size="lg" loading={saving}>
+            {dict.save}
           </Button>
         </form>
       )}

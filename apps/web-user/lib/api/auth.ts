@@ -14,7 +14,21 @@ export interface SendOtpResult {
 export interface VerifyOtpResult {
   accessToken: string;
   refreshToken: string;
-  user: { id: string; phone: string };
+  user: {
+    id: string;
+    phone: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    email?: string | null;
+  };
+}
+
+export interface CompleteProfileResult {
+  id: string;
+  phone: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
 }
 
 /** `POST /auth/user/send-otp` — telefonga OTP yuborish. */
@@ -30,4 +44,21 @@ export async function verifyOtp(
 ): Promise<VerifyOtpResult> {
   const raw = await api.post<unknown>("/auth/user/verify-otp", { phone, code });
   return camelizeKeys<VerifyOtpResult>(raw);
+}
+
+/** `POST /auth/user/complete-profile` — birinchi marta kirgan foydalanuvchi profilini to'ldiradi. */
+export async function completeProfile(
+  token: string,
+  data: { firstName?: string; lastName?: string; email?: string },
+): Promise<CompleteProfileResult> {
+  const raw = await api.post<unknown>(
+    "/auth/user/complete-profile",
+    {
+      first_name: data.firstName,
+      last_name: data.lastName,
+      email: data.email,
+    },
+    { token },
+  );
+  return camelizeKeys<CompleteProfileResult>(raw);
 }
