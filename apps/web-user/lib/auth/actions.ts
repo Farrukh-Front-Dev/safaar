@@ -75,7 +75,7 @@ export async function verifyOtpAction(
         await completeProfile(session.accessToken, {
           firstName,
           lastName: lastName || undefined,
-          email: email || undefined,
+          email,
           password: password || undefined,
         });
         await setSession({ ...session });
@@ -115,6 +115,9 @@ export async function completeProfileAction(
   if (!firstName) {
     return { error: "FIRST_NAME_REQUIRED" };
   }
+  if (!email) {
+    return { error: "EMAIL_REQUIRED" };
+  }
 
   const passwordError = validatePassword(password);
   if (password && passwordError) {
@@ -128,7 +131,7 @@ export async function completeProfileAction(
     await completeProfile(session.accessToken, {
       firstName,
       lastName: lastName || undefined,
-      email: email || undefined,
+      email,
       password: password || undefined,
     });
     await setSession({ ...session });

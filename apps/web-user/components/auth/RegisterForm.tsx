@@ -204,14 +204,16 @@ export function RegisterForm({
         <input type="hidden" name="locale" value={locale} />
         <input type="hidden" name="next" value={next} />
 
-        {errorMsg && (
-          <p className="text-sm text-red-600">
-            {passwordErrorMap[errorMsg] ||
-              (profileState.error === "FIRST_NAME_REQUIRED"
-                ? dict.firstNameRequired
-                : dict.error)}
-          </p>
-        )}
+          {errorMsg && (
+            <p className="text-sm text-red-600">
+              {passwordErrorMap[errorMsg] ||
+                (profileState.error === "FIRST_NAME_REQUIRED"
+                  ? dict.firstNameRequired
+                  : profileState.error === "EMAIL_REQUIRED"
+                    ? dict.emailRequired
+                    : dict.error)}
+            </p>
+          )}
 
         <Button type="submit" size="lg" loading={loading}>
           {dict.verifyAndRegister}

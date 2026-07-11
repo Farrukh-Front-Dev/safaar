@@ -61,7 +61,9 @@ export function LoginForm({
             />
           </label>
           {otpState.error && (
-            <p className="text-sm text-red-600">{dict.error}</p>
+            <p className="text-sm text-red-600">
+              {otpState.error === "EMAIL_REQUIRED" ? dict.emailRequired : dict.error}
+            </p>
           )}
           <Button type="submit" size="lg" loading={sending}>
             {dict.sendCode}
