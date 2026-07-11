@@ -55,8 +55,8 @@ export function ScrollNav({
           <ShinyText
             text={brand}
             speed={4}
-            color="#0f766e"
-            shineColor="#5eead4"
+            color="var(--brand-600)"
+            shineColor="var(--brand-300)"
             className="text-base font-bold"
           />
         </Link>
@@ -76,8 +76,8 @@ export function ScrollNav({
             <ShinyText
               text={brand}
               speed={4}
-              color="#0f766e"
-              shineColor="#5eead4"
+              color="var(--brand-600)"
+              shineColor="var(--brand-300)"
               className="text-lg font-bold"
             />
           </Link>
