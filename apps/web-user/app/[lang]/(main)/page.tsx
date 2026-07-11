@@ -8,6 +8,7 @@ import { getDeals, getPublicStats } from "@/lib/api/cms";
 import { resolveImage } from "@/lib/images";
 import { Hero } from "@/components/home/Hero";
 import { SearchBar } from "@/components/search/SearchBar";
+import { PropertyTypeTabs } from "@/components/search/PropertyTypeTabs";
 import { CityCards, type CityCardData } from "@/components/home/CityCards";
 import { TrustBar } from "@/components/home/TrustBar";
 import { FeaturedHotelsCarousel } from "@/components/home/FeaturedHotelsCarousel";
@@ -118,9 +119,12 @@ export default async function HomePage({
       <div className="flex min-h-svh flex-col justify-between">
         <Hero dict={dict.hero} />
 
-        {/* SearchTabs (Mehmonxona / Avtobus) */}
+        {/* Turar joy turlari filteri */}
         <div className="relative z-10 mx-auto mt-4 w-full max-w-4xl px-3 sm:mt-6 sm:px-6">
-          <SearchBar locale={locale} dict={common.search} cities={cities} />
+          <PropertyTypeTabs labels={common.propertyTypes} />
+          <div className="mt-3">
+            <SearchBar locale={locale} dict={common.search} cities={cities} />
+          </div>
 
           {/* Quick city chips */}
           {cities.length > 0 && (

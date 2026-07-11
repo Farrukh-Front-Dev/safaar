@@ -17,6 +17,14 @@
     "account": "Account"
   },
   "language": "Language",
+  "propertyTypes": {
+    "all": "All",
+    "hotel": "Hotel",
+    "dacha": "Cottage",
+    "guesthouse": "Guesthouse",
+    "sanatorium": "Sanatorium",
+    "resort": "Resort"
+  },
   "search": {
     "hotelsTab": "Hotel",
     "busesTab": "Bus",

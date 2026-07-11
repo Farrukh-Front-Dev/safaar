@@ -17,6 +17,14 @@
     "account": "Kabinet"
   },
   "language": "Til",
+  "propertyTypes": {
+    "all": "Barchasi",
+    "hotel": "Mehmonxona",
+    "dacha": "Dacha",
+    "guesthouse": "Gostinka",
+    "sanatorium": "Sanatoriy",
+    "resort": "Oromgoh"
+  },
   "search": {
     "hotelsTab": "Mehmonxona",
     "busesTab": "Avtobus",

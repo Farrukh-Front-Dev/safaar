@@ -7,6 +7,7 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { getHotels } from "@/lib/api/hotels";
 import { getCities } from "@/lib/api/catalog";
 import { SearchBar } from "@/components/search/SearchBar";
+import { PropertyTypeTabs } from "@/components/search/PropertyTypeTabs";
 import { HotelFilters } from "@/components/hotels/HotelFilters";
 import { HotelSortSelect } from "@/components/hotels/HotelSortSelect";
 import { ActiveFilters } from "@/components/hotels/ActiveFilters";
@@ -94,6 +95,8 @@ export default async function HotelsPage({
     console.error("[hotels] getHotels failed:", e);
     return null;
   });
+  const propertyType = one(sp.type);
+
   const loadFailed = hotelsResult === null;
 
   // Backend server-side filter/sort/pagination qo'llaydi.
@@ -129,12 +132,15 @@ export default async function HotelsPage({
   return (
     <main className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 pb-8 pt-20 sm:px-6 md:pt-28">
 
-      <SearchBar
-        locale={locale}
-        dict={common.search}
-        cities={cities}
-        defaults={{ cityId, checkIn, checkOut, guests }}
-      />
+      <PropertyTypeTabs labels={common.propertyTypes} />
+      <div className="mt-3">
+        <SearchBar
+          locale={locale}
+          dict={common.search}
+          cities={cities}
+          defaults={{ cityId, checkIn, checkOut, guests }}
+        />
+      </div>
 
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-end justify-between gap-3">

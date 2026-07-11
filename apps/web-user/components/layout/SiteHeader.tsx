@@ -30,7 +30,7 @@ export function SiteHeader({
   const navItems = [
     { href: base, label: dict.nav.home, icon: HomeIcon, exact: true },
     { href: `${base}/hotels`, label: dict.nav.hotels, icon: HotelIcon },
-    { href: `${base}/transport`, label: dict.nav.transport, icon: TransportIcon },
+    { href: `${base}/buses`, label: dict.nav.transport, icon: TransportIcon },
     { href: `${base}/attractions`, label: dict.nav.attractions, icon: AttractionsIcon },
   ];
 
@@ -38,7 +38,7 @@ export function SiteHeader({
   const mobileItems = [
     { href: base, label: dict.nav.home, icon: HomeIcon, exact: true },
     { href: `${base}/hotels`, label: dict.nav.hotels, icon: HotelIcon },
-    { href: `${base}/transport`, label: dict.nav.transport, icon: TransportIcon },
+    { href: `${base}/buses`, label: dict.nav.transport, icon: TransportIcon },
     {
       href: authed ? `${base}/account` : `${base}/login`,
       label: authed ? dict.actions.account : dict.actions.login,
