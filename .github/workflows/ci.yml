@@ -6,15 +6,15 @@ on:
   pull_request:
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
 
-# Bir branch'ga ketma-ket push bo'lsa, eskisini bekor qilib, oxirgisini ishlatadi.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # 1) Qaysi paketlar o'zgarganini aniqlaydi — faqat o'shalar tekshiriladi.
+  # 1) Qaysi paketlar o'zgarganini aniqlaydi
   changes:
     runs-on: ubuntu-latest
     outputs:
@@ -45,6 +45,7 @@ jobs:
               - *shared
               - 'apps/backend/**'
 
+  # 2) Har bir o'zgargan app'ni build + lint qiladi
   web-user:
     needs: changes
     if: ${{ needs.changes.outputs.web-user == 'true' }}
@@ -105,17 +106,99 @@ jobs:
       - run: npm run test -w @agoda/backend
       - run: npm run build:backend
 
-  # 2) Yagona "gate" — branch protection shu jobni talab qiladi.
-  # Har doim ishlaydi; o'tkazib yuborilgan (skipped) joblar OK, faqat failure bloklaydi.
+  # 3) Boundary check — har bir commit faqat o'z papkasiga tegganligini tekshiradi
+  boundary-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Papka chegaralarini tekshirish
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Push yoki PR ekanligiga qarab base/head ni aniqlaymiz
+          if [ "${{ github.event_name }}" = "push" ]; then
+            BASE="${{ github.event.before }}"
+            HEAD="${{ github.sha }}"
+          else
+            BASE="${{ github.event.pull_request.base.sha }}"
+            HEAD="${{ github.event.pull_request.head.sha }}"
+          fi
+
+          # Agar BASE "0000..." bo'lsa (birinchi push), farqni topolmaymiz — skip
+          if [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            echo "::notice::Birinchi push — boundary check o'tkazib yuborildi"
+            exit 0
+          fi
+
+          VIOLATIONS=0
+
+          for COMMIT in $(git rev-list "$BASE..$HEAD"); do
+            FILES=$(git diff-tree --no-commit-id -r --name-only "$COMMIT")
+
+            # Qaysi guruh(lar)ga tegishli ekanligini aniqlaymiz
+            GROUP_OWNER=""
+
+            while IFS= read -r FILE; do
+              OWNER=""
+
+              case "$FILE" in
+                # @Farrukh-Front-Dev
+                apps/web-user/*)
+                  OWNER="farrukh"
+                  ;;
+                # @adhambek7717
+                apps/web-partner/* | apps/web-admin/*)
+                  OWNER="adhambek"
+                  ;;
+                # @Lazizdeveloper
+                apps/backend/* | packages/types/* | package.json | package-lock.json | CODEOWNERS | tsconfig.json | .prettierrc)
+                  OWNER="laziz"
+                  ;;
+                # Shared — hamma tegishi mumkin
+                .github/* | *.md | AGENTS.md | CONTRIBUTING.md | .gitignore | .gitattributes)
+                  OWNER="shared"
+                  ;;
+                railway.json | docker-compose* | vercel.json | .env* | next.config* | postcss.config* | eslint* | tsconfig*)
+                  OWNER="shared"
+                  ;;
+              esac
+
+              # Agar OWNER aniqlanmasa — shared hisoblanadi
+              OWNER="${OWNER:-shared}"
+
+              if [ "$OWNER" != "shared" ]; then
+                if [ -z "$GROUP_OWNER" ]; then
+                  GROUP_OWNER="$OWNER"
+                elif [ "$GROUP_OWNER" != "$OWNER" ]; then
+                  echo "::error::CHEGARA BUZILISHI: $COMMIT — commit bir necha egaga tegishli"
+                  echo "  Egalar: $GROUP_OWNER va $OWNER"
+                  echo "  Fayl: $FILE"
+                  VIOLATIONS=$((VIOLATIONS + 1))
+                fi
+              fi
+            done <<< "$FILES"
+          done
+
+          if [ "$VIOLATIONS" -gt 0 ]; then
+            echo "::error::$VIOLATIONS ta commitda chegara buzilishi aniqlandi"
+            exit 1
+          fi
+
+          echo "::notice::Barcha commitlar chegara qoidalariga mos"
+
+  # 4) Umumiy gate — branch protection uchun
   ci-success:
     name: CI Success
-    needs: [web-user, web-partner, web-admin, backend]
+    needs: [web-user, web-partner, web-admin, backend, boundary-check]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Natijalarni tekshirish
         run: |
-          results="${{ needs.web-user.result }} ${{ needs.web-partner.result }} ${{ needs.web-admin.result }} ${{ needs.backend.result }}"
+          results="${{ needs.web-user.result }} ${{ needs.web-partner.result }} ${{ needs.web-admin.result }} ${{ needs.backend.result }} ${{ needs.boundary-check.result }}"
           echo "Job natijalari: $results"
           for r in $results; do
             if [ "$r" = "failure" ] || [ "$r" = "cancelled" ]; then
@@ -124,3 +207,38 @@ jobs:
             fi
           done
           echo "Barcha tegishli tekshiruvlar muvaffaqiyatli."
+
+  # 5) Auto-merge: develop → main (faqat develop'ga push'da, CI to'liq o'tsa)
+  auto-merge:
+    needs: ci-success
+    if: >
+      github.ref == 'refs/heads/develop' &&
+      github.event_name == 'push' &&
+      success()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+      - name: develop → main PR yaratish va auto-merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --base main \
+            --head develop \
+            --title "🤖 Auto-merge: develop → main" \
+            --body "## Avtomatik merge
+
+          - **CI:** o'tdi ✅
+          - **Boundary check:** o'tdi ✅
+
+          Barcha tekshiruvlardan muvaffaqiyatli o'tgan develop'dagi o'zgarishlar main'ga merge qilinmoqda." \
+            2>/dev/null || echo "PR allaqachon mavjud"
+
+          gh pr merge --auto --squash --base main 2>/dev/null || \
+            echo "Auto-merge yoqilgan yoki PR yopiq"
