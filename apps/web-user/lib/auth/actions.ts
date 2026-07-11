@@ -48,6 +48,10 @@ export async function verifyOtpAction(
   const rawLocale = String(formData.get("locale") ?? defaultLocale);
   const locale = isLocale(rawLocale) ? rawLocale : defaultLocale;
   const next = String(formData.get("next") ?? "");
+  const firstName = String(formData.get("firstName") ?? "").trim();
+  const lastName = String(formData.get("lastName") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
 
   try {
     const result = await verifyOtp(phone, code);
@@ -61,6 +65,26 @@ export async function verifyOtpAction(
 
     // Yangi foydalanuvchi (firstName yo'q) — profil to'ldirish sahifasiga
     if (!result.user.firstName) {
+      // Agar shu formda profil ma'lumotlari kelgan bo'lsa — darhol completeProfile
+      if (firstName) {
+        const session = await getSession();
+        if (!session) return { error: "SESSION_EXPIRED" };
+
+        const passwordError = validatePassword(password);
+        if (passwordError) return { error: passwordError };
+
+        await completeProfile(session.accessToken, {
+          firstName,
+          lastName: lastName || undefined,
+          email: email || undefined,
+          password: password || undefined,
+        });
+        await setSession({ ...session });
+
+        const target = next.startsWith("/") ? next : `/${locale}`;
+        redirect(target);
+      }
+
       return { needsProfile: true, locale };
     }
   } catch (error) {
@@ -87,17 +111,27 @@ export async function completeProfileAction(
   const email = String(formData.get("email") ?? "").trim();
   const rawLocale = String(formData.get("locale") ?? defaultLocale);
   const locale = isLocale(rawLocale) ? rawLocale : defaultLocale;
+  const password = String(formData.get("password") ?? "");
 
   if (!firstName) {
     return { error: "FIRST_NAME_REQUIRED" };
+  }
+
+  const passwordError = validatePassword(password);
+  if (password && passwordError) {
+    return { error: passwordError };
   }
 
   try {
     const session = await getSession();
     if (!session) return { error: "SESSION_EXPIRED" };
 
-    await completeProfile(session.accessToken, { firstName, lastName, email: email || undefined });
-    // Session'dagi phone ni yangilab, firstName ham saqlash
+    await completeProfile(session.accessToken, {
+      firstName,
+      lastName: lastName || undefined,
+      email: email || undefined,
+      password: password || undefined,
+    });
     await setSession({ ...session });
   } catch (error) {
     return {
@@ -106,6 +140,16 @@ export async function completeProfileAction(
   }
 
   redirect(`/${locale}`);
+}
+
+function validatePassword(password: string): string | null {
+  if (!password) return null; // ixtiyoriy
+  if (password.length < 8) return "PASSWORD_TOO_SHORT";
+  if (!/[A-Z]/.test(password)) return "PASSWORD_NO_UPPERCASE";
+  if (!/[a-z]/.test(password)) return "PASSWORD_NO_LOWERCASE";
+  if (!/[0-9]/.test(password)) return "PASSWORD_NO_NUMBER";
+  if (!/[^A-Za-z0-9]/.test(password)) return "PASSWORD_NO_SPECIAL";
+  return null;
 }
 
 export async function logoutAction(rawLocale: string): Promise<void> {

@@ -49,15 +49,19 @@ export async function verifyOtp(
 /** `POST /auth/user/complete-profile` — birinchi marta kirgan foydalanuvchi profilini to'ldiradi. */
 export async function completeProfile(
   token: string,
-  data: { firstName?: string; lastName?: string; email?: string },
+  data: { firstName?: string; lastName?: string; email?: string; password?: string },
 ): Promise<CompleteProfileResult> {
+  const body: Record<string, unknown> = {
+    first_name: data.firstName,
+    last_name: data.lastName,
+    email: data.email,
+  };
+  if (data.password) {
+    body.password = data.password;
+  }
   const raw = await api.post<unknown>(
     "/auth/user/complete-profile",
-    {
-      first_name: data.firstName,
-      last_name: data.lastName,
-      email: data.email,
-    },
+    body,
     { token },
   );
   return camelizeKeys<CompleteProfileResult>(raw);
