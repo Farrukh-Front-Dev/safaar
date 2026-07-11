@@ -249,10 +249,10 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
-/* ── Custom scrollbar: thin + green ── */
+/* ── Custom scrollbar: thin + blue ── */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #0d9488 transparent;
+  scrollbar-color: var(--brand-500) transparent;
 }
 
 ::-webkit-scrollbar {
@@ -265,10 +265,10 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #0d9488;
+  background: var(--brand-500);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #0f766e;
+  background: var(--brand-600);
 }

@@ -12,9 +12,9 @@
  */
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   TEMA 1: OCHIQ YORQIN YASHIL (Light Bright Green) — hozir faol
-   Yorqin lekin yumshoqroq yashil — ko'zga yoqimli.
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+   TEMA 1: OCHIQ YORQIN YASHIL (Light Bright Green) — izohda
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 :root {
   --brand-50: #f0fdf4;
   --brand-100: #dcfce7;
@@ -35,10 +35,11 @@
   --brand-accent-700: #c2410c;
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   TEMA 2: KO'K OSMON (Blue) — bu blokni oching, yuqoridagini yoping
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+*/
 
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   TEMA 2: KO'K OSMON (Blue) — hozir faol
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 :root {
   --brand-50: #eff6ff;
   --brand-100: #dbeafe;
@@ -58,5 +59,3 @@
   --brand-accent-600: #ea580c;
   --brand-accent-700: #c2410c;
 }
-
-*/
