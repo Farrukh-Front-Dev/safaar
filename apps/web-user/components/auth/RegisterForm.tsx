@@ -39,7 +39,7 @@ export function RegisterForm({
   next: string;
   dict: AuthDict;
 }) {
-  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
   const strength = useMemo(() => passwordStrength(password), [password]);
@@ -81,15 +81,15 @@ export function RegisterForm({
         {/* Telefon + Send code — always visible */}
         <div className="flex items-end gap-2">
           <label className="flex flex-1 flex-col gap-1">
-            <span className="text-sm font-medium">{dict.phone}</span>
+            <span className="text-sm font-medium">{dict.email}</span>
             <Input
-              name="phone"
-              type="tel"
-              autoComplete="tel"
+              name="email"
+              type="email"
+              autoComplete="email"
               required
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder={dict.phonePlaceholder}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={dict.emailPlaceholder}
             />
           </label>
           <Button
@@ -105,7 +105,7 @@ export function RegisterForm({
         </div>
 
         {otpState.error && (
-          <p className="-mt-2 text-sm text-red-600">{otpState.error === "PHONE_REQUIRED" ? dict.phone : dict.error}</p>
+          <p className="-mt-2 text-sm text-red-600">{otpState.error === "EMAIL_REQUIRED" ? dict.email : dict.error}</p>
         )}
 
         {otpState.devCode && (

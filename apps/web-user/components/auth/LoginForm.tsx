@@ -22,7 +22,7 @@ export function LoginForm({
   next: string;
   dict: AuthDict;
 }) {
-  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [otpState, requestAction, sending] = useActionState<OtpState, FormData>(
     requestOtpAction,
     { ok: false },
@@ -35,10 +35,10 @@ export function LoginForm({
   // Yangi foydalanuvchi — profil to'ldirish sahifasiga yo'naltirish
   useEffect(() => {
     if (verifyState.needsProfile && verifyState.locale) {
-      const target = `/${verifyState.locale}/register?phone=${encodeURIComponent(phone)}&next=${encodeURIComponent(next)}`;
+      const target = `/${verifyState.locale}/register?email=${encodeURIComponent(email)}&next=${encodeURIComponent(next)}`;
       window.location.href = target;
     }
-  }, [verifyState.needsProfile, verifyState.locale, phone, next]);
+  }, [verifyState.needsProfile, verifyState.locale, email, next]);
 
   return (
     <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6 px-6 py-16">
@@ -49,15 +49,15 @@ export function LoginForm({
             <p className="text-sm text-slate-500">{dict.subtitle}</p>
           </header>
           <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium">{dict.phone}</span>
+            <span className="text-sm font-medium">{dict.email}</span>
             <Input
-              name="phone"
-              type="tel"
-              autoComplete="tel"
+              name="email"
+              type="email"
+              autoComplete="email"
               required
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder={dict.phonePlaceholder}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={dict.emailPlaceholder}
             />
           </label>
           {otpState.error && (
@@ -90,7 +90,7 @@ export function LoginForm({
             </p>
           )}
 
-          <input type="hidden" name="phone" value={phone} />
+          <input type="hidden" name="email" value={email} />
           <input type="hidden" name="locale" value={locale} />
           <input type="hidden" name="next" value={next} />
 

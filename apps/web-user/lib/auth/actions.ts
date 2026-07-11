@@ -18,11 +18,11 @@ export async function requestOtpAction(
   _prev: OtpState,
   formData: FormData,
 ): Promise<OtpState> {
-  const phone = String(formData.get("phone") ?? "").trim();
-  if (!phone) return { ok: false, error: "PHONE_REQUIRED" };
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) return { ok: false, error: "EMAIL_REQUIRED" };
 
   try {
-    const result = await sendOtp(phone);
+    const result = await sendOtp(email);
     return { ok: true, devCode: result.devCode };
   } catch (error) {
     return {
@@ -43,22 +43,21 @@ export async function verifyOtpAction(
   _prev: VerifyState,
   formData: FormData,
 ): Promise<VerifyState> {
-  const phone = String(formData.get("phone") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim();
   const code = String(formData.get("code") ?? "").trim();
   const rawLocale = String(formData.get("locale") ?? defaultLocale);
   const locale = isLocale(rawLocale) ? rawLocale : defaultLocale;
   const next = String(formData.get("next") ?? "");
   const firstName = String(formData.get("firstName") ?? "").trim();
   const lastName = String(formData.get("lastName") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
   try {
-    const result = await verifyOtp(phone, code);
+    const result = await verifyOtp(email, code);
     await setSession({
       userId: result.user.id,
       role: Role.USER,
-      phone: result.user.phone,
+      email: result.user.email,
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
     });

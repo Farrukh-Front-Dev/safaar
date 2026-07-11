@@ -16,33 +16,31 @@ export interface VerifyOtpResult {
   refreshToken: string;
   user: {
     id: string;
-    phone: string;
+    email: string;
     firstName?: string | null;
     lastName?: string | null;
-    email?: string | null;
   };
 }
 
 export interface CompleteProfileResult {
   id: string;
-  phone: string;
+  email: string;
   firstName: string;
   lastName: string;
-  email?: string;
 }
 
-/** `POST /auth/user/send-otp` — telefonga OTP yuborish. */
-export async function sendOtp(phone: string): Promise<SendOtpResult> {
-  const raw = await api.post<unknown>("/auth/user/send-otp", { phone });
+/** `POST /auth/user/send-otp` — emailga OTP yuborish. */
+export async function sendOtp(email: string): Promise<SendOtpResult> {
+  const raw = await api.post<unknown>("/auth/user/send-otp", { email });
   return camelizeKeys<SendOtpResult>(raw);
 }
 
 /** `POST /auth/user/verify-otp` — kodni tekshirish, token + user qaytaradi. */
 export async function verifyOtp(
-  phone: string,
+  email: string,
   code: string,
 ): Promise<VerifyOtpResult> {
-  const raw = await api.post<unknown>("/auth/user/verify-otp", { phone, code });
+  const raw = await api.post<unknown>("/auth/user/verify-otp", { email, code });
   return camelizeKeys<VerifyOtpResult>(raw);
 }
 
