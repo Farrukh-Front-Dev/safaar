@@ -65,10 +65,7 @@ export function ScrollNav({
 
       {/* ═══ Desktop navbar (md+) ═══ */}
       <nav
-        className="sticky top-0 z-100 hidden border-b border-slate-200 bg-white/95 backdrop-blur-sm md:block"
-        style={{
-          boxShadow: "0 1px 3px rgba(15,23,42,0.04), 0 4px 12px -4px rgba(15,23,42,0.06)",
-        }}
+        className="sticky top-0 z-100 hidden border-b border-slate-200 bg-white/95 backdrop-blur-sm shadow-card md:block"
       >
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
           {/* Logo */}
