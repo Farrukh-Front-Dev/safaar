@@ -51,106 +51,10 @@ export function SearchBar({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-3 md:flex-row md:items-stretch md:gap-2 md:rounded-full md:border md:border-slate-200 md:bg-slate-50 md:p-1.5 md:shadow-btn"
+      className="rounded-2xl border border-slate-200 bg-slate-100 p-4 shadow-lg sm:p-5"
     >
-      {/* ═══ Mobil: birlashgan karta ═══ */}
-      <div className="divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white shadow-btn md:hidden">
-        {/* Shahar */}
-        <MobileCityPicker
-          cities={cities}
-          value={cityId}
-          onChange={setCityId}
-          label={dict.city}
-          placeholder={dict.cityPlaceholder}
-        />
-
-        {/* Sanalar — 2 ta yon-yoniga */}
-        <div className="grid grid-cols-2 divide-x divide-slate-100">
-          <div className="px-4 py-3">
-            <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-slate-600">
-                {dict.checkIn}
-              </span>
-              <DatePicker
-                locale={locale}
-                label={dict.checkIn}
-                value={checkIn}
-                min={today}
-                icon={<CalendarIcon />}
-                onChange={(iso) => {
-                  setCheckIn(iso);
-                  if (checkOut && iso > checkOut) setCheckOut("");
-                }}
-                compact
-              />
-            </label>
-          </div>
-          <div className="px-4 py-3">
-            <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-slate-600">
-                {dict.checkOut}
-              </span>
-              <DatePicker
-                locale={locale}
-                label={dict.checkOut}
-                value={checkOut}
-                min={checkIn || today}
-                icon={<CalendarIcon />}
-                onChange={setCheckOut}
-                compact
-              />
-            </label>
-          </div>
-        </div>
-
-        {/* Mehmonlar */}
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2.5">
-            <span className="text-slate-600">
-              <GuestsIcon />
-            </span>
-            <span className="text-sm font-medium text-slate-900">
-              {dict.guests}
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setGuests((g) => Math.max(1, g - 1))}
-              aria-label="-"
-              className="grid h-9 w-9 place-items-center rounded-full border border-slate-300 text-slate-700 transition-colors hover:border-primary-500 hover:text-primary-600 active:scale-90 disabled:opacity-40"
-              disabled={guests <= 1}
-            >
-              <MinusIcon />
-            </button>
-            <span className="w-6 text-center text-base font-bold tabular-nums text-slate-900">
-              {guests}
-            </span>
-            <button
-              type="button"
-              onClick={() => setGuests((g) => Math.min(20, g + 1))}
-              aria-label="+"
-              className="grid h-9 w-9 place-items-center rounded-full border border-slate-300 text-slate-700 transition-colors hover:border-primary-500 hover:text-primary-600 active:scale-90 disabled:opacity-40"
-              disabled={guests >= 20}
-            >
-              <PlusIcon />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobil: Qidirish tugmasi — to'liq kenglik */}
-      <button
-        type="submit"
-        className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary-600 text-sm font-semibold text-white shadow-btn transition-all duration-150 hover:bg-primary-500 hover:shadow-btn-hover active:bg-primary-700 active:shadow-btn-active active:scale-[0.97] md:hidden"
-      >
-        <SearchIcon />
-        <span>{dict.submit}</span>
-      </button>
-
-      {/* ═══ Desktop: Airbnb pill (md+) ═══ */}
-      <div className="hidden md:contents">
-        {/* Shahar */}
+      {/* Shahar — to'liq kenglik */}
+      <div className="mb-3">
         <CityPicker
           cities={cities}
           value={cityId}
@@ -158,8 +62,10 @@ export function SearchBar({
           label={dict.city}
           placeholder={dict.cityPlaceholder}
         />
+      </div>
 
-        {/* Kirish sanasi */}
+      {/* Sana + Mehmonlar — yon-yoniga */}
+      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <DatePicker
           locale={locale}
           label={dict.checkIn}
@@ -171,8 +77,6 @@ export function SearchBar({
             if (checkOut && iso > checkOut) setCheckOut("");
           }}
         />
-
-        {/* Chiqish sanasi */}
         <DatePicker
           locale={locale}
           label={dict.checkOut}
@@ -181,8 +85,6 @@ export function SearchBar({
           icon={<CalendarIcon />}
           onChange={setCheckOut}
         />
-
-        {/* Mehmonlar */}
         <Field icon={<GuestsIcon />} label={dict.guests}>
           <div className="flex items-center gap-3">
             <button
@@ -208,16 +110,16 @@ export function SearchBar({
             </button>
           </div>
         </Field>
-
-        {/* Qidirish tugmasi */}
-        <button
-          type="submit"
-          className="group inline-flex h-auto flex-1 items-center justify-center gap-2 rounded-full bg-primary-600 px-7 text-sm font-semibold text-white shadow-btn transition-all duration-150 hover:bg-primary-500 hover:shadow-btn-hover active:bg-primary-700 active:shadow-btn-active active:scale-[0.97]"
-        >
-          <SearchIcon />
-          <span>{dict.submit}</span>
-        </button>
       </div>
+
+      {/* Search tugma — to'liq kenglik */}
+      <button
+        type="submit"
+        className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary-600 text-base font-semibold text-white shadow-btn transition-all duration-150 hover:bg-primary-500 hover:shadow-btn-hover active:bg-primary-700 active:shadow-btn-active active:scale-[0.97]"
+      >
+        <SearchIcon />
+        <span>{dict.submit}</span>
+      </button>
     </form>
   );
 }
@@ -328,7 +230,7 @@ function Field({
 }) {
   return (
     <div
-      className="group flex flex-1 items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-3 shadow-btn transition-all duration-150 hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:shadow-btn-active active:scale-[0.97]"
+      className="group flex flex-1 items-center gap-3 rounded-lg border border-slate-300 bg-white px-4 py-3 transition-colors hover:border-slate-400"
     >
       <span className="shrink-0 text-slate-700 transition-colors group-hover:text-primary-600">
         {icon}
@@ -378,13 +280,13 @@ function CityPicker({
   }, [open]);
 
   return (
-    <div ref={ref} className="relative flex-1">
+    <div ref={ref} className="relative">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className="group flex w-full items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-3 text-left shadow-btn transition-all duration-150 hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:shadow-btn-active active:scale-[0.97]"
+        className="group flex w-full items-center gap-3 rounded-lg border border-slate-300 bg-white px-4 py-3 text-left transition-colors hover:border-slate-400"
       >
         <span className="shrink-0 text-slate-700 transition-colors group-hover:text-primary-600">
           <PinIcon />

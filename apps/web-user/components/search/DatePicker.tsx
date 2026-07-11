@@ -131,7 +131,7 @@ export function DatePicker({
         className={
           compact
             ? "flex w-full items-center gap-2 text-left"
-            : "group flex w-full items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-3 text-left shadow-btn transition-all duration-150 hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:shadow-btn-active active:scale-[0.97]"
+            : "group flex w-full items-center gap-3 rounded-lg border border-slate-300 bg-white px-4 py-3 text-left transition-colors hover:border-slate-400"
         }
         style={undefined}
       >

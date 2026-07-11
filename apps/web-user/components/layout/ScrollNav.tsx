@@ -14,14 +14,14 @@ export type ScrollNavItem = {
 
 /**
  * Sayt navbari.
- * Desktop (md+): markazlashtirilgan oq pill — logo | PillNav | actions.
+ * Desktop (md+): markazlashtirilgan pill — logo | PillNav | actions.
  * Mobil (<md): pastda fixed bottom tab bar — ikonka + label.
  *
  * Ranglar:
- * - Navbar fon: solid oq, border-slate-200, yengil shadow.
- * - PillNav: to'q slate pill'lar, hover'da emerald to'ldiradi, matn oqqa o'tadi.
- * - Mobil active: emerald-600 ikonka fon.
- * - Logo: emerald-700, hover'da emerald-600.
+ * - Navbar fon: primary-600 (blue).
+ * - PillNav: white pill'lar, hover'da white to'ldiradi, matn blue.
+ * - Mobil active: white ikonka foni.
+ * - Logo: white.
  */
 export function ScrollNav({
   items,
@@ -47,7 +47,7 @@ export function ScrollNav({
   return (
     <>
       {/* ═══ Mobil top bar (<md) ═══ */}
-      <header className="sticky top-0 z-100 flex h-12 items-center justify-between border-b border-slate-200 bg-white px-4 md:hidden">
+      <header className="sticky top-0 z-100 flex h-12 items-center justify-between border-b border-primary-700 bg-primary-600 px-4 md:hidden">
         <Link
           href={brandHref}
           className="text-base font-bold tracking-tight"
@@ -55,20 +55,17 @@ export function ScrollNav({
           <ShinyText
             text={brand}
             speed={4}
-            color="#0f766e"
-            shineColor="#5eead4"
+            color="#ffffff"
+            shineColor="#93c5fd"
             className="text-base font-bold"
           />
         </Link>
-        <div className="flex items-center gap-2">{actions}</div>
+        <div className="flex items-center gap-2 [&_button]:text-white [&_a]:text-white">{actions}</div>
       </header>
 
       {/* ═══ Desktop navbar (md+) ═══ */}
       <nav
-        className="sticky top-0 z-100 hidden border-b border-slate-200 bg-white/95 backdrop-blur-sm md:block"
-        style={{
-          boxShadow: "0 1px 3px rgba(15,23,42,0.04), 0 4px 12px -4px rgba(15,23,42,0.06)",
-        }}
+        className="sticky top-0 z-100 hidden border-b border-primary-700 bg-primary-600 md:block"
       >
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
           {/* Logo */}
@@ -79,8 +76,8 @@ export function ScrollNav({
             <ShinyText
               text={brand}
               speed={4}
-              color="#0f766e"
-              shineColor="#5eead4"
+              color="#ffffff"
+              shineColor="#93c5fd"
               className="text-lg font-bold"
             />
           </Link>
@@ -88,21 +85,21 @@ export function ScrollNav({
           {/* Nav — PillNav (gsap hover-fill) */}
           <PillNav
             items={pillItems}
-            baseColor="#16a34a"
-            pillColor="#f1f5f9"
-            hoveredPillTextColor="#ffffff"
-            pillTextColor="#1e293b"
+            baseColor="#ffffff"
+            pillColor="rgba(255,255,255,0.15)"
+            hoveredPillTextColor="#1d4ed8"
+            pillTextColor="#ffffff"
           />
 
           {/* Actions */}
-          <div className="flex shrink-0 items-center gap-2">{actions}</div>
+          <div className="flex shrink-0 items-center gap-2 [&_button]:text-white [&_a]:text-white">{actions}</div>
         </div>
       </nav>
 
       {/* ═══ Mobil bottom bar (<md) ═══ */}
       <nav
         aria-label="Mobil navigatsiya"
-        className="fixed inset-x-0 bottom-0 z-100 rounded-t-2xl border border-slate-200 border-b-0 bg-white shadow-btn md:hidden"
+        className="fixed inset-x-0 bottom-0 z-100 rounded-t-2xl border border-primary-700 border-b-0 bg-primary-600 md:hidden"
         style={{
           paddingBottom: "env(safe-area-inset-bottom, 0px)",
         }}
@@ -119,17 +116,17 @@ export function ScrollNav({
                 <Link
                   href={item.href}
                   aria-current={isActive ? "page" : undefined}
-                  className={`flex flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-[11px] font-medium transition-all duration-200 hover:bg-slate-50 active:bg-slate-100 active:scale-[0.97] ${
+                  className={`flex flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-[11px] font-medium transition-all duration-200 hover:bg-white/10 active:scale-[0.97] ${
                     isActive
-                      ? "text-primary-700"
-                      : "text-slate-400 hover:text-primary-600"
+                      ? "text-white"
+                      : "text-blue-200 hover:text-white"
                   }`}
                 >
                   <span
                     className={`flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200 ${
                       isActive
-                        ? "bg-primary-600 text-white shadow-sm"
-                        : "text-slate-400 hover:bg-slate-100 hover:text-primary-600 active:bg-slate-200"
+                        ? "bg-white text-primary-600 shadow-sm"
+                        : "text-blue-200 hover:bg-white/20 hover:text-white"
                     }`}
                   >
                     {item.icon}
