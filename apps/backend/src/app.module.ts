@@ -24,6 +24,7 @@ import { UploadsModule } from './uploads/uploads.module';
 import { CmsModule } from './cms/cms.module';
 import { PromosModule } from './promos/promos.module';
 import { PartnerApiModule } from './partner-api/partner-api.module';
+import { StatsModule } from './stats/stats.module';
 import { validateEnv } from './config/env.validation';
 
 @Module({
@@ -55,8 +56,8 @@ import { validateEnv } from './config/env.validation';
     UploadsModule,
     CmsModule,
     PromosModule,
-    PartnersModule,
     PartnerApiModule,
+    StatsModule,
     AdminModule,
   ],
   controllers: [AppController],

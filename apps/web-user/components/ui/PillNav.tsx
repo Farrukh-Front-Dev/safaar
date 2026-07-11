@@ -9,6 +9,7 @@ export type PillNavItem = {
   label: string;
   href: string;
   ariaLabel?: string;
+  exact?: boolean;
 };
 
 export interface PillNavProps {
@@ -147,8 +148,9 @@ export function PillNav({
         style={{ background: "transparent" }}
       >
         {items.map((item, i) => {
-          const isActive =
-            pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const isActive = item.exact
+            ? pathname === item.href
+            : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
           return (
             <li key={item.href} role="none" className="flex h-full">
@@ -157,12 +159,11 @@ export function PillNav({
                 href={item.href}
                 aria-label={item.ariaLabel ?? item.label}
                 aria-current={isActive ? "page" : undefined}
-                className="relative box-border inline-flex h-full cursor-pointer items-center justify-center overflow-hidden whitespace-nowrap rounded-full px-[var(--pill-pad-x)] text-sm font-semibold uppercase leading-none tracking-wide"
+                className="relative box-border inline-flex h-full cursor-pointer items-center justify-center overflow-hidden whitespace-nowrap rounded-full border border-slate-200 bg-white px-[var(--pill-pad-x)] text-sm font-semibold uppercase leading-none tracking-wide shadow-btn transition-all duration-150 hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:shadow-btn-active active:scale-[0.97]"
                 style={{
-                  background: isActive ? "var(--base)" : "var(--pill-bg)",
-                  color: isActive ? "var(--hover-text)" : "var(--pill-text)",
-                  boxShadow:
-                    "0 0 3px rgba(0,0,0,0.7), 0 0 6px -1px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.5)",
+                  color: isActive ? "#ffffff" : "var(--pill-text)",
+                  background: isActive ? "var(--base)" : undefined,
+                  borderColor: isActive ? "transparent" : undefined,
                 }}
                 onMouseEnter={() => handleEnter(i)}
                 onMouseLeave={() => handleLeave(i)}

@@ -50,7 +50,7 @@ describe('Security regression tests', () => {
     const db = new InMemoryDbService();
     const auth = new AuthService(db, {
       tryQuery: () => Promise.resolve(null),
-    } as never);
+    });
     const otp = auth.sendUserOtp('+998901234567');
     const login = auth.verifyUserOtp({
       phone: '+998901234567',

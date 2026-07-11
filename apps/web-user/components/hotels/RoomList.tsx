@@ -44,7 +44,7 @@ export function RoomList({
         return (
           <li
             key={room.id}
-            className="flex flex-col gap-3 rounded-xl border border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between"
+            className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-btn transition-all hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover sm:flex-row sm:items-center sm:justify-between"
           >
             <div>
               <h3 className="font-semibold">{room.name}</h3>
@@ -71,7 +71,7 @@ export function RoomList({
                 <Link
                   href={bookingHref(room.id)}
                   className={cn(
-                    "inline-flex h-10 items-center justify-center rounded-full bg-accent-600 px-4 text-sm font-medium text-white transition-colors hover:bg-accent-700",
+                    "inline-flex h-10 items-center justify-center rounded-full bg-accent-600 px-4 text-sm font-medium text-white shadow-btn transition-all hover:bg-accent-500 hover:shadow-btn-hover active:bg-accent-700 active:scale-[0.97] active:shadow-btn-active",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2",
                   )}
                 >

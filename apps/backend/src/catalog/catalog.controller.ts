@@ -34,4 +34,14 @@ export class CatalogController {
   cancellationPolicies() {
     return this.catalogService.cancellationPolicies();
   }
+
+  @Get('popular-cities')
+  popularCities() {
+    return this.catalogService.popularCities();
+  }
+
+  @Get('partners-showcase')
+  partnersShowcase() {
+    return this.catalogService.partnersShowcase();
+  }
 }

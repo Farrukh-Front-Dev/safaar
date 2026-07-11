@@ -21,8 +21,10 @@ export function placeholderPhoto(
 }
 
 /**
- * Berilgan real rasm yo'lini qaytaradi (http bo'lsa), aks holda dev placeholder,
- * aks holda `null` (gradient ko'rsatiladi).
+ * Berilgan real rasm yo'lini qaytaradi:
+ * - http(s) → tashqi URL, o'zidek ishlatiladi
+ * - /... → lokal public papka, o'zidek ishlatiladi
+ * - undefined/bo'sh → dev placeholder, prod'da null (gradient)
  */
 export function resolveImage(
   realUrl: string | undefined,
@@ -30,7 +32,7 @@ export function resolveImage(
   width?: number,
   height?: number,
 ): string | null {
-  if (realUrl?.startsWith("http")) return realUrl;
+  if (realUrl?.startsWith("http") || realUrl?.startsWith("/")) return realUrl;
   if (SHOW_PLACEHOLDER_PHOTOS) return placeholderPhoto(seed, width, height);
   return null;
 }

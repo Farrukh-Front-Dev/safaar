@@ -13,6 +13,11 @@ export class HotelsController {
     return this.hotelsService.findAll(query);
   }
 
+  @Get('featured')
+  featured(@Query() query: Record<string, string | undefined>) {
+    return this.hotelsService.findAll({ ...query, featured: 'true' });
+  }
+
   @Get('map')
   map(@Query() query: Record<string, string | undefined>) {
     return this.hotelsService.map(query);

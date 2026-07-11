@@ -6,13 +6,10 @@ import {
   UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { Role } from '@agoda/types';
 import type { RequestActor } from '../common/actor';
-import {
-  InMemoryDbService,
-  type PaymentMethod,
-  type PaymentRecord,
-} from '../infrastructure/in-memory-db.service';
+import { PostgresService } from '../infrastructure/postgres.service';
 import {
   hmacSha256,
   mockPaymentsEnabled,
@@ -24,31 +21,59 @@ type HeaderMap = Record<string, string | string[] | undefined>;
 
 @Injectable()
 export class PaymentsService {
-  constructor(private readonly db: InMemoryDbService) {}
+  constructor(private readonly pg: PostgresService) {}
 
-  payment(actor: RequestActor | undefined, bookingId: string) {
-    this.assertBookingVisible(actor, bookingId);
-    const payment = this.db.findPaymentByBooking(bookingId);
+  async payment(actor: RequestActor | undefined, bookingId: string) {
+    await this.assertBookingVisible(actor, bookingId);
+    const [payment] = await this.pg.query(
+      'SELECT * FROM payments WHERE booking_id = $1 ORDER BY created_at DESC LIMIT 1',
+      [bookingId],
+    );
     if (!payment) {
       throw new NotFoundException({
         code: 'PAYMENT_PROVIDER_ERROR',
         message: 'Payment topilmadi',
       });
     }
-
     return payment;
   }
 
-  createPayment(
+  async createPayment(
     actor: RequestActor | undefined,
     bookingId: string,
     body: Record<string, unknown>,
   ) {
-    const booking = this.assertBookingVisible(actor, bookingId);
-    return this.db.createPayment(booking, this.provider(body.provider));
+    const booking = await this.assertBookingVisible(actor, bookingId);
+    const provider = this.provider(body.provider);
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    await this.pg.query(
+      `INSERT INTO payments (id, booking_id, provider, status, amount, currency, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        id,
+        booking.id,
+        provider,
+        'pending',
+        booking.total_amount,
+        booking.currency,
+        now,
+        now,
+      ],
+    );
+    return {
+      id,
+      booking_id: booking.id,
+      provider,
+      status: 'pending',
+      amount: Number(booking.total_amount),
+      currency: booking.currency,
+      created_at: now,
+      updated_at: now,
+    };
   }
 
-  providerWebhook(
+  async providerWebhook(
     provider: string,
     event: string,
     body: Record<string, unknown>,
@@ -68,30 +93,38 @@ export class PaymentsService {
       this.stableStringify(body),
       paymentWebhookSecret() ?? 'uzbron-development-payment-secret',
     );
-    const duplicate = this.db.paymentEvents.find(
-      (item) => item.provider === provider && item.event_key === eventKey,
+
+    const [existingEvent] = await this.pg.query(
+      'SELECT * FROM payment_events WHERE event_key = $1',
+      [eventKey],
     );
-    if (duplicate) {
+    if (existingEvent) {
+      const payment = existingEvent.payment_id
+        ? (
+            await this.pg.query('SELECT * FROM payments WHERE id = $1', [
+              existingEvent.payment_id,
+            ])
+          )[0]
+        : undefined;
       return {
         provider,
         event,
         accepted: true,
         duplicate: true,
-        payment: duplicate.payment_id
-          ? this.db.payments.find(
-              (payment) => payment.id === duplicate.payment_id,
-            )
-          : undefined,
-        processed_at: duplicate.processed_at,
+        payment,
+        processed_at: existingEvent.processed_at,
       };
     }
 
     const bookingId = String(
       body.booking_id ?? body.bookingId ?? body.account ?? '',
     );
-    const payment = bookingId
-      ? this.db.findPaymentByBooking(bookingId)
-      : undefined;
+    const [payment] = bookingId
+      ? await this.pg.query(
+          'SELECT * FROM payments WHERE booking_id = $1 ORDER BY created_at DESC LIMIT 1',
+          [bookingId],
+        )
+      : [];
 
     if (!payment) {
       throw new NotFoundException({
@@ -101,46 +134,63 @@ export class PaymentsService {
     }
 
     this.assertPaymentMatchesPayload(payment, body);
-    payment.status = event === 'prepare' ? 'processing' : 'paid';
-    payment.provider_reference = String(
+
+    const now = new Date().toISOString();
+    const newStatus = event === 'prepare' ? 'processing' : 'paid';
+    const providerReference = String(
       body.transaction_id ?? body.id ?? eventKey,
     );
-    payment.updated_at = this.db.now();
 
-    const processedAt = this.db.now();
-    this.db.paymentEvents.unshift({
-      id: this.db.id('payment_event'),
-      provider,
-      event_key: eventKey,
-      event_type: event,
-      payload_hash: payloadHash,
-      booking_id: bookingId,
-      payment_id: payment.id,
-      processed_at: processedAt,
-    });
+    await this.pg.query(
+      'UPDATE payments SET status = $1, provider_reference = $2, updated_at = $3 WHERE id = $4',
+      [newStatus, providerReference, now, payment.id],
+    );
+
+    const processedAt = new Date().toISOString();
+    await this.pg.query(
+      `INSERT INTO payment_events (id, provider, event_type, event_key, payload, payload_hash, payment_id, processed_at)
+       VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8)`,
+      [
+        randomUUID(),
+        provider,
+        event,
+        eventKey,
+        JSON.stringify(body),
+        payloadHash,
+        payment.id,
+        processedAt,
+      ],
+    );
 
     return {
       provider,
       event,
       accepted: true,
       duplicate: false,
-      payment,
+      payment: {
+        ...payment,
+        status: newStatus,
+        provider_reference: providerReference,
+        updated_at: now,
+      },
       processed_at: processedAt,
     };
   }
 
-  private assertBookingVisible(
+  private async assertBookingVisible(
     actor: RequestActor | undefined,
     bookingId: string,
   ) {
-    const booking = this.db.findBooking(bookingId);
+    const [booking] = await this.pg.query(
+      'SELECT * FROM bookings WHERE id = $1',
+      [bookingId],
+    );
     if (!booking) {
       throw new NotFoundException({
         code: 'BOOKING_EXPIRED',
         message: 'Bron topilmadi',
       });
     }
-
     if (
       !actor ||
       actor.role === Role.SUPER_ADMIN ||
@@ -148,18 +198,15 @@ export class PaymentsService {
     ) {
       return booking;
     }
-
     if (actor.actorType === 'user' && booking.user_id === actor.id) {
       return booking;
     }
-
     if (
       actor.actorType === 'partner' &&
       booking.partner_organization_id === actor.organizationId
     ) {
       return booking;
     }
-
     throw new ForbiddenException({
       code: 'BOOKING_FORBIDDEN',
       message: 'Bu bron sizga tegishli emas',
@@ -180,22 +227,18 @@ export class PaymentsService {
         headers['x-uzbron-signature'] ??
         headers['x-signature'],
     );
-
     if (!signature) {
       throw new UnauthorizedException({
         code: 'PAYMENT_SIGNATURE_INVALID',
         message: 'Webhook signature yuborilmagan',
       });
     }
-
-    const canonical = `${provider}.${event}.${eventKey}.${this.stableStringify(
-      body,
-    )}`;
+    const canonical = `${provider}.${event}.${eventKey}.${this.stableStringify(body)}`;
     const expected = hmacSha256(canonical, secret);
     if (!timingSafeEqualString(signature, expected)) {
       throw new UnauthorizedException({
         code: 'PAYMENT_SIGNATURE_INVALID',
-        message: 'Webhook signature noto‘g‘ri',
+        message: 'Webhook signature noto\u2018g\u2018ri',
       });
     }
   }
@@ -216,17 +259,16 @@ export class PaymentsService {
   }
 
   private assertPaymentMatchesPayload(
-    payment: PaymentRecord,
+    payment: Record<string, unknown>,
     body: Record<string, unknown>,
   ) {
     const amount = body.amount ?? body.total_amount;
-    if (amount !== undefined && Number(amount) !== payment.amount) {
+    if (amount !== undefined && Number(amount) !== Number(payment.amount)) {
       throw new UnprocessableEntityException({
         code: 'PAYMENT_AMOUNT_MISMATCH',
         message: 'Webhook summasi payment bilan mos emas',
       });
     }
-
     const currency = body.currency
       ? String(body.currency).toUpperCase()
       : 'UZS';
@@ -242,7 +284,6 @@ export class PaymentsService {
     if (Array.isArray(value)) {
       return `[${value.map((item) => this.stableStringify(item)).join(',')}]`;
     }
-
     if (value && typeof value === 'object') {
       return `{${Object.entries(value as Record<string, unknown>)
         .sort(([left], [right]) => left.localeCompare(right))
@@ -252,7 +293,6 @@ export class PaymentsService {
         )
         .join(',')}}`;
     }
-
     return JSON.stringify(value);
   }
 
@@ -262,8 +302,8 @@ export class PaymentsService {
     return Array.isArray(value) ? value[0] : value;
   }
 
-  private provider(value: unknown): PaymentMethod {
-    const provider = String(value ?? 'click') as PaymentMethod;
+  private provider(value: unknown): string {
+    const provider = String(value ?? 'click');
     return ['click', 'payme', 'uzcard', 'humo', 'cash'].includes(provider)
       ? provider
       : 'click';

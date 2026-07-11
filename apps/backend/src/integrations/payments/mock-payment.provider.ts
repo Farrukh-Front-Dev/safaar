@@ -5,7 +5,7 @@ import type {
   PaymentProvider,
   PaymentWebhookResult,
 } from './payment-provider.interface';
-import type { PaymentMethod } from '../../infrastructure/in-memory-db.service';
+import type { PaymentMethod } from './payment-provider.interface';
 
 @Injectable()
 export class MockPaymentProvider implements PaymentProvider {

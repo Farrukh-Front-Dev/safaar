@@ -64,7 +64,7 @@ export function ActiveFilters({ dict }: { dict: HotelsDict }) {
           type="button"
           onClick={() => remove([chip.key])}
           aria-label={`${dict.removeFilter}: ${chip.label}`}
-          className="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-3 py-1 text-sm text-primary-700 transition-colors hover:bg-primary-100"
+          className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-sm font-medium text-primary-700 shadow-btn transition-all hover:bg-primary-100 hover:border-primary-300 hover:shadow-btn-hover active:bg-primary-200 active:scale-[0.97]"
         >
           {chip.label}
           <span aria-hidden className="text-base leading-none">
@@ -75,7 +75,7 @@ export function ActiveFilters({ dict }: { dict: HotelsDict }) {
       <button
         type="button"
         onClick={() => remove(["stars", "min_price", "max_price", "sort"])}
-        className="text-sm text-slate-500 underline underline-offset-2 hover:text-slate-700"
+        className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-medium text-slate-600 shadow-btn transition-all hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:scale-[0.97] active:shadow-btn-active"
       >
         {dict.clearFilters}
       </button>

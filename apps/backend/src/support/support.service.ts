@@ -4,78 +4,136 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Role } from '@agoda/types';
+import { randomUUID } from 'node:crypto';
 import type { RequestActor } from '../common/actor';
-import { InMemoryDbService } from '../infrastructure/in-memory-db.service';
+import { PostgresService } from '../infrastructure/postgres.service';
 
 @Injectable()
 export class SupportService {
-  constructor(private readonly db: InMemoryDbService) {}
+  constructor(private readonly pg: PostgresService) {}
 
-  create(actor: RequestActor | undefined, body: Record<string, unknown>) {
-    const currentActor = this.db.actorOrDemo(actor);
-    const ticket = {
-      id: this.db.id('ticket'),
-      user_id: currentActor.id,
-      subject: String(body.subject ?? ''),
-      priority: String(body.priority ?? 'normal'),
-      status: 'open',
-      created_at: this.db.now(),
-      updated_at: this.db.now(),
+  async create(actor: RequestActor | undefined, body: Record<string, unknown>) {
+    const currentActor: RequestActor = actor ?? {
+      id: '00000000-0000-0000-0000-000000000000',
+      actorType: 'user',
+      role: Role.USER,
+      roles: [Role.USER],
     };
-    this.db.supportTickets.unshift(ticket);
+    const now = new Date().toISOString();
+    const id = randomUUID();
+
+    const [ticket] = await this.pg.query(
+      `INSERT INTO support_tickets (id, user_id, subject, priority, status, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING *`,
+      [
+        id,
+        currentActor.id,
+        String(body.subject ?? ''),
+        String(body.priority ?? 'normal'),
+        'open',
+        now,
+        now,
+      ],
+    );
+
     return ticket;
   }
 
-  list(actor: RequestActor | undefined) {
-    const currentActor = this.db.actorOrDemo(actor);
-    return this.db.supportTickets.filter(
-      (ticket) => ticket['user_id'] === currentActor.id,
+  async list(actor: RequestActor | undefined) {
+    const currentActor: RequestActor = actor ?? {
+      id: '00000000-0000-0000-0000-000000000000',
+      actorType: 'user',
+      role: Role.USER,
+      roles: [Role.USER],
+    };
+
+    const tickets = await this.pg.query(
+      'SELECT * FROM support_tickets WHERE user_id = $1 ORDER BY created_at DESC',
+      [currentActor.id],
     );
+
+    return tickets;
   }
 
-  findOne(actor: RequestActor | undefined, id: string) {
-    const ticket = this.assertTicket(actor, id);
+  async findOne(actor: RequestActor | undefined, id: string) {
+    const ticket = await this.assertTicket(actor, id);
+
+    const messages = await this.pg.query(
+      'SELECT * FROM support_messages WHERE ticket_id = $1 ORDER BY created_at ASC',
+      [id],
+    );
+
     return {
       ...ticket,
-      messages: this.db.supportMessages.filter(
-        (message) => message['ticket_id'] === id,
-      ),
+      messages,
     };
   }
 
-  message(
+  async message(
     actor: RequestActor | undefined,
     id: string,
     body: Record<string, unknown>,
   ) {
-    this.assertTicket(actor, id);
-    const currentActor = this.db.actorOrDemo(actor);
-    const message = {
-      id: this.db.id('support_msg'),
-      ticket_id: id,
-      sender_type: currentActor.actorType,
-      sender_id: currentActor.id,
-      body: String(body.body ?? ''),
-      created_at: this.db.now(),
+    await this.assertTicket(actor, id);
+    const currentActor: RequestActor = actor ?? {
+      id: '00000000-0000-0000-0000-000000000000',
+      actorType: 'user',
+      role: Role.USER,
+      roles: [Role.USER],
     };
-    this.db.supportMessages.push(message);
+    const now = new Date().toISOString();
+    const messageId = randomUUID();
+
+    const [message] = await this.pg.query(
+      `INSERT INTO support_messages (id, ticket_id, sender_type, sender_id, body, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [
+        messageId,
+        id,
+        currentActor.actorType,
+        currentActor.id,
+        String(body.body ?? ''),
+        now,
+      ],
+    );
+
     return message;
   }
 
-  status(
+  async status(
     actor: RequestActor | undefined,
     id: string,
     status: 'open' | 'closed',
   ) {
-    const ticket = this.assertTicket(actor, id);
-    ticket['status'] = status;
-    ticket['updated_at'] = this.db.now();
+    await this.assertTicket(actor, id);
+    const now = new Date().toISOString();
+
+    const [ticket] = await this.pg.query(
+      `UPDATE support_tickets
+       SET status = $1, updated_at = $2
+       WHERE id = $3
+       RETURNING *`,
+      [status, now, id],
+    );
+
     return ticket;
   }
 
-  private assertTicket(actor: RequestActor | undefined, id: string) {
-    const currentActor = this.db.actorOrDemo(actor);
-    const ticket = this.db.supportTickets.find((item) => item['id'] === id);
+  private async assertTicket(actor: RequestActor | undefined, id: string) {
+    const currentActor: RequestActor = actor ?? {
+      id: '00000000-0000-0000-0000-000000000000',
+      actorType: 'user',
+      role: Role.USER,
+      roles: [Role.USER],
+    };
+
+    const [ticket] = await this.pg.query(
+      'SELECT * FROM support_tickets WHERE id = $1',
+      [id],
+    );
+
     if (!ticket) {
       throw new NotFoundException({
         code: 'VALIDATION_ERROR',
@@ -86,7 +144,7 @@ export class SupportService {
     if (
       currentActor.role !== Role.SUPER_ADMIN &&
       currentActor.actorType !== 'admin' &&
-      ticket['user_id'] !== currentActor.id
+      ticket.user_id !== currentActor.id
     ) {
       throw new ForbiddenException({
         code: 'SUPPORT_FORBIDDEN',

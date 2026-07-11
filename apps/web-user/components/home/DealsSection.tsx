@@ -1,4 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Tag, Clock } from "lucide-react";
 import type { Locale } from "@/i18n/config";
@@ -17,13 +20,12 @@ export interface DealItem {
   newPriceSum: number;
   /** Chegirma foizi. */
   discountPercent: number;
-  /** Tugash sanasigacha qolgan kunlar. */
-  endsInDays: number;
+  /** Tugash sanasi (ISO). Tugash kunini frontend hisoblaydi. */
+  endsAt: string;
 }
 
 /**
- * Chegirmadagi takliflar — horizontal scroll kartalar.
- * Agoda'ning "Today's deals" bo'limiga o'xshash.
+ * Chegirmadagi takliflar — auto-scroll carousel (mobil 2 tadan).
  */
 export function DealsSection({
   deals,
@@ -34,6 +36,31 @@ export function DealsSection({
   dict: HomeDict["deals"];
   locale: Locale;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Tugash vaqtini hisoblash uchun bir marta olingan timestamp (impure call emas).
+  const [now] = useState(() => Date.now());
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || deals.length < 3) return;
+
+    timer.current = setInterval(() => {
+      const cardW = el.clientWidth / 2;
+      const maxScroll = el.scrollWidth - el.clientWidth;
+
+      if (el.scrollLeft + cardW >= maxScroll - 4) {
+        el.scrollTo({ left: 0, behavior: "smooth" });
+      } else {
+        el.scrollBy({ left: cardW, behavior: "smooth" });
+      }
+    }, 6000);
+
+    return () => {
+      if (timer.current) clearInterval(timer.current);
+    };
+  }, [deals.length]);
+
   if (deals.length === 0) return null;
 
   return (
@@ -47,14 +74,24 @@ export function DealsSection({
         </p>
       </div>
 
-      <div className="scrollbar-none flex gap-3 overflow-x-auto pb-2 sm:gap-4">
-        {deals.map((deal) => (
+      <div
+        ref={ref}
+        className="scrollbar-none flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory sm:gap-4"
+      >
+        {deals.map((deal) => {
+          const endsInDays = deal.endsAt
+            ? Math.max(
+                0,
+                Math.ceil((Date.parse(deal.endsAt) - now) / 86_400_000),
+              )
+            : 0;
+          return (
           <Link
             key={deal.id}
             href={`/${locale}/hotels/${deal.slug}`}
-            className="group min-w-[260px] flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+            className="group w-[calc(50%-0.375rem)] shrink-0 snap-start sm:w-auto sm:flex-1 sm:min-w-[260px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
           >
-            <article className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg active:scale-[0.98]">
+            <article className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-btn transition-all duration-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:scale-[0.97] active:shadow-btn-active">
               {/* Rasm */}
               <div className="relative aspect-[16/10] overflow-hidden bg-primary-50">
                 <img
@@ -65,15 +102,15 @@ export function DealsSection({
                 />
 
                 {/* Chegirma badge */}
-                <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-red-500 px-2.5 py-1 text-xs font-bold text-white shadow-md">
+                <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-red-500 px-2.5 py-1 text-xs font-bold text-white shadow-btn">
                   <Tag className="h-3 w-3" aria-hidden />
                   -{deal.discountPercent}%
                 </span>
 
                 {/* Timer badge */}
-                <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
+                <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-medium text-slate-700 shadow-btn">
                   <Clock className="h-3 w-3" aria-hidden />
-                  {deal.endsInDays} {dict.days}
+                  {endsInDays} {dict.days}
                 </span>
               </div>
 
@@ -97,7 +134,8 @@ export function DealsSection({
               </div>
             </article>
           </Link>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

@@ -58,7 +58,7 @@ export function HotelFilters({ dict }: { dict: Pick<HotelsDict, "filters"> }) {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="mb-3 flex w-full items-center justify-between rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium transition-all hover:border-primary-300 lg:hidden"
+        className="mb-3 flex w-full items-center justify-between rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium shadow-btn transition-all hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:scale-[0.97] active:shadow-btn-active lg:hidden"
       >
         {dict.filters.toggle}
         <span aria-hidden>{open ? "▲" : "▼"}</span>
@@ -66,27 +66,26 @@ export function HotelFilters({ dict }: { dict: Pick<HotelsDict, "filters"> }) {
 
       <div
         className={cn(
-          "flex-col gap-4 rounded-2xl border border-slate-200/80 bg-white p-4",
+          "flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-btn",
           open ? "flex" : "hidden",
           "lg:flex",
         )}
-        style={{
-          boxShadow:
-            "0 2px 4px rgba(15,23,42,0.05), 0 8px 20px -4px rgba(15,23,42,0.1), inset 0 1px 0 rgba(255,255,255,0.7)",
-        }}
       >
         <h2 className="text-base font-semibold">{dict.filters.title}</h2>
 
         <label className="flex flex-col gap-1">
           <span className="text-sm text-slate-600">{dict.filters.stars}</span>
-          <Select value={stars} onChange={(e) => setStars(e.target.value)}>
-            <option value="">{dict.filters.anyStars}</option>
-            {[5, 4, 3, 2, 1].map((s) => (
-              <option key={s} value={s}>
-                {dict.filters.starsValue.replace("{n}", String(s))}
-              </option>
-            ))}
-          </Select>
+          <Select
+            value={stars}
+            onChange={setStars}
+            options={[
+              { value: "", label: dict.filters.anyStars },
+              ...[5, 4, 3, 2, 1].map((s) => ({
+                value: String(s),
+                label: dict.filters.starsValue.replace("{n}", String(s)),
+              })),
+            ]}
+          />
         </label>
 
         <label className="flex flex-col gap-1">

@@ -3,25 +3,33 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import { Role } from '@agoda/types';
 import type { RequestActor } from '../common/actor';
-import { InMemoryDbService } from '../infrastructure/in-memory-db.service';
+import { PostgresService } from '../infrastructure/postgres.service';
 
 @Injectable()
 export class RefundsService {
-  constructor(private readonly db: InMemoryDbService) {}
+  constructor(private readonly pg: PostgresService) {}
 
-  create(actor: RequestActor | undefined, body: Record<string, unknown>) {
-    const currentActor = this.db.actorOrDemo(actor);
+  async create(actor: RequestActor | undefined, body: Record<string, unknown>) {
+    const currentActor: RequestActor = actor ?? {
+      id: '00000000-0000-0000-0000-000000000000',
+      actorType: 'user',
+      role: Role.USER,
+      roles: [Role.USER],
+    };
     const bookingId = String(body.booking_id ?? '');
-    const booking = this.db.findBooking(bookingId);
-
+    const [booking] = await this.pg.query(
+      'SELECT * FROM bookings WHERE id = $1',
+      [bookingId],
+    );
     if (!booking) {
       throw new NotFoundException({
         code: 'BOOKING_EXPIRED',
         message: 'Bron topilmadi',
       });
     }
-
     if (booking.user_id !== currentActor.id) {
       throw new ForbiddenException({
         code: 'BOOKING_FORBIDDEN',
@@ -29,41 +37,63 @@ export class RefundsService {
       });
     }
 
-    const existing = this.db.refunds.find(
-      (item) =>
-        item['booking_id'] === bookingId &&
-        item['user_id'] === currentActor.id &&
-        item['status'] !== 'rejected',
+    const [existing] = await this.pg.query(
+      "SELECT * FROM refunds WHERE booking_id = $1 AND user_id = $2 AND status != 'rejected'",
+      [bookingId, currentActor.id],
     );
     if (existing) {
       return existing;
     }
 
-    const refund = {
-      id: this.db.id('refund'),
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    const requestedAmount = Math.round(Number(booking.total_amount) * 0.8);
+    const reason = String(body.reason ?? '');
+    await this.pg.query(
+      `INSERT INTO refunds (id, booking_id, user_id, status, currency, requested_amount, reason, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        id,
+        bookingId,
+        currentActor.id,
+        'requested',
+        booking.currency,
+        requestedAmount,
+        reason,
+        now,
+        now,
+      ],
+    );
+    return {
+      id,
       booking_id: bookingId,
       user_id: currentActor.id,
       status: 'requested',
       currency: booking.currency,
-      requested_amount: Math.round(booking.total_amount * 0.8),
-      reason: String(body.reason ?? ''),
-      created_at: this.db.now(),
-      updated_at: this.db.now(),
+      requested_amount: requestedAmount,
+      reason,
+      created_at: now,
+      updated_at: now,
     };
-    this.db.refunds.unshift(refund);
-    return refund;
   }
 
-  findOne(actor: RequestActor | undefined, id: string) {
-    const currentActor = this.db.actorOrDemo(actor);
-    const refund = this.db.refunds.find((item) => item['id'] === id);
+  async findOne(actor: RequestActor | undefined, id: string) {
+    const currentActor: RequestActor = actor ?? {
+      id: '00000000-0000-0000-0000-000000000000',
+      actorType: 'user',
+      role: Role.USER,
+      roles: [Role.USER],
+    };
+    const [refund] = await this.pg.query(
+      'SELECT * FROM refunds WHERE id = $1',
+      [id],
+    );
     if (!refund) {
       throw new NotFoundException({
         code: 'REFUND_NOT_ALLOWED',
         message: 'Refund topilmadi',
       });
     }
-
     if (
       currentActor.actorType === 'user' &&
       refund['user_id'] !== currentActor.id
@@ -73,14 +103,18 @@ export class RefundsService {
         message: 'Bu refund sizga tegishli emas',
       });
     }
-
     return refund;
   }
 
-  mine(actor: RequestActor | undefined) {
-    const currentActor = this.db.actorOrDemo(actor);
-    return this.db.refunds.filter(
-      (refund) => refund['user_id'] === currentActor.id,
-    );
+  async mine(actor: RequestActor | undefined) {
+    const currentActor: RequestActor = actor ?? {
+      id: '00000000-0000-0000-0000-000000000000',
+      actorType: 'user',
+      role: Role.USER,
+      roles: [Role.USER],
+    };
+    return this.pg.query('SELECT * FROM refunds WHERE user_id = $1', [
+      currentActor.id,
+    ]);
   }
 }

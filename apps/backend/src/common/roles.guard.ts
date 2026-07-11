@@ -7,9 +7,9 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Role } from '@agoda/types';
+import { PostgresService } from '../infrastructure/postgres.service';
 import { authSessionStore } from '../auth/session-store';
 import { demoAuthEnabled } from '../auth/security';
-import { InMemoryDbService } from '../infrastructure/in-memory-db.service';
 import { PERMISSIONS_KEY } from './permissions.decorator';
 import { actorHasPermissions } from './permissions';
 import { ROLES_KEY } from './roles.decorator';
@@ -30,10 +30,10 @@ import {
 export class RolesGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    private readonly db: InMemoryDbService,
+    private readonly pg: PostgresService,
   ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -69,7 +69,7 @@ export class RolesGuard implements CanActivate {
     }
 
     this.assertSessionActive(user);
-    this.assertActorAllowed(user);
+    await this.assertActorAllowed(user);
 
     if (requiredRoles?.length && !hasRole(user, requiredRoles)) {
       throw new ForbiddenException('Bu amal uchun ruxsatingiz yoq.');
@@ -101,10 +101,14 @@ export class RolesGuard implements CanActivate {
     }
   }
 
-  private assertActorAllowed(actor: RequestActor) {
+  private async assertActorAllowed(actor: RequestActor): Promise<void> {
     if (actor.actorType === 'user') {
-      const user = this.db.findUser(actor.id);
-      if (user && ['blocked', 'deleted'].includes(user.status)) {
+      const rows = await this.pg.query<{ status: string }>(
+        `SELECT status FROM users WHERE id = $1 LIMIT 1`,
+        [actor.id],
+      );
+
+      if (rows.length > 0 && ['blocked', 'deleted'].includes(rows[0].status)) {
         throw new ForbiddenException({
           code: 'USER_BLOCKED',
           message: 'Foydalanuvchi bloklangan',
@@ -113,10 +117,12 @@ export class RolesGuard implements CanActivate {
     }
 
     if (actor.actorType === 'partner') {
-      const organization = this.db.partnerOrganizations.find(
-        (item) => item.id === actor.organizationId,
+      const rows = await this.pg.query<{ status: string }>(
+        `SELECT status FROM partner_organizations WHERE id = $1 LIMIT 1`,
+        [actor.organizationId],
       );
-      if (organization && !['approved'].includes(organization.status)) {
+
+      if (rows.length > 0 && rows[0].status !== 'approved') {
         throw new ForbiddenException({
           code: 'PARTNER_NOT_ACTIVE',
           message: 'Hamkor tashkilot faol emas',

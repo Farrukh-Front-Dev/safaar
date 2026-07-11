@@ -1,42 +1,54 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { BookingStatus } from '@agoda/types';
-import { InMemoryDbService } from '../infrastructure/in-memory-db.service';
+import { PostgresService } from '../infrastructure/postgres.service';
 import {
   hashSecret,
   partnerApiPepper,
   timingSafeEqualString,
 } from '../auth/security';
+import { randomUUID } from 'node:crypto';
 
 @Injectable()
 export class PartnerApiService {
-  constructor(private readonly db: InMemoryDbService) {}
+  constructor(private readonly pg: PostgresService) {}
 
-  bookings(apiKey: string | undefined) {
-    const organizationId = this.organizationId(apiKey);
-    return this.db.bookings.filter(
-      (booking) => booking.partner_organization_id === organizationId,
+  async bookings(apiKey: string | undefined) {
+    const organizationId = await this.organizationId(apiKey);
+    return this.pg.query(
+      `SELECT * FROM bookings WHERE partner_organization_id = $1 ORDER BY created_at DESC`,
+      [organizationId],
     );
   }
 
-  booking(apiKey: string | undefined, id: string) {
-    const booking = this.bookings(apiKey).find((item) => item.id === id);
-    if (!booking) {
+  async booking(apiKey: string | undefined, id: string) {
+    const organizationId = await this.organizationId(apiKey);
+    const bookings = await this.pg.query(
+      `SELECT * FROM bookings WHERE id = $1 AND partner_organization_id = $2`,
+      [id, organizationId],
+    );
+    if (!bookings[0]) {
       throw new ForbiddenException({
         code: 'BOOKING_FORBIDDEN',
         message: 'Bu bron API key tashkilotiga tegishli emas',
       });
     }
-    return booking;
+    return bookings[0];
   }
 
-  bookingStatus(
+  async bookingStatus(
     apiKey: string | undefined,
     id: string,
     body: Record<string, unknown>,
   ) {
-    const organizationId = this.organizationId(apiKey);
-    const booking = this.db.findBooking(id);
-    if (!booking || booking.partner_organization_id !== organizationId) {
+    const organizationId = await this.organizationId(apiKey);
+    const now = new Date().toISOString();
+
+    const bookings = await this.pg.query(
+      `SELECT * FROM bookings WHERE id = $1 AND partner_organization_id = $2`,
+      [id, organizationId],
+    );
+
+    if (!bookings[0]) {
       throw new ForbiddenException({
         code: 'BOOKING_FORBIDDEN',
         message: 'Bu bron API key tashkilotiga tegishli emas',
@@ -44,41 +56,49 @@ export class PartnerApiService {
     }
 
     if (body.status === 'completed') {
-      booking.status = BookingStatus.COMPLETED;
-      booking.updated_at = this.db.now();
+      await this.pg.query(
+        `UPDATE bookings SET status = $1, updated_at = $2 WHERE id = $3`,
+        [BookingStatus.COMPLETED, now, id],
+      );
     }
 
-    return booking;
+    const updated = await this.pg.query(
+      `SELECT * FROM bookings WHERE id = $1`,
+      [id],
+    );
+    return updated[0];
   }
 
-  hotels(apiKey: string | undefined) {
-    const organizationId = this.organizationId(apiKey);
-    return this.db.hotels.filter(
-      (hotel) => hotel.partner_organization_id === organizationId,
+  async hotels(apiKey: string | undefined) {
+    const organizationId = await this.organizationId(apiKey);
+    return this.pg.query(
+      `SELECT * FROM hotels WHERE partner_organization_id = $1 ORDER BY created_at DESC`,
+      [organizationId],
     );
   }
 
-  trips(apiKey: string | undefined) {
-    const organizationId = this.organizationId(apiKey);
-    const companyIds = new Set(
-      this.db.busCompanies
-        .filter((company) => company.partner_organization_id === organizationId)
-        .map((company) => company.id),
+  async trips(apiKey: string | undefined) {
+    const organizationId = await this.organizationId(apiKey);
+    return this.pg.query(
+      `SELECT t.* FROM trips t
+       JOIN bus_companies bc ON bc.id = t.company_id
+       WHERE bc.partner_organization_id = $1
+       ORDER BY t.departure_at DESC`,
+      [organizationId],
     );
-    return this.db.trips.filter((trip) => companyIds.has(trip.company_id));
   }
 
-  webhookTest(apiKey: string | undefined, body: Record<string, unknown>) {
-    this.organizationId(apiKey);
+  async webhookTest(apiKey: string | undefined, body: Record<string, unknown>) {
+    await this.organizationId(apiKey); // validate key
     return {
       event: body.event ?? 'booking.created',
       signature: 'mock-signature',
       delivered: true,
-      delivered_at: this.db.now(),
+      delivered_at: new Date().toISOString(),
     };
   }
 
-  private organizationId(apiKey: string | undefined) {
+  private async organizationId(apiKey: string | undefined): Promise<string> {
     if (!apiKey) {
       throw new ForbiddenException({
         code: 'API_KEY_INVALID',
@@ -86,24 +106,32 @@ export class PartnerApiService {
       });
     }
 
-    const key = this.db.partnerApiKeys.find((item) => {
-      const prefix = String(item['key_prefix'] ?? '');
-      const secretHash = String(item['secret_hash'] ?? '');
-      return (
+    const activeKeys = await this.pg.query(
+      `SELECT * FROM partner_api_keys WHERE status = 'active'`,
+    );
+
+    let matchedKey: Record<string, unknown> | undefined;
+    for (const key of activeKeys) {
+      const prefix = String(key['key_prefix'] ?? '');
+      const secretHash = String(key['secret_hash'] ?? '');
+      if (
         prefix &&
         apiKey.startsWith(`${prefix}_`) &&
         timingSafeEqualString(secretHash, this.hashApiKey(apiKey))
-      );
-    });
+      ) {
+        matchedKey = key;
+        break;
+      }
+    }
 
-    if (!key || key['status'] !== 'active') {
+    if (!matchedKey) {
       throw new ForbiddenException({
         code: 'API_KEY_INVALID',
         message: 'Partner API key yaroqsiz',
       });
     }
 
-    return String(key['organization_id']);
+    return String(matchedKey['organization_id']);
   }
 
   private hashApiKey(apiKey: string): string {

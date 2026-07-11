@@ -7,7 +7,8 @@ import { createBookingAction, type CheckoutState } from "@/lib/booking/actions";
 import { formatSum } from "@/lib/money";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
+const SELECT_CLASS =
+  "h-10 w-full rounded-full border border-slate-200 bg-white px-4 text-sm text-slate-900 shadow-btn transition-all hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover focus-visible:border-primary-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 active:bg-slate-100";
 
 const PAYMENT_METHODS = ["click", "payme", "uzcard", "humo", "cash"] as const;
 
@@ -105,13 +106,13 @@ export function CheckoutForm({
 
         <section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold">{dict.paymentMethod}</h2>
-          <Select name="paymentMethod" defaultValue="click">
+          <select name="paymentMethod" defaultValue="click" className={SELECT_CLASS}>
             {PAYMENT_METHODS.map((m) => (
               <option key={m} value={m}>
                 {methods[m] ?? m}
               </option>
             ))}
-          </Select>
+          </select>
         </section>
       </div>
 

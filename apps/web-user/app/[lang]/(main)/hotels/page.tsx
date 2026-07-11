@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getHotels } from "@/lib/api/hotels";
@@ -81,33 +82,26 @@ export default async function HotelsPage({
     console.error("[hotels] getCities failed:", e);
     return [];
   });
-  const hotelsResult = await getHotels(locale, { cityId }).catch(
-    (e: unknown) => {
-      console.error("[hotels] getHotels failed:", e);
-      return null;
-    },
-  );
+  const hotelsResult = await getHotels(locale, {
+    cityId,
+    stars,
+    minPrice,
+    maxPrice,
+    sort,
+    page,
+    limit: PAGE_SIZE,
+  }).catch((e: unknown) => {
+    console.error("[hotels] getHotels failed:", e);
+    return null;
+  });
   const loadFailed = hotelsResult === null;
 
-  // ── Filtr + saralash + pagination — to'liq ro'yxat ustida (izchil) ──
-  // Backend `findAll` narx/saralash/haqiqiy pagination qo'llamaydi, to'liq
-  // ro'yxat qaytaradi; shuning uchun hammasini shu yerda izchil bajaramiz.
-  let all: HotelListItem[] = hotelsResult?.items ?? [];
-  if (stars !== undefined) all = all.filter((h) => h.stars >= stars);
-  if (minPrice !== undefined) all = all.filter((h) => h.minPriceSum >= minPrice);
-  if (maxPrice !== undefined) all = all.filter((h) => h.minPriceSum <= maxPrice);
-  if (sort === "price_asc") {
-    all = [...all].sort((a, b) => a.minPriceSum - b.minPriceSum);
-  } else if (sort === "price_desc") {
-    all = [...all].sort((a, b) => b.minPriceSum - a.minPriceSum);
-  } else if (sort === "rating") {
-    all = [...all].sort((a, b) => b.rating - a.rating);
-  }
-
-  const total = all.length;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  // Backend server-side filter/sort/pagination qo'llaydi.
+  const all: HotelListItem[] = hotelsResult?.items ?? [];
+  const total = hotelsResult?.total ?? all.length;
+  const totalPages = Math.max(1, hotelsResult?.totalPages ?? Math.ceil(total / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
-  const items = all.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const items = all;
 
   // Pagination/CTA havolalari uchun joriy parametrlar.
   const basePath = `/${locale}/hotels`;
@@ -152,24 +146,32 @@ export default async function HotelsPage({
               </p>
             )}
           </div>
-          {!loadFailed && total > 0 && <HotelSortSelect dict={dict.sort} />}
+          {!loadFailed && total > 0 && (
+            <Suspense fallback={null}>
+              <HotelSortSelect dict={dict.sort} />
+            </Suspense>
+          )}
         </div>
-        <ActiveFilters dict={dict} />
+        <Suspense fallback={null}>
+          <ActiveFilters dict={dict} />
+        </Suspense>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr]">
-        <HotelFilters dict={{ filters: dict.filters }} />
+        <Suspense fallback={null}>
+          <HotelFilters dict={{ filters: dict.filters }} />
+        </Suspense>
 
         <section aria-label={dict.title}>
           {loadFailed ? (
-            <div className="flex flex-col items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-800">
+            <div className="flex flex-col items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm font-medium text-amber-800 shadow-btn">
               <p>{dict.error}</p>
               <Link href={retryHref}>
                 <Button variant="secondary">{dict.retry}</Button>
               </Link>
             </div>
           ) : items.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200/80 bg-white py-16 text-center" style={{ boxShadow: "0 2px 8px rgba(15,23,42,0.06), inset 0 1px 0 rgba(255,255,255,0.7)" }}>
+            <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-white py-16 text-center shadow-btn">
               <p className="font-medium text-slate-700">{dict.empty}</p>
               <p className="text-sm text-slate-500">{dict.emptyHint}</p>
               <Link href={clearedHref}>
@@ -178,7 +180,7 @@ export default async function HotelsPage({
             </div>
           ) : (
             <>
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-4 grid-cols-2">
                 {items.map((hotel) => (
                   <HotelCard
                     key={hotel.id}

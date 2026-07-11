@@ -20,6 +20,10 @@ export interface HotelListParams {
   stars?: number;
   page?: number;
   limit?: number;
+  featured?: boolean;
+  sort?: "price_asc" | "price_desc" | "rating";
+  minPrice?: number;
+  maxPrice?: number;
 }
 
 export interface HotelListResult {
@@ -27,13 +31,15 @@ export interface HotelListResult {
   total: number;
   page: number;
   limit: number;
+  totalPages: number;
 }
 
 interface RawListResponse {
-  items: unknown[];
-  total: number;
-  page: number;
-  limit: number;
+  items?: unknown[];
+  total?: number;
+  page?: number;
+  limit?: number;
+  totalPages?: number;
 }
 
 /** `GET /hotels` — e'lon qilingan mehmonxonalar ro'yxati. */
@@ -47,18 +53,34 @@ export async function getHotels(
       stars: params.stars,
       page: params.page,
       limit: params.limit,
+      featured: params.featured ? "true" : undefined,
+      sort: params.sort,
+      min_price: params.minPrice,
+      max_price: params.maxPrice,
     },
     // Katalog tez-tez o'zgarmaydi — 60s ISR (Core Web Vitals uchun).
     next: { revalidate: 60 },
   });
 
-  const data = camelizeKeys<RawListResponse>(raw);
+  // Backend filtered ro'yxat qaytaradi (array yoki {items, total, ...}).
+  const data = camelizeKeys<RawListResponse | unknown[]>(raw);
+  const items = Array.isArray(data)
+    ? data
+    : (data.items ?? []);
+  const mapped = (items ?? []).map((item) =>
+    toHotelListItem(item as never, locale),
+  );
 
   return {
-    items: (data.items ?? []).map((item) => toHotelListItem(item as never, locale)),
-    total: data.total ?? 0,
-    page: data.page ?? 1,
-    limit: data.limit ?? 0,
+    items: mapped,
+    total: Array.isArray(data)
+      ? mapped.length
+      : (data.total ?? mapped.length),
+    page: Array.isArray(data) ? 1 : (data.page ?? 1),
+    limit: Array.isArray(data) ? mapped.length : (data.limit ?? mapped.length),
+    totalPages: Array.isArray(data)
+      ? 1
+      : (data.totalPages ?? Math.ceil((data.total ?? mapped.length) / (data.limit || mapped.length || 1))),
   };
 }
 
@@ -69,4 +91,12 @@ export async function getHotel(
 ): Promise<HotelDetail> {
   const raw = await api.get<unknown>(`/hotels/${encodeURIComponent(slugOrId)}`);
   return toHotelDetail(camelizeKeys(raw) as never, locale);
+}
+
+/** `GET /hotels/featured` — bosh sahifa uchun tanlangan mehmonxonalar. */
+export async function getFeaturedHotels(
+  locale: Locale,
+  params: HotelListParams = {},
+): Promise<HotelListResult> {
+  return getHotels(locale, { ...params, featured: true });
 }

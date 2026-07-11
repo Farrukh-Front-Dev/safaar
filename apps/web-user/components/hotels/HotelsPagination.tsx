@@ -59,12 +59,12 @@ function PageLink({
   disabled: boolean;
   children: React.ReactNode;
 }) {
-  const base = "rounded-full border px-4 py-2 text-sm font-medium transition-all duration-150";
+  const base = "rounded-full border px-4 py-2 text-sm font-medium transition-all duration-150 shadow-btn";
   if (disabled) {
     return (
       <span
         aria-disabled="true"
-        className={`${base} border-slate-200 text-slate-300`}
+        className={`${base} border-slate-200 text-slate-300 bg-white`}
       >
         {children}
       </span>
@@ -73,7 +73,7 @@ function PageLink({
   return (
     <Link
       href={href}
-      className={`${base} border-slate-200 text-slate-700 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700 active:scale-95`}
+      className={`${base} border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:scale-[0.97] active:shadow-btn-active`}
     >
       {children}
     </Link>

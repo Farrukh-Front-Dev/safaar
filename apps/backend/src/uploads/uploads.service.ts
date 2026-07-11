@@ -5,47 +5,71 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Role } from '@agoda/types';
+import { randomUUID } from 'node:crypto';
 import type { RequestActor } from '../common/actor';
-import { InMemoryDbService } from '../infrastructure/in-memory-db.service';
+import { PostgresService } from '../infrastructure/postgres.service';
 
 @Injectable()
 export class UploadsService {
-  constructor(private readonly db: InMemoryDbService) {}
+  constructor(private readonly pg: PostgresService) {}
 
-  create(
+  async create(
     actor: RequestActor | undefined,
     type: 'image' | 'document',
     body: Record<string, unknown>,
   ) {
-    const currentActor = this.db.actorOrDemo(actor);
+    const currentActor: RequestActor = actor ?? {
+      id: '00000000-0000-0000-0000-000000000000',
+      actorType: 'user',
+      role: Role.USER,
+      roles: [Role.USER],
+    };
     const mimeType = String(body.mime_type ?? body.mimeType ?? '');
     const size = Number(body.size ?? 0);
     this.assertUploadAllowed(type, mimeType, size);
-    const file = {
-      id: this.db.id('file'),
-      owner_id: currentActor.id,
-      type,
-      filename: this.safeFilename(String(body.filename ?? `${type}.bin`)),
-      mime_type: mimeType,
-      size,
-      object_key: `${currentActor.actorType}/${currentActor.id}/${this.db.id(type)}`,
-      url: `https://cdn.uzbron.uz/mock/${type}/${Date.now()}`,
-      created_at: this.db.now(),
-    };
-    this.db.uploads.unshift(file);
+
+    const now = new Date().toISOString();
+    const id = randomUUID();
+    const objectKey = `${currentActor.actorType}/${currentActor.id}/${randomUUID()}`;
+    const url = `https://cdn.uzbron.uz/mock/${type}/${Date.now()}`;
+
+    const [file] = await this.pg.query(
+      `INSERT INTO media_files (id, owner_type, owner_id, bucket, object_key, url, mime_type, size, visibility, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       RETURNING *`,
+      [
+        id,
+        currentActor.actorType,
+        currentActor.id,
+        type,
+        objectKey,
+        url,
+        mimeType,
+        size,
+        'private',
+        now,
+      ],
+    );
+
     return file;
   }
 
   presign(actor: RequestActor | undefined, body: Record<string, unknown>) {
-    const currentActor = this.db.actorOrDemo(actor);
+    const currentActor: RequestActor = actor ?? {
+      id: '00000000-0000-0000-0000-000000000000',
+      actorType: 'user',
+      role: Role.USER,
+      roles: [Role.USER],
+    };
     const type =
       String(body.type ?? 'image') === 'document' ? 'document' : 'image';
     const mimeType = String(body.mime_type ?? body.mimeType ?? '');
     const size = Number(body.size ?? 0);
     this.assertUploadAllowed(type, mimeType, size);
+
     return {
       owner_id: currentActor.id,
-      upload_url: `https://storage.uzbron.uz/mock-presign/${this.db.id('upload')}`,
+      upload_url: `https://storage.uzbron.uz/mock-presign/${randomUUID()}`,
       method: 'PUT',
       fields: {},
       expires_in_seconds: 900,
@@ -55,9 +79,19 @@ export class UploadsService {
     };
   }
 
-  delete(actor: RequestActor | undefined, id: string) {
-    const currentActor = this.db.actorOrDemo(actor);
-    const file = this.db.uploads.find((item) => item['id'] === id);
+  async delete(actor: RequestActor | undefined, id: string) {
+    const currentActor: RequestActor = actor ?? {
+      id: '00000000-0000-0000-0000-000000000000',
+      actorType: 'user',
+      role: Role.USER,
+      roles: [Role.USER],
+    };
+
+    const [file] = await this.pg.query(
+      'SELECT * FROM media_files WHERE id = $1 AND deleted_at IS NULL',
+      [id],
+    );
+
     if (!file) {
       throw new NotFoundException({
         code: 'UPLOAD_NOT_FOUND',
@@ -68,7 +102,7 @@ export class UploadsService {
     if (
       currentActor.role !== Role.SUPER_ADMIN &&
       currentActor.actorType !== 'admin' &&
-      file['owner_id'] !== currentActor.id
+      file.owner_id !== currentActor.id
     ) {
       throw new ForbiddenException({
         code: 'UPLOAD_FORBIDDEN',
@@ -76,7 +110,11 @@ export class UploadsService {
       });
     }
 
-    file['deleted_at'] = this.db.now();
+    await this.pg.query(
+      'UPDATE media_files SET deleted_at = $1 WHERE id = $2',
+      [new Date().toISOString(), id],
+    );
+
     return { id, deleted: true };
   }
 

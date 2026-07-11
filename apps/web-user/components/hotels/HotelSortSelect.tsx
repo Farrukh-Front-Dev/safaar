@@ -29,14 +29,15 @@ export function HotelSortSelect({ dict }: { dict: HotelsDict["sort"] }) {
       <div className="w-48 sm:w-56">
         <Select
           value={current}
-          onChange={(e) => onChange(e.target.value)}
-          aria-label={dict.label}
-        >
-          <option value="">{dict.default}</option>
-          <option value="price_asc">{dict.priceAsc}</option>
-          <option value="price_desc">{dict.priceDesc}</option>
-          <option value="rating">{dict.rating}</option>
-        </Select>
+          onChange={onChange}
+          ariaLabel={dict.label}
+          options={[
+            { value: "", label: dict.default },
+            { value: "price_asc", label: dict.priceAsc },
+            { value: "price_desc", label: dict.priceDesc },
+            { value: "rating", label: dict.rating },
+          ]}
+        />
       </div>
     </label>
   );

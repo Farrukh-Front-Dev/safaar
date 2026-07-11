@@ -212,6 +212,8 @@ model PartnerOrganization {
   approvedBy            String?                 @map("approved_by") @db.Uuid
   approvedAt            DateTime?               @map("approved_at") @db.Timestamptz
   rejectionReason       String?                 @map("rejection_reason")
+  logoUrl               String?                 @map("logo_url")
+  showcase              Boolean                 @default(false)
   createdAt             DateTime                @default(now()) @map("created_at") @db.Timestamptz
   updatedAt             DateTime                @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -294,6 +296,9 @@ model City {
   id        String   @id @default(uuid()) @db.Uuid
   regionId  String   @map("region_id") @db.Uuid
   name      Json
+  slug      String   @unique @db.VarChar(255)
+  imageUrl  String?  @map("image_url")
+  sortOrder Int      @default(0) @map("sort_order")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -376,6 +381,7 @@ model Hotel {
   ratingAverage         Decimal     @default(0) @map("rating_average") @db.Decimal(3, 2)
   reviewsCount          Int         @default(0) @map("reviews_count")
   status                HotelStatus @default(draft)
+  featured              Boolean     @default(false)
   checkInTime           String?     @map("check_in_time") @db.VarChar(5)
   checkOutTime          String?     @map("check_out_time") @db.VarChar(5)
   cancellationPolicyId  String?     @map("cancellation_policy_id") @db.Uuid

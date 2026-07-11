@@ -1,124 +1,220 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import {
-  paginateArray,
   parsePagination,
+  limitOffsetSql,
   type QueryLike,
 } from '../common/pagination';
 import { AppCacheService } from '../infrastructure/cache.service';
-import { InMemoryDbService } from '../infrastructure/in-memory-db.service';
+import { PostgresService } from '../infrastructure/postgres.service';
 
 @Injectable()
 export class BusesService {
   constructor(
     private readonly cache: AppCacheService,
-    private readonly db: InMemoryDbService,
+    private readonly pg: PostgresService,
   ) {}
 
-  routes() {
-    return this.db.busRoutes.map((route) => ({
-      ...route,
-      from_city: this.db.cities.find((city) => city.id === route.from_city_id),
-      to_city: this.db.cities.find((city) => city.id === route.to_city_id),
-    }));
+  async routes() {
+    const sql = `
+      SELECT
+        r.id,
+        r.from_city_id,
+        r.to_city_id,
+        r.duration_minutes,
+        r.created_at,
+        r.updated_at,
+        jsonb_build_object('id', fc.id, 'name', fc.name) AS from_city,
+        jsonb_build_object('id', tc.id, 'name', tc.name) AS to_city
+      FROM routes r
+      JOIN cities fc ON fc.id = r.from_city_id
+      JOIN cities tc ON tc.id = r.to_city_id
+      ORDER BY r.created_at DESC
+    `;
+    return this.pg.query(sql);
   }
 
-  trips(query: QueryLike) {
-    return this.cache.getOrSet(`bus-trips:list:${cacheKey(query)}`, 60, () => {
+  async trips(query: QueryLike) {
+    const cacheKeyStr = `bus-trips:list:${cacheKey(query)}`;
+    return this.cache.getOrSet(cacheKeyStr, 60, async () => {
       const pagination = parsePagination(query, 'public', {
         allowedSortBy: ['departure_at', 'base_price', 'available_seats'],
         defaultSortBy: 'departure_at',
         defaultLimit: 20,
       });
-      const availableSeatsByTrip = new Map<string, number>();
-      for (const seat of this.db.tripSeats) {
-        if (seat.status !== 'available') {
-          continue;
-        }
 
-        availableSeatsByTrip.set(
-          seat.trip_id,
-          (availableSeatsByTrip.get(seat.trip_id) ?? 0) + 1,
-        );
+      const conditions: string[] = ["t.status = 'scheduled'"];
+      const params: unknown[] = [];
+      let paramIdx = 1;
+
+      const fromCityId = first(query.from_city_id);
+      if (fromCityId) {
+        conditions.push(`t.from_city_id = $${paramIdx++}`);
+        params.push(fromCityId);
       }
 
-      const trips = this.db.trips
-        .filter((trip) => {
-          if (
-            query.from_city_id &&
-            trip.from_city_id !== first(query.from_city_id)
-          ) {
-            return false;
-          }
+      const toCityId = first(query.to_city_id);
+      if (toCityId) {
+        conditions.push(`t.to_city_id = $${paramIdx++}`);
+        params.push(toCityId);
+      }
 
-          if (query.to_city_id && trip.to_city_id !== first(query.to_city_id)) {
-            return false;
-          }
+      const departureDate = first(query.departure_date);
+      if (departureDate) {
+        conditions.push(`t.departure_at::text LIKE $${paramIdx++} || '%'`);
+        params.push(departureDate);
+      }
 
-          if (
-            query.departure_date &&
-            !trip.departure_at.startsWith(first(query.departure_date) ?? '')
-          ) {
-            return false;
-          }
+      const minPrice = first(query.min_price);
+      if (minPrice) {
+        conditions.push(`t.base_price >= $${paramIdx++}::numeric`);
+        params.push(Number(minPrice));
+      }
 
-          if (
-            query.min_price &&
-            trip.base_price < Number(first(query.min_price))
-          ) {
-            return false;
-          }
+      const maxPrice = first(query.max_price);
+      if (maxPrice) {
+        conditions.push(`t.base_price <= $${paramIdx++}::numeric`);
+        params.push(Number(maxPrice));
+      }
 
-          if (
-            query.max_price &&
-            trip.base_price > Number(first(query.max_price))
-          ) {
-            return false;
-          }
+      const whereClause = conditions.join(' AND ');
 
-          return trip.status === 'scheduled';
-        })
-        .map((trip) => this.tripSummary(trip.id, availableSeatsByTrip))
-        .filter((trip) => trip !== undefined);
+      const orderDir = pagination.order === 'asc' ? 'ASC' : 'DESC';
+      let sortClause: string;
+      if (pagination.sortBy === 'available_seats') {
+        sortClause = `ORDER BY available_seats ${orderDir}`;
+      } else if (pagination.sortBy === 'base_price') {
+        sortClause = `ORDER BY t.base_price ${orderDir}`;
+      } else {
+        sortClause = `ORDER BY t.departure_at ${orderDir}`;
+      }
 
-      return paginateArray(trips, pagination, {
-        departure_at: (trip) => trip.departure_at,
-        base_price: (trip) => trip.base_price,
-        available_seats: (trip) => trip.available_seats,
-      });
+      const sql = `
+        SELECT
+          t.id,
+          t.route_id,
+          t.company_id,
+          t.from_city_id,
+          t.to_city_id,
+          t.departure_at,
+          t.arrival_at,
+          t.status,
+          t.base_price,
+          t.policy_snapshot,
+          t.created_at,
+          t.updated_at,
+          r.duration_minutes,
+          jsonb_build_object('id', fc.id, 'name', fc.name) AS from_city,
+          jsonb_build_object('id', tc.id, 'name', tc.name) AS to_city,
+          jsonb_build_object(
+            'id', bc.id,
+            'name', bc.name,
+            'rating_average', bc.rating_average,
+            'reviews_count', bc.reviews_count
+          ) AS company,
+          (
+            SELECT COUNT(*)
+            FROM trip_seats ts
+            WHERE ts.trip_id = t.id AND ts.status = 'available'
+          ) AS available_seats
+        FROM trips t
+        JOIN routes r ON r.id = t.route_id
+        JOIN cities fc ON fc.id = t.from_city_id
+        JOIN cities tc ON tc.id = t.to_city_id
+        JOIN bus_companies bc ON bc.id = t.company_id
+        WHERE ${whereClause}
+        ${sortClause}
+        ${limitOffsetSql(pagination)}
+      `;
+
+      return this.pg.query(sql, params);
     });
   }
 
-  trip(id: string) {
-    const summary = this.tripSummary(id);
-    if (!summary) {
+  async trip(id: string) {
+    const [result] = await this.pg.query(
+      `
+        SELECT
+          t.id,
+          t.route_id,
+          t.company_id,
+          t.from_city_id,
+          t.to_city_id,
+          t.departure_at,
+          t.arrival_at,
+          t.status,
+          t.base_price,
+          t.policy_snapshot,
+          t.created_at,
+          t.updated_at,
+          r.duration_minutes,
+          jsonb_build_object('id', fc.id, 'name', fc.name) AS from_city,
+          jsonb_build_object('id', tc.id, 'name', tc.name) AS to_city,
+          jsonb_build_object(
+            'id', bc.id,
+            'name', bc.name,
+            'rating_average', bc.rating_average,
+            'reviews_count', bc.reviews_count
+          ) AS company,
+          (
+            SELECT COUNT(*)
+            FROM trip_seats ts
+            WHERE ts.trip_id = t.id AND ts.status = 'available'
+          ) AS available_seats
+        FROM trips t
+        JOIN routes r ON r.id = t.route_id
+        JOIN cities fc ON fc.id = t.from_city_id
+        JOIN cities tc ON tc.id = t.to_city_id
+        JOIN bus_companies bc ON bc.id = t.company_id
+        WHERE t.id = $1
+      `,
+      [id],
+    );
+
+    if (!result) {
       throw new NotFoundException({
         code: 'TRIP_NOT_FOUND',
         message: 'Reys topilmadi',
       });
     }
 
-    return summary;
+    return result;
   }
 
-  seats(id: string) {
-    this.trip(id);
-    return this.db.tripSeats.filter((seat) => seat.trip_id === id);
-  }
-
-  quote(id: string, body: Record<string, unknown>) {
-    const seats = Array.isArray(body.seats)
-      ? body.seats.map(String)
-      : this.seats(id)
-          .filter((seat) => seat.status === 'available')
-          .slice(0, 1)
-          .map((seat) => seat.seat_code);
-    const selectedSeats = this.seats(id).filter((seat) =>
-      seats.includes(seat.seat_code),
+  async seats(tripId: string) {
+    await this.trip(tripId);
+    return this.pg.query(
+      'SELECT * FROM trip_seats WHERE trip_id = $1 ORDER BY seat_code',
+      [tripId],
     );
-    const subtotal = selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
+  }
+
+  async quote(id: string, body: Record<string, unknown>) {
+    await this.trip(id);
+
+    let seatCodes: string[];
+    if (Array.isArray(body.seats)) {
+      seatCodes = body.seats.map(String);
+    } else {
+      const availableSeats = await this.pg.query(
+        "SELECT seat_code FROM trip_seats WHERE trip_id = $1 AND status = 'available' ORDER BY seat_code LIMIT 1",
+        [id],
+      );
+      seatCodes = availableSeats.map((s) => s.seat_code);
+    }
+
+    const selectedSeats = await this.pg.query(
+      'SELECT * FROM trip_seats WHERE trip_id = $1 AND seat_code = ANY($2::text[])',
+      [id, seatCodes],
+    );
+
+    const subtotal = selectedSeats.reduce(
+      (sum, seat) => sum + Number(seat.price),
+      0,
+    );
 
     return {
-      quote_id: this.db.id('quote'),
+      quote_id: randomUUID(),
       trip_id: id,
       seats: selectedSeats,
       currency: 'UZS',
@@ -129,8 +225,12 @@ export class BusesService {
     };
   }
 
-  companyReviews(id: string) {
-    const company = this.db.busCompanies.find((item) => item.id === id);
+  async companyReviews(id: string) {
+    const [company] = await this.pg.query(
+      'SELECT id FROM bus_companies WHERE id = $1',
+      [id],
+    );
+
     if (!company) {
       throw new NotFoundException({
         code: 'TRIP_NOT_FOUND',
@@ -138,31 +238,10 @@ export class BusesService {
       });
     }
 
-    return this.db.reviews.filter((review) => review['target_id'] === id);
-  }
-
-  private tripSummary(id: string, availableSeatsByTrip?: Map<string, number>) {
-    const trip = this.db.trips.find((item) => item.id === id);
-    if (!trip) {
-      return undefined;
-    }
-
-    const availableSeats =
-      availableSeatsByTrip?.get(id) ??
-      this.db.tripSeats.filter(
-        (seat) => seat.trip_id === id && seat.status === 'available',
-      ).length;
-
-    return {
-      ...trip,
-      route: this.db.busRoutes.find((route) => route.id === trip.route_id),
-      company: this.db.busCompanies.find(
-        (company) => company.id === trip.company_id,
-      ),
-      from_city: this.db.cities.find((city) => city.id === trip.from_city_id),
-      to_city: this.db.cities.find((city) => city.id === trip.to_city_id),
-      available_seats: availableSeats,
-    };
+    return this.pg.query(
+      "SELECT * FROM reviews WHERE target_type = 'bus_company' AND target_id = $1 ORDER BY created_at DESC",
+      [id],
+    );
   }
 }
 
