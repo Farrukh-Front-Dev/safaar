@@ -1,58 +1,58 @@
-# UzBron Monorepo
+# SAFAAR.uz — Monorepo
 
-O'zbekiston bo'ylab mehmonxona va avtobus bron qilish platformasi.
-Bitta npm workspace ichida 3 ta frontend + 1 ta backend + umumiy turlar paketi.
+> **Bron qil, yo'lga chiq!** — O'zbekiston milliy turar joy va bron platformasi.
 
-## Struktura
+| | |
+|---|---|
+| 🏨 Mehmonxona | 🏡 Dacha |
+| 🛖 Gostinka | 🏥 Sanatoriy |
+| ⛰️ Tog' oromgohlari | 🚌 Avtobus chiptalari |
+
+## Arxitektura
 
 ```
 apps/
-├── backend/      @agoda/backend       NestJS API (port 4000)
-├── web-user/     @agoda/web-user      Mijozlar sayti — uzbron.uz (port 3000)
-├── web-partner/  @agoda/web-partner   Hamkor kabineti — partner.uzbron.uz (port 3001)
-└── web-admin/    @agoda/web-admin     Super Admin — admin.uzbron.uz (port 3002)
+├── backend/      NestJS API                  → :4000
+├── web-user/     Mijozlar sayti — safaar.uz   → :3000
+├── web-partner/  Hamkor kabineti              → :3001
+└── web-admin/    Super Admin dashboard        → :3002
 packages/
-└── types/        @agoda/types         Umumiy TypeScript turlari (API shartnomasi)
+└── types/        Umumiy TypeScript turlari (API shartnomasi)
 ```
 
-Har bir dasturchi faqat o'z papkasida ishlaydi. Egalik `CODEOWNERS` faylida belgilangan.
-Uchala sayt ham bitta backend API'ga ulanadi; ruxsatlar rol asosida (RBAC) ajratiladi.
+## Texnologiyalar
 
-## O'rnatish
+| Qatlam | Texnologiya |
+|---|---|
+| Frontend | Next.js 16, React 19, Tailwind CSS v4, TypeScript (strict) |
+| Backend | NestJS, PostgreSQL (Neon), Redis |
+| Auth | JWT + Refresh Token, SMS OTP |
+| To'lov | Click, Payme, Uzcard, Humo |
+
+## Boshlash
 
 ```bash
 npm install
-npm run build:types   # @agoda/types ni birinchi build qilish kerak
+npm run build:types         # types paketini build qilish (birinchi)
+npm run dev:user            # web-user → localhost:3000
+npm run dev:backend         # backend  → localhost:4000
 ```
 
-## Ishga tushirish (har biri alohida)
+## Buyruqlar
 
 ```bash
-npm run dev:backend    # API        → localhost:4000
-npm run dev:user       # web-user   → localhost:3000
-npm run dev:partner    # web-partner→ localhost:3001
-npm run dev:admin      # web-admin  → localhost:3002
-npm run dev:types      # types ni watch rejimida
+npm run dev:user            # web-user
+npm run dev:partner         # web-partner
+npm run dev:admin           # web-admin
+npm run dev:backend         # backend
+npm run build               # barchasini build
+npm run test                # testlar
 ```
 
-## Build
+## Loyiha haqida
 
-```bash
-npm run build              # types + barcha applar
-npm run build:user         # faqat web-user
-npm run build:backend      # faqat backend
-```
+**SAFAAR.uz** — O'zbekistonning shahar mehmonxonalaridan tortib tog' bag'ridagi eng chekka oromgohlargacha bo'lgan barcha dam olish joylarini bitta platformada birlashtiruvchi milliy bron ekotizimi. To'liq texnik topshiriq: [`TZ_UzBron_Platform.md`](./TZ_UzBron_Platform.md).
 
-## Test
+---
 
-```bash
-npm run test
-npm run test:backend
-```
-
-## Eslatma
-
-- `packages/types` — frontend va backend o'rtasidagi yagona shartnoma.
-  Faqat backend dasturchisi boshqaradi, qolganlar import qiladi.
-- Backend modullari: `auth`, `users`, `hotels`, `bookings`, `partners`, `admin`
-  (hozircha skeleton; DB, JWT, SMS OTP keyingi bosqichda qo'shiladi).
+*SAFAAR Development Team*
