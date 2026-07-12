@@ -4,20 +4,17 @@ import {
   Activity,
   BedDouble,
   DollarSign,
-  Download,
-  PieChart as PieIcon,
+  TrendingDown,
   TrendingUp,
+  CreditCard,
+  Calendar,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   Card,
   CardBody,
-  CardHeader,
-  CardTitle,
 } from "../../_components/ui/card";
-import { StatCard } from "../../_components/ui/stat-card";
-import { Button } from "../../_components/ui/button";
 import { PageHeader } from "../../_components/layout/page-header";
 import { formatMoney } from "../../_lib/utils/format";
 import {
@@ -26,12 +23,13 @@ import {
   mockRoomTypeDistribution,
   mockSourceDistribution,
 } from "../../_lib/mocks/reports-mock";
-import { OccupancyChart } from "./_charts/occupancy-chart";
-import { RevenueChart } from "./_charts/revenue-chart";
-import { SourceChart } from "./_charts/source-chart";
 import { cn } from "../../_lib/utils/cn";
 
+type TimeRange = "7days" | "30days" | "year";
+
 export function ReportsView() {
+  const [timeRange, setTimeRange] = useState<TimeRange>("30days");
+  
   const revenue = useMemo(() => buildRevenueSeries(), []);
   const occupancy = useMemo(() => buildOccupancySeries(), []);
 
@@ -42,158 +40,286 @@ export function ReportsView() {
   );
   const adr = monthBookings > 0 ? Math.round(monthRevenue / monthBookings) : 0;
 
+  // Oxirgi 7 kunni olish
+  const recentRevenue = revenue.slice(-7).reverse();
+  const recentOccupancy = occupancy.slice(-7).reverse();
+
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-10">
       <PageHeader
-        eyebrow="Boshqaruv"
-        title="Hisobotlar"
-        description="30 kunlik biznes ko'rsatkichlari va trendlar."
-        actions={
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => toast.info("PDF eksport keyingi sprint'da")}
-          >
-            <Download className="h-4 w-4" aria-hidden />
-            PDF eksport
-          </Button>
-        }
+        eyebrow="Tahlil va Statistika"
+        title="Biznes Hisobotlari"
+        description="Mehmonxonaning moliyaviy holati, mehmonlar oqimi va sotuvlar bo'yicha batafsil ko'rsatkichlar."
       />
 
-      {/* KPI'lar */}
+      {/* Vaqt Filtrlari */}
+      <div className="flex justify-center md:justify-end">
+        <div className="flex items-center gap-1 p-1 bg-zinc-100 dark:bg-zinc-900/60 rounded-xl">
+          <TimeTab active={timeRange === "7days"} onClick={() => setTimeRange("7days")} label="Oxirgi 7 kun" />
+          <TimeTab active={timeRange === "30days"} onClick={() => setTimeRange("30days")} label="Oxirgi 30 kun" />
+          <TimeTab active={timeRange === "year"} onClick={() => setTimeRange("year")} label="Joriy yil" />
+        </div>
+      </div>
+
+      {/* Asosiy ko'rsatkichlar (KPIs) */}
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          label="Oylik daromad"
+        <ReportMetric
+          label="Umumiy Daromad"
           value={formatMoney(monthRevenue)}
-          hint="oxirgi 30 kun"
-          icon={<DollarSign className="h-5 w-5" aria-hidden />}
           trend={{ value: 12, positive: true }}
+          icon={<DollarSign className="h-6 w-6" />}
+          tone="brand"
         />
-        <StatCard
-          label="O'rtacha to'liqlik"
+        <ReportMetric
+          label="O'rtacha Bandlik"
           value={`${avgOccupancy}%`}
-          hint="oy davomida"
-          icon={<Activity className="h-5 w-5" aria-hidden />}
           trend={{ value: 5, positive: true }}
+          icon={<Activity className="h-6 w-6" />}
+          tone="accent"
         />
-        <StatCard
-          label="ADR"
+        <ReportMetric
+          label="O'rtacha kunlik narx (ADR)"
           value={formatMoney(adr)}
-          hint="o'rtacha kunlik narx"
-          icon={<TrendingUp className="h-5 w-5" aria-hidden />}
+          trend={{ value: 2, positive: false }}
+          icon={<CreditCard className="h-6 w-6" />}
+          tone="warning"
         />
-        <StatCard
-          label="Bronlar"
+        <ReportMetric
+          label="Yangi Bronlar"
           value={monthBookings.toString()}
-          hint="oxirgi 30 kun"
-          icon={<BedDouble className="h-5 w-5" aria-hidden />}
           trend={{ value: 8, positive: true }}
+          icon={<BedDouble className="h-6 w-6" />}
+          tone="success"
         />
       </section>
 
-      {/* Daromad chizig'i */}
-      <Card>
-        <CardHeader className="flex-row items-center justify-between">
-          <div>
-            <CardTitle>Daromad dinamikasi</CardTitle>
-            <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
-              Har kunlik daromad — dam olish kunlari yuqoriroq
-            </p>
-          </div>
-        </CardHeader>
-        <CardBody>
-          <RevenueChart data={revenue} />
-        </CardBody>
-      </Card>
-
-      {/* Occupancy + Source yonma-yon */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>To'liqlik trend</CardTitle>
-            <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
-              Kunlik to'liqlik foizi — yashil 80%+, sariq 50-80%, qizil 50%'dan
-              past
-            </p>
-          </CardHeader>
-          <CardBody>
-            <OccupancyChart data={occupancy} />
+      {/* Daromad va Bandlik Ro'yxatlari */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        
+        {/* Daromad Ro'yxati */}
+        <Card className="border-none shadow-sm ring-1 ring-zinc-200/50 dark:ring-zinc-800/50 flex flex-col">
+          <CardBody className="p-6 flex-1 flex flex-col">
+            <div className="mb-6 flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-4">
+              <div>
+                <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white">Oxirgi kunlar daromadi</h2>
+                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                  Kunlik tushumlar va bronlar soni
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex flex-col gap-0">
+              <div className="grid grid-cols-[1fr_auto_auto] gap-4 py-2 px-1 text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
+                <span>Sana</span>
+                <span className="text-right w-16">Bronlar</span>
+                <span className="text-right w-24">Daromad</span>
+              </div>
+              
+              {recentRevenue.map((d, i) => (
+                <div key={d.date} className="grid grid-cols-[1fr_auto_auto] gap-4 py-3 px-1 border-b border-zinc-100 dark:border-zinc-800/60 last:border-0 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors rounded-md">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-zinc-400" />
+                    <span className="text-sm font-medium text-zinc-900 dark:text-zinc-200">{formatShortDate(d.date)}</span>
+                  </div>
+                  <span className="text-sm font-medium text-zinc-600 dark:text-zinc-400 text-right w-16">{d.bookings} ta</span>
+                  <span className="text-sm font-bold text-zinc-900 dark:text-white text-right w-24">{formatMoney(d.revenue)}</span>
+                </div>
+              ))}
+            </div>
           </CardBody>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PieIcon className="h-4 w-4" aria-hidden />
-              Bron manbalari
-            </CardTitle>
-            <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
-              Bronlar qayerdan kelmoqda
-            </p>
-          </CardHeader>
-          <CardBody>
-            <SourceChart data={mockSourceDistribution} />
+        {/* Bandlik Ro'yxati */}
+        <Card className="border-none shadow-sm ring-1 ring-zinc-200/50 dark:ring-zinc-800/50 flex flex-col">
+          <CardBody className="p-6 flex-1 flex flex-col">
+            <div className="mb-6 flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-4">
+              <div>
+                <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white">Oxirgi kunlar bandligi</h2>
+                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                  Xonalar qanchalik to'lganligi (foizda)
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex flex-col gap-0">
+              <div className="grid grid-cols-[1fr_auto] gap-4 py-2 px-1 text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
+                <span>Sana</span>
+                <span className="text-right">To'liqlik (%)</span>
+              </div>
+              
+              {recentOccupancy.map((d, i) => (
+                <div key={d.date} className="grid grid-cols-[1fr_auto] gap-4 py-3 px-1 border-b border-zinc-100 dark:border-zinc-800/60 last:border-0 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors rounded-md">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-zinc-400" />
+                    <span className="text-sm font-medium text-zinc-900 dark:text-zinc-200">{formatShortDate(d.date)}</span>
+                  </div>
+                  <div className="flex items-center justify-end gap-2">
+                    <span className={cn(
+                      "text-sm font-bold text-right",
+                      d.occupancy >= 80 ? "text-emerald-600 dark:text-emerald-400" : 
+                      d.occupancy >= 50 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"
+                    )}>
+                      {d.occupancy}%
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardBody>
+        </Card>
+
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        
+        {/* Sotuv Manbalari Ro'yxati */}
+        <Card className="border-none shadow-sm ring-1 ring-zinc-200/50 dark:ring-zinc-800/50 flex flex-col">
+          <CardBody className="p-6 flex-1 flex flex-col">
+            <div className="mb-6 border-b border-zinc-100 dark:border-zinc-800 pb-4">
+              <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white">Sotuv manbalari</h2>
+              <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                Mehmonlar qaysi platformalardan kelmoqda?
+              </p>
+            </div>
+            
+            <div className="flex flex-col gap-0">
+              <div className="grid grid-cols-[1fr_auto_auto] gap-4 py-2 px-1 text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
+                <span>Manba (Platforma)</span>
+                <span className="text-right w-16">Ulush</span>
+                <span className="text-right w-16">Bronlar</span>
+              </div>
+              
+              {(() => {
+                const totalSrc = mockSourceDistribution.reduce((s, r) => s + r.value, 0);
+                const sortedSrc = [...mockSourceDistribution].sort((a,b) => b.value - a.value).slice(0, 5);
+                
+                return sortedSrc.map((s, i) => {
+                  const pct = totalSrc ? Math.round((s.value / totalSrc) * 100) : 0;
+                  return (
+                    <div key={s.name} className="grid grid-cols-[1fr_auto_auto] gap-4 py-3 px-1 border-b border-zinc-100 dark:border-zinc-800/60 last:border-0 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors rounded-md">
+                      <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-200">{s.name}</span>
+                      <span className="text-sm font-medium text-zinc-500 text-right w-16">{pct}%</span>
+                      <span className="text-sm font-bold text-zinc-900 dark:text-white text-right w-16">{s.value} ta</span>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </CardBody>
+        </Card>
+
+        {/* Top Xonalar Ro'yxati (Progress barsiz toza yozuv) */}
+        <Card className="border-none shadow-sm ring-1 ring-zinc-200/50 dark:ring-zinc-800/50">
+          <CardBody className="p-6">
+            <div className="mb-6 border-b border-zinc-100 dark:border-zinc-800 pb-4">
+              <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white">Top xonalar (Daromad bo'yicha)</h2>
+              <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                Biznesga eng ko'p foyda keltiruvchi top-5 xona toifalari
+              </p>
+            </div>
+            
+            <div className="flex flex-col gap-0">
+              <div className="grid grid-cols-[auto_1fr_auto] gap-4 py-2 px-1 text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
+                <span className="w-6 text-center">#</span>
+                <span>Xona turi</span>
+                <span className="text-right">Daromad</span>
+              </div>
+
+               {(() => {
+                  const sorted = [...mockRoomTypeDistribution].sort((a,b) => b.revenue - a.revenue).slice(0, 5);
+                  
+                  return sorted.map((r, index) => {
+                    return (
+                      <div key={r.name} className="grid grid-cols-[auto_1fr_auto] gap-4 py-3 px-1 border-b border-zinc-100 dark:border-zinc-800/60 last:border-0 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors rounded-md">
+                        <span className="text-sm font-mono text-zinc-400 w-6 text-center">{index + 1}</span>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-200">{r.name}</span>
+                          <span className="text-xs text-zinc-500 mt-0.5">{r.bookings} ta bron qilingan</span>
+                        </div>
+                        <span className="text-sm font-bold text-zinc-900 dark:text-white text-right self-center">{formatMoney(r.revenue)}</span>
+                      </div>
+                    );
+                  });
+               })()}
+            </div>
           </CardBody>
         </Card>
       </div>
 
-      {/* Xona turlari bo'yicha */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Xona turlari bo'yicha</CardTitle>
-          <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
-            Qaysi xona turi ko'proq daromad keltirmoqda
-          </p>
-        </CardHeader>
-        <CardBody className="p-0">
-          <table className="w-full text-sm">
-            <thead className="border-b border-[var(--border)] bg-[var(--surface-muted)] text-left text-xs uppercase tracking-wide text-[var(--muted-foreground)]">
-              <tr>
-                <th className="px-5 py-3">Xona turi</th>
-                <th className="px-5 py-3 text-right">Bronlar</th>
-                <th className="px-5 py-3 text-right">Daromad</th>
-                <th className="px-5 py-3">Nisbat</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(() => {
-                const total = mockRoomTypeDistribution.reduce(
-                  (s, r) => s + r.revenue,
-                  0,
-                );
-                return mockRoomTypeDistribution.map((r) => {
-                  const pct = total ? Math.round((r.revenue / total) * 100) : 0;
-                  return (
-                    <tr
-                      key={r.name}
-                      className="border-b border-[var(--border)] last:border-0"
-                    >
-                      <td className="px-5 py-3 font-medium">{r.name}</td>
-                      <td className="px-5 py-3 text-right">{r.bookings}</td>
-                      <td className="px-5 py-3 text-right font-medium">
-                        {formatMoney(r.revenue)}
-                      </td>
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 flex-1 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-                            <div
-                              className={cn("h-full bg-brand-500")}
-                              style={{ width: `${pct}%` }}
-                            />
-                          </div>
-                          <span className="w-10 text-right text-xs text-[var(--muted-foreground)]">
-                            {pct}%
-                          </span>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                });
-              })()}
-            </tbody>
-          </table>
-        </CardBody>
-      </Card>
+    </div>
+  );
+}
+
+// ==========================================
+// Yordamchi Komponentlar
+// ==========================================
+
+function formatShortDate(isoDate: string) {
+  const d = new Date(isoDate);
+  const months = ["Yan", "Fev", "Mar", "Apr", "May", "Iyun", "Iyul", "Avg", "Sen", "Okt", "Noy", "Dek"];
+  return `${d.getDate()}-${months[d.getMonth()]}`;
+}
+
+function TimeTab({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 whitespace-nowrap",
+        active 
+          ? "bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-200/50 dark:bg-zinc-800 dark:text-white dark:ring-zinc-700/50" 
+          : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200/30 dark:hover:text-zinc-200 dark:hover:bg-zinc-800/30"
+      )}
+    >
+      {label}
+    </button>
+  );
+}
+
+function ReportMetric({
+  label, value, trend, icon, tone = "brand"
+}: {
+  label: string;
+  value: string;
+  trend?: { value: number; positive: boolean };
+  icon: React.ReactNode;
+  tone?: "brand" | "accent" | "warning" | "success" | "danger" | "neutral";
+}) {
+  const toneMap = {
+    neutral: { bg: "bg-zinc-100 dark:bg-zinc-800/60", icon: "text-zinc-500" },
+    brand: { bg: "bg-brand-50 dark:bg-brand-900/20", icon: "text-brand-600 dark:text-brand-400" },
+    accent: { bg: "bg-indigo-50 dark:bg-indigo-900/20", icon: "text-indigo-600 dark:text-indigo-400" },
+    warning: { bg: "bg-amber-50 dark:bg-amber-900/20", icon: "text-amber-600 dark:text-amber-400" },
+    success: { bg: "bg-emerald-50 dark:bg-emerald-900/20", icon: "text-emerald-600 dark:text-emerald-400" },
+    danger: { bg: "bg-red-50 dark:bg-red-900/20", icon: "text-red-600 dark:text-red-400" },
+  }[tone];
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl bg-white p-5 border border-zinc-200/60 shadow-sm hover:shadow-md transition-shadow duration-200 dark:bg-zinc-900 dark:border-zinc-800/60">
+      <div className="flex justify-between items-start">
+        <div className="flex flex-col gap-1.5">
+          <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{label}</p>
+          <p className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">{value}</p>
+        </div>
+        <div className={cn("flex h-12 w-12 items-center justify-center rounded-xl", toneMap.bg, toneMap.icon)}>
+          {icon}
+        </div>
+      </div>
+      
+      {trend && (
+        <div className="mt-5 flex items-center gap-2">
+          <div className={cn(
+            "flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-md",
+            trend.positive 
+              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" 
+              : "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+          )}>
+            {trend.positive ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
+            {trend.value}%
+          </div>
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">o'tgan oyga nisbatan</span>
+        </div>
+      )}
     </div>
   );
 }

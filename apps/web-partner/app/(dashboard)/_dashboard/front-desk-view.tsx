@@ -5,9 +5,6 @@ import {
   BedDouble,
   CalendarDays,
   CalendarPlus,
-  CheckCircle2,
-  Clock3,
-  Inbox,
   LogIn,
   LogOut,
   Phone,
@@ -15,7 +12,6 @@ import {
   Sparkles,
   Users,
   Wallet,
-  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -32,7 +28,6 @@ import { OccupancyMeter } from "../../_components/domain/occupancy-meter";
 import { SourceBadge } from "../../_components/domain/source-badge";
 import { WalkInDialog } from "../../_components/domain/walk-in-dialog";
 import { PageHeader } from "../../_components/layout/page-header";
-import { useFrontDeskStats } from "../../_hooks/use-dashboard";
 import { useReservations } from "../../_hooks/use-reservations";
 import { useDataStore } from "../../_stores/data-store";
 import { TODAY_ISO } from "../../_lib/mocks/data";
@@ -84,7 +79,6 @@ const TASK_ORDER: Record<TaskKind, number> = {
 };
 
 export function FrontDeskView() {
-  const stats = useFrontDeskStats();
   const reservations = useReservations();
 
   const checkIn = useDataStore((s) => s.checkIn);
@@ -126,7 +120,8 @@ export function FrontDeskView() {
   }, [tasks]);
 
   const filtered = useMemo(() => {
-    let list = filter === "all" ? tasks : tasks.filter((task) => task.kind === filter);
+    let list =
+      filter === "all" ? tasks : tasks.filter((task) => task.kind === filter);
     const q = query.trim().toLowerCase();
     if (q) {
       list = list.filter(({ reservation }) =>
@@ -146,7 +141,6 @@ export function FrontDeskView() {
     return list;
   }, [filter, query, tasks]);
 
-  const occupancy = stats.data?.occupancyPercent ?? 0;
   const nextTask = tasks[0];
   const activeReservations = reservations.data.filter(
     (reservation) =>
@@ -175,137 +169,106 @@ export function FrontDeskView() {
   };
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6 max-w-7xl mx-auto">
       <PageHeader
         eyebrow="Front Desk"
-        title={`Bugun, ${formatTodayUz(TODAY_ISO)}`}
-        description="Resepsiyon uchun eng kerakli ishlar: yangi bronlar, check-in, check-out va to'lov nazorati."
+        title={
+          <div className="flex items-center gap-3 mt-1">
+            <div className="flex flex-col overflow-hidden rounded-lg border border-zinc-200/80 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:border-zinc-800 dark:bg-zinc-950 w-[3.25rem] shrink-0">
+              <div className="bg-brand-600 py-1 text-center text-[10px] font-bold uppercase tracking-widest text-white">
+                {MONTHS[new Date(TODAY_ISO).getMonth()]}
+              </div>
+              <div className="py-1.5 text-center text-xl font-black leading-none text-zinc-900 dark:text-white">
+                {new Date(TODAY_ISO).getDate()}
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-2xl font-bold leading-none text-zinc-900 dark:text-white tracking-tight">
+                {WEEKDAYS[new Date(TODAY_ISO).getDay()]}
+              </span>
+              <span className="text-sm font-medium leading-none text-zinc-500 dark:text-zinc-400">
+                Bugungi vazifalar va navbat
+              </span>
+            </div>
+          </div>
+        }
+        description=""
         actions={
-          <>
-            <Link href="/calendar">
-              <Button variant="outline" size="sm">
-                <CalendarDays className="h-4 w-4" aria-hidden />
-                Kalendar
-              </Button>
-            </Link>
-            <Button size="sm" onClick={() => setWalkInOpen(true)}>
-              <CalendarPlus className="h-4 w-4" aria-hidden />
+          <div className="flex items-center gap-3">
+            <Button variant="outline" onClick={() => window.location.href = '/calendar'}>
+              <CalendarDays className="mr-2 h-4 w-4" aria-hidden />
+              Kalendar
+            </Button>
+            <Button onClick={() => setWalkInOpen(true)}>
+              <CalendarPlus className="mr-2 h-4 w-4" aria-hidden />
               Yangi bron
             </Button>
-          </>
+          </div>
         }
       />
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <FrontMetric
-          icon={<BedDouble />}
-          label="Bandlik"
-          value={`${occupancy}%`}
-          hint={`${stats.data?.occupiedRooms ?? 0}/${stats.data?.totalRooms ?? 0} xona band`}
-          tone="brand"
-        >
-          <OccupancyMeter percent={occupancy} className="mt-2 h-1.5" />
-        </FrontMetric>
-        <FrontMetric
-          icon={<Clock3 />}
-          label="Zudlik kerak"
-          value={counts.pending.toString()}
-          hint="tasdiq kutayotgan bronlar"
-          tone={counts.pending > 0 ? "warning" : "neutral"}
-        />
-        <FrontMetric
-          icon={<LogIn />}
-          label="Bugun keladi"
-          value={counts.arrival.toString()}
-          hint="check-in navbati"
-          tone="accent"
-        />
-        <FrontMetric
-          icon={<Wallet />}
-          label="Qoldiq to'lov"
-          value={formatMoney(balance)}
-          hint="faol bronlar bo'yicha"
-          tone={balance > 0 ? "danger" : "accent"}
-        />
-      </section>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
-        <section className="flex min-w-0 flex-col gap-3">
-          <Card>
-            <CardBody className="flex flex-col gap-3">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <h2 className="text-base font-semibold">Bugungi ish navbati</h2>
-                  <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                    Avval zudlik, keyin kelish va ketish vazifalari.
-                  </p>
-                </div>
-                <div className="relative min-w-[240px] lg:w-[320px]">
-                  <Search
-                    className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-600 dark:text-brand-300"
-                    aria-hidden
-                  />
-                  <Input
-                    type="search"
-                    placeholder="Ism, telefon, xona..."
-                    className="h-10 rounded-lg bg-[var(--surface-muted)] pl-9"
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    aria-label="Front desk vazifalaridan qidirish"
-                  />
-                </div>
-              </div>
 
-              <div
-                role="tablist"
-                aria-label="Vazifa turi"
-                className="flex border-b border-[var(--border)] mt-2"
-              >
-                <FilterTab
-                  active={filter === "all"}
-                  count={counts.all}
-                  onClick={() => setFilter("all")}
-                  label="Hammasi"
-                />
-                <FilterTab
-                  active={filter === "pending"}
-                  count={counts.pending}
-                  onClick={() => setFilter("pending")}
-                  label="Zudlik"
-                  tone="warning"
-                />
-                <FilterTab
-                  active={filter === "arrival"}
-                  count={counts.arrival}
-                  onClick={() => setFilter("arrival")}
-                  label="Keladi"
-                  tone="brand"
-                />
-                <FilterTab
-                  active={filter === "departure"}
-                  count={counts.departure}
-                  onClick={() => setFilter("departure")}
-                  label="Ketadi"
-                  tone="accent"
-                />
-              </div>
-            </CardBody>
-          </Card>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
+        {/* Asosiy vazifalar qismi */}
+        <section className="flex min-w-0 flex-col gap-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200/60 dark:border-zinc-800/60 shadow-sm">
+            <div className="flex items-center gap-1 p-1 bg-zinc-100 dark:bg-zinc-950/50 rounded-lg overflow-x-auto w-full lg:w-auto">
+              <FilterTab
+                active={filter === "all"}
+                count={counts.all}
+                onClick={() => setFilter("all")}
+                label="Hammasi"
+              />
+              <FilterTab
+                active={filter === "pending"}
+                count={counts.pending}
+                onClick={() => setFilter("pending")}
+                label="Zudlik"
+              />
+              <FilterTab
+                active={filter === "arrival"}
+                count={counts.arrival}
+                onClick={() => setFilter("arrival")}
+                label="Keladi"
+              />
+              <FilterTab
+                active={filter === "departure"}
+                count={counts.departure}
+                onClick={() => setFilter("departure")}
+                label="Ketadi"
+              />
+            </div>
+            
+            <div className="relative shrink-0 lg:w-64">
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
+                aria-hidden
+              />
+              <Input
+                type="search"
+                placeholder="Qidirish..."
+                className="h-10 w-full rounded-lg bg-zinc-50 dark:bg-zinc-950/50 pl-9 border-none focus-visible:ring-1 focus-visible:ring-brand-500 transition-shadow"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+              />
+            </div>
+          </div>
 
           {filtered.length === 0 ? (
-            <Card>
+            <Card className="border-dashed border-2 border-zinc-200 dark:border-zinc-800 bg-transparent shadow-none">
               <EmptyState
-                icon={<Inbox className="h-10 w-10" aria-hidden />}
+                icon={<LogOut className="h-10 w-10 text-zinc-300" aria-hidden />}
                 title="Hammasi joyida"
                 description={
                   query
-                    ? "Qidiruv bo'yicha vazifa topilmadi."
-                    : "Ushbu bo'limda bajariladigan vazifa yo'q."
+                    ? "Qidiruv bo'yicha hech narsa topilmadi."
+                    : "Hozircha bajarilishi kerak bo'lgan vazifalar yo'q."
                 }
               />
             </Card>
           ) : (
-            <div className="grid gap-3">
+            <div className="flex flex-col gap-3">
               {filtered.map(({ kind, reservation }) => (
                 <TaskCard
                   key={`${kind}-${reservation.id}`}
@@ -326,27 +289,29 @@ export function FrontDeskView() {
           )}
         </section>
 
+        {/* O'ng tomondagi ixcham yordamchi panel */}
         <aside className="flex min-w-0 flex-col gap-4 xl:sticky xl:top-20 xl:self-start">
-          <Card>
-            <CardBody className="flex flex-col gap-3">
+          <Card className="border-none shadow-sm ring-1 ring-zinc-200/50 dark:ring-zinc-800/50">
+            <CardBody className="p-5 flex flex-col gap-4">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-brand-600" aria-hidden />
-                <h2 className="text-sm font-semibold">Keyingi ish</h2>
+                <Sparkles className="h-4 w-4 text-brand-500" aria-hidden />
+                <h2 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Diqqat markazida</h2>
               </div>
+              
               {nextTask ? (
                 <NextTaskCard task={nextTask} />
               ) : (
-                <div className="rounded-card bg-[var(--surface-muted)] p-3 text-sm text-[var(--muted-foreground)]">
+                <div className="rounded-lg bg-zinc-50 dark:bg-zinc-900/50 p-4 text-sm text-center text-zinc-500 dark:text-zinc-400">
                   Hozircha shoshilinch vazifa yo'q.
                 </div>
               )}
             </CardBody>
           </Card>
 
-          <Card>
-            <CardBody className="flex flex-col gap-3">
-              <h2 className="text-sm font-semibold">Tezkor yo'nalishlar</h2>
-              <QuickLink href="/reservations" icon={<Users />} label="Bronlar ro'yxati" />
+          <Card className="border-none shadow-sm ring-1 ring-zinc-200/50 dark:ring-zinc-800/50 bg-gradient-to-br from-brand-50 to-white dark:from-brand-950/20 dark:to-zinc-950">
+            <CardBody className="p-5 flex flex-col gap-3">
+              <h2 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 mb-1">Tezkor yo'nalishlar</h2>
+              <QuickLink href="/reservations" icon={<Users />} label="Barcha bronlar" />
               <QuickLink href="/calendar" icon={<CalendarDays />} label="Bandlik kalendari" />
             </CardBody>
           </Card>
@@ -383,85 +348,80 @@ export function FrontDeskView() {
             ? `${confirmReject.name} ning bronini rad etmoqchimisiz?`
             : ""
         }
-        confirmLabel="Ha, rad etish"
+        confirmLabel="Rad etish"
         tone="danger"
       />
     </div>
   );
 }
 
-function FrontMetric({
-  icon,
-  label,
-  value,
-  hint,
-  tone = "neutral",
-  children,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  hint: string;
-  tone?: "neutral" | "brand" | "accent" | "warning" | "danger";
-  children?: React.ReactNode;
-}) {
-  const toneClass = {
-    neutral: "text-zinc-500",
-    brand: "text-brand-600",
-    accent: "text-accent-600",
-    warning: "text-amber-600",
-    danger: "text-red-600",
-  }[tone];
+// ==========================================
+// Helper Components (Redesigned for Soft UI)
+// ==========================================
 
-  return (
-    <div className="flex flex-col gap-2 p-4 border border-[var(--border-light)] rounded-lg bg-white">
-      <div className="flex items-center gap-2">
-        <span className={cn("[&>svg]:h-4 [&>svg]:w-4", toneClass)}>{icon}</span>
-        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{label}</p>
-      </div>
-      <div>
-        <p className="truncate text-2xl font-medium tracking-tight text-zinc-900">{value}</p>
-        <p className="mt-1 text-xs text-zinc-400">{hint}</p>
-      </div>
-      {children}
-    </div>
-  );
-}
+
 
 function FilterTab({
   active,
   count,
   onClick,
   label,
-  icon,
-  tone,
 }: {
   active: boolean;
   count: number;
   onClick: () => void;
   label: string;
-  icon?: React.ReactNode;
-  tone?: "brand" | "accent" | "warning";
 }) {
   return (
     <button
       type="button"
-      role="tab"
-      aria-selected={active}
       onClick={onClick}
       className={cn(
-        "flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-all duration-150",
-        active
-          ? "border-brand-600 text-brand-700"
-          : "border-transparent text-zinc-500 hover:text-zinc-800",
+        "relative px-4 py-2 text-sm font-medium transition-all duration-200 rounded-md flex items-center gap-2 whitespace-nowrap",
+        active 
+          ? "bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-200/50 dark:bg-zinc-800 dark:text-white dark:ring-zinc-700/50" 
+          : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200/30 dark:hover:text-zinc-200 dark:hover:bg-zinc-800/30"
       )}
     >
-      {icon}
       {label}
-      <span className="ml-1 text-[11px] font-mono text-zinc-400">({count})</span>
+      <span className={cn(
+        "flex h-5 items-center justify-center rounded-full px-2 text-[11px] font-semibold",
+        active ? "bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400" : "bg-zinc-200/50 text-zinc-500 dark:bg-zinc-800"
+      )}>
+        {count}
+      </span>
     </button>
   );
 }
+
+const TASK_META: Record<
+  TaskKind,
+  {
+    label: string;
+    icon: React.ReactNode;
+    iconClass: string;
+    bgClass: string;
+  }
+> = {
+  pending: {
+    label: "Yangi",
+    icon: <AlertCircle className="h-5 w-5" aria-hidden />,
+    iconClass: "text-amber-600 dark:text-amber-400",
+    bgClass: "bg-amber-50 dark:bg-amber-900/30",
+  },
+  arrival: {
+    label: "Keladi",
+    icon: <LogIn className="h-5 w-5" aria-hidden />,
+    iconClass: "text-emerald-600 dark:text-emerald-400",
+    bgClass: "bg-emerald-50 dark:bg-emerald-900/30",
+  },
+  departure: {
+    label: "Ketadi",
+    icon: <LogOut className="h-5 w-5" aria-hidden />,
+    iconClass: "text-zinc-500 dark:text-zinc-400",
+    bgClass: "bg-zinc-100 dark:bg-zinc-800",
+  },
+};
 
 function TaskCard({
   kind,
@@ -482,126 +442,107 @@ function TaskCard({
   const meta = TASK_META[kind];
 
   return (
-    <div className="grid gap-4 py-4 border-b border-[var(--border-light)] md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center last:border-b-0 hover:bg-zinc-50 transition-colors px-4 -mx-4">
-      <span
-        className={cn(
-          "flex items-center justify-center [&>svg]:h-4 [&>svg]:w-4",
-          meta.iconClass,
-        )}
-        aria-label={meta.label}
-      >
-        {meta.icon}
-      </span>
-
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href={`/reservations/${reservation.id}`}
-            className="truncate text-sm font-semibold hover:underline"
-          >
-            {reservation.guest.fullName}
-          </Link>
-          <span className={cn("text-[10px] font-medium uppercase tracking-wide", meta.badgeClass)}>
-            {meta.label}
-          </span>
-          <SourceBadge source={reservation.source} />
-        </div>
-
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-zinc-500">
-          <span className="inline-flex items-center gap-1">
-            <BedDouble className="h-3 w-3" aria-hidden />
-            {reservation.roomTypeName}
-            {reservation.roomNumber && (
-              <span className="font-mono">· {reservation.roomNumber}</span>
-            )}
-          </span>
-          <span>{reservation.nights} kech.</span>
-          <span>{formatMoney(reservation.totalPrice)}</span>
-          {kind === "departure" &&
-            (balance > 0 ? (
-              <span className="font-semibold text-red-600">Qoldiq: {formatMoney(balance)}</span>
-            ) : (
-              <span className="text-zinc-400">To'liq to'langan</span>
-            ))}
-        </div>
+    <div className="group relative flex flex-col gap-4 rounded-xl border border-zinc-200/60 bg-white p-4 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md dark:border-zinc-800/60 dark:bg-zinc-900 md:flex-row md:items-center">
+      
+      {/* Icon Badge */}
+      <div className={cn("hidden md:flex h-12 w-12 shrink-0 items-center justify-center rounded-full", meta.bgClass, meta.iconClass)}>
+         {meta.icon}
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 md:justify-end">
-        <Tooltip content="Qo'ng'iroq" side="bottom">
-          <a
-            href={`tel:+${reservation.guest.phone}`}
-            aria-label={`Qo'ng'iroq: ${formatPhone(reservation.guest.phone)}`}
-            className="text-zinc-400 hover:text-brand-600 transition-colors"
-          >
-            <Phone className="h-4 w-4" aria-hidden />
+      {/* Main Info */}
+      <div className="flex-1 min-w-0">
+        <div className="flex flex-wrap items-center gap-3">
+           <div className={cn("md:hidden flex h-6 w-6 items-center justify-center rounded-full", meta.bgClass, meta.iconClass)}>
+             <span className="[&>svg]:h-3 [&>svg]:w-3">{meta.icon}</span>
+           </div>
+           <Link href={`/reservations/${reservation.id}`} className="text-base font-semibold text-zinc-900 hover:text-brand-600 dark:text-zinc-100 dark:hover:text-brand-400">
+              {reservation.guest.fullName}
+           </Link>
+           <SourceBadge source={reservation.source} />
+        </div>
+        
+        <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-500 dark:text-zinc-400">
+           {/* Room Type */}
+           <div className="flex items-center gap-1.5">
+             <BedDouble className="h-4 w-4 text-zinc-400" />
+             <span>
+               {reservation.roomTypeName}
+               {reservation.roomNumber && <strong className="text-zinc-700 dark:text-zinc-300 ml-1">· {reservation.roomNumber}</strong>}
+             </span>
+           </div>
+           {/* Duration */}
+           <div className="flex items-center gap-1.5">
+             <CalendarDays className="h-4 w-4 text-zinc-400" />
+             <span>{reservation.nights} kecha</span>
+           </div>
+           {/* Price & Balance */}
+           <div className="flex items-center gap-1.5 font-medium">
+             <Wallet className="h-4 w-4 text-zinc-400" />
+             {kind === "departure" ? (
+               balance > 0 ? (
+                 <span className="text-red-600 dark:text-red-400">Qarzdorlik: {formatMoney(balance)}</span>
+               ) : (
+                 <span className="text-emerald-600 dark:text-emerald-400">To'liq to'langan</span>
+               )
+             ) : (
+               <span>{formatMoney(reservation.totalPrice)}</span>
+             )}
+           </div>
+        </div>
+      </div>
+      
+      {/* Actions */}
+      <div className="flex items-center gap-2 pt-4 border-t border-zinc-100 dark:border-zinc-800/60 md:pt-0 md:border-t-0 md:pl-4 md:border-l">
+        <Tooltip content="Mijozga qo'ng'iroq qilish" side="top">
+          <a href={`tel:+${reservation.guest.phone}`} className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-zinc-400 hover:text-brand-600 hover:bg-brand-50 transition-colors">
+            <Phone className="h-4 w-4" />
           </a>
         </Tooltip>
-
-        {kind === "pending" && (
-          <div className="flex gap-2">
-            <button className="text-xs font-medium text-red-600 hover:underline" onClick={onReject}>Rad</button>
-            <button className="text-xs font-medium text-brand-600 hover:underline" onClick={onConfirm}>Tasdiqlash</button>
-          </div>
-        )}
-        {kind === "arrival" && (
-          <button className="text-xs font-medium text-brand-600 hover:underline" onClick={onCheckIn}>Check-in</button>
-        )}
-        {kind === "departure" && (
-          <button className="text-xs font-medium text-zinc-600 hover:underline" onClick={onCheckOut}>Check-out</button>
-        )}
+        
+        <div className="flex-1 flex justify-end gap-2">
+          {kind === "pending" && (
+            <>
+              <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-200 border-zinc-200" onClick={onReject}>
+                Rad etish
+              </Button>
+              <Button size="sm" className="bg-brand-600 hover:bg-brand-700 text-white" onClick={onConfirm}>
+                Tasdiqlash
+              </Button>
+            </>
+          )}
+          {kind === "arrival" && (
+            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={onCheckIn}>
+              Check-in qilish
+            </Button>
+          )}
+          {kind === "departure" && (
+            <Button variant="outline" size="sm" onClick={onCheckOut} className="border-zinc-200 hover:bg-zinc-50">
+              Check-out qilib yopish
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
 }
-
-const TASK_META: Record<
-  TaskKind,
-  {
-    label: string;
-    icon: React.ReactNode;
-    iconClass: string;
-    badgeClass: string;
-  }
-> = {
-  pending: {
-    label: "Yangi",
-    icon: <AlertCircle aria-hidden />,
-    iconClass: "text-amber-500",
-    badgeClass: "text-amber-600",
-  },
-  arrival: {
-    label: "Keladi",
-    icon: <LogIn aria-hidden />,
-    iconClass: "text-brand-600",
-    badgeClass: "text-brand-600",
-  },
-  departure: {
-    label: "Ketadi",
-    icon: <LogOut aria-hidden />,
-    iconClass: "text-zinc-400",
-    badgeClass: "text-zinc-500",
-  },
-};
 
 function NextTaskCard({ task }: { task: Task }) {
   const meta = TASK_META[task.kind];
   return (
     <Link
       href={`/reservations/${task.reservation.id}`}
-      className="block rounded-card border border-[var(--border)] bg-[var(--surface-muted)] p-3 transition-colors hover:border-[var(--border-strong)] hover:bg-[var(--surface-hover)]"
+      className="group flex items-center gap-3 rounded-lg border border-zinc-200/60 bg-white p-3 transition-all hover:border-brand-300 hover:shadow-sm dark:border-zinc-800/60 dark:bg-zinc-900/50"
     >
-      <div className="flex items-center gap-2">
-        <span className={cn("flex h-8 w-8 items-center justify-center rounded-md [&>svg]:h-4 [&>svg]:w-4", meta.iconClass)}>
-          {meta.icon}
-        </span>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold">
-            {task.reservation.guest.fullName}
-          </p>
-          <p className="text-xs text-[var(--muted-foreground)]">
-            {meta.label} · {task.reservation.roomTypeName}
-          </p>
-        </div>
+      <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-transform group-hover:scale-105", meta.bgClass, meta.iconClass)}>
+        {meta.icon}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-brand-600 transition-colors">
+          {task.reservation.guest.fullName}
+        </p>
+        <p className="truncate text-xs text-zinc-500 mt-0.5">
+          {meta.label} · {task.reservation.roomTypeName}
+        </p>
       </div>
     </Link>
   );
@@ -619,9 +560,9 @@ function QuickLink({
   return (
     <Link
       href={href}
-      className="flex items-center gap-2 rounded-md border border-[var(--border)] px-3 py-2 text-sm font-medium transition-colors hover:border-brand-300 hover:bg-brand-50 dark:hover:bg-brand-950/25"
+      className="flex items-center gap-2 rounded-lg border border-transparent px-3 py-2.5 text-sm font-medium text-zinc-600 transition-all hover:bg-white hover:shadow-sm hover:text-brand-700 hover:border-zinc-200/60 dark:text-zinc-400 dark:hover:bg-zinc-900/50"
     >
-      <span className="[&>svg]:h-4 [&>svg]:w-4">{icon}</span>
+      <span className="[&>svg]:h-4 [&>svg]:w-4 opacity-70">{icon}</span>
       {label}
     </Link>
   );

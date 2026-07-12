@@ -13,11 +13,17 @@ import {
   ArrowLeft, Ban, CheckCircle, Pause, Mail, MessageSquare, Trash2,
   Hotel, Bus, Star, CalendarCheck, CreditCard, Pencil, MessageCircle, Home, Bed, Trees
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useAdminStore } from "@/lib/store";
+import { toast } from "sonner";
 import { PartnerTypeDisplay } from "@/components/ui/PartnerTypeDisplay";
 
 export default function PartnerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const partner = mockPartners.find((p) => p.id === id);
+  const router = useRouter();
+  const partners = useAdminStore((s) => s.partners);
+  const updatePartnerStatus = useAdminStore((s) => s.updatePartnerStatus);
+  const partner = partners.find((p) => p.id === id);
 
   if (!partner) {
     return (
@@ -31,6 +37,20 @@ export default function PartnerDetailPage({ params }: { params: Promise<{ id: st
   }
 
   const partnerBookings = mockHotelBookings.slice(0, 8);
+
+  const handleStatusChange = (status: "active" | "suspended" | "blocked") => {
+    updatePartnerStatus(id, status);
+    toast.success("Hamkor holati yangilandi!");
+  };
+
+  const handleDelete = () => {
+    if (confirm("Rostdan ham ushbu hamkorni o'chirmoqchimisiz?")) {
+      const setPartners = useAdminStore.getState().setPartners;
+      setPartners(useAdminStore.getState().partners.filter((p) => p.id !== id));
+      toast.success("Hamkor o'chirildi!");
+      router.push("/partners/list");
+    }
+  };
 
   return (
     <div className="max-w-[1200px] mx-auto flex flex-col gap-6">
@@ -80,14 +100,14 @@ export default function PartnerDetailPage({ params }: { params: Promise<{ id: st
           <div className="flex items-center gap-2 flex-wrap">
             {partner.status === "active" ? (
               <>
-                <Button variant="secondary" size="sm" icon={<Pause size={14} />}>To&apos;xtatish</Button>
-                <Button variant="danger" size="sm" icon={<Ban size={14} />}>Bloklash</Button>
+                <Button variant="secondary" size="sm" icon={<Pause size={14} />} onClick={() => handleStatusChange("suspended")}>To&apos;xtatish</Button>
+                <Button variant="danger" size="sm" icon={<Ban size={14} />} onClick={() => handleStatusChange("blocked")}>Bloklash</Button>
               </>
             ) : (
-              <Button variant="accent" size="sm" icon={<CheckCircle size={14} />}>Faollashtirish</Button>
+              <Button variant="accent" size="sm" icon={<CheckCircle size={14} />} onClick={() => handleStatusChange("active")}>Faollashtirish</Button>
             )}
             <Button variant="secondary" size="sm" icon={<Mail size={14} />}>Email</Button>
-            <Button variant="ghost" size="sm" icon={<Trash2 size={14} />}>O&apos;chirish</Button>
+            <Button variant="ghost" size="sm" icon={<Trash2 size={14} />} onClick={handleDelete}>O&apos;chirish</Button>
           </div>
         </div>
       </Card>

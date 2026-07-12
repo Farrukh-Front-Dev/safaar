@@ -1,6 +1,6 @@
 "use client";
 
-import { BedDouble, Info } from "lucide-react";
+import { BedDouble, Info, Users, Sparkles, Check } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
@@ -8,7 +8,8 @@ import { Dialog } from "../ui/dialog";
 import { EmptyState } from "../ui/empty-state";
 import { useDataStore } from "../../_stores/data-store";
 import { useRooms } from "../../_hooks/use-rooms";
-import { RoomStatus, type ReservationView } from "../../_lib/domain/types";
+import { useRoomTypes } from "../../_hooks/use-room-types";
+import { RoomStatus, type ReservationView, type Room, type RoomType } from "../../_lib/domain/types";
 import { cn } from "../../_lib/utils/cn";
 
 interface Props {
@@ -26,33 +27,41 @@ export function AssignRoomDialog({
   onAssigned,
 }: Props) {
   const { data: rooms } = useRooms();
+  const { data: roomTypes } = useRoomTypes();
   const assignRoom = useDataStore((s) => s.assignRoom);
   const [selected, setSelected] = useState<string | null>(null);
 
-  // Faqat bo'sh (toza) va mos xona turidagi xonalar
-  const availableRooms = useMemo(() => {
-    if (!reservation) return [];
+  const availableRoomsCount = useMemo(() => {
+    if (!reservation) return 0;
     return rooms.filter(
-      (r) =>
-        r.roomTypeId === reservation.roomTypeId &&
-        r.status === RoomStatus.VACANT_CLEAN,
-    );
+      (r) => r.roomTypeId === reservation.roomTypeId && r.status === RoomStatus.VACANT_CLEAN
+    ).length;
   }, [rooms, reservation]);
 
-  // Boshqa turdagi bo'sh xonalar (agar mos yo'q bo'lsa)
-  const otherAvailable = useMemo(() => {
-    if (!reservation) return [];
-    return rooms.filter(
-      (r) =>
-        r.roomTypeId !== reservation.roomTypeId &&
-        r.status === RoomStatus.VACANT_CLEAN,
-    );
-  }, [rooms, reservation]);
+  // Qavatlar bo'yicha xaritalash
+  const floors = useMemo(() => {
+    const map = new Map<number, Room[]>();
+    rooms.forEach(room => {
+      if (!map.has(room.floor)) {
+        map.set(room.floor, []);
+      }
+      map.get(room.floor)!.push(room);
+    });
+
+    return Array.from(map.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([floor, floorRooms]) => {
+        return {
+          floor,
+          rooms: floorRooms.sort((a, b) => a.number.localeCompare(b.number))
+        };
+      });
+  }, [rooms]);
 
   const handleConfirm = () => {
     if (!reservation || !selected) return;
     assignRoom(reservation.id, selected);
-    toast.success(`Xona ${selected} tayinlandi: ${reservation.guest.fullName}`);
+    toast.success(`Xona ${selected} muvaffaqiyatli tayinlandi.`);
     onAssigned?.(selected);
     setSelected(null);
     onClose();
@@ -65,80 +74,78 @@ export function AssignRoomDialog({
         setSelected(null);
         onClose();
       }}
-      title="Xonaga tayinlash"
+      title="Aqlli Xona Tayinlash"
       description={
         reservation
-          ? `${reservation.guest.fullName} · ${reservation.roomTypeName}`
+          ? `${reservation.guest.fullName} · Bron: ${reservation.roomTypeName}`
           : ""
       }
-      size="lg"
+      size="lg" // xaritani sig'dirish uchun kattaroq oyna
     >
-      <div className="flex flex-col gap-4">
-        {availableRooms.length === 0 && otherAvailable.length === 0 ? (
-          <EmptyState
-            icon={<BedDouble className="h-10 w-10" aria-hidden />}
-            title="Bo'sh xona yo'q"
-            description="Barcha xonalar band yoki tozalanmoqda. Housekeeping'ni tekshiring."
-          />
-        ) : (
-          <>
-            {availableRooms.length > 0 && (
-              <div className="flex flex-col gap-2">
-                <h3 className="text-xs font-semibold uppercase tracking-widest text-[var(--muted-foreground)]">
-                  Mos xonalar ({reservation?.roomTypeName})
-                </h3>
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                  {availableRooms.map((room) => (
-                    <RoomOption
-                      key={room.id}
-                      number={room.number}
-                      floor={room.floor}
-                      selected={selected === room.number}
-                      onSelect={() => setSelected(room.number)}
-                    />
-                  ))}
-                </div>
+      <div className="flex flex-col gap-6">
+        
+        {/* Info panel */}
+        {reservation && (
+          <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl bg-brand-50 p-4 border border-brand-100 dark:bg-brand-900/20 dark:border-brand-900/40">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-100 text-brand-700 dark:bg-brand-900/60 dark:text-brand-300">
+                <Sparkles className="h-5 w-5" />
               </div>
-            )}
-
-            {availableRooms.length === 0 && otherAvailable.length > 0 && (
-              <>
-                <div className="flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
-                  <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
-                  <p>
-                    <strong>{reservation?.roomTypeName}</strong> turida bo'sh
-                    xona yo'q. Boshqa turdagi xonalardan tanlashingiz mumkin
-                    (upgrade).
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <h3 className="text-xs font-semibold uppercase tracking-widest text-[var(--muted-foreground)]">
-                    Boshqa bo'sh xonalar
-                  </h3>
-                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                    {otherAvailable.slice(0, 8).map((room) => (
-                      <RoomOption
-                        key={room.id}
-                        number={room.number}
-                        floor={room.floor}
-                        typeName={room.roomTypeName}
-                        selected={selected === room.number}
-                        onSelect={() => setSelected(room.number)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-          </>
+              <div>
+                <p className="text-sm font-semibold text-brand-900 dark:text-brand-100">
+                  Mos keladigan {availableRoomsCount} ta toza xona bor
+                </p>
+                <p className="text-xs text-brand-700 dark:text-brand-300">
+                  Tizim avtomatik ravishda mos xonalarni yashil rangda ko'rsatmoqda.
+                </p>
+              </div>
+            </div>
+          </div>
         )}
 
-        <div className="flex justify-end gap-2 border-t border-[var(--border)] pt-4">
+        <div className="flex flex-col gap-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+          {floors.map(({ floor, rooms }) => (
+            <div key={floor} className="flex flex-col gap-3">
+              <h3 className="text-sm font-bold text-zinc-900 dark:text-white border-b border-zinc-100 dark:border-zinc-800 pb-1">
+                {floor}-Qavat
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {rooms.map((room) => {
+                  const roomType = roomTypes.find(t => t.id === room.roomTypeId);
+                  const isMatch = reservation 
+                    ? room.roomTypeId === reservation.roomTypeId && room.status === RoomStatus.VACANT_CLEAN
+                    : false;
+                  const isOtherAvailable = reservation
+                    ? room.roomTypeId !== reservation.roomTypeId && room.status === RoomStatus.VACANT_CLEAN
+                    : false;
+                  
+                  return (
+                    <SmartRoomOption
+                      key={room.id}
+                      room={room}
+                      roomType={roomType}
+                      isMatch={isMatch}
+                      isOtherAvailable={isOtherAvailable}
+                      selected={selected === room.number}
+                      onSelect={() => {
+                        if (isMatch || isOtherAvailable) {
+                          setSelected(room.number);
+                        }
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex justify-end gap-3 border-t border-[var(--border)] pt-5">
           <Button variant="outline" onClick={onClose}>
             Bekor qilish
           </Button>
           <Button onClick={handleConfirm} disabled={!selected}>
-            {selected ? `Xona ${selected} ga tayinlash` : "Xona tanlang"}
+            {selected ? `Xona ${selected} ga tayinlash` : "Xarita orqali xona tanlang"}
           </Button>
         </div>
       </div>
@@ -146,34 +153,63 @@ export function AssignRoomDialog({
   );
 }
 
-function RoomOption({
-  number,
-  floor,
-  typeName,
+function SmartRoomOption({
+  room,
+  roomType,
+  isMatch,
+  isOtherAvailable,
   selected,
   onSelect,
 }: {
-  number: string;
-  floor: number;
-  typeName?: string;
+  room: Room;
+  roomType?: RoomType;
+  isMatch: boolean;
+  isOtherAvailable: boolean;
   selected: boolean;
   onSelect: () => void;
 }) {
+  const isAvailable = isMatch || isOtherAvailable;
+  
   return (
     <button
       type="button"
       onClick={onSelect}
+      disabled={!isAvailable}
       className={cn(
-        "flex flex-col items-start gap-0.5 rounded-lg border p-3 text-left transition-all",
+        "relative flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition-all duration-200",
+        // Tanlangan bo'lsa
         selected
-          ? "border-brand-500 bg-brand-50 ring-2 ring-brand-200 dark:bg-brand-900/40 dark:ring-brand-800"
-          : "border-[var(--border)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-muted)]",
+          ? "border-brand-500 bg-brand-50 shadow-md ring-1 ring-brand-500 dark:bg-brand-900/40 dark:border-brand-400 dark:ring-brand-400"
+          : isMatch
+            ? "border-emerald-200 bg-emerald-50/50 hover:border-emerald-400 hover:bg-emerald-50 hover:shadow-sm cursor-pointer dark:bg-emerald-900/10 dark:border-emerald-900/60 dark:hover:bg-emerald-900/20"
+            : isOtherAvailable
+              ? "border-amber-200 bg-amber-50/50 hover:border-amber-400 hover:bg-amber-50 cursor-pointer opacity-80 dark:bg-amber-900/10 dark:border-amber-900/50"
+              : "border-zinc-100 bg-zinc-50/50 opacity-40 cursor-not-allowed grayscale dark:border-zinc-800 dark:bg-zinc-900/30"
       )}
     >
-      <span className="font-mono text-lg font-bold">{number}</span>
-      <span className="text-[10px] text-[var(--muted-foreground)]">
-        {floor}-qavat{typeName && ` · ${typeName}`}
+      {selected && (
+        <div className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-brand-500 text-white">
+          <Check className="h-3 w-3" strokeWidth={3} />
+        </div>
+      )}
+      
+      <span className={cn(
+        "font-mono text-xl font-black leading-none",
+        selected ? "text-brand-700 dark:text-brand-300" 
+        : isMatch ? "text-emerald-700 dark:text-emerald-400"
+        : "text-zinc-600 dark:text-zinc-400"
+      )}>
+        {room.number}
       </span>
+      
+      <span className="text-[10px] font-semibold text-zinc-500 mt-1 line-clamp-1">
+        {room.roomTypeName}
+      </span>
+      
+      <div className="flex items-center gap-1.5 mt-1 text-[10px] font-medium text-zinc-400">
+        <Users className="h-3 w-3" />
+        {roomType?.capacity || "?"} kishi
+      </div>
     </button>
   );
 }

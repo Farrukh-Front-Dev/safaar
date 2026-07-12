@@ -6,6 +6,7 @@ import {
   Megaphone,
   Settings,
   Users,
+  BedDouble,
   type LucideIcon,
 } from "lucide-react";
 
@@ -33,6 +34,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: "Operatsion",
     items: [
+      { label: "Xonalar", href: "/rooms", icon: BedDouble },
       { label: "Bronlar", href: "/reservations", icon: CalendarRange },
       { label: "Kalendar", href: "/calendar", icon: CalendarDays },
     ],

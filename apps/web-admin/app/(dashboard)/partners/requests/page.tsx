@@ -13,30 +13,29 @@ import type { PartnerRequest } from "@/types/admin";
 import { PartnerTypeDisplay } from "@/components/ui/PartnerTypeDisplay";
 import { toast } from "sonner";
 
+import { useAdminStore } from "@/lib/store";
+
 function isActiveRequest(request: PartnerRequest) {
   return request.status === "new" || request.status === "reviewing";
 }
 
 export default function PartnerRequestsPage() {
-  const [requests, setRequests] = useState<PartnerRequest[]>([]);
+  const storeRequests = useAdminStore((s) => s.partnerRequests);
+  const approvePartnerRequest = useAdminStore((s) => s.approvePartnerRequest);
+  const rejectPartnerRequest = useAdminStore((s) => s.rejectPartnerRequest);
   const [selectedRequest, setSelectedRequest] = useState<PartnerRequest | null>(null);
 
-  useEffect(() => {
-    MockApi.getPartnerRequests().then((items) => {
-      setRequests(items.filter(isActiveRequest));
-    });
-  }, []);
+  const requests = storeRequests.filter(isActiveRequest);
 
   const handleDecision = async (id: string, decision: "approve" | "reject") => {
     try {
       if (decision === "approve") {
-        await MockApi.approvePartner(id);
+        approvePartnerRequest(id);
         toast.success("Ariza muvaffaqiyatli tasdiqlandi!");
       } else {
-        await MockApi.rejectPartner(id);
+        rejectPartnerRequest(id);
         toast.success("Ariza rad etildi!");
       }
-      setRequests((current) => current.filter((item) => item.id !== id));
       setSelectedRequest(null);
     } catch (e) {
       toast.error("Xatolik yuz berdi. Iltimos qaytadan urinib ko'ring.");

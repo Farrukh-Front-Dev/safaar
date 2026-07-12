@@ -17,19 +17,17 @@ import type { Partner } from "@/types/admin";
 import { PartnerTypeDisplay } from "@/components/ui/PartnerTypeDisplay";
 import { exportToExcel } from "@/lib/export";
 
+import { useAdminStore } from "@/lib/store";
+
 const ITEMS_PER_PAGE = 12;
 
 export default function PartnersListPage() {
   const router = useRouter();
-  const [partners, setPartners] = useState<Partner[]>([]);
+  const partners = useAdminStore((s) => s.partners);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
-
-  useEffect(() => {
-    MockApi.getPartners().then(setPartners);
-  }, []);
 
   const filtered = useMemo(() => {
     let result = partners;
