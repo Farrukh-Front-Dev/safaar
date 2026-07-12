@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
@@ -9,6 +8,7 @@ import { ApiRequestError } from "@/lib/api";
 import { formatTime, formatDuration } from "@/lib/datetime";
 import { SeatPicker } from "@/components/bus/SeatPicker";
 import { ReviewsList } from "@/components/reviews/ReviewsList";
+import { BackButton } from "@/components/ui/BackButton";
 
 export async function generateMetadata({
   params,
@@ -62,14 +62,7 @@ export default async function BusTripPage({
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-6 py-8">
-      <div>
-        <Link
-          href={`/${locale}/buses`}
-          className="text-sm text-primary-600 transition-colors hover:text-primary-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
-        >
-          ← {dict.back}
-        </Link>
-      </div>
+      <BackButton href={`/${locale}/buses`} className="fixed left-4 top-16 z-50 md:left-8 md:top-20" />
 
       <header className="flex flex-col gap-3">
         <h1 className="flex flex-wrap items-center gap-2 text-2xl font-bold tracking-tight">

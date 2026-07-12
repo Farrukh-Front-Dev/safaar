@@ -6,6 +6,7 @@ import { getSession } from "@/lib/auth/session";
 import { getBooking } from "@/lib/api/bookings";
 import { formatSum } from "@/lib/money";
 import { Button } from "@/components/ui/Button";
+import { BackButton } from "@/components/ui/BackButton";
 import type { BookingView } from "@/types/view";
 
 export default async function BookingDetailPage({
@@ -47,6 +48,7 @@ export default async function BookingDetailPage({
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 py-12">
+      <BackButton className="fixed left-4 top-16 z-50 md:left-8 md:top-20" />
       <h1 className="text-2xl font-bold tracking-tight">{dict.title}</h1>
 
       <div className="flex flex-col gap-4 rounded-xl border border-black/10 p-6 dark:border-white/15">

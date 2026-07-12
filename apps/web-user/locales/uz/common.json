@@ -12,11 +12,20 @@
   },
   "actions": {
     "login": "Kirish",
+    "register": "Ro'yxatdan o'tish",
     "logout": "Chiqish",
     "search": "Qidirish",
     "account": "Kabinet"
   },
   "language": "Til",
+  "propertyTypes": {
+
+    "hotel": "Mehmonxona",
+    "dacha": "Dacha",
+    "guesthouse": "Gostinka",
+    "sanatorium": "Sanatoriy",
+    "resort": "Oromgoh"
+  },
   "search": {
     "hotelsTab": "Mehmonxona",
     "busesTab": "Avtobus",

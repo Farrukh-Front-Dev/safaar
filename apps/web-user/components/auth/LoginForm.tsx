@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useEffect, useActionState, useState } from "react";
+import Link from "next/link";
 import type { Locale } from "@/i18n/config";
 import type { AuthDict } from "@/i18n/dictionaries";
 import {
@@ -21,7 +22,7 @@ export function LoginForm({
   next: string;
   dict: AuthDict;
 }) {
-  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [otpState, requestAction, sending] = useActionState<OtpState, FormData>(
     requestOtpAction,
     { ok: false },
@@ -30,6 +31,14 @@ export function LoginForm({
     VerifyState,
     FormData
   >(verifyOtpAction, {});
+
+  // Yangi foydalanuvchi — profil to'ldirish sahifasiga yo'naltirish
+  useEffect(() => {
+    if (verifyState.needsProfile && verifyState.locale) {
+      const target = `/${verifyState.locale}/register?email=${encodeURIComponent(email)}&next=${encodeURIComponent(next)}`;
+      window.location.href = target;
+    }
+  }, [verifyState.needsProfile, verifyState.locale, email, next]);
 
   return (
     <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6 px-6 py-16">
@@ -40,23 +49,35 @@ export function LoginForm({
             <p className="text-sm text-slate-500">{dict.subtitle}</p>
           </header>
           <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium">{dict.phone}</span>
+            <span className="text-sm font-medium">{dict.email}</span>
             <Input
-              name="phone"
-              type="tel"
-              autoComplete="tel"
+              name="email"
+              type="email"
+              autoComplete="email"
               required
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder={dict.phonePlaceholder}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={dict.emailPlaceholder}
             />
           </label>
           {otpState.error && (
-            <p className="text-sm text-red-600">{dict.error}</p>
+            <p className="text-sm text-red-600">
+              {otpState.error === "EMAIL_REQUIRED" ? dict.emailRequired : dict.error}
+            </p>
           )}
           <Button type="submit" size="lg" loading={sending}>
             {dict.sendCode}
           </Button>
+
+          <p className="text-center text-sm text-slate-500">
+            {dict.noAccount}{" "}
+            <Link
+              href={`/${locale}/register${next ? `?next=${encodeURIComponent(next)}` : ""}`}
+              className="font-medium text-primary-600 hover:text-primary-500"
+            >
+              {dict.register}
+            </Link>
+          </p>
         </form>
       ) : (
         <form action={verifyAction} className="flex flex-col gap-4">
@@ -71,7 +92,7 @@ export function LoginForm({
             </p>
           )}
 
-          <input type="hidden" name="phone" value={phone} />
+          <input type="hidden" name="email" value={email} />
           <input type="hidden" name="locale" value={locale} />
           <input type="hidden" name="next" value={next} />
 

@@ -94,6 +94,8 @@ export default async function HotelsPage({
     console.error("[hotels] getHotels failed:", e);
     return null;
   });
+  const propertyType = one(sp.type);
+
   const loadFailed = hotelsResult === null;
 
   // Backend server-side filter/sort/pagination qo'llaydi.
@@ -127,13 +129,14 @@ export default async function HotelsPage({
   const retryHref = `${basePath}${retryQuery ? `?${retryQuery}` : ""}`;
 
   return (
-    <main className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 pb-8 pt-20 sm:px-6 md:pt-28">
+    <main className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 pb-8 pt-4 sm:px-6 sm:pt-6">
 
       <SearchBar
         locale={locale}
         dict={common.search}
         cities={cities}
         defaults={{ cityId, checkIn, checkOut, guests }}
+        propertyTypeLabels={common.propertyTypes}
       />
 
       <div className="flex flex-col gap-3">

@@ -12,11 +12,20 @@
   },
   "actions": {
     "login": "Войти",
+    "register": "Регистрация",
     "logout": "Выйти",
     "search": "Поиск",
     "account": "Кабинет"
   },
   "language": "Язык",
+  "propertyTypes": {
+
+    "hotel": "Отель",
+    "dacha": "Дача",
+    "guesthouse": "Гостевой дом",
+    "sanatorium": "Санаторий",
+    "resort": "Курорт"
+  },
   "search": {
     "hotelsTab": "Отель",
     "busesTab": "Автобус",

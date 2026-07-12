@@ -13,6 +13,7 @@ import { HotelGallery } from "@/components/hotels/HotelGallery";
 import { RoomList } from "@/components/hotels/RoomList";
 import { ReviewsList } from "@/components/reviews/ReviewsList";
 import { FavoriteButton } from "@/components/favorites/FavoriteButton";
+import { BackButton } from "@/components/ui/BackButton";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -89,7 +90,8 @@ export default async function HotelDetailPage({
   const reviewsDict = await getDictionary(locale, "reviews");
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-6 py-8">
+    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-6 py-8">
+      <BackButton className="fixed left-4 top-16 z-50 md:left-8 md:top-20" />
       <HotelGallery images={hotel.images} alt={hotel.name} />
 
       <header className="flex flex-col gap-2">

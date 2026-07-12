@@ -1,0 +1,193 @@
+O'ZBEKISTONNING BIRINCHI MILLIY BRON PLATFORMASI
+SAFAAR.uz
+"Bron qil, yo'lga chiq!"
+MEHMONXONA BRON  |  AVTobus CHIPTA  |  TURIZM
+Aholi: 36M+  |  Turizm bozori: $3.2B  |  Start: 2025
+
+MUAMMO
+BOZORDA KATTA MUAMMO MAVJUD
+O'zbekistonda sayohat bron qilish hali ham qiyin va eskirgan. Mavjud tizimlar foydalanuvchilar va hamkorlarning ehtiyojlarini qondirmaydi.
+80% mehmonxonalarning bron telefon yoki shaxsan qabul qiladi
+5-10 saytga alohida kirish kerak narx solishtirish uchun
+0% onlayn avtobus bron imkoniyati — faqat kassada
+0 yagona milliy bron platformasi mavjud emas
+15% onlayn bron ulushi — 85% hali an'anaviy
+02
+
+YECHIM
+SAFAAR — BARCHA BRON BIR JOYDA
+O'zbekistonning birinchi to'liq milliy bron platformasi
+MIJOZLAR
+safaar.uz
+• Mehmonxona qidirish, filter, bron
+• Avtobus chipta sotib olish
+• Click / Payme / Uzcard to'lov
+• Shaxsiy kabinet, bronlar tarixi
+• PWA — telefonga o'rnatish
+HAMKORLAR
+partner.safaar.uz
+• Xonalar va marshrut boshqaruvi
+• Real-time bronlar va tasdiqlar
+• Daromad hisoboti, komissiya
+• Dinamik narxlash kalendari
+ADMIN
+admin.safaar.uz
+• Barcha hamkorlar nazorati
+• Moliyaviy hisobotlar
+• CMS, promo-kodlar, aksiyalar
+• Audit log va xavfsizlik
+03
+
+BOZOR TAHLILI
+$3.2B LIK BOZOR — ONLAYN BRON FAQAT 15%
+TAM
+$3.2B
+Jami O'zbekiston turizm bozori
+SAM
+$480M
+Onlayn bron segmenti
+SOM
+$48M
+SAFAAR boshlang'ich maqsadi
+6.7M+ turist 2023-yilda O'zbekistonga kelgan — bu tarixiy rekord
+20%+ ichki turizm yillik o'sish sur'ati — bozor tez kengaymoqda
+85% bronlar hali an'anaviy usulda — raqamlashtirish katta imkoniyat
+#1 ustuvor yo'nalish — hukumat turizm raqamlashtirishni qo'llab-quvvatlamoqda
+04
+
+RAQOBATCHILAR
+RAQOBATDA YAGONA TO'LIQ EKOTIZIM
+→ SAFAAR — yagona TO'LIQ mahalliy bron ekotizimi
+05
+
+BIZNES MODEL
+4 TA DAROMAD MANBALI BIZNES MODEL
+01
+KOMISSIYA
+8-12%
+Har bir muvaffaqiyatli brondan avtomatik olinadi — mehmonxona va avtobus chipta
+02
+PREMIUM OBUNA
+Oylik
+Mehmonxonalar va avtobus kompaniyalari uchun kengaytirilgan statistika va ustuvor ko'rinish
+03
+REKLAMA
+CPC / Banner
+Mahalliy bizneslar va brendlar uchun targetli reklama imkoniyati
+04
+KORPORATIV PAKET
+B2B
+Kompaniyalar uchun xodimlar safarini boshqarish va hisobotlash xizmati
+06
+
+MOLIYAVIY PROGNOZ
+18-OYDA BREAK-EVEN, 4 YILDA $2.1M DAROMAD
+ASOSIY KPI — YIL 1
+1,200
+Hamkorlar soni
+18,000
+Bronlar soni
+$180K
+Yillik daromad
+18 oy
+Break-even nuqtasi
+07
+
+YO'L XARITASI
+4 BOSQICHDa STRATEGIK YO'L XARITASI
+1-3 OY
+MVP
+• Mehmonxona bron (asosiy)
+• Hamkor panel
+• Admin dashboard
+• Click & Payme integratsiya
+• SMS OTP tasdiqlash
+4-5 OY
+BETA
+• Avtobus bron (o'rindiq sxemasi)
+• Multi-til: O'zbek/Rus/Ingliz
+• Google Maps integratsiya
+• PWA ishga tushirish
+• Google & Facebook OAuth
+6-7 OY
+FULL LAUNCH
+• iOS va Android ilovalar
+• Promo-kodlar va bonus
+• Kengaytirilgan hisobotlar
+• B2B korporativ paket
+• Push bildirishnomalar
+8+ OY
+SCALE
+• Keng marketing kampaniyalar
+• Hamkorlar bazasini kengaytirish
+• AI tavsiyalar tizimi
+• Qo'shni davlatlar ekspansiyasi
+08
+
+TEXNIK STACK
+ZAMONAVIY VA KUCHLI TEXNIK STACK
+FRONTEND
+Next.js 14
+Tailwind CSS
+Shadcn/ui
+BACKEND
+Node.js / NestJS
+PostgreSQL
+Redis
+MOBIL
+PWA (hozir)
+React Native (kelajak)
+CLOUD & DEVOPS
+AWS S3 / Yandex Object
+GitHub Actions
+Cloudflare CDN
+Grafana
+TO'LOV & AUTH
+Click API, Payme API
+Uzcard / Humo
+JWT + Refresh Token
+XARITA & SMS
+Google Maps
+Yandex Maps
+Eskiz.uz / PlayMobile
+09
+
+JAMOA
+TAJRIBALI VA QAT'IYATLI JAMOA
+CEO / FOUNDER
+5+ YIL
+IT tajriba
+Strategiya, mahsulot, investor munosabatlar
+CTO
+7+ YIL
+Backend tajriba
+Next.js, Node.js, PostgreSQL, AWS arxitekturasi
+HEAD OF SALES
+4+ YIL
+Tajriba
+Mehmonxona hamkorlar, B2B shartnomalar
+UI/UX DESIGNER
+3+ YIL
+Tajriba
+Mobile-first dizayn, foydalanuvchi tajribasi
+10
+
+INVESTITSIYA TAKLIFI
+$500K = 15-20%
+Pre-money baholash: $2.5M - $3.5M
+MABLA'G TAqSIMOTI
+●  35% — Texnologiya ($175K)
+●  25% — Marketing ($125K)
+●  25% — Jamoa ($125K)
+●  15% — Operatsion ($75K)
+INVESTOR IMTIYOZLARI
+✓  Kvartal moliyaviy hisobotlar
+✓  Kengash a'zoligi (lead investor)
+✓  Pro-rata huquqi keyingi raundlarda
+✓  Strategik hamkorlik imkoniyati
+ALOQA
+🌐  safaar.uz
+✉  info@safaar.uz
+📱  @safaaruz
+"Bron qil, yo'lga chiq!"
+SAFAAR.uz | 2025 | Pitch Deck v1.0

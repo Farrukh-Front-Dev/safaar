@@ -12,11 +12,20 @@
   },
   "actions": {
     "login": "Sign in",
+    "register": "Register",
     "logout": "Sign out",
     "search": "Search",
     "account": "Account"
   },
   "language": "Language",
+  "propertyTypes": {
+
+    "hotel": "Hotel",
+    "dacha": "Cottage",
+    "guesthouse": "Guesthouse",
+    "sanatorium": "Sanatorium",
+    "resort": "Resort"
+  },
   "search": {
     "hotelsTab": "Hotel",
     "busesTab": "Bus",

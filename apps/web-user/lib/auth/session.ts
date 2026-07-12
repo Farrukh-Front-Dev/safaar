@@ -20,7 +20,7 @@ const MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 kun
 export interface Session {
   userId: string;
   role: Role;
-  phone?: string;
+  email?: string;
   accessToken: string;
   refreshToken: string;
 }

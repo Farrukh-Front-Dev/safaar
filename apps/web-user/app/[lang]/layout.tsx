@@ -85,6 +85,7 @@ export default async function LangLayout({
   return (
     <html
       lang={lang}
+      data-scroll-behavior="smooth"
       className={`${inter.variable} ${manrope.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-slate-50 text-slate-900">
