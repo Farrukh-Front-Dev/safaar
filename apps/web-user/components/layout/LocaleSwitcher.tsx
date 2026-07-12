@@ -15,7 +15,7 @@ import { cn } from "@/lib/cn";
  * A11y: `aria-haspopup`/`aria-expanded`, Escape va tashqariga bosishda yopiladi,
  * `aria-current` + check ikonka faol tilda, `focus-visible:ring`.
  */
-export function LocaleSwitcher({ current }: { current: Locale }) {
+export function LocaleSwitcher({ current, light }: { current: Locale; light?: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -57,9 +57,13 @@ export function LocaleSwitcher({ current }: { current: Locale }) {
         aria-label="Til tanlash"
         className={cn(
           "inline-flex h-8 items-center rounded-full border px-3.5 text-xs font-bold uppercase tracking-wide transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 active:scale-95",
-          open
-            ? "border-primary-200 bg-primary-50 text-primary-700 shadow-sm"
-            : "border-slate-200 bg-white text-slate-900 shadow-btn hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:shadow-btn-active active:scale-[0.97]",
+          light
+            ? open
+              ? "border-primary-200 bg-primary-50 text-primary-700 shadow-sm"
+              : "border-slate-200 bg-white text-slate-900 shadow-btn hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:shadow-btn-active active:scale-[0.97]"
+            : open
+              ? "border-white/50 bg-white/20 text-white shadow-sm"
+              : "border-white/40 bg-transparent text-white/80 hover:bg-white/10 hover:border-white/60 hover:text-white",
         )}
       >
         {current}

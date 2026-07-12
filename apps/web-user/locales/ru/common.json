@@ -12,6 +12,7 @@
   },
   "actions": {
     "login": "Войти",
+    "register": "Регистрация",
     "logout": "Выйти",
     "search": "Поиск",
     "account": "Кабинет"

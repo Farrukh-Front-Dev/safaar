@@ -12,6 +12,7 @@
   },
   "actions": {
     "login": "Kirish",
+    "register": "Ro'yxatdan o'tish",
     "logout": "Chiqish",
     "search": "Qidirish",
     "account": "Kabinet"

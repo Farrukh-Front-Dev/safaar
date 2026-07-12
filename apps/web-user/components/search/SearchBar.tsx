@@ -35,14 +35,13 @@ export function SearchBar({
   const [checkIn, setCheckIn] = useState(defaults?.checkIn ?? "");
   const [checkOut, setCheckOut] = useState(defaults?.checkOut ?? "");
   const [guests, setGuests] = useState(defaults?.guests ?? 2);
-
-  const activeType = (searchParams.get("type") as PropertyType) || "hotel";
+  const [activeType, setActiveType] = useState<PropertyType>(
+    (searchParams.get("type") as PropertyType) || "hotel",
+  );
   const today = new Date().toISOString().split("T")[0];
 
   function onTypeChange(type: PropertyType) {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("type", type);
-    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    setActiveType(type);
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -61,11 +60,11 @@ export function SearchBar({
     <div className="relative mx-auto w-full max-w-4xl px-4">
       <form
         onSubmit={handleSubmit}
-        className="rounded-3xl bg-white shadow-xl shadow-slate-200/70 transition-shadow duration-300 hover:shadow-2xl hover:shadow-slate-200/80"
+        className="rounded-3xl border border-slate-300 bg-white shadow-xl shadow-slate-200/70 transition-shadow duration-300 hover:shadow-2xl hover:shadow-slate-200/80"
       >
         {/* ── Property type tabs ── */}
         {propertyTypeLabels && (
-          <div className="border-b border-slate-100 px-5 py-3 max-md:px-4 max-md:py-2">
+          <div className="border-b border-slate-300 px-5 py-3 max-md:px-4 max-md:py-2">
             <div className="flex justify-center overflow-x-auto scrollbar-none">
               <PropertyTypeTabs
                 activeType={activeType}
@@ -77,7 +76,7 @@ export function SearchBar({
         )}
 
         {/* ── Destination ── */}
-        <div className="border-b border-slate-100 px-5 max-md:px-4">
+        <div className="border-b border-slate-300 px-5 max-md:px-4">
           <div className="flex items-center gap-3 py-4 max-md:py-3">
             <span className="shrink-0 text-slate-400">
               <Search className="h-5 w-5" />
@@ -97,9 +96,9 @@ export function SearchBar({
         </div>
 
         {/* ── Date + Guests (desktop: row, mobile: stacked) ── */}
-        <div className="md:flex md:items-stretch md:divide-x md:divide-slate-100">
+        <div className="md:flex md:items-stretch md:divide-x md:divide-slate-300">
           {/* Date */}
-          <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4 max-md:px-4 max-md:py-3 md:flex-1 md:border-b-0">
+          <div className="flex items-center gap-3 border-b border-slate-300 px-5 py-4 max-md:px-4 max-md:py-3 md:flex-1 md:border-b-0">
             <span className="shrink-0 text-slate-400">
               <Calendar className="h-5 w-5 text-blue-500" />
             </span>
@@ -121,7 +120,7 @@ export function SearchBar({
                   }}
                 />
               </div>
-              <div className="h-6 w-px shrink-0 bg-slate-200" />
+              <div className="h-8 w-px shrink-0 bg-slate-300" />
               <div className="min-w-0 flex-1">
                 <span className="text-xs font-medium uppercase tracking-wider text-slate-500">
                   {dict.checkOut}
@@ -140,27 +139,29 @@ export function SearchBar({
           </div>
 
           {/* Guests */}
-          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 max-md:px-4 max-md:py-3 md:border-b-0 md:pl-5 md:pr-3">
-            <div className="flex items-center gap-3">
-              <span className="shrink-0 text-slate-400">
-                <Users className="h-5 w-5" />
-              </span>
-              <div>
-                <span className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                  {dict.guests}
+          <div className="border-b border-slate-300 px-5 max-md:px-4 md:flex-1 md:border-b-0 md:pl-5 md:pr-3">
+            <div className="flex items-center justify-between py-4 max-md:py-3">
+              <div className="flex items-center gap-3">
+                <span className="shrink-0 text-slate-400">
+                  <Users className="h-5 w-5" />
                 </span>
-                <GuestPicker value={guests} onChange={setGuests} />
+                <div>
+                  <span className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                    {dict.guests}
+                  </span>
+                  <GuestPicker value={guests} onChange={setGuests} />
+                </div>
               </div>
-            </div>
 
-            {/* Search — mobile: inline, desktop: overhanging ↓ */}
-            <button
-              type="submit"
-              className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-blue-200 transition-all duration-200 hover:bg-blue-700 active:scale-[0.97] md:hidden"
-            >
-              <Search className="h-4 w-4" />
-              <span>Search</span>
-            </button>
+              {/* Search — mobile: inline, desktop: overhanging ↓ */}
+              <button
+                type="submit"
+                className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-blue-200 transition-all duration-200 hover:bg-blue-700 active:scale-[0.97] md:hidden"
+              >
+                <Search className="h-4 w-4" />
+                <span>{dict.submit}</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -168,10 +169,10 @@ export function SearchBar({
         <div className="relative hidden h-0 justify-center md:flex">
           <button
             type="submit"
-            className="absolute -top-6 inline-flex items-center gap-2.5 rounded-full bg-blue-600 px-10 py-3.5 text-sm font-bold uppercase tracking-wider text-white shadow-lg shadow-blue-200 transition-all duration-200 hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-200 active:scale-[0.97]"
+            className="absolute -top-3 inline-flex items-center gap-2.5 rounded-full bg-blue-600 px-10 py-3.5 text-sm font-bold uppercase tracking-wider text-white shadow-lg shadow-blue-200 transition-all duration-200 hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-200 active:scale-[0.97]"
           >
             <Search className="h-4 w-4" />
-            <span>Search</span>
+            <span>{dict.submit}</span>
           </button>
         </div>
       </form>

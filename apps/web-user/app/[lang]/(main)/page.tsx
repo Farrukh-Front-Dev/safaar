@@ -2,13 +2,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
-import { getCities, getPopularCities } from "@/lib/api/catalog";
+import { getCities } from "@/lib/api/catalog";
 import { getFeaturedHotels } from "@/lib/api/hotels";
 import { getDeals, getPublicStats } from "@/lib/api/cms";
-import { resolveImage } from "@/lib/images";
 import { Hero } from "@/components/home/Hero";
 import { SearchBar } from "@/components/search/SearchBar";
-import { CityCards, type CityCardData } from "@/components/home/CityCards";
+import { CityCardsSection } from "@/components/home/CityCardsSection";
 import { TrustBar } from "@/components/home/TrustBar";
 import { FeaturedHotelsCarousel } from "@/components/home/FeaturedHotelsCarousel";
 import { DealsSection, type DealItem } from "@/components/home/DealsSection";
@@ -40,7 +39,7 @@ export default async function HomePage({
   ]);
 
   const cities = await getCities(locale).catch(() => []);
-  const featuredResult = await getFeaturedHotels(locale, { limit: 6 }).catch(
+  const featuredResult = await getFeaturedHotels(locale, { limit: 4 }).catch(
     () => null,
   );
   let hotels: HotelListItem[] = featuredResult?.items ?? [];
@@ -68,48 +67,7 @@ export default async function HomePage({
     endsAt: d.endsAt,
   }));
 
-  const popularCities = await getPopularCities(locale).catch(() => []);
-  const KNOWN_CITY_IMAGES: Record<string, string> = {
-    tashkent: "/Tashkent-city-skyline.jpeg",
-    toshkent: "/Tashkent-city-skyline.jpeg",
-    samarkand: "/Samarkand-Registan-cinematic.jpeg",
-    samarqand: "/Samarkand-Registan-cinematic.jpeg",
-    bukhara: "/Bukhara-old-city-golden-hour.jpeg",
-    buxoro: "/Bukhara-old-city-golden-hour.jpeg",
-    khiva: "/Khiva-Ichan-Kala-aerial.jpeg",
-    xiva: "/Khiva-Ichan-Kala-aerial.jpeg",
-    fergana: "/Uzbekistan-travel.jpeg",
-    fargona: "/Uzbekistan-travel.jpeg",
-    namangan: "/Uzbekistan-travel.jpeg",
-    charvak: "/Charvak-Lake-drone.jpeg",
-    chimgan: "/Chimgan-mountains-landscape.jpeg",
-    zaamin: "/Zaamin.jpeg",
-    nukus: "/Uzbekistan-travel.jpeg",
-  };
-  const cityCards: CityCardData[] = popularCities
-    .sort((a, b) => a.sortOrder - b.sortOrder)
-    .map((c) => ({
-      name: c.name,
-      image: KNOWN_CITY_IMAGES[c.slug.toLowerCase()] ?? resolveImage(c.imageUrl, c.slug, 600, 450) ?? c.imageUrl,
-      hotelCount: String(c.hotelCount),
-      href: `/${locale}/hotels?city=${encodeURIComponent(c.slug)}`,
-    }));
-
   const stats = await getPublicStats().catch(() => null);
-
-  const cityCardsFinal =
-    cityCards.length > 0
-      ? cityCards
-      : [
-          { name: "Toshkent", image: "/Tashkent-city-skyline.jpeg", hotelCount: "200+", href: `/${locale}/hotels?city=tashkent` },
-          { name: "Samarqand", image: "/Samarkand-Registan-cinematic.jpeg", hotelCount: "120+", href: `/${locale}/hotels?city=samarqand` },
-          { name: "Buxoro", image: "/Bukhara-old-city-golden-hour.jpeg", hotelCount: "85+", href: `/${locale}/hotels?city=bukhara` },
-          { name: "Xiva", image: "/Khiva-Ichan-Kala-aerial.jpeg", hotelCount: "45+", href: `/${locale}/hotels?city=khiva` },
-          { name: "Charvak", image: "/Charvak-Lake-drone.jpeg", hotelCount: "30+", href: `/${locale}/hotels?city=charvak` },
-          { name: "Chimgan", image: "/Chimgan-mountains-landscape.jpeg", hotelCount: "25+", href: `/${locale}/hotels?city=chimgan` },
-          { name: "Zaamin", image: "/Zaamin.jpeg", hotelCount: "15+", href: `/${locale}/hotels?city=zaamin` },
-          { name: "Nukus", image: "/Uzbekistan-travel.jpeg", hotelCount: "20+", href: `/${locale}/hotels?city=nukus` },
-        ];
 
   return (
     <main className="relative flex flex-1 flex-col">
@@ -130,7 +88,7 @@ export default async function HomePage({
           {/* Quick city chips */}
           {cities.length > 0 && (
             <div className="mx-auto mt-4 flex max-w-4xl flex-wrap justify-center gap-1.5 px-4 sm:mt-6 sm:gap-2">
-              {cities.slice(0, 6).map((city) => (
+              {cities.slice(0, 10).map((city) => (
                 <a
                   key={city.id}
                   href={`/${locale}/hotels?city_id=${encodeURIComponent(city.id)}`}
@@ -172,7 +130,7 @@ export default async function HomePage({
 
       {/* ═══ EKRAN 3: City Cards (scroll qilganda) ═══ */}
       <div className="py-10 sm:py-16 md:py-20">
-        <CityCards cities={cityCardsFinal} dict={dict.popularCities} />
+        <CityCardsSection locale={locale} dict={dict.popularCities} />
       </div>
 
       {/* ═══ EKRAN 4: Trust Bar ═══ */}

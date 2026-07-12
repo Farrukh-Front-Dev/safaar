@@ -12,6 +12,7 @@
   },
   "actions": {
     "login": "Sign in",
+    "register": "Register",
     "logout": "Sign out",
     "search": "Search",
     "account": "Account"

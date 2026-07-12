@@ -1,7 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Menu, X } from "lucide-react";
+import ShinyText from "@/components/ui/ShinyText";
 import { cn } from "@/lib/cn";
 
 export type ScrollNavItem = {
@@ -13,37 +16,90 @@ export type ScrollNavItem = {
 
 interface Props {
   items: ScrollNavItem[];
-  mobileItems: ScrollNavItem[];
   brand: string;
   brandHref: string;
   actions: React.ReactNode;
+  localeSwitcher?: React.ReactNode;
+  authActions?: React.ReactNode;
 }
 
 function isActive(pathname: string, href: string, exact?: boolean): boolean {
   return exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function ScrollNav({ items, mobileItems, brand, brandHref, actions }: Props) {
+export function ScrollNav({ items, brand, brandHref, actions, localeSwitcher, authActions }: Props) {
   const pathname = usePathname();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <>
-      {/* ═══ Mobile header (top bar) ═══ */}
-      <header className="sticky top-0 z-100 flex h-12 items-center justify-between border-b border-slate-200 bg-white/90 px-4 backdrop-blur-md md:hidden">
-        <Link href={brandHref} className="text-base font-bold tracking-tight text-slate-800">
-          {brand}
+      {/* ═══ Mobile header ═══ */}
+      <header className="sticky top-0 z-100 flex h-12 items-center justify-between border-b border-sky-200 bg-primary-600 px-4 text-white md:hidden">
+        <Link href={brandHref}>
+          <ShinyText text={brand} speed={4} color="#ffffff" shineColor="#dbeafe" className="font-extrabold tracking-wide antialiased text-lg sm:text-xl" />
         </Link>
-        <div className="flex items-center gap-2">{actions}</div>
+        <button
+          type="button"
+          onClick={() => setMenuOpen((v) => !v)}
+          aria-label={menuOpen ? "Yopish" : "Menyu"}
+          className="flex h-8 w-8 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/20 active:scale-90"
+        >
+          {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
       </header>
 
-      {/* ═══ Desktop navbar ═══ */}
-      <nav className="sticky top-0 z-100 hidden border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur-md md:block">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
-          <Link
-            href={brandHref}
-            className="shrink-0 text-lg font-bold tracking-tight text-slate-800"
+      {/* ═══ Mobile drawer ═══ */}
+      {menuOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-90 bg-black/20 md:hidden"
+            onClick={() => setMenuOpen(false)}
+            aria-hidden
+          />
+          <nav
+            aria-label="Mobil navigatsiya"
+            className="fixed inset-x-4 top-16 z-100 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl md:hidden"
           >
-            {brand}
+            {items.map((item) => {
+              const active = isActive(pathname, item.href, item.exact);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMenuOpen(false)}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors",
+                    active
+                      ? "bg-primary-600 text-white shadow-sm"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                  )}
+                >
+                  <span className="flex h-8 w-8 items-center justify-center">{item.icon}</span>
+                  {item.label}
+                </Link>
+              );
+            })}
+            <hr className="my-2 border-slate-200" />
+            <div className="space-y-3 px-4 py-2">
+              {localeSwitcher && (
+                <div className="flex justify-center">{localeSwitcher}</div>
+              )}
+              {authActions && (
+                <div className="flex flex-col gap-2">
+                  {authActions}
+                </div>
+              )}
+            </div>
+          </nav>
+        </>
+      )}
+
+      {/* ═══ Desktop navbar ═══ */}
+      <nav className="sticky top-0 z-100 hidden border-b border-sky-200 bg-primary-600 shadow-sm md:block">
+        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
+          <Link href={brandHref} className="shrink-0">
+            <ShinyText text={brand} speed={4} color="#ffffff" shineColor="#dbeafe" className="font-extrabold tracking-wide antialiased text-lg sm:text-xl" />
           </Link>
 
           <div className="flex items-center gap-0.5">
@@ -57,8 +113,8 @@ export function ScrollNav({ items, mobileItems, brand, brandHref, actions }: Pro
                   className={cn(
                     "inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium transition-all duration-150",
                     active
-                      ? "bg-primary-600 text-white shadow-sm"
-                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                      ? "border border-white/80 bg-white/20 text-white shadow-sm"
+                      : "text-white/80 hover:bg-white/20 hover:text-white",
                   )}
                 >
                   {item.icon}
@@ -71,46 +127,6 @@ export function ScrollNav({ items, mobileItems, brand, brandHref, actions }: Pro
           <div className="flex shrink-0 items-center gap-2">{actions}</div>
         </div>
       </nav>
-
-      {/* ═══ Mobile bottom bar ═══ */}
-      <nav
-        aria-label="Mobil navigatsiya"
-        className="fixed inset-x-0 bottom-0 z-100 rounded-t-2xl border border-slate-200 border-b-0 bg-white shadow-btn md:hidden"
-        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-      >
-        <ul className="flex items-center justify-around px-1 py-1">
-          {mobileItems.map((item) => {
-            const active = isActive(pathname, item.href, item.exact);
-            return (
-              <li key={item.href} className="flex-1">
-                <Link
-                  href={item.href}
-                  aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "flex flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-[11px] font-medium transition-all duration-200 hover:bg-slate-50 active:bg-slate-100 active:scale-[0.97]",
-                    active ? "text-primary-700" : "text-slate-400 hover:text-primary-600",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200",
-                      active
-                        ? "bg-primary-600 text-white shadow-sm"
-                        : "text-slate-400 hover:bg-slate-100 hover:text-primary-600 active:bg-slate-200",
-                    )}
-                  >
-                    {item.icon}
-                  </span>
-                  <span className={active ? "font-semibold" : ""}>{item.label}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
-
-      {/* Spacer for mobile bottom bar */}
-      <div className="h-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:hidden" />
     </>
   );
 }
