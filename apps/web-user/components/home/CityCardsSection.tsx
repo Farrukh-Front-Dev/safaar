@@ -3,7 +3,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getPopularCities } from "@/lib/api/catalog";
 import { resolveImage } from "@/lib/images";
 import type { Locale } from "@/i18n/config";
@@ -31,10 +30,7 @@ export function CityCardsSection({
   dict: HomeDict["popularCities"];
 }) {
   const sectionRef = useRef<HTMLDivElement>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
   const [cities, setCities] = useState<CityCardData[] | null>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
 
   useEffect(() => {
     const el = sectionRef.current;
@@ -49,6 +45,7 @@ export function CityCardsSection({
           .then((data) => {
             const cards: CityCardData[] = data
               .sort((a, b) => a.sortOrder - b.sortOrder)
+              .slice(0, 4)
               .map((c) => ({
                 name: c.name,
                 image:
@@ -69,23 +66,6 @@ export function CityCardsSection({
     return () => observer.disconnect();
   }, [locale]);
 
-  function updateScrollButtons() {
-    const el = scrollRef.current;
-    if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 4);
-    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
-  }
-
-  function scroll(dir: "left" | "right") {
-    const el = scrollRef.current;
-    if (!el) return;
-    const cardW = el.querySelector("a")?.clientWidth ?? 260;
-    el.scrollBy({
-      left: dir === "left" ? -(cardW + 12) : cardW + 12,
-      behavior: "smooth",
-    });
-  }
-
   return (
     <section ref={sectionRef} aria-labelledby="city-cards-heading">
       {cities === null ? (
@@ -94,59 +74,35 @@ export function CityCardsSection({
             <div className="mb-1 h-7 w-48 rounded bg-slate-100 sm:h-8" />
             <div className="h-4 w-64 rounded bg-slate-100 sm:h-5" />
           </div>
-          <div className="flex gap-3 overflow-hidden">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <div
                 key={i}
-                className="aspect-[3/4] w-[calc(50%-0.375rem)] shrink-0 animate-pulse rounded-xl bg-slate-100 sm:w-[220px] sm:aspect-4/3"
+                className="aspect-[3/4] animate-pulse rounded-xl bg-slate-100 sm:aspect-4/3"
               />
             ))}
           </div>
         </div>
       ) : cities.length === 0 ? null : (
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
-          <div className="mb-4 flex items-center justify-between gap-4 sm:mb-6">
-            <div>
-              <h2
-                id="city-cards-heading"
-                className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl"
-              >
-                {dict.title}
-              </h2>
-              <p className="mt-0.5 text-xs text-slate-500 sm:mt-1 sm:text-sm">
-                {dict.subtitle}
-              </p>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <button
-                type="button"
-                onClick={() => scroll("left")}
-                disabled={!canScrollLeft}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:opacity-30"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => scroll("right")}
-                disabled={!canScrollRight}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:opacity-30"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
+          <div className="mb-4 sm:mb-6">
+            <h2
+              id="city-cards-heading"
+              className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl"
+            >
+              {dict.title}
+            </h2>
+            <p className="mt-0.5 text-xs text-slate-500 sm:mt-1 sm:text-sm">
+              {dict.subtitle}
+            </p>
           </div>
 
-          <div
-            ref={scrollRef}
-            onScroll={updateScrollButtons}
-            className="scrollbar-none flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory"
-          >
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {cities.map((city) => (
               <Link
                 key={city.name}
                 href={city.href}
-                className="group relative w-[calc(50%-0.375rem)] shrink-0 snap-start overflow-hidden rounded-xl border border-slate-200 bg-white shadow-btn transition-all duration-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:scale-[0.97] active:shadow-btn-active sm:w-[220px] sm:rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+                className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-btn transition-all duration-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:scale-[0.97] active:shadow-btn-active sm:rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
               >
                 <div className="aspect-[3/4] overflow-hidden sm:aspect-4/3">
                   <img
