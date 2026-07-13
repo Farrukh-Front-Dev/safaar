@@ -31,7 +31,12 @@ import { validateEnv } from './config/env.validation';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env.local', '.env'],
+      envFilePath: [
+        'apps/backend/.env.local',
+        'apps/backend/.env',
+        '.env.local',
+        '.env',
+      ],
       validate: validateEnv,
     }),
     ThrottlerModule.forRoot([
@@ -44,6 +49,7 @@ import { validateEnv } from './config/env.validation';
     AuthModule,
     CatalogModule,
     UsersModule,
+    PartnersModule,
     HotelsModule,
     BusesModule,
     BookingsModule,

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -16,6 +17,14 @@ import { hashSecret, partnerApiPepper, randomToken } from '../auth/security';
 import { randomUUID } from 'node:crypto';
 
 type HotelListingStatus = 'draft' | 'pending_review' | 'published' | 'hidden';
+type PublicPartnerStatus =
+  | 'not_found'
+  | 'new'
+  | 'reviewing'
+  | 'approved'
+  | 'rejected';
+
+const DEMO_PARTNER_ORGANIZATION_ID = '00000000-0000-3001-0000-000000000001';
 
 function localizedText(
   body: Record<string, unknown>,
@@ -61,7 +70,6 @@ export class PartnersService {
   private readonly routesInternal: Array<Record<string, unknown>> = [];
   private readonly tripsInternal: Array<Record<string, unknown>> = [];
   private readonly tripSeatsInternal: Array<Record<string, unknown>> = [];
-  private readonly roomTypesInternal: Array<Record<string, unknown>> = [];
 
   constructor(
     private readonly pg: PostgresService,
@@ -120,20 +128,25 @@ export class PartnersService {
     actor: RequestActor | undefined,
     body: Record<string, unknown>,
   ) {
-    const organization = await this.profile(actor);
+    const organization = (await this.profile(actor)) as Record<string, unknown>;
     const now = new Date().toISOString();
     const brandName = body.brand_name
       ? String(body.brand_name)
-      : organization.brand_name;
-    const phone = body.phone ? String(body.phone) : organization.phone;
+      : String(organization['brand_name'] ?? '');
+    const phone = body.phone
+      ? String(body.phone)
+      : String(organization['phone'] ?? '');
     const email = body.email
       ? String(body.email).toLowerCase()
-      : organization.email;
-    const address = body.address ? String(body.address) : organization.address;
+      : String(organization['email'] ?? '');
+    const address = body.address
+      ? String(body.address)
+      : String(organization['address'] ?? '');
+    const taxId = body.tax_id ?? body.taxId ?? organization['tax_id'];
 
     const result = await this.pg.query(
-      `UPDATE partner_organizations SET brand_name = $1, phone = $2, email = $3, address = $4, updated_at = $5 WHERE id = $6 RETURNING *`,
-      [brandName, phone, email, address, now, organization.id],
+      `UPDATE partner_organizations SET brand_name = $1, phone = $2, email = $3, address = $4, tax_id = $5, updated_at = $6 WHERE id = $7 RETURNING *`,
+      [brandName, phone, email, address, taxId, now, organization['id']],
     );
     return result[0];
   }
@@ -217,10 +230,10 @@ export class PartnersService {
   }
 
   async applicationStatus(actor: RequestActor | undefined) {
-    const organization = await this.profile(actor);
+    const organization = (await this.profile(actor)) as Record<string, unknown>;
     return {
-      organization_id: organization.id,
-      status: organization.status,
+      organization_id: String(organization['id'] ?? ''),
+      status: String(organization['status'] ?? ''),
       history: [],
     };
   }
@@ -233,6 +246,166 @@ export class PartnersService {
       [now, organizationId],
     );
     return result[0];
+  }
+
+  async submitPublicPartnerRequest(body: Record<string, unknown>) {
+    const phone = this.normalizePhone(body.phone);
+    const email = String(body.email ?? '')
+      .trim()
+      .toLowerCase();
+    const brandName = String(
+      body.companyName ?? body.brandName ?? body.company_name ?? '',
+    ).trim();
+    const legalName = String(
+      body.legalName ?? body.legal_name ?? brandName,
+    ).trim();
+    const taxId = this.normalizeTaxId(body.taxId ?? body.tax_id);
+    const fieldErrors: Record<string, string> = {};
+
+    if (!brandName) {
+      fieldErrors.companyName = 'Obyekt yoki kompaniya nomini kiriting';
+    }
+    if (!legalName) {
+      fieldErrors.companyName = 'Yuridik nomni kiriting';
+    }
+    if (!phone) {
+      fieldErrors.phone = 'Telefon raqamni kiriting';
+    } else if (!this.isValidUzPhone(phone)) {
+      fieldErrors.phone = "Telefon noto'g'ri formatda";
+    }
+    if (!email) {
+      fieldErrors.email = 'Email kiriting';
+    } else if (!this.isValidEmail(email)) {
+      fieldErrors.email = "Email noto'g'ri formatda";
+    }
+    if (!taxId) {
+      fieldErrors.taxId = 'STIR raqamini kiriting';
+    } else if (!/^\d{9}$/.test(taxId)) {
+      fieldErrors.taxId = "STIR 9 ta raqamdan iborat bo'lishi kerak";
+    }
+
+    if (Object.keys(fieldErrors).length > 0) {
+      throw new BadRequestException({
+        code: 'PARTNER_REQUEST_INVALID',
+        message: "Hamkor arizasi ma'lumotlarini tekshiring",
+        fields: fieldErrors,
+      });
+    }
+
+    const duplicates = await this.pg.query(
+      `
+        select id::text,
+               regexp_replace(phone, '\\D', '', 'g') = regexp_replace($1, '\\D', '', 'g') as phone_match,
+               lower(email) = lower($2) as email_match,
+               tax_id = $3 as tax_id_match
+        from partner_organizations
+        where regexp_replace(phone, '\\D', '', 'g') = regexp_replace($1, '\\D', '', 'g')
+           or lower(email) = lower($2)
+           or tax_id = $3
+        order by created_at desc
+        limit 10
+      `,
+      [phone, email, taxId],
+    );
+
+    const duplicateErrors: Record<string, string> = {};
+    for (const duplicate of duplicates) {
+      if (duplicate['phone_match']) {
+        duplicateErrors.phone =
+          'Bu telefon raqam bilan ariza yoki hamkor mavjud';
+      }
+      if (duplicate['email_match']) {
+        duplicateErrors.email = 'Bu email bilan ariza yoki hamkor mavjud';
+      }
+      if (duplicate['tax_id_match']) {
+        duplicateErrors.taxId = 'Bu STIR bilan ariza yoki hamkor mavjud';
+      }
+    }
+
+    if (Object.keys(duplicateErrors).length > 0) {
+      throw new BadRequestException({
+        code: 'PARTNER_REQUEST_DUPLICATE',
+        message: "Bu ma'lumotlar bilan ariza yoki hamkor allaqachon mavjud",
+        fields: duplicateErrors,
+      });
+    }
+
+    const now = new Date().toISOString();
+    const cityId = await this.resolveCityId(body.city ?? body.city_id);
+    const partnerType = this.partnerType(body.type);
+    const address = this.optionalString(body.address);
+
+    const id = randomUUID();
+    const inserted = await this.pg.query(
+      `
+        insert into partner_organizations (
+          id, type, legal_name, brand_name, tax_id, phone, email, city_id,
+          address, status, default_commission_rate, created_at, updated_at
+        )
+        values ($1, $2, $3, $4, $5, $6, $7, $8::uuid, $9, 'submitted', 12.00, $10, $10)
+        returning id::text, type::text, legal_name, brand_name, tax_id, phone,
+                  email, city_id::text, address, status::text, rejection_reason,
+                  created_at, updated_at
+      `,
+      [
+        id,
+        partnerType,
+        legalName,
+        brandName,
+        taxId,
+        phone,
+        email,
+        cityId,
+        address,
+        now,
+      ],
+    );
+
+    return { item: this.publicPartnerRequestDto(inserted[0]) };
+  }
+
+  async publicPartnerRequestStatus(phone?: string, email?: string) {
+    const normalizedPhone = this.normalizePhone(phone);
+    const normalizedEmail = String(email ?? '')
+      .trim()
+      .toLowerCase();
+
+    if (!normalizedPhone && !normalizedEmail) {
+      return {
+        found: false,
+        status: 'not_found' satisfies PublicPartnerStatus,
+        request: null,
+      };
+    }
+
+    const rows = await this.pg.query(
+      `
+        select id::text, type::text, legal_name, brand_name, tax_id, phone,
+               email, city_id::text, address, status::text, rejection_reason,
+               created_at, updated_at
+        from partner_organizations
+        where ($1::text <> '' and regexp_replace(phone, '\\D', '', 'g') = regexp_replace($1, '\\D', '', 'g'))
+           or ($2::text <> '' and lower(email) = lower($2))
+        order by created_at desc
+        limit 1
+      `,
+      [normalizedPhone, normalizedEmail],
+    );
+
+    if (!rows[0]) {
+      return {
+        found: false,
+        status: 'not_found' satisfies PublicPartnerStatus,
+        request: null,
+      };
+    }
+
+    const request = this.publicPartnerRequestDto(rows[0]);
+    return {
+      found: true,
+      status: request.status,
+      request,
+    };
   }
 
   // ---------------------------------------------------------------------------
@@ -249,10 +422,11 @@ export class PartnersService {
     const sortColumn = pagination.sortBy === 'stars' ? 'stars' : 'created_at';
     const orderDir = pagination.order === 'asc' ? 'ASC' : 'DESC';
 
-    return this.pg.query(
+    const rows = await this.pg.query(
       `SELECT * FROM hotels WHERE partner_organization_id = $1 ORDER BY ${sortColumn} ${orderDir} LIMIT $2 OFFSET $3`,
       [organizationId, pagination.limit, pagination.offset],
     );
+    return this.hydratePartnerHotels(rows);
   }
 
   async createHotel(
@@ -310,11 +484,14 @@ export class PartnersService {
       description: { uz: '', ru: '', en: '' },
       amenities: [],
       images: [],
+      image_ids: [],
     };
   }
 
   async hotel(actor: RequestActor | undefined, id: string) {
-    return this.assertHotel(id, actor);
+    const hotel = await this.assertHotel(id, actor);
+    const [hydrated] = await this.hydratePartnerHotels([hotel]);
+    return hydrated;
   }
 
   async updateHotel(
@@ -388,15 +565,23 @@ export class PartnersService {
     body: Record<string, unknown>,
   ) {
     await this.assertHotel(id, actor);
-    const imageUrl = String(
-      body.url ?? body.image_url ?? `/mock/${randomUUID()}`,
-    );
-    // Append image to the hotel's images JSON array
+    const imageUrl = this.optionalString(body.url ?? body.image_url);
+    if (!imageUrl) {
+      throw new BadRequestException({
+        code: 'IMAGE_URL_REQUIRED',
+        message: 'Rasm URL manzili kerak',
+      });
+    }
+
+    const imageId = randomUUID();
+    const now = new Date().toISOString();
     await this.pg.query(
-      `UPDATE hotels SET images = COALESCE(images, '[]'::jsonb) || $1::jsonb, updated_at = $2 WHERE id = $3`,
-      [JSON.stringify([imageUrl]), new Date().toISOString(), id],
+      `INSERT INTO media_files (id, owner_type, owner_id, bucket, object_key, url, mime_type, size, visibility, created_at)
+       VALUES ($1, 'hotel', $2::uuid, 'external', $3, $3, 'image/*', 0, 'public', $4)`,
+      [imageId, id, imageUrl, now],
     );
-    return { hotel_id: id, image_url: imageUrl };
+    await this.touchHotel(id, now);
+    return { hotel_id: id, image_id: imageId, image_url: imageUrl };
   }
 
   async deleteHotelImage(
@@ -405,7 +590,23 @@ export class PartnersService {
     imageId: string,
   ) {
     await this.assertHotel(id, actor);
-    return { hotel_id: id, image_id: imageId, deleted: true };
+    const now = new Date().toISOString();
+    const result = await this.pg.query<{ id: string }>(
+      `UPDATE media_files
+       SET deleted_at = $1
+       WHERE owner_type = 'hotel'
+         AND owner_id = $2::uuid
+         AND deleted_at IS NULL
+         AND (id::text = $3 OR url = $3)
+       RETURNING id::text`,
+      [now, id, imageId],
+    );
+    await this.touchHotel(id, now);
+    return {
+      hotel_id: id,
+      image_id: result[0]?.id ?? imageId,
+      deleted: result.length > 0,
+    };
   }
 
   // ---------------------------------------------------------------------------
@@ -422,66 +623,81 @@ export class PartnersService {
 
   async roomTypes(actor: RequestActor | undefined, id: string) {
     await this.assertHotel(id, actor);
-    // Read from DB + internal array for locally created types
-    const dbTypes = await this.pg.query(
-      `SELECT * FROM room_types ORDER BY name ASC`,
+    return this.pg.query(
+      `SELECT rt.id::text, rt.code, rt.name, rt.created_at, rt.updated_at,
+        COALESCE(MIN(hr.base_price)::float8, 0) as base_price,
+        COALESCE(MAX(hr.max_adults), 2) as max_adults,
+        COALESCE(MAX(hr.base_occupancy), 2) as base_occupancy
+       FROM room_types rt
+       LEFT JOIN hotel_rooms hr ON hr.room_type_id = rt.id AND hr.hotel_id = $1
+       GROUP BY rt.id, rt.code, rt.name, rt.created_at, rt.updated_at
+       ORDER BY rt.name ->> 'uz' ASC`,
+      [id],
     );
-    const allInternal = this.roomTypesInternal.filter(
-      (rt) => rt['hotel_id'] === id || rt['hotel_id'] === undefined,
-    );
-    return [...dbTypes, ...allInternal];
   }
 
-  createRoomType(
+  async createRoomType(
     actor: RequestActor | undefined,
     id: string,
     body: Record<string, unknown>,
   ) {
-    this.assertHotelSync(id, actor);
-    const roomType = {
-      id: randomUUID(),
-      hotel_id: id,
-      name: localizedText(body, 'name', 'Yangi xona turi'),
-      created_at: new Date().toISOString(),
+    await this.assertHotel(id, actor);
+    const roomTypeId = randomUUID();
+    const now = new Date().toISOString();
+    const name = localizedText(body, 'name', 'Yangi xona turi');
+    const code = this.slugify(name.uz || `room-type-${Date.now()}`);
+    const [roomType] = await this.pg.query(
+      `INSERT INTO room_types (id, code, name, created_at, updated_at)
+       VALUES ($1, $2, $3::jsonb, $4, $4)
+       ON CONFLICT (code) DO UPDATE
+       SET name = EXCLUDED.name, updated_at = EXCLUDED.updated_at
+       RETURNING id::text, code, name, created_at, updated_at`,
+      [roomTypeId, code, JSON.stringify(name), now],
+    );
+    return {
+      ...roomType,
+      base_price: Number(body.base_price ?? body.basePrice ?? 0),
+      max_adults: Number(body.capacity ?? body.max_adults ?? 2),
+      base_occupancy: Number(body.capacity ?? body.base_occupancy ?? 2),
     };
-    this.roomTypesInternal.unshift(roomType);
-    return roomType;
   }
 
-  updateRoomType(
+  async updateRoomType(
     actor: RequestActor | undefined,
     id: string,
     roomTypeId: string,
     body: Record<string, unknown>,
   ) {
-    this.assertHotelSync(id, actor);
-    const roomType = this.roomTypesInternal.find(
-      (item) => item['id'] === roomTypeId,
+    await this.assertHotel(id, actor);
+    const now = new Date().toISOString();
+    const name = localizedText(body, 'name', 'Xona');
+    const rows = await this.pg.query(
+      `UPDATE room_types
+       SET name = $1::jsonb, updated_at = $2
+       WHERE id = $3::uuid
+       RETURNING id::text, code, name, created_at, updated_at`,
+      [JSON.stringify(name), now, roomTypeId],
     );
-    if (!roomType) {
+    if (!rows[0]) {
       throw new NotFoundException({
         code: 'ROOM_TYPE_NOT_FOUND',
         message: 'Xona turi topilmadi',
       });
     }
-    roomType['name'] = localizedText(
-      body,
-      'name',
-      (roomType['name'] as Record<string, string>)?.uz ?? '',
-    );
-    return roomType;
+    return rows[0];
   }
 
-  deleteRoomType(
+  async deleteRoomType(
     actor: RequestActor | undefined,
     id: string,
     roomTypeId: string,
   ) {
-    this.assertHotelSync(id, actor);
-    const inUse = this.roomTypesInternal.some(
-      (item) => item['id'] === roomTypeId,
+    await this.assertHotel(id, actor);
+    const rooms = await this.pg.query(
+      `SELECT id::text FROM hotel_rooms WHERE hotel_id = $1 AND room_type_id = $2 LIMIT 1`,
+      [id, roomTypeId],
     );
-    if (inUse) {
+    if (rooms[0]) {
       return {
         ok: false,
         reason:
@@ -489,12 +705,12 @@ export class PartnersService {
       };
     }
 
-    const index = this.roomTypesInternal.findIndex(
-      (item) => item['id'] === roomTypeId,
+    await this.pg.query(
+      `DELETE FROM room_types WHERE id = $1::uuid AND NOT EXISTS (
+        SELECT 1 FROM hotel_rooms WHERE room_type_id = $1::uuid
+      )`,
+      [roomTypeId],
     );
-    if (index >= 0) {
-      this.roomTypesInternal.splice(index, 1);
-    }
     return { ok: true, room_type_id: roomTypeId, deleted: true };
   }
 
@@ -637,7 +853,6 @@ export class PartnersService {
     body: Record<string, unknown>,
   ) {
     await this.assertHotel(id, actor);
-    const floor = Number(body.floor ?? 1);
     const startNumber = Number(body.startNumber ?? body.start_number ?? 101);
     const count = Math.max(0, Math.min(Number(body.count ?? 0), 200));
     const roomTypeId = String(
@@ -727,7 +942,7 @@ export class PartnersService {
 
   async inventory(actor: RequestActor | undefined, id: string) {
     await this.assertHotel(id, actor);
-    const rooms = await this.pg.query(
+    const rooms = await this.pg.query<{ id: string; total_inventory: number }>(
       `SELECT id, total_inventory FROM hotel_rooms WHERE hotel_id = $1 AND status = 'active'`,
       [id],
     );
@@ -912,12 +1127,23 @@ export class PartnersService {
     const now = new Date().toISOString();
     if (Array.isArray(body.amenities)) {
       const amenities = body.amenities.map(String);
-      await this.pg.query(
-        `UPDATE hotels SET amenities = $1::jsonb, updated_at = $2 WHERE id = $3`,
-        [JSON.stringify(amenities), now, id],
-      );
+      await this.pg.query(`DELETE FROM hotel_amenities WHERE hotel_id = $1`, [
+        id,
+      ]);
+      for (const amenityId of amenities) {
+        await this.pg.query(
+          `INSERT INTO hotel_amenities (hotel_id, amenity_id)
+           VALUES ($1::uuid, $2::uuid)
+           ON CONFLICT (hotel_id, amenity_id) DO NOTHING`,
+          [id, amenityId],
+        );
+      }
+      await this.pg.query(`UPDATE hotels SET updated_at = $1 WHERE id = $2`, [
+        now,
+        id,
+      ]);
     }
-    return this.assertHotel(id, actor);
+    return this.hotel(actor, id);
   }
 
   async updateListingStatus(
@@ -1109,7 +1335,11 @@ export class PartnersService {
     }
 
     // Find a room
-    const rooms = await this.pg.query(
+    const rooms = await this.pg.query<{
+      id: string;
+      room_type_id: string;
+      base_price: number;
+    }>(
       `SELECT * FROM hotel_rooms WHERE hotel_id = $1${roomTypeId ? ' AND room_type_id = $2' : ''} AND status = 'active' LIMIT 1`,
       roomTypeId ? [hotelId, roomTypeId] : [hotelId],
     );
@@ -1160,7 +1390,7 @@ export class PartnersService {
         'hotel',
         'instant_confirmation',
         'cash',
-        BookingStatus.CONFIRMED,
+        BookingStatus.CONFIRMED.toLowerCase(),
         'UZS',
         totalAmount,
         totalAmount,
@@ -1244,10 +1474,10 @@ export class PartnersService {
 
     if (status === 'confirmed') {
       sets.push(`status = $${paramIdx++}`, `confirmed_at = $1`);
-      params.push(BookingStatus.CONFIRMED);
+      params.push(BookingStatus.CONFIRMED.toLowerCase());
     } else if (status === 'checked_in') {
       sets.push(`status = $${paramIdx++}`);
-      params.push(BookingStatus.CONFIRMED);
+      params.push(BookingStatus.CONFIRMED.toLowerCase());
       // Set checked_in_at inside item jsonb
       await this.pg.query(
         `UPDATE bookings SET item = jsonb_set(COALESCE(item, '{}'::jsonb), '{checked_in_at}', to_jsonb($1::text)), updated_at = $1 WHERE id = $2`,
@@ -1260,7 +1490,7 @@ export class PartnersService {
       );
     } else if (status === 'completed') {
       sets.push(`status = $${paramIdx++}`);
-      params.push(BookingStatus.COMPLETED);
+      params.push(BookingStatus.COMPLETED.toLowerCase());
       await this.pg.query(
         `UPDATE bookings SET item = jsonb_set(COALESCE(item, '{}'::jsonb), '{checked_out_at}', to_jsonb($1::text)), updated_at = $1 WHERE id = $2`,
         [now, id],
@@ -1293,7 +1523,7 @@ export class PartnersService {
 
     const result = await this.pg.query(
       `UPDATE bookings SET status = $1, cancel_reason_text = $2, cancelled_at = $3, updated_at = $3 WHERE id = $4 RETURNING *`,
-      [BookingStatus.CANCELLED, reason, now, id],
+      [BookingStatus.CANCELLED.toLowerCase(), reason, now, id],
     );
     return result[0];
   }
@@ -1676,12 +1906,246 @@ export class PartnersService {
     return (
       (
         actor ?? {
-          id: '00000000-0000-0000-0000-000000000000',
+          id: 'demo-partner-user-id',
           actorType: 'partner' as const,
-          role: Role.USER,
+          role: Role.PARTNER,
         }
-      ).organizationId ?? '00000000-0000-0000-0000-000000000000'
+      ).organizationId ?? DEMO_PARTNER_ORGANIZATION_ID
     );
+  }
+
+  private normalizePhone(value: unknown): string {
+    const raw = String(value ?? '').trim();
+    if (!raw) {
+      return '';
+    }
+
+    const digits = raw.replace(/\D/g, '');
+    if (digits.startsWith('998')) {
+      return `+${digits}`;
+    }
+    if (digits.length === 9) {
+      return `+998${digits}`;
+    }
+    return raw.startsWith('+') ? `+${digits}` : raw;
+  }
+
+  private isValidUzPhone(value: string): boolean {
+    return /^\+998\d{9}$/.test(value);
+  }
+
+  private isValidEmail(value: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  }
+
+  private normalizeTaxId(value: unknown): string {
+    return String(value ?? '').replace(/\D/g, '');
+  }
+
+  private optionalString(value: unknown): string | null {
+    const text = String(value ?? '').trim();
+    return text.length > 0 ? text : null;
+  }
+
+  private partnerType(value: unknown): 'hotel' | 'bus' | 'mixed' {
+    const type = String(value ?? 'hotel').toLowerCase();
+    if (type === 'bus') {
+      return 'bus';
+    }
+    if (type === 'mixed') {
+      return 'mixed';
+    }
+    return 'hotel';
+  }
+
+  private slugify(value: string): string {
+    const slug = value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    return slug || `room-type-${Date.now()}`;
+  }
+
+  private publicStatus(value: unknown): PublicPartnerStatus {
+    const status = String(value ?? '').toLowerCase();
+    if (status === 'approved') {
+      return 'approved';
+    }
+    if (status === 'rejected') {
+      return 'rejected';
+    }
+    if (status === 'under_review' || status === 'submitted') {
+      return 'reviewing';
+    }
+    return 'new';
+  }
+
+  private publicPartnerRequestDto(row: Record<string, unknown>) {
+    return {
+      id: String(row['id']),
+      organizationId: String(row['id']),
+      companyName: String(row['brand_name'] ?? row['legal_name'] ?? 'Hamkor'),
+      contactPerson: String(
+        row['legal_name'] ?? row['brand_name'] ?? 'Masul shaxs',
+      ),
+      phone: String(row['phone'] ?? ''),
+      email: String(row['email'] ?? ''),
+      city: String(row['city'] ?? row['city_id'] ?? ''),
+      address: String(row['address'] ?? ''),
+      taxId: row['tax_id'] ? String(row['tax_id']) : undefined,
+      type: String(row['type'] ?? 'hotel'),
+      status: this.publicStatus(row['status']),
+      rejectionReason: row['rejection_reason']
+        ? String(row['rejection_reason'])
+        : undefined,
+      createdAt: String(row['created_at'] ?? ''),
+      updatedAt: String(row['updated_at'] ?? ''),
+    };
+  }
+
+  private async hydratePartnerHotels(rows: Array<Record<string, unknown>>) {
+    if (rows.length === 0) {
+      return [];
+    }
+
+    const ids = rows.map((row) => String(row['id']));
+    const [translations, images, amenities] = await Promise.all([
+      this.pg.query<{
+        hotel_id: string;
+        language: string;
+        name: string | null;
+        description: string | null;
+      }>(
+        `SELECT hotel_id::text, language::text, name, description
+         FROM hotel_translations
+         WHERE hotel_id = ANY($1::uuid[])`,
+        [ids],
+      ),
+      this.pg.query<{ id: string; owner_id: string; url: string }>(
+        `SELECT id::text, owner_id::text, url
+         FROM media_files
+         WHERE owner_type = 'hotel'
+           AND owner_id = ANY($1::uuid[])
+           AND deleted_at IS NULL
+           AND url IS NOT NULL
+         ORDER BY created_at ASC`,
+        [ids],
+      ),
+      this.pg.query<{ hotel_id: string; amenity_id: string }>(
+        `SELECT hotel_id::text, amenity_id::text
+         FROM hotel_amenities
+         WHERE hotel_id = ANY($1::uuid[])`,
+        [ids],
+      ),
+    ]);
+
+    const nameMap = new Map<string, Record<string, string>>();
+    const descriptionMap = new Map<string, Record<string, string>>();
+    const imageUrlMap = new Map<string, string[]>();
+    const imageIdMap = new Map<string, string[]>();
+    const amenityMap = new Map<string, string[]>();
+
+    for (const row of translations) {
+      const names = nameMap.get(row.hotel_id) ?? {};
+      const descriptions = descriptionMap.get(row.hotel_id) ?? {};
+      if (row.name) names[row.language] = row.name;
+      if (row.description) descriptions[row.language] = row.description;
+      nameMap.set(row.hotel_id, names);
+      descriptionMap.set(row.hotel_id, descriptions);
+    }
+
+    for (const row of images) {
+      const urls = imageUrlMap.get(row.owner_id) ?? [];
+      const imageIds = imageIdMap.get(row.owner_id) ?? [];
+      urls.push(row.url);
+      imageIds.push(row.id);
+      imageUrlMap.set(row.owner_id, urls);
+      imageIdMap.set(row.owner_id, imageIds);
+    }
+
+    for (const row of amenities) {
+      const idsForHotel = amenityMap.get(row.hotel_id) ?? [];
+      idsForHotel.push(row.amenity_id);
+      amenityMap.set(row.hotel_id, idsForHotel);
+    }
+
+    return rows.map((row) => {
+      const id = String(row['id']);
+      return {
+        ...row,
+        id,
+        partner_organization_id: String(row['partner_organization_id'] ?? ''),
+        city_id: String(row['city_id'] ?? ''),
+        latitude:
+          row['latitude'] === null || row['latitude'] === undefined
+            ? null
+            : Number(row['latitude']),
+        longitude:
+          row['longitude'] === null || row['longitude'] === undefined
+            ? null
+            : Number(row['longitude']),
+        stars: Number(row['stars'] ?? 0),
+        rating_average: Number(row['rating_average'] ?? 0),
+        reviews_count: Number(row['reviews_count'] ?? 0),
+        name: localizedTextFromMap(
+          nameMap.get(id),
+          String(row['slug'] ?? 'Mehmonxona'),
+        ),
+        description: localizedTextFromMap(descriptionMap.get(id), ''),
+        amenities: amenityMap.get(id) ?? [],
+        images: imageUrlMap.get(id) ?? [],
+        image_ids: imageIdMap.get(id) ?? [],
+      };
+    });
+  }
+
+  private async touchHotel(id: string, date = new Date().toISOString()) {
+    await this.pg.query(`UPDATE hotels SET updated_at = $1 WHERE id = $2`, [
+      date,
+      id,
+    ]);
+  }
+
+  private async resolveCityId(value: unknown): Promise<string> {
+    const city = String(value ?? '').trim();
+
+    if (/^[0-9a-f-]{36}$/i.test(city)) {
+      return city;
+    }
+
+    if (city) {
+      const rows = await this.pg.query<{ id: string }>(
+        `
+          select id::text
+          from cities
+          where lower(name ->> 'uz') = lower($1)
+             or lower(name ->> 'ru') = lower($1)
+             or lower(name ->> 'en') = lower($1)
+             or lower(name::text) like '%' || lower($1) || '%'
+          order by created_at asc
+          limit 1
+        `,
+        [city],
+      );
+
+      if (rows[0]) {
+        return rows[0].id;
+      }
+    }
+
+    const fallback = await this.pg.query<{ id: string }>(
+      `select id::text from cities order by created_at asc limit 1`,
+    );
+
+    if (!fallback[0]) {
+      throw new BadRequestException({
+        code: 'CITY_NOT_FOUND',
+        message: 'Shahar topilmadi',
+      });
+    }
+
+    return fallback[0].id;
   }
 
   private async assertOrganization(id: string) {
@@ -1720,19 +2184,6 @@ export class PartnersService {
     }
 
     return hotels[0];
-  }
-
-  /**
-   * Synchronous version of assertHotel for room-type internal operations
-   * that still need ownership check but don't await.
-   */
-  private assertHotelSync(id: string, actor?: RequestActor) {
-    // Ownership check only; actual data from DB is not needed for internal ops
-    if (actor) {
-      const orgId = this.organizationId(actor);
-      // We cannot verify synchronously against DB, so we trust the actor
-      void orgId;
-    }
   }
 
   private async assertWebhook(actor: RequestActor | undefined, id: string) {
@@ -1783,4 +2234,15 @@ export class PartnersService {
 
 function field(item: object, key: string): unknown {
   return (item as Record<string, unknown>)[key];
+}
+
+function localizedTextFromMap(
+  value: Record<string, string> | undefined,
+  fallback: string,
+) {
+  return {
+    uz: value?.uz ?? fallback,
+    ru: value?.ru ?? value?.uz ?? fallback,
+    en: value?.en ?? value?.uz ?? fallback,
+  };
 }

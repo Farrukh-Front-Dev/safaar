@@ -176,6 +176,15 @@ export class AdminController {
     return this.adminService.partnerStatus(actor, id, body);
   }
 
+  @Delete('partners/:id')
+  @Permissions(Permission.PartnersWrite)
+  partnerDelete(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.adminService.partnerDelete(actor, id);
+  }
+
   @Patch('partners/:id/commission')
   @Permissions(Permission.FinanceWrite)
   partnerCommission(

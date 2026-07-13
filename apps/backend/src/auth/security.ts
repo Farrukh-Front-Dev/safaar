@@ -54,7 +54,7 @@ export function isProduction(): boolean {
 }
 
 export function demoAuthEnabled(): boolean {
-  return boolFromEnv(process.env.ENABLE_DEMO_AUTH, !isProduction());
+  return boolFromEnv(process.env.ENABLE_DEMO_AUTH, false);
 }
 
 export function mockPaymentsEnabled(): boolean {

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { BookingStatus, Role } from '@agoda/types';
 import { randomUUID } from 'node:crypto';
 import type { RequestActor } from '../common/actor';
@@ -17,6 +21,17 @@ type DbRow = Record<string, unknown>;
 function numberValue(value: unknown): number {
   const numeric = Number(value ?? 0);
   return Number.isFinite(numeric) ? numeric : 0;
+}
+
+function slugify(value: string): string {
+  const slug = value
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return slug || 'hotel';
 }
 
 function cmsTypesForResource(resource: string): string[] {
@@ -113,11 +128,14 @@ export class AdminService {
       role: Role.SUPER_ADMIN,
     };
     await this.postgres.query(
-      `insert into audit_logs (actor_type, actor_id, action, metadata)
-       values ($1, $2, $3, ($4)::jsonb)`,
+      `insert into audit_logs (id, actor_type, actor_id, action, metadata)
+       values ($1::uuid, $2, $3::uuid, $4, ($5)::jsonb)`,
       [
+        randomUUID(),
         currentActor.actorType ?? 'admin',
-        currentActor.id,
+        isUuid(currentActor.id)
+          ? currentActor.id
+          : '00000000-0000-0000-0000-000000000000',
         action,
         JSON.stringify(meta),
       ],
@@ -158,6 +176,434 @@ export class AdminService {
 
   private invalidateAdminCache() {
     void this.cache.delByPattern('admin:*');
+  }
+
+  private invalidatePublicHotelCache() {
+    void this.cache.delByPattern('hotels:list:*');
+  }
+
+  private invalidatePublicBusCache() {
+    void this.cache.delByPattern('bus-trips:list:*');
+  }
+
+  private async uniqueHotelSlug(
+    name: string,
+    partnerId: string,
+  ): Promise<string> {
+    const base = `${slugify(name)}-${partnerId.replace(/-/g, '').slice(0, 8)}`;
+    const rows = await this.rows(
+      `select slug from hotels where slug = $1 limit 1`,
+      [base],
+    );
+
+    if (!rows[0]) {
+      return base;
+    }
+
+    return `${base}-${randomUUID().replace(/-/g, '').slice(0, 6)}`;
+  }
+
+  private async upsertHotelTranslations(
+    hotelId: string,
+    name: string,
+    description: string,
+  ): Promise<void> {
+    await this.rows(
+      `
+        insert into hotel_translations
+          (id, hotel_id, language, name, description, created_at, updated_at)
+        values
+          ($1::uuid, $2::uuid, 'uz', $3, $4, now(), now()),
+          ($5::uuid, $2::uuid, 'ru', $3, $4, now(), now()),
+          ($6::uuid, $2::uuid, 'en', $3, $4, now(), now())
+        on conflict (hotel_id, language)
+        do update set
+          name = excluded.name,
+          description = excluded.description,
+          updated_at = now()
+      `,
+      [randomUUID(), hotelId, name, description, randomUUID(), randomUUID()],
+    );
+  }
+
+  private async ensureApprovedPartnerHotel(partner: DbRow) {
+    const type = String(partner.type ?? '');
+    if (type !== 'hotel' && type !== 'mixed') {
+      return undefined;
+    }
+
+    const partnerId = String(partner.id ?? '');
+    const cityId = String(partner.city_id ?? '');
+    const name = String(
+      partner.brand_name ?? partner.legal_name ?? 'Mehmonxona',
+    ).trim();
+    const address =
+      String(partner.address ?? '').trim() || 'Manzil kiritilmagan';
+    const description = `${name} mehmonxonasi.`;
+
+    if (!cityId) {
+      throw new BadRequestException({
+        code: 'PARTNER_CITY_REQUIRED',
+        message:
+          'Hamkor arizasida shahar topilmadi. Mehmonxonani user panelga chiqarish uchun shahar kerak.',
+      });
+    }
+
+    const existing = await this.rows(
+      `
+        select id::text, slug
+        from hotels
+        where partner_organization_id = $1::uuid
+          and deleted_at is null
+        order by created_at asc
+        limit 1
+      `,
+      [partnerId],
+    );
+
+    let hotel = existing[0];
+    if (hotel) {
+      const updated = await this.rows(
+        `
+          update hotels
+          set status = 'published',
+              city_id = $2::uuid,
+              address = $3,
+              updated_at = now()
+          where id = $1::uuid
+          returning id::text, slug
+        `,
+        [hotel.id, cityId, address],
+      );
+      hotel = updated[0];
+    } else {
+      const slug = await this.uniqueHotelSlug(name, partnerId);
+      const inserted = await this.rows(
+        `
+          insert into hotels
+            (
+              id,
+              partner_organization_id,
+              slug,
+              city_id,
+              address,
+              stars,
+              rating_average,
+              reviews_count,
+              status,
+              featured,
+              check_in_time,
+              check_out_time,
+              created_at,
+              updated_at
+            )
+          values
+            (
+              $1::uuid,
+              $2::uuid,
+              $3,
+              $4::uuid,
+              $5,
+              3,
+              0,
+              0,
+              'published',
+              false,
+              '14:00',
+              '12:00',
+              now(),
+              now()
+            )
+          returning id::text, slug
+        `,
+        [randomUUID(), partnerId, slug, cityId, address],
+      );
+      hotel = inserted[0];
+    }
+
+    if (!hotel) {
+      return undefined;
+    }
+
+    await this.upsertHotelTranslations(String(hotel.id), name, description);
+    this.invalidatePublicHotelCache();
+    return hotel;
+  }
+
+  private async ensureApprovedPartnerBusCompany(partner: DbRow) {
+    const type = String(partner.type ?? '');
+    if (type !== 'bus' && type !== 'mixed') {
+      return undefined;
+    }
+
+    const partnerId = String(partner.id ?? '');
+    const name = String(
+      partner.brand_name ?? partner.legal_name ?? 'Avtobus kompaniyasi',
+    ).trim();
+
+    const existing = await this.rows(
+      `
+        select id::text
+        from bus_companies
+        where partner_organization_id = $1::uuid
+        order by created_at asc
+        limit 1
+      `,
+      [partnerId],
+    );
+
+    let company = existing[0];
+    if (company) {
+      const updated = await this.rows(
+        `
+          update bus_companies
+          set name = $2,
+              status = 'active',
+              updated_at = now()
+          where id = $1::uuid
+          returning id::text, partner_organization_id::text, name, status,
+                    rating_average::float8, reviews_count, created_at, updated_at
+        `,
+        [company.id, name],
+      );
+      company = updated[0];
+    } else {
+      const inserted = await this.rows(
+        `
+          insert into bus_companies
+            (
+              id,
+              partner_organization_id,
+              name,
+              status,
+              rating_average,
+              reviews_count,
+              created_at,
+              updated_at
+            )
+          values
+            ($1::uuid, $2::uuid, $3, 'active', 0, 0, now(), now())
+          returning id::text, partner_organization_id::text, name, status,
+                    rating_average::float8, reviews_count, created_at, updated_at
+        `,
+        [randomUUID(), partnerId, name],
+      );
+      company = inserted[0];
+    }
+
+    const starterTrip = company
+      ? await this.ensureStarterBusTrip(company, partner)
+      : undefined;
+
+    this.invalidatePublicBusCache();
+    return { ...company, starter_trip: starterTrip };
+  }
+
+  private async ensureStarterBusTrip(company: DbRow, partner: DbRow) {
+    const companyId = String(company.id ?? '');
+    const fromCityId = String(partner.city_id ?? '');
+
+    if (!companyId || !fromCityId) {
+      return undefined;
+    }
+
+    const existingTrips = await this.rows(
+      `select id::text from trips where company_id = $1::uuid limit 1`,
+      [companyId],
+    );
+    if (existingTrips[0]) {
+      return existingTrips[0];
+    }
+
+    const destinationRows = await this.rows(
+      `
+        select id::text
+        from cities
+        where id <> $1::uuid
+        order by
+          case when slug in ('toshkent', 'tashkent') then 0 else 1 end,
+          sort_order asc,
+          created_at asc
+        limit 1
+      `,
+      [fromCityId],
+    );
+    const toCityId = String(destinationRows[0]?.id ?? '');
+    if (!toCityId) {
+      return undefined;
+    }
+
+    const route = await this.ensureBusRoute(fromCityId, toCityId);
+    const vehicle = await this.ensureBusVehicle(companyId);
+    if (!route || !vehicle) {
+      return undefined;
+    }
+
+    const tripId = randomUUID();
+    const trips = await this.rows(
+      `
+        insert into trips
+          (
+            id,
+            route_id,
+            company_id,
+            vehicle_id,
+            from_city_id,
+            to_city_id,
+            departure_at,
+            arrival_at,
+            status,
+            base_price,
+            policy_snapshot,
+            created_at,
+            updated_at
+          )
+        values
+          (
+            $1::uuid,
+            $2::uuid,
+            $3::uuid,
+            $4::uuid,
+            $5::uuid,
+            $6::uuid,
+            date_trunc('day', now() + interval '1 day') + interval '9 hours',
+            date_trunc('day', now() + interval '1 day') + interval '13 hours',
+            'scheduled',
+            120000,
+            $7::jsonb,
+            now(),
+            now()
+          )
+        returning id::text, route_id::text, company_id::text, vehicle_id::text,
+                  from_city_id::text, to_city_id::text, departure_at, arrival_at,
+                  status::text, base_price::float8, created_at, updated_at
+      `,
+      [
+        tripId,
+        route.id,
+        companyId,
+        vehicle.id,
+        fromCityId,
+        toCityId,
+        JSON.stringify({ source: 'partner_approval_starter_trip' }),
+      ],
+    );
+
+    const seatIds = Array.from({ length: 40 }, () => randomUUID());
+    await this.rows(
+      `
+        insert into trip_seats (id, trip_id, seat_code, seat_class, price, status)
+        select
+          seat_id::uuid,
+          $1::uuid,
+          seat_number::text,
+          'standard',
+          120000,
+          'available'
+        from unnest($2::uuid[]) with ordinality as seats(seat_id, seat_number)
+        on conflict (trip_id, seat_code) do nothing
+      `,
+      [tripId, seatIds],
+    );
+
+    return trips[0];
+  }
+
+  private async ensureBusRoute(fromCityId: string, toCityId: string) {
+    const existing = await this.rows(
+      `
+        select id::text, from_city_id::text, to_city_id::text
+        from routes
+        where from_city_id = $1::uuid and to_city_id = $2::uuid
+        limit 1
+      `,
+      [fromCityId, toCityId],
+    );
+    if (existing[0]) {
+      return existing[0];
+    }
+
+    const inserted = await this.rows(
+      `
+        insert into routes
+          (id, from_city_id, to_city_id, duration_minutes, created_at, updated_at)
+        values
+          ($1::uuid, $2::uuid, $3::uuid, 240, now(), now())
+        returning id::text, from_city_id::text, to_city_id::text
+      `,
+      [randomUUID(), fromCityId, toCityId],
+    );
+    return inserted[0];
+  }
+
+  private async ensureBusVehicle(companyId: string) {
+    const existing = await this.rows(
+      `
+        select id::text
+        from vehicles
+        where company_id = $1::uuid and status = 'active'
+        order by created_at asc
+        limit 1
+      `,
+      [companyId],
+    );
+    if (existing[0]) {
+      return existing[0];
+    }
+
+    const inserted = await this.rows(
+      `
+        insert into vehicles
+          (
+            id,
+            company_id,
+            name,
+            plate_number,
+            seats_count,
+            seat_layout,
+            status,
+            created_at,
+            updated_at
+          )
+        values
+          ($1::uuid, $2::uuid, 'Standart avtobus', null, 40, $3::jsonb, 'active', now(), now())
+        returning id::text
+      `,
+      [
+        randomUUID(),
+        companyId,
+        JSON.stringify({ rows: 10, columns: 4, aisleAfterColumn: 2 }),
+      ],
+    );
+    return inserted[0];
+  }
+
+  private async syncPartnerPublicVisibility(
+    partnerId: string,
+    status: string,
+  ): Promise<void> {
+    const isPublic = status === 'approved';
+    await this.rows(
+      `
+        update hotels
+        set status = $2::"HotelStatus",
+            updated_at = now()
+        where partner_organization_id = $1::uuid
+          and deleted_at is null
+      `,
+      [partnerId, isPublic ? 'published' : 'hidden'],
+    );
+    await this.rows(
+      `
+        update bus_companies
+        set status = $2,
+            updated_at = now()
+        where partner_organization_id = $1::uuid
+      `,
+      [partnerId, isPublic ? 'active' : 'inactive'],
+    );
+    this.invalidatePublicHotelCache();
+    this.invalidatePublicBusCache();
   }
 
   private dbBookingsSql(where = '') {
@@ -639,6 +1085,10 @@ export class AdminService {
         message: 'Partner topilmadi',
       });
     }
+    if (rows[0].status === 'approved') {
+      await this.ensureApprovedPartnerHotel(rows[0]);
+      await this.ensureApprovedPartnerBusCompany(rows[0]);
+    }
     return rows[0];
   }
 
@@ -651,7 +1101,7 @@ export class AdminService {
     const rows = await this.rows(
       `
         update partner_organizations
-        set status = $2,
+        set status = $2::"PartnerStatus",
             rejection_reason = case when $2 = 'rejected' then nullif($3, '') else rejection_reason end,
             approved_by = case when $2 = 'approved' then $4::uuid else approved_by end,
             approved_at = case when $2 = 'approved' then now() else approved_at end,
@@ -662,6 +1112,8 @@ export class AdminService {
           type::text,
           legal_name,
           brand_name,
+          city_id::text,
+          address,
           status::text,
           rejection_reason,
           approved_by::text,
@@ -678,9 +1130,18 @@ export class AdminService {
       });
     }
 
+    const hotel =
+      status === 'approved'
+        ? await this.ensureApprovedPartnerHotel(rows[0])
+        : undefined;
+    const busCompany =
+      status === 'approved'
+        ? await this.ensureApprovedPartnerBusCompany(rows[0])
+        : undefined;
+
     await this.audit('partner.moderation', actor, { partner_id: id, status });
     this.invalidateAdminCache();
-    return rows[0];
+    return { ...rows[0], hotel, bus_company: busCompany };
   }
 
   async partnerStatus(
@@ -688,17 +1149,21 @@ export class AdminService {
     id: string,
     body: Record<string, unknown>,
   ) {
-    const newStatus = String(body.status ?? '');
+    const requestedStatus = String(body.status ?? '');
+    const newStatus =
+      requestedStatus === 'active' ? 'approved' : requestedStatus;
     const rows = await this.rows(
       `
         update partner_organizations
-        set status = $2, updated_at = now()
+        set status = $2::"PartnerStatus", updated_at = now()
         where id = $1::uuid
         returning
           id::text,
           type::text,
           legal_name,
           brand_name,
+          city_id::text,
+          address,
           status::text,
           updated_at
       `,
@@ -712,12 +1177,207 @@ export class AdminService {
       });
     }
 
+    if (newStatus === 'approved') {
+      await this.ensureApprovedPartnerHotel(rows[0]);
+      await this.ensureApprovedPartnerBusCompany(rows[0]);
+    } else {
+      await this.syncPartnerPublicVisibility(id, newStatus);
+    }
     await this.audit('partner.status', actor, {
       partner_id: id,
       status: newStatus,
     });
     this.invalidateAdminCache();
     return rows[0];
+  }
+
+  async partnerDelete(actor: RequestActor | undefined, id: string) {
+    if (!isUuid(id)) {
+      throw new NotFoundException({
+        code: 'PARTNER_NOT_ACTIVE',
+        message: 'Partner topilmadi',
+      });
+    }
+
+    const existing = await this.rows(
+      `select id::text, brand_name, legal_name from partner_organizations where id = $1::uuid`,
+      [id],
+    );
+    if (!existing[0]) {
+      throw new NotFoundException({
+        code: 'PARTNER_NOT_ACTIVE',
+        message: 'Partner topilmadi',
+      });
+    }
+
+    await this.rows(
+      `
+        delete from payment_events
+        where payment_id in (
+          select p.id
+          from payments p
+          join bookings b on b.id = p.booking_id
+          where b.partner_organization_id = $1::uuid
+        )
+      `,
+      [id],
+    );
+    await this.rows(
+      `delete from payments where booking_id in (select id from bookings where partner_organization_id = $1::uuid)`,
+      [id],
+    );
+    await this.rows(
+      `delete from refunds where booking_id in (select id from bookings where partner_organization_id = $1::uuid)`,
+      [id],
+    );
+    await this.rows(
+      `delete from booking_messages where booking_id in (select id from bookings where partner_organization_id = $1::uuid)`,
+      [id],
+    );
+    await this.rows(
+      `delete from booking_status_history where booking_id in (select id from bookings where partner_organization_id = $1::uuid)`,
+      [id],
+    );
+    await this.rows(
+      `delete from partner_ledger_entries where organization_id = $1::uuid or booking_id in (select id from bookings where partner_organization_id = $1::uuid)`,
+      [id],
+    );
+    await this.rows(
+      `delete from bookings where partner_organization_id = $1::uuid`,
+      [id],
+    );
+
+    await this.rows(
+      `
+        delete from favorites
+        where (target_type = 'hotel' and target_id in (select id from hotels where partner_organization_id = $1::uuid))
+           or (target_type = 'bus_company' and target_id in (select id from bus_companies where partner_organization_id = $1::uuid))
+      `,
+      [id],
+    );
+    await this.rows(
+      `
+        delete from reviews
+        where (target_type = 'hotel' and target_id in (select id from hotels where partner_organization_id = $1::uuid))
+           or (target_type = 'bus_company' and target_id in (select id from bus_companies where partner_organization_id = $1::uuid))
+      `,
+      [id],
+    );
+    await this.rows(
+      `
+        delete from notifications
+        where (owner_type in ('partner', 'partner_organization') and owner_id = $1::uuid)
+           or (owner_type = 'hotel' and owner_id in (select id from hotels where partner_organization_id = $1::uuid))
+           or (owner_type = 'bus_company' and owner_id in (select id from bus_companies where partner_organization_id = $1::uuid))
+      `,
+      [id],
+    );
+
+    await this.rows(
+      `
+        delete from room_inventory
+        where room_id in (
+          select hr.id
+          from hotel_rooms hr
+          join hotels h on h.id = hr.hotel_id
+          where h.partner_organization_id = $1::uuid
+        )
+      `,
+      [id],
+    );
+    await this.rows(
+      `
+        delete from room_amenities
+        where room_id in (
+          select hr.id
+          from hotel_rooms hr
+          join hotels h on h.id = hr.hotel_id
+          where h.partner_organization_id = $1::uuid
+        )
+      `,
+      [id],
+    );
+    await this.rows(
+      `
+        delete from hotel_room_translations
+        where room_id in (
+          select hr.id
+          from hotel_rooms hr
+          join hotels h on h.id = hr.hotel_id
+          where h.partner_organization_id = $1::uuid
+        )
+      `,
+      [id],
+    );
+    await this.rows(
+      `delete from hotel_rooms where hotel_id in (select id from hotels where partner_organization_id = $1::uuid)`,
+      [id],
+    );
+    await this.rows(
+      `delete from hotel_amenities where hotel_id in (select id from hotels where partner_organization_id = $1::uuid)`,
+      [id],
+    );
+    await this.rows(
+      `delete from hotel_translations where hotel_id in (select id from hotels where partner_organization_id = $1::uuid)`,
+      [id],
+    );
+    await this.rows(
+      `delete from media_files where owner_type = 'hotel' and owner_id in (select id from hotels where partner_organization_id = $1::uuid)`,
+      [id],
+    );
+    await this.rows(
+      `delete from hotels where partner_organization_id = $1::uuid`,
+      [id],
+    );
+
+    await this.rows(
+      `delete from trip_seats where trip_id in (select t.id from trips t join bus_companies bc on bc.id = t.company_id where bc.partner_organization_id = $1::uuid)`,
+      [id],
+    );
+    await this.rows(
+      `delete from trips where company_id in (select id from bus_companies where partner_organization_id = $1::uuid)`,
+      [id],
+    );
+    await this.rows(
+      `delete from vehicles where company_id in (select id from bus_companies where partner_organization_id = $1::uuid)`,
+      [id],
+    );
+    await this.rows(
+      `delete from bus_companies where partner_organization_id = $1::uuid`,
+      [id],
+    );
+
+    await this.rows(
+      `delete from withdrawal_requests where organization_id = $1::uuid`,
+      [id],
+    );
+    await this.rows(
+      `delete from partner_api_keys where organization_id = $1::uuid`,
+      [id],
+    );
+    await this.rows(
+      `delete from partner_webhook_endpoints where organization_id = $1::uuid`,
+      [id],
+    );
+    await this.rows(
+      `delete from partner_users where organization_id = $1::uuid`,
+      [id],
+    );
+
+    const deleted = await this.rows(
+      `delete from partner_organizations where id = $1::uuid returning id::text`,
+      [id],
+    );
+
+    await this.audit('partner.delete', actor, {
+      partner_id: id,
+      brand_name: existing[0].brand_name,
+      legal_name: existing[0].legal_name,
+    });
+    this.invalidateAdminCache();
+    this.invalidatePublicHotelCache();
+    this.invalidatePublicBusCache();
+    return { id: deleted[0]?.id ?? id, deleted: true };
   }
 
   async partnerCommission(

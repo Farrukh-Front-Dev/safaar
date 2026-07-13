@@ -30,6 +30,11 @@ interface EnvironmentConfig {
   CACHE_DEFAULT_TTL_SECONDS: number;
   CORS_ORIGINS?: string;
   SWAGGER_ENABLED: string;
+  SMTP_HOST?: string;
+  SMTP_PORT?: number;
+  SMTP_USER?: string;
+  SMTP_PASS?: string;
+  SMTP_FROM?: string;
 }
 
 function toNumber(value: unknown, fallback: number): number {
@@ -146,5 +151,10 @@ export function validateEnv(
     CACHE_DEFAULT_TTL_SECONDS: toNumber(config.CACHE_DEFAULT_TTL_SECONDS, 300),
     CORS_ORIGINS: config.CORS_ORIGINS ? String(config.CORS_ORIGINS) : undefined,
     SWAGGER_ENABLED: String(config.SWAGGER_ENABLED ?? !production),
+    SMTP_HOST: config.SMTP_HOST ? String(config.SMTP_HOST) : undefined,
+    SMTP_PORT: config.SMTP_PORT ? toNumber(config.SMTP_PORT, 587) : undefined,
+    SMTP_USER: config.SMTP_USER ? String(config.SMTP_USER) : undefined,
+    SMTP_PASS: config.SMTP_PASS ? String(config.SMTP_PASS) : undefined,
+    SMTP_FROM: config.SMTP_FROM ? String(config.SMTP_FROM) : undefined,
   };
 }
