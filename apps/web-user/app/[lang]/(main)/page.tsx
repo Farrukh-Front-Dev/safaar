@@ -6,7 +6,7 @@ import { getCities } from "@/lib/api/catalog";
 import { getFeaturedHotels } from "@/lib/api/hotels";
 import { getDeals, getPublicStats } from "@/lib/api/cms";
 import { Hero } from "@/components/home/Hero";
-import { SearchBar } from "@/components/search/SearchBar";
+import { SearchTabs } from "@/components/search/SearchTabs";
 import { CityCardsSection } from "@/components/home/CityCardsSection";
 import { TrustBar } from "@/components/home/TrustBar";
 import { FeaturedHotelsCarousel } from "@/components/home/FeaturedHotelsCarousel";
@@ -78,7 +78,7 @@ export default async function HomePage({
 
         {/* Turar joy turlari filteri */}
         <div className="relative z-10">
-          <SearchBar
+          <SearchTabs
             locale={locale}
             dict={common.search}
             cities={cities}

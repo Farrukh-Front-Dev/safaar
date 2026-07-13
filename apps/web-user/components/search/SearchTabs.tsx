@@ -5,7 +5,7 @@ import { Hotel, Bus, ChevronLeft, ChevronRight } from "lucide-react";
 import type { Locale } from "@/i18n/config";
 import type { CommonDict } from "@/i18n/dictionaries";
 import type { CityOption } from "@/types/view";
-import { SearchBar, type SearchDefaults } from "./SearchBar";
+import { SearchBar, type SearchDefaults, type PropertyType } from "./SearchBar";
 import { BusSearchMini, type BusSearchMiniDefaults } from "./BusSearchMini";
 
 type Tab = "hotels" | "buses";
@@ -26,12 +26,14 @@ export function SearchTabs({
   cities,
   hotelDefaults,
   busDefaults,
+  propertyTypeLabels,
 }: {
   locale: Locale;
   dict: CommonDict["search"];
   cities: CityOption[];
   hotelDefaults?: SearchDefaults;
   busDefaults?: BusSearchMiniDefaults;
+  propertyTypeLabels?: Record<PropertyType, string>;
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("hotels");
 
@@ -97,7 +99,7 @@ export function SearchTabs({
 
       {/* Tab kontenti */}
       {activeTab === "hotels" ? (
-        <SearchBar locale={locale} dict={dict} cities={cities} defaults={hotelDefaults} />
+        <SearchBar locale={locale} dict={dict} cities={cities} defaults={hotelDefaults} propertyTypeLabels={propertyTypeLabels} />
       ) : (
         <BusSearchMini locale={locale} dict={dict} cities={cities} defaults={busDefaults} />
       )}
