@@ -45,7 +45,7 @@ export function CityCardsSection({
           .then((data) => {
             const cards: CityCardData[] = data
               .sort((a, b) => a.sortOrder - b.sortOrder)
-              .slice(0, 4)
+              .slice(0, 8)
               .map((c) => ({
                 name: c.name,
                 image:
