@@ -103,10 +103,6 @@ function buildDemoActorFromAuthorization(
     return undefined;
   }
 
-  if (token === 'demo-access-token') {
-    return buildActor(Role.PARTNER, 'demo-partner-user-id', headers);
-  }
-
   if (!token.startsWith('mock-access.')) {
     return undefined;
   }
@@ -131,9 +127,8 @@ function buildActor(
     actorType,
     role,
     roles: [role],
-    organizationId:
-      firstHeader(headers['x-organization-id']) ?? 'demo-partner-org-id',
-    sessionId: firstHeader(headers['x-session-id']) ?? 'demo-session-id',
+    organizationId: firstHeader(headers['x-organization-id']),
+    sessionId: firstHeader(headers['x-session-id']),
   };
 }
 

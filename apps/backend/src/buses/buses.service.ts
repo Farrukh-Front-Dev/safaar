@@ -43,7 +43,10 @@ export class BusesService {
         defaultLimit: 20,
       });
 
-      const conditions: string[] = ["t.status = 'scheduled'"];
+      const conditions: string[] = [
+        "t.status = 'scheduled'",
+        "bc.status = 'active'",
+      ];
       const params: unknown[] = [];
       let paramIdx = 1;
 
@@ -196,7 +199,7 @@ export class BusesService {
     if (Array.isArray(body.seats)) {
       seatCodes = body.seats.map(String);
     } else {
-      const availableSeats = await this.pg.query(
+      const availableSeats = await this.pg.query<{ seat_code: string }>(
         "SELECT seat_code FROM trip_seats WHERE trip_id = $1 AND status = 'available' ORDER BY seat_code LIMIT 1",
         [id],
       );

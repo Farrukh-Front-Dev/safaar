@@ -21,6 +21,33 @@ export class HotelsService {
   }
 
   private async findAllFresh(query: QueryLike) {
+    const conditions = [
+      "h.status = 'published'",
+      'h.deleted_at IS NULL',
+      "po.status = 'approved'",
+    ];
+    const params: unknown[] = [];
+    let paramIndex = 1;
+
+    if (query.city_id) {
+      conditions.push(`h.city_id = $${paramIndex++}`);
+      params.push(query.city_id);
+    }
+
+    if (query.stars) {
+      conditions.push(`h.stars = $${paramIndex++}`);
+      params.push(Number(query.stars));
+    }
+
+    if (query.featured === 'true') {
+      conditions.push('h.featured = true');
+    }
+
+    if (query.min_rating) {
+      conditions.push(`h.rating_average >= $${paramIndex++}`);
+      params.push(Number(query.min_rating));
+    }
+
     const rows = await this.pg.query(
       `SELECT h.id::text, h.partner_organization_id::text, h.slug, h.city_id::text,
         h.address, h.latitude::float8, h.longitude::float8, h.stars,
@@ -31,15 +58,13 @@ export class HotelsService {
         c.name as city_name, c.region_id::text,
         rp.min_price::float8
       FROM hotels h
+      JOIN partner_organizations po ON po.id = h.partner_organization_id
       LEFT JOIN hotel_translations ht ON ht.hotel_id = h.id AND ht.language = 'uz'
       LEFT JOIN cities c ON c.id = h.city_id
       LEFT JOIN (SELECT hotel_id, MIN(base_price) as min_price FROM hotel_rooms WHERE status = 'active' GROUP BY hotel_id) rp ON rp.hotel_id = h.id
-      WHERE h.status = 'published'
-      ${query.city_id ? 'AND h.city_id = $1' : ''}
-      ${query.stars ? `AND h.stars = ${Number(query.stars)}` : ''}
-      ${query.featured === 'true' ? 'AND h.featured = true' : ''}
+      WHERE ${conditions.join(' AND ')}
       ORDER BY h.rating_average DESC`,
-      query.city_id ? [query.city_id] : [],
+      params,
     );
 
     const mapped = rows.map((r: Record<string, unknown>) => ({
@@ -89,9 +114,13 @@ export class HotelsService {
         ht.name, ht.description,
         c.name as city_name, c.region_id::text
       FROM hotels h
+      JOIN partner_organizations po ON po.id = h.partner_organization_id
       LEFT JOIN hotel_translations ht ON ht.hotel_id = h.id AND ht.language = 'uz'
       LEFT JOIN cities c ON c.id = h.city_id
-      WHERE (h.id::text = $1 OR h.slug = $1) AND h.status = 'published'`,
+      WHERE (h.id::text = $1 OR h.slug = $1)
+        AND h.status = 'published'
+        AND h.deleted_at IS NULL
+        AND po.status = 'approved'`,
       [slugOrId],
     );
 

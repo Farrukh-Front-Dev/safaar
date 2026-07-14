@@ -10,6 +10,7 @@ interface ErrorBody {
   code?: string;
   message?: string | string[];
   error?: string;
+  fields?: unknown;
 }
 
 function normalizeError(exception: unknown): {
@@ -32,7 +33,8 @@ function normalizeError(exception: unknown): {
         status,
         code: body.code ?? body.error ?? 'REQUEST_ERROR',
         message,
-        fields: Array.isArray(body.message) ? body.message : null,
+        fields:
+          body.fields ?? (Array.isArray(body.message) ? body.message : null),
       };
     }
 

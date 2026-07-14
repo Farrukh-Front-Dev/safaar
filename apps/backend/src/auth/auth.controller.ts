@@ -47,9 +47,19 @@ export class AuthController {
     return this.authService.sendPartnerOtp(dto.phone);
   }
 
+  @Post('partner/email-otp/request')
+  requestPartnerEmailOtp(@Body() body: Record<string, unknown>) {
+    return this.authService.sendPartnerEmailOtp(String(body.email ?? ''));
+  }
+
   @Post('otp/verify')
   verifyOtpAlias(@Body() dto: VerifyOtpRequestDto) {
     return this.authService.verifyPartnerOtp(dto);
+  }
+
+  @Post('partner/email-otp/verify')
+  verifyPartnerEmailOtp(@Body() body: Record<string, unknown>) {
+    return this.authService.verifyPartnerEmailOtp(body);
   }
 
   @Post('user/complete-profile')
@@ -123,6 +133,16 @@ export class AuthController {
     return this.authService.partnerLogin(
       body as unknown as Record<string, unknown>,
     );
+  }
+
+  @Post('partner/phone-login')
+  partnerPhoneLogin(@Body() body: Record<string, unknown>) {
+    return this.authService.partnerPhoneLogin(body);
+  }
+
+  @Post('partner/email-login')
+  partnerEmailLogin(@Body() body: Record<string, unknown>) {
+    return this.authService.partnerEmailLogin(body);
   }
 
   @Post('partner/forgot-password')

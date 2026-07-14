@@ -127,8 +127,13 @@ export class BookingsService {
       'SELECT partner_organization_id FROM bus_companies WHERE id = $1',
       [trip.company_id],
     );
-    const partnerOrganizationId =
-      company?.partner_organization_id ?? 'demo-partner-org-id';
+    if (!company?.partner_organization_id) {
+      throw new NotFoundException({
+        code: 'BUS_COMPANY_NOT_FOUND',
+        message: 'Avtobus hamkori topilmadi',
+      });
+    }
+    const partnerOrganizationId = company.partner_organization_id;
 
     const subtotal = seats.reduce((sum, seat) => sum + Number(seat.price), 0);
 

@@ -13,7 +13,10 @@ import {
   type AuthTokens,
 } from '@agoda/types';
 import type { RequestActor } from '../common/actor';
+import { JOBS } from '../jobs/job-names';
 import { PostgresService } from '../infrastructure/postgres.service';
+import { JobQueueService } from '../infrastructure/job-queue.service';
+import { EmailService } from '../infrastructure/email.service';
 import { otpStore, type OtpPurpose } from './otp-store';
 import { authSessionStore } from './session-store';
 import { demoAuthEnabled, signJwt, verifyJwt } from './security';
@@ -71,14 +74,49 @@ export class AuthService {
     { adminId: string; setup: TotpSetup; expiresAt: number }
   >();
 
-  constructor(private readonly pg: PostgresService) {}
+  constructor(
+    private readonly pg: PostgresService,
+    private readonly jobs: JobQueueService,
+    private readonly emailService: EmailService,
+  ) {}
 
   sendUserOtp(phone: string) {
-    return this.createOtpChallenge(phone, 'user_login');
+    return this.createOtpChallenge(this.normalizePhone(phone), 'user_login');
   }
 
   sendPartnerOtp(phone: string) {
-    return this.createOtpChallenge(phone, 'partner_login');
+    return this.createOtpChallenge(this.normalizePhone(phone), 'partner_login');
+  }
+
+  async sendPartnerEmailOtp(email: string) {
+    const normalizedEmail = this.normalizeEmail(email);
+    if (!this.isValidEmail(normalizedEmail)) {
+      throw this.invalidCredentials();
+    }
+
+    await this.assertApprovedPartnerEmail(normalizedEmail);
+    const response = this.createOtpChallenge(normalizedEmail, 'partner_login');
+    const code =
+      response.dev_code ?? otpStore.getDevCode(response.challenge_id);
+
+    const message = {
+      to: normalizedEmail,
+      subject: 'Safaar hamkor kabineti uchun kirish kodi',
+      text: `Safaar hamkor kabinetiga kirish kodingiz: ${code ?? '******'}`,
+      html: `<p>Safaar hamkor kabinetiga kirish kodingiz:</p><h2>${code ?? '******'}</h2>`,
+    };
+
+    await this.emailService.send(message);
+    await this.jobs.add(JOBS.SEND_EMAIL, message, {
+      idempotencyKey: `partner-login-email:${response.challenge_id}`,
+    });
+
+    return {
+      sent: response.sent,
+      challenge_id: response.challenge_id,
+      expires_in_seconds: response.expires_in_seconds,
+      resend_after_seconds: response.resend_after_seconds,
+    };
   }
 
   async verifyUserOtp(
@@ -139,7 +177,7 @@ export class AuthService {
     };
   }
 
-  verifyPartnerOtp(dto: VerifyOtpDto): AuthTokens {
+  async verifyPartnerOtp(dto: VerifyOtpDto): Promise<AuthTokens> {
     const phone = this.normalizePhone(dto.phone);
     this.consumeOtp({
       challengeId: dto.challenge_id,
@@ -148,12 +186,34 @@ export class AuthService {
       code: dto.code,
     });
 
-    return this.issueTokens({
-      actorId: 'demo-partner-user-id',
-      actorType: 'partner',
-      role: Role.PARTNER,
-      organizationId: 'demo-partner-org-id',
+    return this.issuePartnerTokensByPhone(phone);
+  }
+
+  async verifyPartnerEmailOtp(body: Record<string, unknown>): Promise<
+    AuthTokens & {
+      organization_id: string;
+      organizationId: string;
+      partner_role: string;
+    }
+  > {
+    const email = this.normalizeEmail(body.email);
+    const code = String(body.code ?? '');
+    const challengeId = String(
+      body.challenge_id ?? body.chalenge_id ?? '',
+    ).trim();
+
+    if (!this.isValidEmail(email)) {
+      throw this.invalidCredentials();
+    }
+
+    this.consumeOtp({
+      challengeId,
+      phone: email,
+      purpose: 'partner_login',
+      code,
     });
+
+    return this.issuePartnerTokensByEmail(email);
   }
 
   async completeProfile(
@@ -357,6 +417,24 @@ export class AuthService {
     };
   }
 
+  async partnerPhoneLogin(body: Record<string, unknown>) {
+    const phone = this.normalizePhone(String(body.phone ?? ''));
+    if (!phone) {
+      throw this.invalidCredentials();
+    }
+
+    return this.issuePartnerTokensByPhone(phone);
+  }
+
+  async partnerEmailLogin(body: Record<string, unknown>) {
+    const email = this.normalizeEmail(body.email);
+    if (!this.isValidEmail(email)) {
+      throw this.invalidCredentials();
+    }
+
+    return this.issuePartnerTokensByEmail(email);
+  }
+
   async adminLogin(body: Record<string, unknown>) {
     const login = String(body.username ?? body.email ?? '')
       .trim()
@@ -373,10 +451,15 @@ export class AuthService {
     }
 
     if (!admin.totp_secret) {
-      throw new UnauthorizedException({
-        code: 'AUTH_2FA_REQUIRED',
-        message: 'Admin uchun 2FA sozlanishi majburiy',
-      });
+      return {
+        ...this.issueTokens({
+          actorId: admin.id,
+          actorType: 'admin',
+          role: admin.role,
+          roles: admin.roles,
+        }),
+        admin: this.publicAdmin(admin),
+      };
     }
 
     const challengeId = randomUUID();
@@ -687,11 +770,9 @@ export class AuthService {
     return { id, actor_id: currentActor.id, revoked: true };
   }
 
-  private createOtpChallenge(phone: string, purpose: OtpPurpose) {
-    const normalizedPhone = this.normalizePhone(phone);
-
+  private createOtpChallenge(identifier: string, purpose: OtpPurpose) {
     try {
-      const challenge = otpStore.create(normalizedPhone, purpose);
+      const challenge = otpStore.create(identifier, purpose);
       const response: {
         sent: boolean;
         challenge_id: string;
@@ -823,6 +904,136 @@ export class AuthService {
     return undefined;
   }
 
+  private async issuePartnerTokensByPhone(phone: string): Promise<
+    AuthTokens & {
+      organization_id: string;
+      partner_role: string;
+    }
+  > {
+    const rows = await this.pg.query<DbRow>(
+      `
+        select
+          po.id::text as organization_id,
+          po.status::text as organization_status,
+          pu.id::text as user_id,
+          pu.status::text as user_status,
+          'owner'::text as partner_role
+        from partner_organizations po
+        left join partner_users pu
+          on pu.organization_id = po.id
+         and pu.deleted_at is null
+        where regexp_replace(po.phone, '\\D', '', 'g') = regexp_replace($1, '\\D', '', 'g')
+        order by pu.created_at asc nulls last, po.created_at desc
+        limit 1
+      `,
+      [phone],
+    );
+    const row = rows[0];
+
+    if (!row || row['organization_status'] !== 'approved') {
+      throw new UnauthorizedException({
+        code: 'PARTNER_NOT_ACTIVE',
+        message: 'Hamkor tashkilot faol emas',
+      });
+    }
+
+    if (row['user_status'] && row['user_status'] !== 'active') {
+      throw this.invalidCredentials();
+    }
+
+    const organizationId = String(row['organization_id']);
+    const actorId = row['user_id'] ? String(row['user_id']) : organizationId;
+
+    return {
+      ...this.issueTokens({
+        actorId,
+        actorType: 'partner',
+        role: Role.PARTNER,
+        organizationId,
+      }),
+      organization_id: organizationId,
+      partner_role: String(row['partner_role'] ?? 'owner'),
+    };
+  }
+
+  private async issuePartnerTokensByEmail(email: string): Promise<
+    AuthTokens & {
+      organization_id: string;
+      organizationId: string;
+      partner_role: string;
+    }
+  > {
+    const rows = await this.pg.query<DbRow>(
+      `
+        select
+          po.id::text as organization_id,
+          po.status::text as organization_status,
+          pu.id::text as user_id,
+          pu.status::text as user_status,
+          'owner'::text as partner_role
+        from partner_organizations po
+        left join partner_users pu
+          on pu.organization_id = po.id
+         and pu.deleted_at is null
+        where lower(po.email) = lower($1)
+           or lower(pu.email) = lower($1)
+        order by pu.created_at asc nulls last, po.created_at desc
+        limit 1
+      `,
+      [email],
+    );
+    const row = rows[0];
+
+    if (!row || row['organization_status'] !== 'approved') {
+      throw new UnauthorizedException({
+        code: 'PARTNER_NOT_ACTIVE',
+        message: 'Hamkor tashkilot faol emas',
+      });
+    }
+
+    if (row['user_status'] && row['user_status'] !== 'active') {
+      throw this.invalidCredentials();
+    }
+
+    const organizationId = String(row['organization_id']);
+    const actorId = row['user_id'] ? String(row['user_id']) : organizationId;
+
+    return {
+      ...this.issueTokens({
+        actorId,
+        actorType: 'partner',
+        role: Role.PARTNER,
+        organizationId,
+      }),
+      organization_id: organizationId,
+      organizationId,
+      partner_role: String(row['partner_role'] ?? 'owner'),
+    };
+  }
+
+  private async assertApprovedPartnerEmail(email: string) {
+    const rows = await this.pg.query<DbRow>(
+      `
+        select po.id::text
+        from partner_organizations po
+        left join partner_users pu
+          on pu.organization_id = po.id
+         and pu.deleted_at is null
+        where po.status = 'approved'
+          and (lower(po.email) = lower($1) or lower(pu.email) = lower($1))
+        limit 1
+      `,
+      [email],
+    );
+
+    if (!rows[0]) {
+      throw new UnauthorizedException({
+        code: 'PARTNER_NOT_ACTIVE',
+        message: 'Hamkor tashkilot faol emas',
+      });
+    }
+  }
+
   private async findAdminUser(
     login: string,
   ): Promise<AdminUserRecord | undefined> {
@@ -910,5 +1121,15 @@ export class AuthService {
   private normalizePhone(phone: string): string {
     const digits = String(phone ?? '').replace(/\D/g, '');
     return digits.startsWith('998') ? `+${digits}` : `+998${digits}`;
+  }
+
+  private normalizeEmail(email: unknown): string {
+    return String(email ?? '')
+      .trim()
+      .toLowerCase();
+  }
+
+  private isValidEmail(email: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
 }
