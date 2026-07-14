@@ -119,16 +119,6 @@ const partnerData = [
   { name: "Oasis Hotel", type: "hotel" as const, city: "Nukus", rating: 3.5 },
   { name: "Pearl Fergana", type: "hotel" as const, city: "Farg'ona", rating: 4.0 },
   { name: "Andijan Grand", type: "hotel" as const, city: "Andijon", rating: 3.9 },
-  { name: "Comfort Bus MChJ", type: "bus" as const, city: "Toshkent", rating: 4.2 },
-  { name: "Express Yo'l", type: "bus" as const, city: "Toshkent", rating: 4.0 },
-  { name: "Sharq Transport", type: "bus" as const, city: "Samarqand", rating: 3.7 },
-  { name: "Buxoro Avtobus", type: "bus" as const, city: "Buxoro", rating: 3.9 },
-  { name: "Andijon Safar", type: "bus" as const, city: "Andijon", rating: 4.1 },
-  { name: "Farg'ona Express", type: "bus" as const, city: "Farg'ona", rating: 3.8 },
-  { name: "Namangan Yo'l", type: "bus" as const, city: "Namangan", rating: 3.6 },
-  { name: "Toshkent Avto", type: "bus" as const, city: "Toshkent", rating: 4.4 },
-  { name: "Premium Travel", type: "bus" as const, city: "Toshkent", rating: 4.5 },
-  { name: "Silk Way Bus", type: "bus" as const, city: "Samarqand", rating: 4.0 },
 ];
 
 export const mockPartners: Partner[] = partnerData.map((p, i) => ({
@@ -171,23 +161,6 @@ export const mockPartnerRequests: PartnerRequest[] = [
     createdAt: new Date(Date.now() - 86400000).toISOString(),
   },
   {
-    id: "PR-102",
-    companyName: "Comfort Bus MChJ",
-    type: "bus",
-    contactPerson: "Sardor Alimov",
-    phone: "+998 91 234 56 78",
-    email: "sardor@comfortbus.uz",
-    city: "Toshkent",
-    address: "Toshkent, Navoiy ko'chasi 12",
-    documents: [
-      { name: "Litsenziya", type: "license", url: "#" },
-      { name: "Soliq guvohnomasi", type: "tax_certificate", url: "#" },
-    ],
-    note: "10 ta zamonaviy avtobus. Toshkent-Samarqand-Buxoro marshrutlari.",
-    status: "new",
-    createdAt: new Date(Date.now() - 172800000).toISOString(),
-  },
-  {
     id: "PR-103",
     companyName: "Qarshi Grand Hotel",
     type: "hotel",
@@ -205,22 +178,6 @@ export const mockPartnerRequests: PartnerRequest[] = [
     createdAt: new Date(Date.now() - 345600000).toISOString(),
   },
   {
-    id: "PR-104",
-    companyName: "Namangan Express",
-    type: "bus",
-    contactPerson: "Xurshid Mamatov",
-    phone: "+998 94 321 65 87",
-    email: "xurshid@namanganexp.uz",
-    city: "Namangan",
-    address: "Namangan, Bobur ko'chasi 22",
-    documents: [
-      { name: "Litsenziya", type: "license", url: "#" },
-    ],
-    note: "Namangan-Toshkent kundalik reyslar.",
-    status: "new",
-    createdAt: new Date(Date.now() - 432000000).toISOString(),
-  },
-  {
     id: "PR-105",
     companyName: "Termiz Oasis Hotel",
     type: "hotel",
@@ -236,6 +193,93 @@ export const mockPartnerRequests: PartnerRequest[] = [
     ],
     status: "new",
     createdAt: new Date(Date.now() - 518400000).toISOString(),
+  },
+];
+
+/* ────────────────────────────────────────────
+   Listings (Mehmonxonalar e'lonlari)
+   ──────────────────────────────────────────── */
+
+export const mockListings: import("@/types/admin").AdminListing[] = [
+  {
+    id: "L-101",
+    partnerId: "P-101",
+    companyName: "Buxoro Travel MChJ",
+    hotelName: "Buxoro Grand Hotel",
+    city: "Buxoro",
+    address: "Buxoro, B. Naqshband ko'chasi 15",
+    stars: 4,
+    photos: [
+      "https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1540518614846-7eded433c457?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+    ],
+    description: "Buxoroning qoq markazida joylashgan zamonaviy mehmonxona. Qadimiy obidalarga piyoda borish mumkin. 24/7 xizmat, bepul Wi-Fi va nonushta.",
+    amenities: ["wifi", "pool", "restaurant", "parking", "ac"],
+    rules: {
+      checkInTime: "14:00",
+      checkOutTime: "12:00",
+      childrenAllowed: true,
+      petsAllowed: false,
+      smokingAllowed: false,
+      cancellationPolicy: "flexible"
+    },
+    roomsCount: 45,
+    status: "under_review",
+    submittedAt: new Date(Date.now() - 43200000).toISOString(),
+  },
+  {
+    id: "L-102",
+    partnerId: "P-103",
+    companyName: "Qarshi Grand Hotel",
+    hotelName: "Qarshi City Center",
+    city: "Qarshi",
+    address: "Qarshi, Islom Karimov ko'chasi 8",
+    stars: 3,
+    photos: [
+      "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1497366216548-37526070297c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+    ],
+    description: "Qarshi shahri markazidagi qulay mehmonxona. Biznes va dam olish uchun ideal joy.",
+    amenities: ["wifi", "parking", "ac", "tv"],
+    rules: {
+      checkInTime: "13:00",
+      checkOutTime: "11:00",
+      childrenAllowed: true,
+      petsAllowed: true,
+      smokingAllowed: false,
+      cancellationPolicy: "moderate"
+    },
+    roomsCount: 20,
+    status: "under_review",
+    submittedAt: new Date(Date.now() - 86400000).toISOString(),
+  },
+  {
+    id: "L-103",
+    partnerId: "P-105",
+    companyName: "Termiz Oasis Hotel",
+    hotelName: "Oasis Resort Termiz",
+    city: "Termiz",
+    address: "Termiz, Al-Hakim At-Termiziy ko'chasi 55",
+    stars: 5,
+    photos: [
+      "https://images.unsplash.com/photo-1542314831-c6a4d140b64f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1564501049412-61c2a3083791?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+    ],
+    description: "Hashamatli dam olish maskani. Basseyn, spa va fitnes markaziga ega 5 yulduzli resort.",
+    amenities: ["wifi", "pool", "spa", "gym", "restaurant", "bar", "parking"],
+    rules: {
+      checkInTime: "15:00",
+      checkOutTime: "12:00",
+      childrenAllowed: true,
+      petsAllowed: false,
+      smokingAllowed: false,
+      cancellationPolicy: "strict"
+    },
+    roomsCount: 120,
+    status: "published",
+    submittedAt: new Date(Date.now() - 172800000).toISOString(),
   },
 ];
 
@@ -378,11 +422,13 @@ export const mockBusBookings: AdminBusBooking[] = Array.from({ length: 30 }, (_,
   const dep = new Date(Date.now() + (i - 15) * 86400000);
   const amount = (Math.floor(Math.random() * 150) + 50) * 1000;
 
+  const busNames = ["Comfort Bus", "Sharq Transport", "Buxoro Express"];
+
   return {
     id: `BB-${3000 + i}`,
     customerName: userNames[(i + 10) % userNames.length],
     customerPhone: `+998 9${(i + 3) % 10} ${String(200 + i).slice(0, 3)} ${String(30 + i).slice(0, 2)} ${String(60 + i).slice(0, 2)}`,
-    companyName: partnerData.filter((p) => p.type === "bus")[i % 10]?.name ?? "Comfort Bus",
+    companyName: busNames[i % busNames.length],
     route: routes[i % routes.length],
     departureDate: dep.toISOString().split("T")[0],
     departureTime: `${String(6 + (i % 14)).padStart(2, "0")}:${i % 2 === 0 ? "00" : "30"}`,

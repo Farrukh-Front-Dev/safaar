@@ -220,20 +220,29 @@ function AddPhotoDialog({
         onClose();
       }}
       title="Yangi rasm"
-      description="URL manzil kiriting (Unsplash, S3 va h.k.). Yuklash real backend'da ulanadi."
+      description="Yangi rasmni tanlang. Yuklash real backend'da ulanadi."
       size="lg"
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="p-url">Rasm URL</Label>
-          <Input
-            id="p-url"
-            type="url"
-            placeholder="https://..."
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            required
-          />
+          <Label>Qurilmadan rasm yuklash</Label>
+          <label className="flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[var(--border)] bg-[var(--surface-muted)] transition-colors hover:border-brand-500 hover:bg-[var(--surface)]">
+            <ImageIcon className="mb-2 h-8 w-8 text-zinc-400" />
+            <span className="text-sm font-medium text-zinc-600">Rasm tanlash uchun bosing</span>
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const url = URL.createObjectURL(file);
+                  setUrl(url);
+                }
+              }}
+              required={!url}
+            />
+          </label>
         </div>
 
         <div className="flex flex-col gap-1.5">

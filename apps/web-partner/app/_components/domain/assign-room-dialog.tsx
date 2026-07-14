@@ -115,20 +115,15 @@ export function AssignRoomDialog({
                   const isMatch = reservation 
                     ? room.roomTypeId === reservation.roomTypeId && room.status === RoomStatus.VACANT_CLEAN
                     : false;
-                  const isOtherAvailable = reservation
-                    ? room.roomTypeId !== reservation.roomTypeId && room.status === RoomStatus.VACANT_CLEAN
-                    : false;
-                  
                   return (
                     <SmartRoomOption
                       key={room.id}
                       room={room}
                       roomType={roomType}
                       isMatch={isMatch}
-                      isOtherAvailable={isOtherAvailable}
                       selected={selected === room.number}
                       onSelect={() => {
-                        if (isMatch || isOtherAvailable) {
+                        if (isMatch) {
                           setSelected(room.number);
                         }
                       }}
@@ -145,7 +140,7 @@ export function AssignRoomDialog({
             Bekor qilish
           </Button>
           <Button onClick={handleConfirm} disabled={!selected}>
-            {selected ? `Xona ${selected} ga tayinlash` : "Xarita orqali xona tanlang"}
+            {selected ? `Tayinlash` : "Xona tanlang"}
           </Button>
         </div>
       </div>
@@ -157,18 +152,16 @@ function SmartRoomOption({
   room,
   roomType,
   isMatch,
-  isOtherAvailable,
   selected,
   onSelect,
 }: {
   room: Room;
   roomType?: RoomType;
   isMatch: boolean;
-  isOtherAvailable: boolean;
   selected: boolean;
   onSelect: () => void;
 }) {
-  const isAvailable = isMatch || isOtherAvailable;
+  const isAvailable = isMatch;
   
   return (
     <button
@@ -182,9 +175,7 @@ function SmartRoomOption({
           ? "border-brand-500 bg-brand-50 shadow-md ring-1 ring-brand-500 dark:bg-brand-900/40 dark:border-brand-400 dark:ring-brand-400"
           : isMatch
             ? "border-emerald-200 bg-emerald-50/50 hover:border-emerald-400 hover:bg-emerald-50 hover:shadow-sm cursor-pointer dark:bg-emerald-900/10 dark:border-emerald-900/60 dark:hover:bg-emerald-900/20"
-            : isOtherAvailable
-              ? "border-amber-200 bg-amber-50/50 hover:border-amber-400 hover:bg-amber-50 cursor-pointer opacity-80 dark:bg-amber-900/10 dark:border-amber-900/50"
-              : "border-zinc-100 bg-zinc-50/50 opacity-40 cursor-not-allowed grayscale dark:border-zinc-800 dark:bg-zinc-900/30"
+            : "border-zinc-100 bg-zinc-50/50 opacity-40 cursor-not-allowed grayscale dark:border-zinc-800 dark:bg-zinc-900/30"
       )}
     >
       {selected && (

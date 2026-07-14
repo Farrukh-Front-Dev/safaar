@@ -16,18 +16,16 @@ import { Download, Mail } from "lucide-react";
 import type { AdminManagedUser } from "@/types/admin";
 import { exportToExcel } from "@/lib/export";
 
+import { useAdminStore } from "@/lib/store";
+
 const ITEMS_PER_PAGE = 12;
 
 export default function UsersPage() {
   const router = useRouter();
-  const [users, setUsers] = useState<AdminManagedUser[]>([]);
+  const users = useAdminStore((s) => s.users);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
-
-  useEffect(() => {
-    MockApi.getUsers().then(setUsers);
-  }, []);
 
   const filtered = useMemo(() => {
     let result = users;

@@ -120,10 +120,7 @@ export function ReservationDetailView({ id }: { id: string }) {
             {canCheckIn && (
               <Button
                 size="sm"
-                onClick={() => {
-                  checkIn(data.id);
-                  toast.success("Check-in qilindi");
-                }}
+                onClick={() => setAssignOpen(true)}
               >
                 Check-in qilish
               </Button>

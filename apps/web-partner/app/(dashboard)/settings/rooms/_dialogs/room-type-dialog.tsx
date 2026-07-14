@@ -32,8 +32,6 @@ const schema = z.object({
   description: z.string().max(180, "Tavsif 180 belgidan oshmasin").optional(),
   imageUrl: z
     .string()
-    .url("Rasm linki noto'g'ri")
-    .or(z.literal(""))
     .optional(),
   bedType: z.string().max(60, "Juda uzun").optional(),
   sizeSqm: z.number().min(0).max(500).optional(),
@@ -211,28 +209,34 @@ export function RoomTypeDialog({ open, onClose, editing }: Props) {
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="rt-image">Xona rasmi</Label>
-            <div className="aspect-[4/3] overflow-hidden rounded-card border border-[var(--border)] bg-[var(--surface-muted)]">
+            <Label>Xona rasmi</Label>
+            <label className="group relative aspect-[4/3] cursor-pointer overflow-hidden rounded-card border-2 border-dashed border-[var(--border)] bg-[var(--surface-muted)] transition-colors hover:border-brand-500 hover:bg-[var(--surface)]">
               {imageUrl ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   src={imageUrl}
                   alt=""
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover transition-opacity group-hover:opacity-80"
                 />
               ) : (
                 <div className="flex h-full flex-col items-center justify-center gap-2 text-[var(--muted-foreground)]">
-                  <ImageIcon className="h-8 w-8" aria-hidden />
-                  <span className="text-xs">Rasm linki kiriting</span>
+                  <ImageIcon className="h-8 w-8 transition-transform group-hover:scale-110" aria-hidden />
+                  <span className="text-xs font-medium">Rasm tanlash uchun bosing</span>
                 </div>
               )}
-            </div>
-            <Input
-              id="rt-image"
-              placeholder="https://..."
-              aria-invalid={Boolean(err.imageUrl)}
-              {...form.register("imageUrl")}
-            />
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const url = URL.createObjectURL(file);
+                    form.setValue("imageUrl", url);
+                  }
+                }}
+              />
+            </label>
             {err.imageUrl && (
               <p className="text-xs text-red-600">{err.imageUrl.message}</p>
             )}

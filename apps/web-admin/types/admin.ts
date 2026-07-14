@@ -18,6 +18,32 @@ export interface AdminUser {
   createdAt: string;
 }
 
+export interface AdminListing {
+  id: string;
+  partnerId: string;
+  companyName: string;
+  hotelName: string;
+  city: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  stars: number;
+  photos?: string[];
+  description?: string;
+  amenities?: string[];
+  rules?: {
+    checkInTime?: string;
+    checkOutTime?: string;
+    childrenAllowed?: boolean;
+    petsAllowed?: boolean;
+    smokingAllowed?: boolean;
+    cancellationPolicy?: string;
+  };
+  roomsCount?: number;
+  status: "under_review" | "published" | "rejected";
+  submittedAt: string;
+}
+
 /* ────────────────────────────────────────────
    Dashboard
    ──────────────────────────────────────────── */

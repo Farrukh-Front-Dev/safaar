@@ -7,6 +7,7 @@ import {
   Settings,
   Users,
   BedDouble,
+  LifeBuoy,
   type LucideIcon,
 } from "lucide-react";
 
@@ -48,6 +49,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Hisobotlar", href: "/reports", icon: BarChart3 },
       { label: "Sozlamalar", href: "/settings/hotel", icon: Settings },
+      { label: "Yordam", href: "/support", icon: LifeBuoy },
     ],
   },
 ];

@@ -16,19 +16,17 @@ import { Download } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { exportToExcel } from "@/lib/export";
 
+import { useAdminStore } from "@/lib/store";
+
 const ITEMS_PER_PAGE = 12;
 
 export default function HotelBookingsPage() {
   const router = useRouter();
-  const [bookings, setBookings] = useState<AdminHotelBooking[]>([]);
+  const bookings = useAdminStore((s) => s.hotelBookings);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("");
   const [page, setPage] = useState(1);
-
-  useEffect(() => {
-    MockApi.getBookings().then(setBookings);
-  }, []);
 
   const filtered = useMemo(() => {
     let result = bookings;

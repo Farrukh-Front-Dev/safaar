@@ -13,11 +13,22 @@ import {
   Hotel, Bus, User, CreditCard, Clock, CheckCircle,
 } from "lucide-react";
 
+import { useRouter } from "next/navigation";
+import { useAdminStore } from "@/lib/store";
+import { toast } from "sonner";
+
 export default function BookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const booking = getMockBookingDetail(id);
+  const router = useRouter();
+  
+  const hotelBookings = useAdminStore((s) => s.hotelBookings);
+  const busBookings = useAdminStore((s) => s.busBookings);
+  const updateHotelBookingStatus = useAdminStore((s) => s.updateHotelBookingStatus);
+  const updateBusBookingStatus = useAdminStore((s) => s.updateBusBookingStatus);
 
-  if (!booking) {
+  const baseBooking = getMockBookingDetail(id);
+
+  if (!baseBooking) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
         <p className="text-lg text-[var(--text-muted)]">Bron topilmadi</p>
@@ -28,7 +39,28 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  const isHotel = booking.serviceType === "hotel";
+  const isHotel = baseBooking.serviceType === "hotel";
+  
+  // Find real-time status from store
+  const storeBooking = isHotel 
+    ? hotelBookings.find(b => b.id === id) 
+    : busBookings.find(b => b.id === id);
+    
+  const booking = {
+    ...baseBooking,
+    status: storeBooking ? storeBooking.status : baseBooking.status,
+  };
+
+  const handleCancel = () => {
+    if (confirm("Rostdan ham ushbu bronni bekor qilmoqchimisiz?")) {
+      if (isHotel) {
+        updateHotelBookingStatus(id, "CANCELLED" as any);
+      } else {
+        updateBusBookingStatus(id, "CANCELLED" as any);
+      }
+      toast.success("Bron bekor qilindi!");
+    }
+  };
 
   return (
     <div className="max-w-[1200px] mx-auto flex flex-col gap-6">
@@ -67,7 +99,11 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
 
         {/* Actions */}
         <div className="flex items-center gap-2 flex-wrap">
-          <Button variant="danger" size="sm" icon={<Ban size={14} />}>Bekor qilish</Button>
+          {booking.status !== "CANCELLED" && (
+            <Button variant="danger" size="sm" icon={<Ban size={14} />} onClick={handleCancel}>
+              Bekor qilish
+            </Button>
+          )}
           <Button variant="secondary" size="sm" icon={<DollarSign size={14} />}>Refund</Button>
           <Button variant="secondary" size="sm" icon={<Printer size={14} />}>Chop etish</Button>
         </div>

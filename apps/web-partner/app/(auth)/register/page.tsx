@@ -107,7 +107,7 @@ export default function RegisterPage() {
           <option value="guesthouse">Mehmon uyi</option>
           <option value="motel">Motel</option>
           <option value="dacha">Dacha</option>
-          <option value="bus">Avtobus</option>
+          <option value="bus" disabled>Transport (Tez kunda)</option>
         </select>
       </Field>
       <Field label="Obyekt yoki Kompaniya nomi" error={form.formState.errors.companyName?.message}>

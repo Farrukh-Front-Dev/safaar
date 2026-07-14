@@ -14,9 +14,20 @@ import {
   CalendarCheck, CreditCard, AlertTriangle,
 } from "lucide-react";
 
+import { useRouter } from "next/navigation";
+import { useAdminStore } from "@/lib/store";
+import { toast } from "sonner";
+
 export default function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const user = mockUsers.find((u) => u.id === id);
+  const router = useRouter();
+  
+  const users = useAdminStore((s) => s.users);
+  const updateUserStatus = useAdminStore((s) => s.updateUserStatus);
+  const setUsers = useAdminStore((s) => s.setUsers);
+  const hotelBookings = useAdminStore((s) => s.hotelBookings);
+  
+  const user = users.find((u) => u.id === id);
 
   if (!user) {
     return (
@@ -29,10 +40,26 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
     );
   }
 
-  const userBookings = mockHotelBookings.slice(0, 5).map((b) => ({
-    ...b,
-    customerName: user.fullName,
-  }));
+  const userBookings = hotelBookings
+    .filter(b => b.customerName === user.fullName || b.customerPhone === user.phone)
+    .slice(0, 5)
+    .map((b) => ({
+      ...b,
+      customerName: user.fullName,
+    }));
+
+  const handleStatusChange = (status: "active" | "blocked" | "unverified") => {
+    updateUserStatus(id, status);
+    toast.success("Foydalanuvchi holati yangilandi!");
+  };
+
+  const handleDelete = () => {
+    if (confirm("Rostdan ham ushbu foydalanuvchini o'chirmoqchimisiz?")) {
+      setUsers(users.filter((u) => u.id !== id));
+      toast.success("Foydalanuvchi o'chirildi!");
+      router.push("/users");
+    }
+  };
 
   return (
     <div className="max-w-[1200px] mx-auto flex flex-col gap-6">
@@ -65,11 +92,11 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
           {/* Actions */}
           <div className="flex items-center gap-2 flex-wrap">
             {user.status === "active" ? (
-              <Button variant="danger" size="sm" icon={<Ban size={14} />}>
+              <Button variant="danger" size="sm" icon={<Ban size={14} />} onClick={() => handleStatusChange("blocked")}>
                 Bloklash
               </Button>
             ) : (
-              <Button variant="accent" size="sm" icon={<CheckCircle size={14} />}>
+              <Button variant="accent" size="sm" icon={<CheckCircle size={14} />} onClick={() => handleStatusChange("active")}>
                 Faollashtirish
               </Button>
             )}
@@ -82,7 +109,7 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
             <Button variant="secondary" size="sm" icon={<Gift size={14} />}>
               Bonus berish
             </Button>
-            <Button variant="ghost" size="sm" icon={<Trash2 size={14} />}>
+            <Button variant="ghost" size="sm" icon={<Trash2 size={14} />} onClick={handleDelete}>
               O&apos;chirish
             </Button>
           </div>

@@ -30,7 +30,7 @@ export function PartnerTypeDisplay({ type }: { type: ExtendedPartnerType }) {
       break;
     case "bus":
       icon = <Bus size={14} className="text-[var(--info)]" />;
-      label = "Avtobus";
+      label = "Transport";
       break;
     default:
       label = type ? type.charAt(0).toUpperCase() + type.slice(1) : "Noma'lum";

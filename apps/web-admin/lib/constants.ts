@@ -46,6 +46,7 @@ export const SIDEBAR_ITEMS: NavItem[] = [
     children: [
       { label: "Arizalar", href: "/partners/requests", icon: "FileText", badge: 5 },
       { label: "Ro'yxat", href: "/partners/list", icon: "List" },
+      { label: "E'lonlar", href: "/partners/listings", icon: "Megaphone" },
     ],
   },
   {
@@ -54,7 +55,7 @@ export const SIDEBAR_ITEMS: NavItem[] = [
     icon: "CalendarCheck",
     children: [
       { label: "Mehmonxona", href: "/bookings/hotels", icon: "Hotel" },
-      { label: "Avtobus", href: "/bookings/buses", icon: "Bus" },
+      { label: "Transport (Tez kunda)", href: "/bookings/buses", icon: "Bus" },
     ],
   },
   {
