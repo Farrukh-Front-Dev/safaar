@@ -109,7 +109,6 @@ export async function AccommodationPage({
         dict={common.search}
         cities={cities}
         defaults={{ cityId, checkIn, checkOut, guests }}
-        propertyTypeLabels={common.propertyTypes}
       />
 
       <div className="flex flex-col gap-3">

@@ -6,7 +6,6 @@ import { Search, Calendar, Users } from "lucide-react";
 import { DatePicker } from "./DatePicker";
 import { CityPicker } from "./CityPicker";
 import { GuestPicker } from "./GuestPicker";
-import { PropertyTypeTabs } from "./PropertyTypeTabs";
 import type { PropertyType, SearchDefaults } from "./types";
 import type { Locale } from "@/i18n/config";
 import type { CommonDict } from "@/i18n/dictionaries";
@@ -19,13 +18,11 @@ export function SearchBar({
   dict,
   cities,
   defaults,
-  propertyTypeLabels,
 }: {
   locale: Locale;
   dict: CommonDict["search"];
   cities: CityOption[];
   defaults?: SearchDefaults;
-  propertyTypeLabels?: Record<PropertyType, string>;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -80,19 +77,6 @@ export function SearchBar({
         onSubmit={handleSubmit}
         className="rounded-3xl border border-slate-300 bg-white shadow-xl shadow-slate-200/70 transition-shadow duration-300 hover:shadow-2xl hover:shadow-slate-200/80"
       >
-        {/* ── Property type tabs ── */}
-        {propertyTypeLabels && (
-          <div className="border-b border-slate-300 px-5 py-3 max-md:px-4 max-md:py-2">
-            <div className="flex justify-center overflow-x-auto scrollbar-none">
-              <PropertyTypeTabs
-                activeType={activeType}
-                onChange={onTypeChange}
-                labels={propertyTypeLabels}
-              />
-            </div>
-          </div>
-        )}
-
         {/* ── Destination ── */}
         <div className="border-b border-slate-300 px-5 max-md:px-4">
           <div className="flex items-center gap-3 py-4 max-md:py-3">

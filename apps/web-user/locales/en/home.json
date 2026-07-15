@@ -36,6 +36,15 @@
     "endsIn": "Ends in",
     "days": "days"
   },
+  "reviews": {
+    "title": "Customer Reviews",
+    "items": [
+      { "name": "Shakhnoza Rakhimova", "city": "Tashkent", "rating": 5, "text": "Booked for the first time through Safaar. Very convenient and fast! The hotel was wonderful." },
+      { "name": "Jasurbek Aliyev", "city": "Samarkand", "rating": 5, "text": "Planned my trip to Samarkand through Safaar. Prices were cheaper than other sites." },
+      { "name": "Malika Karimova", "city": "Bukhara", "rating": 4, "text": "Booked a resort in Chimgan. The photos matched reality perfectly. Great organization." },
+      { "name": "Bobur Khamidov", "city": "Fergana", "rating": 5, "text": "Also got my bus ticket here. Everything in one place — so convenient. I recommend it to everyone!" }
+    ]
+  },
   "partners": {
     "title": "Trusted Partners",
     "subtitle": "Working with 500+ hotels and transport companies"
