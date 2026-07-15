@@ -68,7 +68,7 @@ export class RolesGuard implements CanActivate {
       });
     }
 
-    this.assertSessionActive(user);
+    await this.assertSessionActive(user);
     await this.assertActorAllowed(user);
 
     if (requiredRoles?.length && !hasRole(user, requiredRoles)) {
@@ -88,12 +88,12 @@ export class RolesGuard implements CanActivate {
     return true;
   }
 
-  private assertSessionActive(actor: RequestActor) {
+  private async assertSessionActive(actor: RequestActor) {
     if (!actor.sessionId || actor.sessionId === 'demo-session-id') {
       return;
     }
 
-    if (!authSessionStore.isActive(actor.sessionId)) {
+    if (!await authSessionStore.isActive(actor.sessionId)) {
       throw new UnauthorizedException({
         code: 'AUTH_SESSION_REVOKED',
         message: 'Sessiya bekor qilingan yoki muddati tugagan',

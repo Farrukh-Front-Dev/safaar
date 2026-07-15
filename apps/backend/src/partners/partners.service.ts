@@ -1049,6 +1049,11 @@ export class PartnersService {
     const params: unknown[] = [];
     let idx = 1;
 
+    if (body.city_id !== undefined || body.city !== undefined) {
+      const resolvedCityId = await this.resolveCityId(body.city_id ?? body.city);
+      sets.push(`city_id = $${idx++}`);
+      params.push(resolvedCityId);
+    }
     if (body.address !== undefined) {
       sets.push(`address = $${idx++}`);
       params.push(String(body.address));
@@ -1126,11 +1131,21 @@ export class PartnersService {
     await this.assertHotel(id, actor);
     const now = new Date().toISOString();
     if (Array.isArray(body.amenities)) {
-      const amenities = body.amenities.map(String);
+      const codes = body.amenities.map(String);
+
+      // Resolve codes → UUIDs from the amenities table
+      const resolved = await this.pg.query<{ code: string; id: string }>(
+        `SELECT code, id::text FROM amenities WHERE code = ANY($1::text[])`,
+        [codes],
+      );
+      const codeToId = new Map(resolved.map((r) => [r.code, r.id]));
+
       await this.pg.query(`DELETE FROM hotel_amenities WHERE hotel_id = $1`, [
         id,
       ]);
-      for (const amenityId of amenities) {
+      for (const code of codes) {
+        const amenityId = codeToId.get(code);
+        if (!amenityId) continue; // skip unknown codes silently
         await this.pg.query(
           `INSERT INTO hotel_amenities (hotel_id, amenity_id)
            VALUES ($1::uuid, $2::uuid)
@@ -2032,10 +2047,11 @@ export class PartnersService {
          ORDER BY created_at ASC`,
         [ids],
       ),
-      this.pg.query<{ hotel_id: string; amenity_id: string }>(
-        `SELECT hotel_id::text, amenity_id::text
-         FROM hotel_amenities
-         WHERE hotel_id = ANY($1::uuid[])`,
+      this.pg.query<{ hotel_id: string; code: string }>(
+        `SELECT ha.hotel_id::text, a.code
+         FROM hotel_amenities ha
+         JOIN amenities a ON a.id = ha.amenity_id
+         WHERE ha.hotel_id = ANY($1::uuid[])`,
         [ids],
       ),
     ]);
@@ -2065,9 +2081,9 @@ export class PartnersService {
     }
 
     for (const row of amenities) {
-      const idsForHotel = amenityMap.get(row.hotel_id) ?? [];
-      idsForHotel.push(row.amenity_id);
-      amenityMap.set(row.hotel_id, idsForHotel);
+      const codesForHotel = amenityMap.get(row.hotel_id) ?? [];
+      codesForHotel.push(row.code);
+      amenityMap.set(row.hotel_id, codesForHotel);
     }
 
     return rows.map((row) => {

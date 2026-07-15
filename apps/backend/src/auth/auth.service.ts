@@ -168,7 +168,7 @@ export class AuthService {
     }
 
     return {
-      ...this.issueTokens({
+      ...await this.issueTokens({
         actorId: String(user['id']),
         actorType: 'user',
         role: Role.USER,
@@ -332,7 +332,7 @@ export class AuthService {
     };
     this.socialAccountStore.push(social);
     return {
-      ...this.issueTokens({
+      ...await this.issueTokens({
         actorId: String(user['id']),
         actorType: 'user',
         role: Role.USER,
@@ -406,7 +406,7 @@ export class AuthService {
     }
 
     return {
-      ...this.issueTokens({
+      ...await this.issueTokens({
         actorId: partnerUser.id,
         actorType: 'partner',
         role: Role.PARTNER,
@@ -452,7 +452,7 @@ export class AuthService {
 
     if (!admin.totp_secret) {
       return {
-        ...this.issueTokens({
+        ...await this.issueTokens({
           actorId: admin.id,
           actorType: 'admin',
           role: admin.role,
@@ -476,7 +476,7 @@ export class AuthService {
     };
   }
 
-  adminVerify2fa(body: Record<string, unknown>) {
+  async adminVerify2fa(body: Record<string, unknown>) {
     const challengeId = String(body.challenge_id ?? body.chalenge_id ?? '');
     const code = String(body.code ?? '');
     const challenge = this.twoFactorChallenges.get(challengeId);
@@ -500,7 +500,7 @@ export class AuthService {
 
     this.twoFactorChallenges.delete(challengeId);
     return {
-      ...this.issueTokens({
+      ...await this.issueTokens({
         actorId: challenge.admin.id,
         actorType: 'admin',
         role: challenge.admin.role,
@@ -639,7 +639,7 @@ export class AuthService {
       [now, currentActor.id],
     );
 
-    authSessionStore.revokeActor(currentActor.id);
+    await authSessionStore.revokeActor(currentActor.id);
     return { disabled: true, sessions_revoked: true };
   }
 
@@ -659,7 +659,7 @@ export class AuthService {
     };
   }
 
-  refresh(body: Record<string, unknown>) {
+  async refresh(body: Record<string, unknown>) {
     const refreshToken = String(body.refreshToken ?? body.refresh_token ?? '');
     const payload = verifyJwt(refreshToken, 'refresh');
 
@@ -685,7 +685,7 @@ export class AuthService {
     );
 
     try {
-      authSessionStore.rotate(
+      await authSessionStore.rotate(
         payload.session_id,
         refreshToken,
         payload.jti,
@@ -706,7 +706,7 @@ export class AuthService {
     return nextTokens;
   }
 
-  logout(actor: RequestActor | undefined) {
+  async logout(actor: RequestActor | undefined) {
     const currentActor = actor ?? {
       id: '00000000-0000-0000-0000-000000000000',
       actorType: 'user',
@@ -714,30 +714,31 @@ export class AuthService {
       roles: [Role.USER],
     };
     if (currentActor.sessionId) {
-      authSessionStore.revokeSession(currentActor.sessionId);
+      await authSessionStore.revokeSession(currentActor.sessionId);
     }
     return { actor_id: currentActor.id, logged_out: true };
   }
 
-  logoutAll(actor: RequestActor | undefined) {
+  async logoutAll(actor: RequestActor | undefined) {
     const currentActor = actor ?? {
       id: '00000000-0000-0000-0000-000000000000',
       actorType: 'user',
       role: Role.USER,
       roles: [Role.USER],
     };
-    const revoked = authSessionStore.revokeActor(currentActor.id);
+    const revoked = await authSessionStore.revokeActor(currentActor.id);
     return { actor_id: currentActor.id, revoked_sessions: revoked };
   }
 
-  sessions(actor: RequestActor | undefined) {
+  async sessions(actor: RequestActor | undefined) {
     const currentActor = actor ?? {
       id: '00000000-0000-0000-0000-000000000000',
       actorType: 'user',
       role: Role.USER,
       roles: [Role.USER],
     };
-    return authSessionStore.listForActor(currentActor.id).map((session) => ({
+    const sessionList = await authSessionStore.listForActor(currentActor.id);
+    return sessionList.map((session) => ({
       id: session.id,
       actor_id: session.actorId,
       role: session.role,
@@ -750,14 +751,14 @@ export class AuthService {
     }));
   }
 
-  revokeSession(actor: RequestActor | undefined, id: string) {
+  async revokeSession(actor: RequestActor | undefined, id: string) {
     const currentActor = actor ?? {
       id: '00000000-0000-0000-0000-000000000000',
       actorType: 'user',
       role: Role.USER,
       roles: [Role.USER],
     };
-    const session = authSessionStore.get(id);
+    const session = await authSessionStore.get(id);
 
     if (!session || session.actorId !== currentActor.id) {
       throw new UnauthorizedException({
@@ -766,7 +767,7 @@ export class AuthService {
       });
     }
 
-    authSessionStore.revokeSession(id);
+    await authSessionStore.revokeSession(id);
     return { id, actor_id: currentActor.id, revoked: true };
   }
 
@@ -825,13 +826,13 @@ export class AuthService {
     }
   }
 
-  private issueTokens(input: IssueTokenInput): AuthTokens {
+  private async issueTokens(input: IssueTokenInput): Promise<AuthTokens> {
     const sessionId = randomUUID();
     const familyId = randomUUID();
     const refreshJti = randomUUID();
     const tokens = this.signTokenPair(input, sessionId, familyId, refreshJti);
 
-    authSessionStore.create({
+    await authSessionStore.create({
       sessionId,
       familyId,
       actorId: input.actorId,
@@ -945,7 +946,7 @@ export class AuthService {
     const actorId = row['user_id'] ? String(row['user_id']) : organizationId;
 
     return {
-      ...this.issueTokens({
+      ...await this.issueTokens({
         actorId,
         actorType: 'partner',
         role: Role.PARTNER,
@@ -999,7 +1000,7 @@ export class AuthService {
     const actorId = row['user_id'] ? String(row['user_id']) : organizationId;
 
     return {
-      ...this.issueTokens({
+      ...await this.issueTokens({
         actorId,
         actorType: 'partner',
         role: Role.PARTNER,

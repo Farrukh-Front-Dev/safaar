@@ -1,4 +1,5 @@
 import { Role, type ActorType } from '@agoda/types';
+import { Pool, type QueryResultRow } from 'pg';
 import { hashSecret, jwtSecurityConfig } from './security';
 
 export interface AuthSessionRecord {
@@ -36,60 +37,123 @@ export interface CreateSessionInput {
 }
 
 class AuthSessionStore {
-  private readonly sessions = new Map<string, AuthSessionRecord>();
+  private pool: Pool | null = null;
 
-  create(input: CreateSessionInput): AuthSessionRecord {
-    const now = new Date().toISOString();
-    const record: AuthSessionRecord = {
-      id: input.sessionId,
-      actorId: input.actorId,
-      actorType: input.actorType,
-      role: input.role,
-      roles: input.roles,
-      organizationId: input.organizationId,
-      familyId: input.familyId,
-      refreshHash: hashSecret(input.refreshToken),
-      refreshJti: input.refreshJti,
-      refreshExpiresAt:
-        Date.now() + jwtSecurityConfig().refreshTtlSeconds * 1000,
-      createdAt: now,
-      updatedAt: now,
-      ipAddress: input.ipAddress,
-      userAgent: input.userAgent,
-    };
-    this.sessions.set(record.id, record);
-    return record;
-  }
-
-  get(id: string | undefined): AuthSessionRecord | undefined {
-    if (!id) {
-      return undefined;
+  private getPool(): Pool {
+    if (!this.pool) {
+      const url = process.env.DATABASE_URL;
+      if (!url) {
+        throw new Error(
+          'AuthSessionStore: DATABASE_URL is required for session persistence',
+        );
+      }
+      this.pool = new Pool({ connectionString: url, max: 3 });
     }
-
-    return this.sessions.get(id);
+    return this.pool;
   }
 
-  isActive(id: string | undefined): boolean {
-    const session = this.get(id);
+  private async query<T extends QueryResultRow = Record<string, unknown>>(
+    sql: string,
+    params: unknown[] = [],
+  ): Promise<T[]> {
+    const { rows } = await this.getPool().query<T>(sql, [...params]);
+    return rows;
+  }
+
+  private rowToRecord(row: Record<string, unknown>): AuthSessionRecord {
+    return {
+      id: String(row.id),
+      actorId: String(row.actor_id),
+      actorType: String(row.actor_type) as ActorType,
+      role: String(row.role) as Role,
+      roles: (row.roles as unknown as Role[]) ?? [],
+      organizationId: row.organization_id
+        ? String(row.organization_id)
+        : null,
+      familyId: String(row.family_id),
+      refreshHash: String(row.refresh_hash),
+      refreshJti: String(row.refresh_jti),
+      refreshExpiresAt: Number(row.refresh_expires_at),
+      revokedAt: row.revoked_at ? String(row.revoked_at) : undefined,
+      replacedByJti: row.replaced_by_jti
+        ? String(row.replaced_by_jti)
+        : undefined,
+      createdAt: String(row.created_at),
+      updatedAt: String(row.updated_at),
+      lastUsedAt: row.last_used_at ? String(row.last_used_at) : undefined,
+      ipAddress: row.ip_address ? String(row.ip_address) : undefined,
+      userAgent: row.user_agent ? String(row.user_agent) : undefined,
+    };
+  }
+
+  async create(input: CreateSessionInput): Promise<AuthSessionRecord> {
+    const now = new Date().toISOString();
+    const refreshExpiresAt =
+      Date.now() + jwtSecurityConfig().refreshTtlSeconds * 1000;
+    const refreshHash = hashSecret(input.refreshToken);
+
+    const rows = await this.query(
+      `INSERT INTO auth_sessions (
+         id, actor_id, actor_type, role, roles, organization_id,
+         family_id, refresh_hash, refresh_jti, refresh_expires_at,
+         created_at, updated_at, ip_address, user_agent
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+       RETURNING *`,
+      [
+        input.sessionId,
+        input.actorId,
+        input.actorType,
+        input.role,
+        input.roles,
+        input.organizationId ?? null,
+        input.familyId,
+        refreshHash,
+        input.refreshJti,
+        refreshExpiresAt,
+        now,
+        now,
+        input.ipAddress ?? null,
+        input.userAgent ?? null,
+      ],
+    );
+
+    return this.rowToRecord(rows[0] as Record<string, unknown>);
+  }
+
+  async get(id: string | undefined): Promise<AuthSessionRecord | undefined> {
+    if (!id) return undefined;
+    const rows = await this.query(
+      'SELECT * FROM auth_sessions WHERE id = $1',
+      [id],
+    );
+    return rows[0] ? this.rowToRecord(rows[0] as Record<string, unknown>) : undefined;
+  }
+
+  async isActive(id: string | undefined): Promise<boolean> {
+    const session = await this.get(id);
     return Boolean(
       session && !session.revokedAt && session.refreshExpiresAt > Date.now(),
     );
   }
 
-  listForActor(actorId: string): AuthSessionRecord[] {
-    return [...this.sessions.values()]
-      .filter((session) => session.actorId === actorId)
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  async listForActor(actorId: string): Promise<AuthSessionRecord[]> {
+    const rows = await this.query(
+      `SELECT * FROM auth_sessions
+       WHERE actor_id = $1
+       ORDER BY created_at DESC`,
+      [actorId],
+    );
+    return rows.map((r) => this.rowToRecord(r as Record<string, unknown>));
   }
 
-  rotate(
+  async rotate(
     sessionId: string,
     refreshToken: string,
     refreshJti: string,
     nextRefreshToken: string,
     nextRefreshJti: string,
-  ): AuthSessionRecord {
-    const session = this.sessions.get(sessionId);
+  ): Promise<AuthSessionRecord> {
+    const session = await this.get(sessionId);
     if (
       !session ||
       session.revokedAt ||
@@ -102,54 +166,60 @@ class AuthSessionStore {
       session.refreshJti !== refreshJti ||
       session.refreshHash !== hashSecret(refreshToken)
     ) {
-      this.revokeFamily(session.familyId);
+      await this.revokeFamily(session.familyId);
       throw new Error('AUTH_REFRESH_REUSED');
     }
 
     const now = new Date().toISOString();
-    session.refreshHash = hashSecret(nextRefreshToken);
-    session.replacedByJti = nextRefreshJti;
-    session.refreshJti = nextRefreshJti;
-    session.refreshExpiresAt =
+    const newRefreshExpiresAt =
       Date.now() + jwtSecurityConfig().refreshTtlSeconds * 1000;
-    session.lastUsedAt = now;
-    session.updatedAt = now;
-    return session;
+    const newRefreshHash = hashSecret(nextRefreshToken);
+
+    const rows = await this.query(
+      `UPDATE auth_sessions
+       SET refresh_hash = $1,
+           replaced_by_jti = $2,
+           refresh_jti = $3,
+           refresh_expires_at = $4,
+           last_used_at = $5,
+           updated_at = $5
+       WHERE id = $6
+       RETURNING *`,
+      [newRefreshHash, nextRefreshJti, nextRefreshJti, newRefreshExpiresAt, now, sessionId],
+    );
+
+    return this.rowToRecord(rows[0] as Record<string, unknown>);
   }
 
-  revokeSession(id: string): boolean {
-    const session = this.sessions.get(id);
-    if (!session) {
-      return false;
-    }
-
-    session.revokedAt = new Date().toISOString();
-    session.updatedAt = session.revokedAt;
-    return true;
+  async revokeSession(id: string): Promise<boolean> {
+    const result = await this.query(
+      `UPDATE auth_sessions
+       SET revoked_at = now(), updated_at = now()
+       WHERE id = $1 AND revoked_at IS NULL
+       RETURNING id`,
+      [id],
+    );
+    return result.length > 0;
   }
 
-  revokeActor(actorId: string): number {
-    let count = 0;
-    for (const session of this.sessions.values()) {
-      if (session.actorId === actorId && !session.revokedAt) {
-        session.revokedAt = new Date().toISOString();
-        session.updatedAt = session.revokedAt;
-        count += 1;
-      }
-    }
-    return count;
+  async revokeActor(actorId: string): Promise<number> {
+    const result = await this.query(
+      `UPDATE auth_sessions
+       SET revoked_at = now(), updated_at = now()
+       WHERE actor_id = $1 AND revoked_at IS NULL`,
+      [actorId],
+    );
+    return (result as unknown[]).length;
   }
 
-  revokeFamily(familyId: string): number {
-    let count = 0;
-    for (const session of this.sessions.values()) {
-      if (session.familyId === familyId && !session.revokedAt) {
-        session.revokedAt = new Date().toISOString();
-        session.updatedAt = session.revokedAt;
-        count += 1;
-      }
-    }
-    return count;
+  async revokeFamily(familyId: string): Promise<number> {
+    const result = await this.query(
+      `UPDATE auth_sessions
+       SET revoked_at = now(), updated_at = now()
+       WHERE family_id = $1 AND revoked_at IS NULL`,
+      [familyId],
+    );
+    return (result as unknown[]).length;
   }
 }
 

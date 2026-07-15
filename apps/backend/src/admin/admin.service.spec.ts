@@ -65,4 +65,61 @@ describe('AdminService frontend action endpoints', () => {
       status: 'approved',
     });
   });
+
+  it('loads admin settings from persistent storage with defaults', async () => {
+    pgMock.query.mockResolvedValue([
+      {
+        group_key: 'general',
+        value: {
+          support_email: 'help@safaar.uz',
+          maintenance_mode: true,
+        },
+      },
+      {
+        group_key: 'finance',
+        value: {
+          hotel_commission_rate: 17,
+        },
+      },
+    ]);
+
+    await expect(service.settings()).resolves.toMatchObject({
+      general: {
+        app_name: 'UzBron',
+        support_email: 'help@safaar.uz',
+        maintenance_mode: true,
+      },
+      finance: {
+        hotel_commission_rate: 17,
+        bus_commission_rate: 10,
+      },
+    });
+  });
+
+  it('persists admin settings groups and audits the change', async () => {
+    pgMock.query
+      .mockResolvedValueOnce([
+        {
+          group_key: 'finance',
+          value: {
+            hotel_commission_rate: 18,
+            bus_commission_rate: 11,
+          },
+          updated_at: '2026-07-14T12:30:00.000Z',
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    await expect(
+      service.settingsGroup(actor, 'finance', {
+        hotel_commission_rate: 18,
+        bus_commission_rate: 11,
+      }),
+    ).resolves.toMatchObject({
+      group: 'finance',
+      hotel_commission_rate: 18,
+      bus_commission_rate: 11,
+    });
+    expect(pgMock.query).toHaveBeenCalledTimes(2);
+  });
 });

@@ -12,23 +12,32 @@ import { PostgresService } from '../infrastructure/postgres.service';
 export class SupportService {
   constructor(private readonly pg: PostgresService) {}
 
-  async create(actor: RequestActor | undefined, body: Record<string, unknown>) {
-    const currentActor: RequestActor = actor ?? {
+  private defaultActor(): RequestActor {
+    return {
       id: '00000000-0000-0000-0000-000000000000',
       actorType: 'user',
       role: Role.USER,
       roles: [Role.USER],
     };
+  }
+
+  async create(actor: RequestActor | undefined, body: Record<string, unknown>) {
+    const a = actor ?? this.defaultActor();
     const now = new Date().toISOString();
     const id = randomUUID();
+    const actorType = a.actorType === 'partner' ? 'partner' : 'user';
+    const userId = actorType === 'user' ? a.id : null;
+    const actorId = a.id;
 
     const [ticket] = await this.pg.query(
-      `INSERT INTO support_tickets (id, user_id, subject, priority, status, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO support_tickets (id, user_id, actor_type, actor_id, subject, priority, status, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
       [
         id,
-        currentActor.id,
+        userId,
+        actorType,
+        actorId,
         String(body.subject ?? ''),
         String(body.priority ?? 'normal'),
         'open',
@@ -41,18 +50,21 @@ export class SupportService {
   }
 
   async list(actor: RequestActor | undefined) {
-    const currentActor: RequestActor = actor ?? {
-      id: '00000000-0000-0000-0000-000000000000',
-      actorType: 'user',
-      role: Role.USER,
-      roles: [Role.USER],
-    };
+    const a = actor ?? this.defaultActor();
+    const isPartner = a.actorType === 'partner';
+
+    if (isPartner) {
+      const tickets = await this.pg.query(
+        'SELECT * FROM support_tickets WHERE actor_id = $1 AND actor_type = $2 ORDER BY created_at DESC',
+        [a.id, 'partner'],
+      );
+      return tickets;
+    }
 
     const tickets = await this.pg.query(
       'SELECT * FROM support_tickets WHERE user_id = $1 ORDER BY created_at DESC',
-      [currentActor.id],
+      [a.id],
     );
-
     return tickets;
   }
 
@@ -76,14 +88,11 @@ export class SupportService {
     body: Record<string, unknown>,
   ) {
     await this.assertTicket(actor, id);
-    const currentActor: RequestActor = actor ?? {
-      id: '00000000-0000-0000-0000-000000000000',
-      actorType: 'user',
-      role: Role.USER,
-      roles: [Role.USER],
-    };
+    const a = actor ?? this.defaultActor();
     const now = new Date().toISOString();
     const messageId = randomUUID();
+
+    const senderType = a.actorType === 'partner' ? 'partner' : a.actorType === 'admin' ? 'admin' : 'user';
 
     const [message] = await this.pg.query(
       `INSERT INTO support_messages (id, ticket_id, sender_type, sender_id, body, created_at)
@@ -92,8 +101,8 @@ export class SupportService {
       [
         messageId,
         id,
-        currentActor.actorType,
-        currentActor.id,
+        senderType,
+        a.id,
         String(body.body ?? ''),
         now,
       ],
@@ -122,12 +131,7 @@ export class SupportService {
   }
 
   private async assertTicket(actor: RequestActor | undefined, id: string) {
-    const currentActor: RequestActor = actor ?? {
-      id: '00000000-0000-0000-0000-000000000000',
-      actorType: 'user',
-      role: Role.USER,
-      roles: [Role.USER],
-    };
+    const a = actor ?? this.defaultActor();
 
     const [ticket] = await this.pg.query(
       'SELECT * FROM support_tickets WHERE id = $1',
@@ -141,17 +145,24 @@ export class SupportService {
       });
     }
 
-    if (
-      currentActor.role !== Role.SUPER_ADMIN &&
-      currentActor.actorType !== 'admin' &&
-      ticket.user_id !== currentActor.id
-    ) {
-      throw new ForbiddenException({
-        code: 'SUPPORT_FORBIDDEN',
-        message: 'Bu ticket sizga tegishli emas',
-      });
+    // Admin / super_admin can access any ticket
+    if (a.role === Role.SUPER_ADMIN || a.actorType === 'admin') {
+      return ticket;
     }
 
-    return ticket;
+    // User ownership check
+    if (ticket.user_id && ticket.user_id === a.id) {
+      return ticket;
+    }
+
+    // Partner ownership check
+    if (ticket.actor_type === 'partner' && ticket.actor_id === a.id) {
+      return ticket;
+    }
+
+    throw new ForbiddenException({
+      code: 'SUPPORT_FORBIDDEN',
+      message: 'Bu ticket sizga tegishli emas',
+    });
   }
 }

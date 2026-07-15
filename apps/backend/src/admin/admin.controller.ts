@@ -632,10 +632,11 @@ export class AdminController {
   @Patch('settings/:group')
   @Permissions(Permission.SettingsWrite)
   settingsGroup(
+    @CurrentActor() actor: RequestActor | undefined,
     @Param('group') group: string,
     @Body() body: Record<string, unknown>,
   ) {
-    return this.adminService.settingsGroup(group, body);
+    return this.adminService.settingsGroup(actor, group, body);
   }
 
   @Patch('settings/providers/:provider')

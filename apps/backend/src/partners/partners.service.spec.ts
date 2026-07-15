@@ -43,7 +43,23 @@ describe('PartnersService frontend action endpoints', () => {
   });
 
   it('supports room type and bulk room buttons from the partner listing UI', async () => {
-    const roomType = service.createRoomType(actor, hotelId, {
+    pgMock.query
+      .mockResolvedValueOnce([hotelRow])
+      .mockResolvedValueOnce([
+        {
+          id: '00000000-0000-0000-0000-000000000004',
+          code: 'deluxe',
+          name: { uz: 'Deluxe', ru: 'Deluxe', en: 'Deluxe' },
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      ])
+      .mockResolvedValueOnce([hotelRow])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    const roomType = await service.createRoomType(actor, hotelId, {
       name: 'Deluxe',
     });
     const bulk = await service.createRoomsBulk(actor, hotelId, {
@@ -53,7 +69,7 @@ describe('PartnersService frontend action endpoints', () => {
       basePrice: 90000000,
     });
 
-    expect(roomType.name.uz).toBe('Deluxe');
+    expect((roomType.name as { uz: string }).uz).toBe('Deluxe');
     expect(bulk).toMatchObject({ ok: true, added: 2 });
   });
 

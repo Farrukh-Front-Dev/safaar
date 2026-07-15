@@ -263,9 +263,23 @@ model AdminUser {
   deletedAt    DateTime? @map("deleted_at") @db.Timestamptz
 
   recoveryCodes AdminRecoveryCode[]
+  settings      AdminSetting[] @relation("AdminSettingUpdatedBy")
 
   @@index([deletedAt, createdAt])
   @@map("admin_users")
+}
+
+model AdminSetting {
+  groupKey  String   @id @map("group_key") @db.VarChar(80)
+  value     Json     @default("{}")
+  updatedBy String?  @map("updated_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  updatedByAdmin AdminUser? @relation("AdminSettingUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
+
+  @@index([updatedAt])
+  @@map("admin_settings")
 }
 
 model AdminRecoveryCode {
@@ -835,19 +849,21 @@ model Notification {
 }
 
 model SupportTicket {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String?   @map("user_id") @db.Uuid
+  actorType String    @default("user") @map("actor_type") @db.VarChar(32)
+  actorId   String?   @map("actor_id") @db.Uuid
   subject   String
-  priority  String   @default("normal") @db.VarChar(32)
-  status    String   @default("open") @db.VarChar(32)
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  priority  String    @default("normal") @db.VarChar(32)
+  status    String    @default("open") @db.VarChar(32)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 
-  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages SupportMessage[]
 
   @@index([userId, status])
   @@index([userId, status, createdAt])
+  @@index([actorId])
   @@index([status, createdAt])
   @@map("support_tickets")
 }

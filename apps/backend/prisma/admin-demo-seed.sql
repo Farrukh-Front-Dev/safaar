@@ -30,12 +30,44 @@ set region_id = excluded.region_id, name = excluded.name, slug = excluded.slug, 
 
 insert into amenities (id, code, name, created_at, updated_at)
 values
+  -- Internet va texnika
   ('00000000-0000-1003-0000-000000000001', 'wifi', '{"uz":"Bepul Wi-Fi","ru":"Бесплатный Wi-Fi","en":"Free Wi-Fi"}', now(), now()),
-  ('00000000-0000-1003-0000-000000000002', 'pool', '{"uz":"Hovuz","ru":"Бассейн","en":"Pool"}', now(), now()),
-  ('00000000-0000-1003-0000-000000000003', 'parking', '{"uz":"Avtoturargoh","ru":"Парковка","en":"Parking"}', now(), now()),
-  ('00000000-0000-1003-0000-000000000004', 'breakfast', '{"uz":"Nonushta","ru":"Завтрак","en":"Breakfast"}', now(), now()),
-  ('00000000-0000-1003-0000-000000000005', 'air_conditioner', '{"uz":"Konditsioner","ru":"Кондиционер","en":"Air conditioner"}', now(), now()),
-  ('00000000-0000-1003-0000-000000000006', 'tv', '{"uz":"Televizor","ru":"Телевизор","en":"TV"}', now(), now())
+  ('00000000-0000-1003-0000-000000000002', 'wifi_public', '{"uz":"Umumiy joylarda Wi-Fi","ru":"Wi-Fi в общественных зонах","en":"Public area Wi-Fi"}', now(), now()),
+  ('00000000-0000-1003-0000-000000000003', 'workspace', '{"uz":"Ish stoli","ru":"Рабочий стол","en":"Workspace"}', now(), now()),
+  ('00000000-0000-1003-0000-000000000004', 'tv', '{"uz":"Televizor","ru":"Телевизор","en":"TV"}', now(), now()),
+  -- Ovqat va ichimlik
+  ('00000000-0000-1003-0000-000000000005', 'breakfast', '{"uz":"Nonushta","ru":"Завтрак","en":"Breakfast"}', now(), now()),
+  ('00000000-0000-1003-0000-000000000006', 'restaurant', '{"uz":"Restoran","ru":"Ресторан","en":"Restaurant"}', now(), now()),
+  ('00000000-0000-1003-0000-000000000007', 'bar', '{"uz":"Bar","ru":"Бар","en":"Bar"}', now(), now()),
+  ('00000000-0000-1003-0000-000000000008', 'minibar', '{"uz":"Mini-bar","ru":"Мини-бар","en":"Mini-bar"}', now(), now()),
+  ('00000000-0000-1003-0000-000000000009', 'room_service', '{"uz":"Xonaga xizmat (24/7)","ru":"Обслуживание в номер (24/7)","en":"Room service (24/7)"}', now(), now()),
+  ('00000000-0000-1003-0000-00000000000a', 'kitchen', '{"uz":"Umumiy oshxona","ru":"Общая кухня","en":"Shared kitchen"}', now(), now()),
+  -- Sog'lomlashtirish
+  ('00000000-0000-1003-0000-00000000000b', 'pool', '{"uz":"Hovuz","ru":"Бассейн","en":"Pool"}', now(), now()),
+  ('00000000-0000-1003-0000-00000000000c', 'gym', '{"uz":"Fitness zal","ru":"Фитнес зал","en":"Gym"}', now(), now()),
+  ('00000000-0000-1003-0000-00000000000d', 'spa', '{"uz":"Spa","ru":"Спа","en":"Spa"}', now(), now()),
+  ('00000000-0000-1003-0000-00000000000e', 'sauna', '{"uz":"Sauna","ru":"Сауна","en":"Sauna"}', now(), now()),
+  ('00000000-0000-1003-0000-00000000000f', 'jacuzzi', '{"uz":"Jakuzi","ru":"Джакузи","en":"Jacuzzi"}', now(), now()),
+  -- Xizmatlar
+  ('00000000-0000-1003-0000-000000000010', 'reception_24', '{"uz":"24/7 resepsiyon","ru":"Ресепшн 24/7","en":"24/7 reception"}', now(), now()),
+  ('00000000-0000-1003-0000-000000000011', 'concierge', '{"uz":"Konsyerj","ru":"Консьерж","en":"Concierge"}', now(), now()),
+  ('00000000-0000-1003-0000-000000000012', 'laundry', '{"uz":"Kir yuvish","ru":"Прачечная","en":"Laundry"}', now(), now()),
+  ('00000000-0000-1003-0000-000000000013', 'airport_shuttle', '{"uz":"Aeroport transferi","ru":"Трансфер из аэропорта","en":"Airport shuttle"}', now(), now()),
+  ('00000000-0000-1003-0000-000000000014', 'car_rental', '{"uz":"Avtomobil ijarasi","ru":"Прокат автомобилей","en":"Car rental"}', now(), now()),
+  ('00000000-0000-1003-0000-000000000015', 'tour_desk', '{"uz":"Ekskursiya byurosi","ru":"Туристическое бюро","en":"Tour desk"}', now(), now()),
+  -- Umumiy
+  ('00000000-0000-1003-0000-000000000016', 'parking', '{"uz":"Bepul parking","ru":"Бесплатная парковка","en":"Free parking"}', now(), now()),
+  ('00000000-0000-1003-0000-000000000017', 'elevator', '{"uz":"Lift","ru":"Лифт","en":"Elevator"}', now(), now()),
+  ('00000000-0000-1003-0000-000000000018', 'ac', '{"uz":"Konditsioner","ru":"Кондиционер","en":"Air conditioning"}', now(), now()),
+  ('00000000-0000-1003-0000-000000000019', 'heating', '{"uz":"Isitish tizimi","ru":"Отопление","en":"Heating"}', now(), now()),
+  ('00000000-0000-1003-0000-00000000001a', 'garden', '{"uz":"Bog'","ru":"Сад","en":"Garden"}', now(), now()),
+  ('00000000-0000-1003-0000-00000000001b', 'terrace', '{"uz":"Terrasa","ru":"Терраса","en":"Terrace"}', now(), now()),
+  -- Xavfsizlik va qulaylik
+  ('00000000-0000-1003-0000-00000000001c', 'safe', '{"uz":"Seyf","ru":"Сейф","en":"Safe"}', now(), now()),
+  ('00000000-0000-1003-0000-00000000001d', 'smoke_detector', '{"uz":"Tutun detektori","ru":"Дымовой датчик","en":"Smoke detector"}', now(), now()),
+  ('00000000-0000-1003-0000-00000000001e', 'fire_extinguisher', '{"uz":"O''t o''chirgich","ru":"Огнетушитель","en":"Fire extinguisher"}', now(), now()),
+  ('00000000-0000-1003-0000-00000000001f', 'wheelchair', '{"uz":"Nogironlar aravasi uchun","ru":"Для инвалидов","en":"Wheelchair accessible"}', now(), now()),
+  ('00000000-0000-1003-0000-000000000020', 'family_friendly', '{"uz":"Oilaviylar uchun","ru":"Для семей","en":"Family friendly"}', now(), now())
 on conflict (code) do update
 set name = excluded.name, updated_at = now();
 
@@ -165,13 +197,16 @@ set name = excluded.name, description = excluded.description, updated_at = now()
 insert into hotel_amenities (hotel_id, amenity_id)
 select hotel_id, amenity_id
 from (values
+  -- hotel 1: wifi + pool + breakfast
   ('00000000-0000-4001-0000-000000000001'::uuid, '00000000-0000-1003-0000-000000000001'::uuid),
-  ('00000000-0000-4001-0000-000000000001'::uuid, '00000000-0000-1003-0000-000000000002'::uuid),
-  ('00000000-0000-4001-0000-000000000001'::uuid, '00000000-0000-1003-0000-000000000004'::uuid),
+  ('00000000-0000-4001-0000-000000000001'::uuid, '00000000-0000-1003-0000-00000000000b'::uuid),
+  ('00000000-0000-4001-0000-000000000001'::uuid, '00000000-0000-1003-0000-000000000005'::uuid),
+  -- hotel 2: wifi + parking
   ('00000000-0000-4001-0000-000000000002'::uuid, '00000000-0000-1003-0000-000000000001'::uuid),
-  ('00000000-0000-4001-0000-000000000002'::uuid, '00000000-0000-1003-0000-000000000003'::uuid),
+  ('00000000-0000-4001-0000-000000000002'::uuid, '00000000-0000-1003-0000-000000000016'::uuid),
+  -- hotel 3: wifi + breakfast
   ('00000000-0000-4001-0000-000000000003'::uuid, '00000000-0000-1003-0000-000000000001'::uuid),
-  ('00000000-0000-4001-0000-000000000003'::uuid, '00000000-0000-1003-0000-000000000004'::uuid)
+  ('00000000-0000-4001-0000-000000000003'::uuid, '00000000-0000-1003-0000-000000000005'::uuid)
 ) as links(hotel_id, amenity_id)
 on conflict (hotel_id, amenity_id) do nothing;
 

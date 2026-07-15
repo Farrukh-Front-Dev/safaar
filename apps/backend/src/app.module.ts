@@ -26,6 +26,7 @@ import { PromosModule } from './promos/promos.module';
 import { PartnerApiModule } from './partner-api/partner-api.module';
 import { StatsModule } from './stats/stats.module';
 import { validateEnv } from './config/env.validation';
+import { MaintenanceGuard } from './common/maintenance.guard';
 
 @Module({
   imports: [
@@ -69,6 +70,10 @@ import { validateEnv } from './config/env.validation';
   controllers: [AppController],
   providers: [
     AppService,
+    {
+      provide: APP_GUARD,
+      useClass: MaintenanceGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

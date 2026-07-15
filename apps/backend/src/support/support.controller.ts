@@ -11,7 +11,7 @@ export class SupportController {
   constructor(private readonly supportService: SupportService) {}
 
   @Post()
-  @Roles(Role.USER)
+  @Roles(Role.USER, Role.PARTNER)
   create(
     @CurrentActor() actor: RequestActor | undefined,
     @Body() body: Record<string, unknown>,
@@ -20,13 +20,13 @@ export class SupportController {
   }
 
   @Get()
-  @Roles(Role.USER)
+  @Roles(Role.USER, Role.PARTNER)
   list(@CurrentActor() actor: RequestActor | undefined) {
     return this.supportService.list(actor);
   }
 
   @Get(':id')
-  @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)
+  @Roles(Role.USER, Role.PARTNER, Role.ADMIN, Role.SUPER_ADMIN)
   findOne(
     @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
@@ -35,7 +35,7 @@ export class SupportController {
   }
 
   @Post(':id/messages')
-  @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)
+  @Roles(Role.USER, Role.PARTNER, Role.ADMIN, Role.SUPER_ADMIN)
   message(
     @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
@@ -45,7 +45,7 @@ export class SupportController {
   }
 
   @Post(':id/close')
-  @Roles(Role.USER)
+  @Roles(Role.USER, Role.PARTNER)
   close(
     @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
@@ -54,7 +54,7 @@ export class SupportController {
   }
 
   @Post(':id/reopen')
-  @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)
+  @Roles(Role.USER, Role.PARTNER, Role.ADMIN, Role.SUPER_ADMIN)
   reopen(
     @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,

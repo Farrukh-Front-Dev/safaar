@@ -18,6 +18,29 @@ import { PostgresService } from '../infrastructure/postgres.service';
 
 type DbRow = Record<string, unknown>;
 
+const DEFAULT_ADMIN_SETTINGS: Record<string, Record<string, unknown>> = {
+  general: {
+    app_name: 'UzBron',
+    timezone: 'Asia/Tashkent',
+    support_email: 'support@uzbron.uz',
+    maintenance_mode: false,
+  },
+  finance: {
+    hotel_commission_rate: 15,
+    bus_commission_rate: 10,
+  },
+  security: {
+    admin_2fa_required: true,
+  },
+  booking: {
+    hold_minutes: 15,
+  },
+  providers: {
+    click: { enabled: true },
+    payme: { enabled: true },
+  },
+};
+
 function numberValue(value: unknown): number {
   const numeric = Number(value ?? 0);
   return Number.isFinite(numeric) ? numeric : 0;
@@ -58,6 +81,24 @@ function isUuid(value: string): boolean {
 
 function field(item: object, key: string): unknown {
   return (item as Record<string, unknown>)[key];
+}
+
+function objectValue(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+  return value as Record<string, unknown>;
+}
+
+function normalizeSettingsGroup(group: string): string {
+  const normalized = group.trim().toLowerCase();
+  if (!/^[a-z0-9_-]{1,80}$/.test(normalized)) {
+    throw new BadRequestException({
+      code: 'INVALID_SETTINGS_GROUP',
+      message: "Sozlamalar guruhi noto'g'ri",
+    });
+  }
+  return normalized;
 }
 
 function adminActorUuid(actor: RequestActor | undefined): string {
@@ -2102,15 +2143,22 @@ export class AdminService {
       select
         st.id::text,
         st.user_id::text,
+        st.actor_type,
+        st.actor_id::text,
         st.subject,
         st.priority,
         st.status,
-        concat_ws(' ', u.first_name, u.last_name) as customer_name,
-        'user' as customer_type,
+        case
+          when st.actor_type = 'partner' then coalesce(po.brand_name, po.legal_name, 'Hamkor')
+          else concat_ws(' ', u.first_name, u.last_name)
+        end as customer_name,
+        st.actor_type as customer_type,
         st.created_at,
         st.updated_at
       from support_tickets st
       left join users u on u.id = st.user_id
+      left join partner_users pu on pu.id = st.actor_id and st.actor_type = 'partner'
+      left join partner_organizations po on po.id = pu.organization_id
       order by st.created_at desc
       ${this.limitClause(query)}
     `);
@@ -2129,15 +2177,22 @@ export class AdminService {
         select
           st.id::text,
           st.user_id::text,
+          st.actor_type,
+          st.actor_id::text,
           st.subject,
           st.priority,
           st.status,
-          concat_ws(' ', u.first_name, u.last_name) as customer_name,
-          'user' as customer_type,
+          case
+            when st.actor_type = 'partner' then coalesce(po.brand_name, po.legal_name, 'Hamkor')
+            else concat_ws(' ', u.first_name, u.last_name)
+          end as customer_name,
+          st.actor_type as customer_type,
           st.created_at,
           st.updated_at
         from support_tickets st
         left join users u on u.id = st.user_id
+        left join partner_users pu on pu.id = st.actor_id and st.actor_type = 'partner'
+        left join partner_organizations po on po.id = pu.organization_id
         where st.id = $1::uuid
       `,
       [id],
@@ -2151,6 +2206,7 @@ export class AdminService {
           sm.sender_id::text,
           case
             when sm.sender_type = 'admin' then coalesce(au.full_name, 'Admin')
+            when sm.sender_type = 'partner' then coalesce(po.brand_name, po.legal_name, 'Hamkor')
             else concat_ws(' ', u.first_name, u.last_name)
           end as sender_name,
           sm.body as message,
@@ -2158,6 +2214,8 @@ export class AdminService {
         from support_messages sm
         left join users u on u.id = sm.sender_id
         left join admin_users au on au.id = sm.sender_id
+        left join partner_users pu on pu.id = sm.sender_id and sm.sender_type = 'partner'
+        left join partner_organizations po on po.id = pu.organization_id
         where sm.ticket_id = $1::uuid
         order by sm.created_at asc
       `,
@@ -2435,18 +2493,77 @@ export class AdminService {
     `);
   }
 
-  settings() {
-    return this.cache.getOrSet('admin:settings', 300, () => ({
-      general: { app_name: 'UzBron', timezone: 'Asia/Tashkent' },
-      security: { admin_2fa_required: true },
-      booking: { hold_minutes: 15 },
-      providers: { click: { enabled: true }, payme: { enabled: true } },
-    }));
+  async settings() {
+    return this.cache.getOrSet('admin:settings', 300, async () => {
+      const rows = await this.rows(`
+        select group_key, value
+        from admin_settings
+        order by group_key asc
+      `);
+      const settings: Record<string, Record<string, unknown>> = {
+        ...DEFAULT_ADMIN_SETTINGS,
+      };
+
+      for (const row of rows) {
+        const group = String(row.group_key ?? '');
+        if (!group) {
+          continue;
+        }
+        settings[group] = {
+          ...(DEFAULT_ADMIN_SETTINGS[group] ?? {}),
+          ...objectValue(row.value),
+        };
+      }
+
+      return settings;
+    });
   }
 
-  settingsGroup(group: string, body: Record<string, unknown>) {
+  async settingsGroup(
+    actor: RequestActor | undefined,
+    group: string,
+    body: Record<string, unknown>,
+  ) {
+    const groupKey = normalizeSettingsGroup(group);
+    const value = objectValue(body);
+    const actorId = adminActorUuid(actor);
+    const rows = await this.rows(
+      `
+        insert into admin_settings (group_key, value, updated_by, created_at, updated_at)
+        values (
+          $1,
+          ($2)::jsonb,
+          (select id from admin_users where id = $3::uuid),
+          now(),
+          now()
+        )
+        on conflict (group_key)
+        do update set
+          value = admin_settings.value || excluded.value,
+          updated_by = excluded.updated_by,
+          updated_at = now()
+        returning group_key, value, updated_at
+      `,
+      [groupKey, JSON.stringify(value), actorId],
+    );
+
     this.invalidateAdminCache();
-    return { group, ...body, updated_at: new Date().toISOString() };
+    void this.cache.delByPattern('settings:*');
+    await this.audit('settings.update', actor, {
+      group: groupKey,
+      value,
+    });
+
+    const updated = rows[0] ?? {
+      group_key: groupKey,
+      value,
+      updated_at: new Date().toISOString(),
+    };
+    return {
+      group: String(updated.group_key ?? groupKey),
+      ...objectValue(updated.value),
+      updated_at: updated.updated_at,
+    };
   }
 
   providerSettings(provider: string, body: Record<string, unknown>) {

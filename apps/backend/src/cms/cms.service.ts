@@ -151,10 +151,28 @@ export class CmsService {
   }
 
   publicSettings() {
-    return this.cache.getOrSet('settings:public', 900, () => {
+    return this.cache.getOrSet('settings:public', 300, async () => {
+      let general: Record<string, unknown> = {};
+      try {
+        const rows = await this.postgres.query<{
+          value: Record<string, unknown>;
+        }>(
+          `
+            select value
+            from admin_settings
+            where group_key = 'general'
+            limit 1
+          `,
+        );
+        general = rows[0]?.value ?? {};
+      } catch {
+        general = {};
+      }
+
       return {
         support_phone: '+998 71 200 00 00',
-        support_email: 'support@uzbron.uz',
+        support_email: String(general.support_email ?? 'support@uzbron.uz'),
+        maintenance_mode: Boolean(general.maintenance_mode ?? false),
         languages: ['uz', 'ru', 'en'],
         currency: 'UZS',
         social_links: {
