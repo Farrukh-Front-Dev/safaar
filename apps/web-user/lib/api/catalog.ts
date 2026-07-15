@@ -81,9 +81,7 @@ export async function getAmenities(locale: Locale): Promise<AmenityOption[]> {
 export async function getPopularCities(
   locale: Locale,
 ): Promise<PopularCityView[]> {
-  const raw = await api.get<unknown>("/catalog/popular-cities", {
-    next: { revalidate: 3600 },
-  });
+  const raw = await api.get<unknown>("/catalog/popular-cities");
   const items = camelizeKeys<RawPopularCity[]>(raw);
   return (items ?? []).map((item) => ({
     id: item.id,

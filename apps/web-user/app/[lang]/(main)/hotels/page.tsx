@@ -183,7 +183,7 @@ export default async function HotelsPage({
             </div>
           ) : (
             <>
-              <div className="grid gap-4 grid-cols-2">
+              <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
                 {items.map((hotel) => (
                   <HotelCard
                     key={hotel.id}

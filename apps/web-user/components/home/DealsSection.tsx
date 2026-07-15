@@ -76,7 +76,7 @@ export function DealsSection({
 
       <div
         ref={ref}
-        className="scrollbar-none flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory sm:gap-4"
+        className="scrollbar-none flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory sm:hidden"
       >
         {deals.map((deal) => {
           const endsInDays = deal.endsAt
@@ -89,7 +89,7 @@ export function DealsSection({
           <Link
             key={deal.id}
             href={`/${locale}/hotels/${deal.slug}`}
-            className="group w-[calc(50%-0.375rem)] shrink-0 snap-start sm:w-auto sm:flex-1 sm:min-w-[260px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+            className="group w-[calc(50%-0.375rem)] shrink-0 snap-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
           >
             <article className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-btn transition-all duration-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:scale-[0.97] active:shadow-btn-active">
               {/* Rasm */}
@@ -122,6 +122,55 @@ export function DealsSection({
                 <p className="text-xs text-slate-500">{deal.cityName}</p>
 
                 {/* Narxlar */}
+                <div className="mt-auto flex items-center gap-2 pt-2">
+                  <span className="text-xs text-slate-400 line-through">
+                    {formatSum(deal.oldPriceSum)}
+                  </span>
+                  <span className="text-base font-bold text-red-600">
+                    {formatSum(deal.newPriceSum)}
+                  </span>
+                  <span className="text-[10px] text-slate-400">{dict.perNight}</span>
+                </div>
+              </div>
+            </article>
+          </Link>
+          );
+        })}
+      </div>
+
+      <div className="hidden sm:grid sm:grid-cols-4 sm:gap-4">
+        {deals.slice(0, 4).map((deal) => {
+          const endsInDays = deal.endsAt
+            ? Math.max(0, Math.ceil((Date.parse(deal.endsAt) - now) / 86_400_000))
+            : 0;
+          return (
+          <Link
+            key={deal.id}
+            href={`/${locale}/hotels/${deal.slug}`}
+            className="group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+          >
+            <article className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-btn transition-all duration-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:scale-[0.97] active:shadow-btn-active">
+              <div className="relative aspect-[16/10] overflow-hidden bg-primary-50">
+                <img
+                  src={deal.imageUrl}
+                  alt={deal.name}
+                  loading="lazy"
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-red-500 px-2.5 py-1 text-xs font-bold text-white shadow-btn">
+                  <Tag className="h-3 w-3" aria-hidden />
+                  -{deal.discountPercent}%
+                </span>
+                <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-medium text-slate-700 shadow-btn">
+                  <Clock className="h-3 w-3" aria-hidden />
+                  {endsInDays} {dict.days}
+                </span>
+              </div>
+              <div className="flex flex-1 flex-col gap-1.5 p-3 sm:p-4">
+                <h3 className="line-clamp-1 text-sm font-semibold text-slate-900 sm:text-base">
+                  {deal.name}
+                </h3>
+                <p className="text-xs text-slate-500">{deal.cityName}</p>
                 <div className="mt-auto flex items-center gap-2 pt-2">
                   <span className="text-xs text-slate-400 line-through">
                     {formatSum(deal.oldPriceSum)}

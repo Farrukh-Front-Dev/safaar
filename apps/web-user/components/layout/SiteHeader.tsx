@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Home, Hotel, Bus, MountainSnow, HelpCircle } from "lucide-react";
+import { Home, Hotel, Bus, MountainSnow, HelpCircle, Building2, TreePine, HeartPulse, Mountain, UtensilsCrossed } from "lucide-react";
 import type { Locale } from "@/i18n/config";
 import type { CommonDict } from "@/i18n/dictionaries";
 import { logoutAction } from "@/lib/auth/actions";
@@ -21,7 +21,17 @@ export function SiteHeader({
 
   const desktopItems: ScrollNavItem[] = [
     { href: base, label: dict.nav.home, icon: <Home className="h-4 w-4" />, exact: true },
-    { href: `${base}/hotels`, label: dict.nav.hotels, icon: <Hotel className="h-4 w-4" /> },
+    {
+      href: `${base}/hotels`, label: dict.nav.hotels, icon: <Hotel className="h-4 w-4" />,
+      children: [
+        { href: `${base}/hotels`, label: dict.nav.hotels ?? "Hotels", icon: <Building2 className="h-4 w-4" /> },
+        { href: `${base}/dachas`, label: dict.nav.dachas ?? "Dachas", icon: <Home className="h-4 w-4" /> },
+        { href: `${base}/guesthouses`, label: dict.nav.guesthouses ?? "Guest Houses", icon: <TreePine className="h-4 w-4" /> },
+        { href: `${base}/sanatoriums`, label: dict.nav.sanatoriums ?? "Sanatoriums", icon: <HeartPulse className="h-4 w-4" /> },
+        { href: `${base}/resorts`, label: dict.nav.resorts ?? "Resorts", icon: <Mountain className="h-4 w-4" /> },
+      ],
+    },
+    { href: `${base}/restaurants`, label: dict.nav.restaurants ?? "Restaurants", icon: <UtensilsCrossed className="h-4 w-4" /> },
     { href: `${base}/buses`, label: dict.nav.transport, icon: <Bus className="h-4 w-4" /> },
     { href: `${base}/attractions`, label: dict.nav.attractions, icon: <MountainSnow className="h-4 w-4" /> },
     { href: `${base}/help`, label: dict.nav.help, icon: <HelpCircle className="h-4 w-4" /> },
