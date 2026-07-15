@@ -1,10 +1,38 @@
-import { redirect } from "next/navigation";
+import { notFound } from "next/navigation";
+import type { Metadata } from "next";
+import { isLocale } from "@/i18n/config";
+import { getDictionary } from "@/i18n/dictionaries";
+import { AccommodationPage } from "@/components/accommodation/AccommodationPage";
 
-export default async function DachasPage({
+export async function generateMetadata({
   params,
 }: {
   params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
+  const { lang } = await params;
+  if (!isLocale(lang)) return {};
+  const common = await getDictionary(lang, "common");
+  return { title: common.nav.dachas };
+}
+
+export default async function DachasPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ lang: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { lang } = await params;
-  redirect(`/${lang}/hotels?type=dacha`);
+  if (!isLocale(lang)) notFound();
+  const common = await getDictionary(lang, "common");
+  const locale = lang;
+
+  return (
+    <AccommodationPage
+      locale={locale}
+      searchParams={await searchParams}
+      basePath={`/${locale}/dachas`}
+      title={common.nav.dachas}
+    />
+  );
 }

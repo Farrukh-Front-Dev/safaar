@@ -35,10 +35,28 @@ export function SearchBar({
   const [checkIn, setCheckIn] = useState(defaults?.checkIn ?? "");
   const [checkOut, setCheckOut] = useState(defaults?.checkOut ?? "");
   const [guests, setGuests] = useState(defaults?.guests ?? 2);
+  const typeFromPath = pathname.split("/").pop() as PropertyType;
+  const typePathsReverse: Record<string, PropertyType> = {
+    hotels: "hotel",
+    dachas: "dacha",
+    guesthouses: "guesthouse",
+    sanatoriums: "sanatorium",
+    resorts: "resort",
+  };
   const [activeType, setActiveType] = useState<PropertyType>(
-    (searchParams.get("type") as PropertyType) || "hotel",
+    typePathsReverse[typeFromPath] ||
+      (searchParams.get("type") as PropertyType) ||
+      "hotel",
   );
   const today = new Date().toISOString().split("T")[0];
+
+  const typePaths: Record<PropertyType, string> = {
+    hotel: `/${locale}/hotels`,
+    dacha: `/${locale}/dachas`,
+    guesthouse: `/${locale}/guesthouses`,
+    sanatorium: `/${locale}/sanatoriums`,
+    resort: `/${locale}/resorts`,
+  };
 
   function onTypeChange(type: PropertyType) {
     setActiveType(type);
@@ -51,9 +69,9 @@ export function SearchBar({
     if (checkIn) params.set("check_in", checkIn);
     if (checkOut) params.set("check_out", checkOut);
     if (guests) params.set("guests", String(guests));
-    params.set("type", activeType);
+    const base = typePaths[activeType] ?? `/${locale}/hotels`;
     const query = params.toString();
-    router.push(`/${locale}/hotels${query ? `?${query}` : ""}`);
+    router.push(`${base}${query ? `?${query}` : ""}`);
   }
 
   return (
