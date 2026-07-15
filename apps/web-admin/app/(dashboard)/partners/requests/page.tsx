@@ -13,10 +13,11 @@ import type { PartnerRequest } from "@/types/admin";
 import { PartnerTypeDisplay } from "@/components/ui/PartnerTypeDisplay";
 import { toast } from "sonner";
 
+import apiClient from "@/lib/api/client";
 import { useAdminStore } from "@/lib/store";
 
 function isActiveRequest(request: PartnerRequest) {
-  return request.status === "new" || request.status === "reviewing";
+  return request.status === "new" || request.status === "reviewing" || request.status === "submitted";
 }
 
 export default function PartnerRequestsPage() {
@@ -25,14 +26,35 @@ export default function PartnerRequestsPage() {
   const rejectPartnerRequest = useAdminStore((s) => s.rejectPartnerRequest);
   const [selectedRequest, setSelectedRequest] = useState<PartnerRequest | null>(null);
 
+  const setPartnerRequests = useAdminStore((s) => s.setPartnerRequests);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadRequests() {
+      try {
+        const res = await apiClient.get("/admin/partners/requests");
+        if (res.data?.items) {
+          setPartnerRequests(res.data.items);
+        }
+      } catch (e) {
+        console.error("Failed to fetch partner requests", e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadRequests();
+  }, [setPartnerRequests]);
+
   const requests = storeRequests.filter(isActiveRequest);
 
   const handleDecision = async (id: string, decision: "approve" | "reject") => {
     try {
       if (decision === "approve") {
+        await apiClient.post(`/admin/partners/${id}/approve`);
         approvePartnerRequest(id);
         toast.success("Ariza muvaffaqiyatli tasdiqlandi!");
       } else {
+        await apiClient.post(`/admin/partners/${id}/reject`, { reason: "" });
         rejectPartnerRequest(id);
         toast.success("Ariza rad etildi!");
       }

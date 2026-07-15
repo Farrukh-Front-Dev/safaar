@@ -29,8 +29,13 @@ import { ReservationStatusBadge } from "../../../_components/domain/reservation-
 import { ReservationTimeline } from "../../../_components/domain/reservation-timeline";
 import { SourceBadge } from "../../../_components/domain/source-badge";
 import { PageHeader } from "../../../_components/layout/page-header";
-import { useReservation } from "../../../_hooks/use-reservations";
-import { useDataStore } from "../../../_stores/data-store";
+import {
+  useReservation,
+  useConfirmReservation,
+  useRejectReservation,
+  useCheckIn,
+  useCheckOut,
+} from "../../../_hooks/use-reservations";
 import {
   formatDate,
   formatMoney,
@@ -39,10 +44,10 @@ import {
 
 export function ReservationDetailView({ id }: { id: string }) {
   const { data } = useReservation(id);
-  const confirmReservation = useDataStore((s) => s.confirmReservation);
-  const rejectReservation = useDataStore((s) => s.rejectReservation);
-  const checkIn = useDataStore((s) => s.checkIn);
-  const checkOut = useDataStore((s) => s.checkOut);
+  const confirmReservation = useConfirmReservation();
+  const rejectReservation = useRejectReservation();
+  const checkIn = useCheckIn();
+  const checkOut = useCheckOut();
 
   const [confirmDialog, setConfirmDialog] = useState<
     "reject" | "cancel" | null
@@ -108,9 +113,11 @@ export function ReservationDetailView({ id }: { id: string }) {
                 </Button>
                 <Button
                   size="sm"
+                  loading={confirmReservation.isPending}
                   onClick={() => {
-                    confirmReservation(data.id);
-                    toast.success("Bron tasdiqlandi");
+                    confirmReservation.mutate(data.id, {
+                      onSuccess: () => toast.success("Bron tasdiqlandi"),
+                    });
                   }}
                 >
                   Tasdiqlash
@@ -129,9 +136,11 @@ export function ReservationDetailView({ id }: { id: string }) {
               <Button
                 variant="secondary"
                 size="sm"
+                loading={checkOut.isPending}
                 onClick={() => {
-                  checkOut(data.id);
-                  toast.success("Check-out qilindi");
+                  checkOut.mutate(data.id, {
+                    onSuccess: () => toast.success("Check-out qilindi"),
+                  });
                 }}
               >
                 Check-out qilish
@@ -289,8 +298,11 @@ export function ReservationDetailView({ id }: { id: string }) {
         open={confirmDialog === "reject"}
         onClose={() => setConfirmDialog(null)}
         onConfirm={() => {
-          rejectReservation(data.id);
-          toast.success("Bron rad etildi");
+          rejectReservation.mutate(
+            { id: data.id, reason: "Hamkor tomonidan rad etildi" },
+            { onSuccess: () => toast.success("Bron rad etildi") }
+          );
+          setConfirmDialog(null);
         }}
         title="Bron rad etilsinmi?"
         description={`${data.guest.fullName} ning bronini rad etmoqchimisiz?`}
@@ -302,8 +314,11 @@ export function ReservationDetailView({ id }: { id: string }) {
         open={confirmDialog === "cancel"}
         onClose={() => setConfirmDialog(null)}
         onConfirm={() => {
-          rejectReservation(data.id);
-          toast.success("Bron bekor qilindi");
+          rejectReservation.mutate(
+            { id: data.id, reason: "Hamkor tomonidan bekor qilindi" },
+            { onSuccess: () => toast.success("Bron bekor qilindi") }
+          );
+          setConfirmDialog(null);
         }}
         title="Bron bekor qilinsinmi?"
         description="Mijozga SMS orqali xabar yuboriladi. Bu amalni qaytarib bo'lmaydi."
@@ -316,8 +331,9 @@ export function ReservationDetailView({ id }: { id: string }) {
         onClose={() => setAssignOpen(false)}
         reservation={data}
         onAssigned={() => {
-          checkIn(data.id);
-          toast.success("Check-in qilindi");
+          checkIn.mutate(data.id, {
+            onSuccess: () => toast.success("Check-in qilindi"),
+          });
         }}
       />
     </div>

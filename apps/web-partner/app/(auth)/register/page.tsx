@@ -21,7 +21,7 @@ const schema = z.object({
   email: z.string().email("Email noto'g'ri"),
   city: z.string().min(2, "Shaharni kiriting"),
   address: z.string().min(5, "Manzilni kiriting"),
-  taxId: z.string().optional(),
+  taxId: z.string().min(9, "STIR 9 ta raqamdan iborat bo'lishi kerak").max(9, "STIR 9 ta raqamdan iborat bo'lishi kerak").regex(/^\d{9}$/, "Faqat raqamlar kiriting"),
   note: z.string().optional(),
 });
 
@@ -54,8 +54,15 @@ export default function RegisterPage() {
         phone: normalizePhone(values.phone),
       });
       setSubmitted({ id: result.item.id });
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Ariza yuborishda xatolik");
+    } catch (cause: any) {
+      if (cause?.payload?.fields) {
+        for (const [field, message] of Object.entries(cause.payload.fields)) {
+          form.setError(field as any, { type: "server", message: message as string });
+        }
+        setError(cause.payload.message || "Iltimos formadagi xatoliklarni to'g'irlang");
+      } else {
+        setError(cause instanceof Error ? cause.message : "Ariza yuborishda xatolik");
+      }
     }
   });
 

@@ -15,6 +15,7 @@ import {
   Activity
 } from "lucide-react";
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
 
 const STAT_ICONS: Record<string, ReactNode> = {
@@ -45,6 +46,16 @@ const ACTIVITY_COLORS: Record<string, string> = {
 };
 
 export default function DashboardPage() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null; // Prevent hydration mismatch
+  }
+
   return (
     <div className="max-w-[1400px] mx-auto flex flex-col gap-6 animate-fade-in">
       {/* Header */}

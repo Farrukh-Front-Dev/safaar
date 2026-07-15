@@ -119,3 +119,37 @@ export function confirmBooking(id: string, token?: string | null) {
     },
   );
 }
+
+export function rejectBooking(id: string, reason: string, token?: string | null) {
+  return request<BackendBooking>(`/partners/bookings/${encodeURIComponent(id)}/reject`, {
+    method: "POST",
+    body: { reason },
+    token,
+  });
+}
+
+export function checkIn(id: string, token?: string | null) {
+  return request<BackendBooking>(`/partners/bookings/${encodeURIComponent(id)}/check-in`, {
+    method: "POST",
+    token,
+  });
+}
+
+export function assignRoom(id: string, roomNumber: string, token?: string | null) {
+  return request<BackendBooking>(`/partners/bookings/${encodeURIComponent(id)}/assign-room`, {
+    method: "POST",
+    body: { roomNumber },
+    token,
+  });
+}
+
+export function checkOut(id: string, token?: string | null) {
+  return request<BackendBooking>(`/partners/bookings/${encodeURIComponent(id)}/complete`, {
+    method: "POST",
+    token,
+  });
+}
+
+export function listRoomTypes(hotelId: string, token?: string | null) {
+  return request<any[]>(`/partners/hotels/${encodeURIComponent(hotelId)}/room-types`, { token });
+}

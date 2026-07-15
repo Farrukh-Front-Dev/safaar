@@ -9,6 +9,7 @@ export interface AuthUser {
   phone: string;
   fullName: string;
   role: Role;
+  organizationId?: string;
 }
 
 interface AuthState {

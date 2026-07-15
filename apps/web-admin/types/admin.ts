@@ -130,7 +130,7 @@ export interface UserPayment {
    ──────────────────────────────────────────── */
 
 export type PartnerType = "hotel" | "bus" | "hostel" | "guesthouse" | "motel" | "dacha";
-export type PartnerRequestStatus = "new" | "reviewing" | "approved" | "rejected";
+export type PartnerRequestStatus = "new" | "reviewing" | "approved" | "rejected" | "submitted";
 export type PartnerStatus = "active" | "suspended" | "blocked";
 
 export interface Partner {

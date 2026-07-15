@@ -2,7 +2,7 @@ import axios from "axios";
 import Cookies from "js-cookie";
 
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/v1",
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "/api/backend",
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",

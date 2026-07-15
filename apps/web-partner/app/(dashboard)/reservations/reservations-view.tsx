@@ -28,8 +28,12 @@ import { ReservationStatusBadge } from "../../_components/domain/reservation-sta
 import { SourceBadge } from "../../_components/domain/source-badge";
 import { WalkInDialog } from "../../_components/domain/walk-in-dialog";
 import { PageHeader } from "../../_components/layout/page-header";
-import { useReservations } from "../../_hooks/use-reservations";
-import { useDataStore } from "../../_stores/data-store";
+import {
+  useReservations,
+  useConfirmReservation,
+  useRejectReservation,
+  useCheckIn,
+} from "../../_hooks/use-reservations";
 import { cn } from "../../_lib/utils/cn";
 import type { ReservationUiStatus, ReservationView } from "../../_lib/domain/types";
 import { formatDate, formatMoney, formatPhone } from "../../_lib/utils/format";
@@ -102,9 +106,9 @@ function exportToCsv(items: ReservationView[]) {
 export function ReservationsView() {
   const { data } = useReservations();
   const router = useRouter();
-  const confirmReservation = useDataStore((s) => s.confirmReservation);
-  const rejectReservation = useDataStore((s) => s.rejectReservation);
-  const checkIn = useDataStore((s) => s.checkIn);
+  const confirmReservation = useConfirmReservation();
+  const rejectReservation = useRejectReservation();
+  const checkIn = useCheckIn();
 
   const [filter, setFilter] = useState<FilterKey>("all");
   const [query, setQuery] = useState("");
@@ -187,8 +191,9 @@ export function ReservationsView() {
   }, [data, today]);
 
   const handleConfirm = (reservation: ReservationView) => {
-    confirmReservation(reservation.id);
-    toast.success(`Bron tasdiqlandi: ${reservation.id}`);
+    confirmReservation.mutate(reservation.id, {
+      onSuccess: () => toast.success(`Bron tasdiqlandi: ${reservation.id}`)
+    });
   };
 
   const handleCheckIn = (reservation: ReservationView) => {
@@ -385,8 +390,11 @@ export function ReservationsView() {
         reservation={assignTarget}
         onAssigned={() => {
           if (assignTarget) {
-            checkIn(assignTarget.id);
-            toast.success(`Check-in qilindi: ${assignTarget.guest.fullName}`);
+            checkIn.mutate(assignTarget.id, {
+              onSuccess: () => {
+                toast.success(`Check-in qilindi: ${assignTarget.guest.fullName}`);
+              }
+            });
           }
         }}
       />
@@ -395,8 +403,15 @@ export function ReservationsView() {
         onClose={() => setRejectTarget(null)}
         onConfirm={() => {
           if (rejectTarget) {
-            rejectReservation(rejectTarget.id);
-            toast.success(`Bron rad etildi: ${rejectTarget.id}`);
+            rejectReservation.mutate(
+              { id: rejectTarget.id, reason: "Hamkor tomonidan rad etildi" },
+              {
+                onSuccess: () => {
+                  toast.success(`Bron rad etildi: ${rejectTarget.id}`);
+                  setRejectTarget(null);
+                }
+              }
+            );
           }
         }}
         title="Bron rad etilsinmi?"

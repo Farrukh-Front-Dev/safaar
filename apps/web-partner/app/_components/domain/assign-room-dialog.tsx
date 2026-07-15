@@ -9,6 +9,7 @@ import { EmptyState } from "../ui/empty-state";
 import { useDataStore } from "../../_stores/data-store";
 import { useRooms } from "../../_hooks/use-rooms";
 import { useRoomTypes } from "../../_hooks/use-room-types";
+import { useAssignRoom } from "../../_hooks/use-reservations";
 import { RoomStatus, type ReservationView, type Room, type RoomType } from "../../_lib/domain/types";
 import { cn } from "../../_lib/utils/cn";
 
@@ -28,7 +29,7 @@ export function AssignRoomDialog({
 }: Props) {
   const { data: rooms } = useRooms();
   const { data: roomTypes } = useRoomTypes();
-  const assignRoom = useDataStore((s) => s.assignRoom);
+  const assignRoom = useAssignRoom();
   const [selected, setSelected] = useState<string | null>(null);
 
   const availableRoomsCount = useMemo(() => {
@@ -60,11 +61,14 @@ export function AssignRoomDialog({
 
   const handleConfirm = () => {
     if (!reservation || !selected) return;
-    assignRoom(reservation.id, selected);
-    toast.success(`Xona ${selected} muvaffaqiyatli tayinlandi.`);
-    onAssigned?.(selected);
-    setSelected(null);
-    onClose();
+    assignRoom.mutate({ id: reservation.id, roomNumber: selected }, {
+      onSuccess: () => {
+        toast.success(`Xona ${selected} muvaffaqiyatli tayinlandi.`);
+        onAssigned?.(selected);
+        setSelected(null);
+        onClose();
+      }
+    });
   };
 
   return (
@@ -136,10 +140,10 @@ export function AssignRoomDialog({
         </div>
 
         <div className="flex justify-end gap-3 border-t border-[var(--border)] pt-5">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={assignRoom.isPending}>
             Bekor qilish
           </Button>
-          <Button onClick={handleConfirm} disabled={!selected}>
+          <Button onClick={handleConfirm} disabled={!selected} loading={assignRoom.isPending}>
             {selected ? `Tayinlash` : "Xona tanlang"}
           </Button>
         </div>

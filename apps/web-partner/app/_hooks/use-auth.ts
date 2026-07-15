@@ -18,7 +18,7 @@ export function usePartnerPhoneLogin() {
         if (accessStatus.status === "rejected") {
           throw new Error("Arizangiz rad etilgan. Admin bilan bog'laning.");
         }
-        if (accessStatus.status === "new" || accessStatus.status === "reviewing") {
+        if (accessStatus.status === "new" || accessStatus.status === "reviewing" || accessStatus.status === "submitted") {
           throw new Error("Arizangiz hali admin tomonidan tasdiqlanmagan.");
         }
         throw new Error("Bu telefon uchun hamkorlik access topilmadi. Avval ariza yuboring.");
@@ -27,10 +27,11 @@ export function usePartnerPhoneLogin() {
         accessToken: "demo-access-token",
         refreshToken: "demo-refresh-token",
       };
-      return { phone, tokens };
+      return { phone, tokens, organizationId: accessStatus.request?.id || "demo-partner-org-id" };
     },
-    onSuccess: ({ phone, tokens }) => {
+    onSuccess: ({ phone, tokens, organizationId }) => {
       const { user } = buildPartnerSession(phone, tokens);
+      user.organizationId = organizationId;
       setSession(user, tokens);
       toast.success("Xush kelibsiz!");
       router.replace("/");

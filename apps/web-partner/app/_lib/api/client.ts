@@ -1,7 +1,7 @@
 import type { ApiError } from "@agoda/types";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/v1";
+  process.env.NEXT_PUBLIC_API_URL ?? "/api/backend";
 
 interface ApiEnvelope<T> {
   success: true;
@@ -61,11 +61,21 @@ export async function request<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
+  let defaultOrgId = "demo-partner-org-id";
+  if (typeof window !== "undefined") {
+    try {
+      const auth = JSON.parse(localStorage.getItem("uzbron-partner-auth") || "{}");
+      if (auth?.state?.user?.organizationId) {
+        defaultOrgId = auth.state.user.organizationId;
+      }
+    } catch (e) {}
+  }
+
   const {
     body,
     token,
     role = "PARTNER",
-    organizationId = "demo-partner-org-id",
+    organizationId = defaultOrgId,
     searchParams,
     headers,
     ...rest

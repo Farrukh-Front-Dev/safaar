@@ -1,12 +1,6 @@
-function adminBaseUrl() {
-  if (process.env.NEXT_PUBLIC_ADMIN_URL) return process.env.NEXT_PUBLIC_ADMIN_URL;
-  if (typeof window === "undefined") return "http://localhost:3002";
+import { request } from "../client";
 
-  const { protocol, hostname } = window.location;
-  return `${protocol}//${hostname}:3002`;
-}
-
-export type PartnerAccessStatus = "not_found" | "new" | "reviewing" | "approved" | "rejected";
+export type PartnerAccessStatus = "not_found" | "new" | "reviewing" | "approved" | "rejected" | "submitted";
 
 export interface PartnerApplicationDraft {
   companyName: string;
@@ -16,36 +10,28 @@ export interface PartnerApplicationDraft {
   email: string;
   city: string;
   address: string;
-  taxId?: string;
+  taxId: string;
   note?: string;
 }
 
 export async function submitPartnerApplication(body: PartnerApplicationDraft) {
-  const response = await fetch(`${adminBaseUrl()}/api/partner-requests`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    throw new Error("Arizani yuborib bo'lmadi. Web-admin serverini tekshiring.");
-  }
-
-  return response.json() as Promise<{ item: { id: string; status: PartnerAccessStatus } }>;
+  const result = await request<{ item: { id: string; status: PartnerAccessStatus } }>(
+    "/partners/requests",
+    {
+      method: "POST",
+      body,
+    }
+  );
+  return result;
 }
 
 export async function getPartnerAccessStatus(phone: string) {
-  const url = new URL(`${adminBaseUrl()}/api/partner-requests`);
-  url.searchParams.set("phone", phone);
-  const response = await fetch(url.toString(), { cache: "no-store" });
-
-  if (!response.ok) {
-    throw new Error("Hamkor access holatini tekshirib bo'lmadi.");
-  }
-
-  return response.json() as Promise<{
+  const result = await request<{
     found: boolean;
     status: PartnerAccessStatus;
     request?: { id: string; companyName: string; status: PartnerAccessStatus } | null;
-  }>;
+  }>("/partners/requests", {
+    searchParams: { phone },
+  });
+  return result;
 }

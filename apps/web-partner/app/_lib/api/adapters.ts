@@ -1,5 +1,7 @@
 import { BookingStatus } from "@agoda/types";
+import { RoomStatus } from "../domain/types";
 import type {
+  Room,
   FrontDeskStats,
   ReservationSource,
   ReservationView,
@@ -134,6 +136,18 @@ export function toListing(hotel: BackendHotel): Listing {
     petsAllowed: false,
     childrenAllowed: true,
     extraFees: [],
+  };
+}
+
+export function toRoom(room: BackendRoom): Room {
+  return {
+    id: room.id,
+    roomTypeId: room.id, // Using room.id as roomTypeId is temporary, the backend returns real relations
+    number: room.code ?? `R-${room.id.substring(0, 4)}`,
+    floor: 1, // Assume floor 1 for now if missing
+    status: room.status === "active" ? RoomStatus.VACANT_CLEAN : RoomStatus.VACANT_CLEAN,
+    roomTypeName: localized(room.name, "Xona"),
+    isListed: true,
   };
 }
 
