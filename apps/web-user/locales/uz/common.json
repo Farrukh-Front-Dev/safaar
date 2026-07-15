@@ -4,6 +4,11 @@
   "nav": {
     "home": "Bosh",
     "hotels": "Mehmonxonalar",
+    "dachas": "Dachalar",
+    "guesthouses": "Gostinkalar",
+    "sanatoriums": "Sanatoriylar",
+    "resorts": "Oromgohlar",
+    "restaurants": "Restoranlar",
     "transport": "Transport",
     "attractions": "Attraksionlar",
     "about": "Biz haqimizda",

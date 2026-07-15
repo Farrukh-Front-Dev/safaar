@@ -11,11 +11,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { lang } = await params;
   if (!isLocale(lang)) return {};
-  const dict = await getDictionary(lang, "hotels");
-  return { title: dict.title };
+  const common = await getDictionary(lang, "common");
+  return { title: common.nav.guesthouses };
 }
 
-export default async function HotelsPage({
+export default async function GuesthousesPage({
   params,
   searchParams,
 }: {
@@ -24,15 +24,15 @@ export default async function HotelsPage({
 }) {
   const { lang } = await params;
   if (!isLocale(lang)) notFound();
-  const dict = await getDictionary(lang, "hotels");
+  const common = await getDictionary(lang, "common");
   const locale = lang;
 
   return (
     <AccommodationPage
       locale={locale}
       searchParams={await searchParams}
-      basePath={`/${locale}/hotels`}
-      title={dict.title}
+      basePath={`/${locale}/guesthouses`}
+      title={common.nav.guesthouses}
     />
   );
 }

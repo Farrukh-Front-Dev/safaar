@@ -4,6 +4,11 @@
   "nav": {
     "home": "Главная",
     "hotels": "Отели",
+    "dachas": "Дачи",
+    "guesthouses": "Гостевые дома",
+    "sanatoriums": "Санатории",
+    "resorts": "Курорты",
+    "restaurants": "Рестораны",
     "transport": "Транспорт",
     "attractions": "Экскурсии",
     "about": "О нас",

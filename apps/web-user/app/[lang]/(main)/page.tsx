@@ -5,12 +5,15 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { getCities } from "@/lib/api/catalog";
 import { getFeaturedHotels } from "@/lib/api/hotels";
 import { getDeals, getPublicStats } from "@/lib/api/cms";
+import { SearchTabs } from "@/components/search/SearchTabs";
 import { Hero } from "@/components/home/Hero";
-import { SearchBar } from "@/components/search/SearchBar";
 import { CityCardsSection } from "@/components/home/CityCardsSection";
 import { TrustBar } from "@/components/home/TrustBar";
 import { FeaturedHotelsCarousel } from "@/components/home/FeaturedHotelsCarousel";
 import { DealsSection, type DealItem } from "@/components/home/DealsSection";
+import { PartnersSection } from "@/components/home/PartnersSection";
+import { WhySafaar } from "@/components/home/WhySafaar";
+import { ReviewsSection } from "@/components/home/ReviewsSection";
 import type { HotelListItem } from "@/types/view";
 
 export async function generateMetadata({
@@ -78,12 +81,15 @@ export default async function HomePage({
 
         {/* Turar joy turlari filteri */}
         <div className="relative z-10">
-          <SearchBar
-            locale={locale}
-            dict={common.search}
-            cities={cities}
-            propertyTypeLabels={common.propertyTypes}
-          />
+          <section id="search-section" className="bg-slate-50 pb-10 pt-6 sm:pb-14 sm:pt-8">
+            <div className="mx-auto max-w-4xl px-4">
+              <SearchTabs
+                locale={locale}
+                dict={common.search}
+                cities={cities}
+              />
+            </div>
+          </section>
 
           {/* Quick city chips */}
           {cities.length > 0 && (
@@ -127,6 +133,15 @@ export default async function HomePage({
       <div className="py-10 sm:py-14">
         <DealsSection deals={deals} dict={dict.deals} locale={locale} />
       </div>
+
+      {/* ═══ EKRAN: Reviews ═══ */}
+      <ReviewsSection dict={dict.reviews} />
+
+      {/* ═══ EKRAN: Partners ═══ */}
+      <PartnersSection dict={dict.partners} />
+
+      {/* ═══ EKRAN: Why Safaar ═══ */}
+      <WhySafaar dict={dict.why} />
 
       {/* ═══ EKRAN 3: City Cards (scroll qilganda) ═══ */}
       <div className="py-10 sm:py-16 md:py-20">

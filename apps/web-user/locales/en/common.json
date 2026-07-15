@@ -4,6 +4,11 @@
   "nav": {
     "home": "Home",
     "hotels": "Hotels",
+    "dachas": "Dachas",
+    "guesthouses": "Guest Houses",
+    "sanatoriums": "Sanatoriums",
+    "resorts": "Resorts",
+    "restaurants": "Restaurants",
     "transport": "Transport",
     "attractions": "Attractions",
     "about": "About us",
