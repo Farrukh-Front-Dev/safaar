@@ -29,7 +29,12 @@ export async function getPartnerAccessStatus(phone: string) {
   const result = await request<{
     found: boolean;
     status: PartnerAccessStatus;
-    request?: { id: string; companyName: string; status: PartnerAccessStatus } | null;
+    request?: {
+      id: string;
+      companyName: string;
+      status: PartnerAccessStatus;
+      type?: string;
+    } | null;
   }>("/partners/requests", {
     searchParams: { phone },
   });

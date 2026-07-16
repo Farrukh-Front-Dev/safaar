@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronLeft, Hotel, X } from "lucide-react";
+import { ChevronLeft, Hotel, X, Trees, Bus, Bed, Home } from "lucide-react";
 import { useEffect } from "react";
 import { cn } from "../../_lib/utils/cn";
 import { useUiStore } from "../../_stores/ui-store";
+import { useAuthStore } from "../../_stores/auth-store";
 import { Tooltip } from "../ui/tooltip";
-import { NAV_GROUPS } from "./sidebar-nav";
+import { getNavGroups } from "./sidebar-nav";
 
 function isActive(pathname: string, href: string): boolean {
   if (href === "/") return pathname === "/";
@@ -16,6 +17,8 @@ function isActive(pathname: string, href: string): boolean {
 
 export function Sidebar() {
   const pathname = usePathname();
+  const user = useAuthStore((s) => s.user);
+  const partnerType = user?.partnerType || "hotel";
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
   const toggle = useUiStore((s) => s.toggleSidebar);
   const mobileOpen = useUiStore((s) => s.mobileSidebarOpen);
@@ -68,13 +71,29 @@ export function Sidebar() {
             aria-label="Safaar bosh sahifa"
           >
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-brand-700 text-white shadow-sm">
-              <Hotel className="h-4 w-4" aria-hidden />
+              {partnerType === "dacha" ? (
+                <Trees className="h-4 w-4" aria-hidden />
+              ) : partnerType === "bus" ? (
+                <Bus className="h-4 w-4" aria-hidden />
+              ) : partnerType === "hostel" ? (
+                <Bed className="h-4 w-4" aria-hidden />
+              ) : partnerType === "guesthouse" ? (
+                <Home className="h-4 w-4" aria-hidden />
+              ) : (
+                <Hotel className="h-4 w-4" aria-hidden />
+              )}
             </span>
             {(!collapsed || mobileOpen) && (
               <span className="flex flex-col leading-tight">
                 <span className="text-sm font-bold tracking-tight">Safaar</span>
                 <span className="text-[10px] uppercase tracking-widest text-[var(--muted-foreground)]">
-                  Hamkor
+                  {partnerType === "dacha"
+                    ? "Dacha egasi"
+                    : partnerType === "bus"
+                      ? "Tashuvchi"
+                      : partnerType === "hostel"
+                        ? "Hostel"
+                        : "Hamkor"}
                 </span>
               </span>
             )}
@@ -112,7 +131,7 @@ export function Sidebar() {
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto p-3">
           <ul className="flex flex-col gap-4">
-            {NAV_GROUPS.map((group, gi) => (
+            {getNavGroups(partnerType).map((group, gi) => (
               <li key={gi} className="flex flex-col gap-1">
                 {group.title && (!collapsed || mobileOpen) && (
                   <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-[var(--muted-foreground)]">

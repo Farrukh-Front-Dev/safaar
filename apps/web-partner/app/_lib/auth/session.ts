@@ -13,13 +13,24 @@ import type { AuthUser } from "../../_stores/auth-store";
 export function buildPartnerSession(
   phone: string,
   tokens: AuthTokens,
+  partnerType?: string,
 ): { user: AuthUser; tokens: AuthTokens } {
+  let resolvedType = partnerType || "hotel";
+  if (phone.includes("7777777")) {
+    resolvedType = "dacha";
+  } else if (phone.includes("8888888")) {
+    resolvedType = "hostel";
+  } else if (phone.includes("9999999")) {
+    resolvedType = "bus";
+  }
+
   return {
     user: {
       id: `staff-${phone}`,
       phone,
       fullName: "Resepsiyon Xodimi",
       role: Role.PARTNER,
+      partnerType: resolvedType,
     },
     tokens,
   };

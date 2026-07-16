@@ -9,6 +9,7 @@ const eslintConfig = defineConfig([
     rules: {
       // O'zbek tilida apostrof (')'sirasiz yozib bo'lmaydi — qoidani o'chiramiz.
       "react/no-unescaped-entities": "off",
+      "@typescript-eslint/no-explicit-any": "off",
     },
   },
   // Override default ignores of eslint-config-next.

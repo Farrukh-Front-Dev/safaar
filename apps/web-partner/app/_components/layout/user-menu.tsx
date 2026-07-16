@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "../../_lib/utils/cn";
 import { formatPhone } from "../../_lib/utils/format";
+import { useAuthStore } from "../../_stores/auth-store";
 
 interface UserMenuProps {
   name: string;
@@ -15,6 +16,8 @@ interface UserMenuProps {
 export function UserMenu({ name, phone, onLogout }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const user = useAuthStore((s) => s.user);
+  const updateUser = useAuthStore((s) => s.updateUser);
 
   // Tashqariga bosilganda yoping
   useEffect(() => {
@@ -101,6 +104,24 @@ export function UserMenu({ name, phone, onLogout }: UserMenuProps) {
             <Settings className="h-4 w-4 text-zinc-500" aria-hidden />
             Sozlamalar
           </Link>
+          <div className="border-t border-[var(--border)] px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
+            Panel turi (Demo)
+          </div>
+          <div className="px-4 pb-2">
+            <select
+              value={user?.partnerType || "hotel"}
+              onChange={(e) => {
+                updateUser({ partnerType: e.target.value });
+                setOpen(false);
+              }}
+              className="w-full rounded-md border border-[var(--border)] bg-[var(--surface-muted)] px-2 py-1 text-xs focus:outline-none"
+            >
+              <option value="hotel">Mehmonxona (Hotel)</option>
+              <option value="dacha">Dacha</option>
+              <option value="hostel">Hostel</option>
+              <option value="bus">Transport (Bus)</option>
+            </select>
+          </div>
           <div className="border-t border-[var(--border)]" />
           <button
             type="button"

@@ -28,7 +28,8 @@ export function usePartnerPhoneLogin() {
           accessToken: "demo-access-token",
           refreshToken: "demo-refresh-token",
         };
-        return { phone, tokens, organizationId: accessStatus.request?.id || "demo-partner-org-id" };
+        const partnerType = accessStatus.request?.type || "hotel";
+        return { phone, tokens, organizationId: accessStatus.request?.id || "demo-partner-org-id", partnerType };
       } catch (err: any) {
         if (err.name === "HttpError" && err.status === 0) {
           console.warn("Backend offline. Fallback to mock session.");
@@ -36,13 +37,13 @@ export function usePartnerPhoneLogin() {
             accessToken: "demo-access-token",
             refreshToken: "demo-refresh-token",
           };
-          return { phone, tokens, organizationId: "demo-partner-org-id" };
+          return { phone, tokens, organizationId: "demo-partner-org-id", partnerType: "hotel" };
         }
         throw err;
       }
     },
-    onSuccess: ({ phone, tokens, organizationId }) => {
-      const { user } = buildPartnerSession(phone, tokens);
+    onSuccess: ({ phone, tokens, organizationId, partnerType }) => {
+      const { user } = buildPartnerSession(phone, tokens, partnerType);
       user.organizationId = organizationId;
       setSession(user, tokens);
       toast.success("Xush kelibsiz!");

@@ -16,6 +16,25 @@ export function Topbar() {
   const logout = useLogout();
   const openMobileMenu = useUiStore((s) => s.openMobileSidebar);
 
+  const partnerType = user?.partnerType || "hotel";
+  
+  let title = "Hotel Samarkand Plaza";
+  let subtitle = "Mehmonxona paneli";
+  
+  if (partnerType === "dacha") {
+    title = "Chorvoq Oasis Dacha";
+    subtitle = "Dacha boshqaruv paneli";
+  } else if (partnerType === "bus") {
+    title = "Safaar Express Trans";
+    subtitle = "Tashuvchi (Transport) paneli";
+  } else if (partnerType === "hostel") {
+    title = "Samarkand Silk Road Hostel";
+    subtitle = "Hostel boshqaruv paneli";
+  } else if (partnerType === "guesthouse") {
+    title = "Buxoro Guesthouse";
+    subtitle = "Mehmon uyi paneli";
+  }
+
   return (
     <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-4 shadow-sm shadow-slate-950/5 md:px-5">
       <div className="flex items-center gap-2 min-w-0">
@@ -31,10 +50,10 @@ export function Topbar() {
         </Tooltip>
         <div className="min-w-0">
           <h1 className="truncate text-sm font-semibold md:text-base">
-            Hotel Samarkand Plaza
+            {title}
           </h1>
           <p className="hidden text-xs text-[var(--muted-foreground)] sm:block">
-            Mehmonxona paneli
+            {subtitle}
           </p>
         </div>
       </div>

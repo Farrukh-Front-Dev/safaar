@@ -10,13 +10,14 @@ export interface AuthUser {
   fullName: string;
   role: Role;
   organizationId?: string;
+  partnerType?: string;
 }
 
 interface AuthState {
   user: AuthUser | null;
   tokens: AuthTokens | null;
   setSession: (user: AuthUser, tokens: AuthTokens) => void;
-  updateUser: (patch: Partial<Pick<AuthUser, "fullName" | "phone">>) => void;
+  updateUser: (patch: Partial<Pick<AuthUser, "fullName" | "phone" | "partnerType">>) => void;
   clearSession: () => void;
   setAccessToken: (accessToken: string) => void;
 }

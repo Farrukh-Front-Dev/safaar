@@ -12,7 +12,8 @@ import { createPortal } from "react-dom";
 import { useMounted } from "../../_hooks/use-mounted";
 import { useReservations } from "../../_hooks/use-reservations";
 import { useGuests } from "../../_hooks/use-guests";
-import { NAV_GROUPS } from "./sidebar-nav";
+import { useAuthStore } from "../../_stores/auth-store";
+import { getNavGroups } from "./sidebar-nav";
 import { cn } from "../../_lib/utils/cn";
 import { formatPhone } from "../../_lib/utils/format";
 
@@ -62,12 +63,15 @@ export function CommandPalette() {
     }
   }, [open]);
 
+  const user = useAuthStore((s) => s.user);
+  const partnerType = user?.partnerType || "hotel";
+
   const results = useMemo<ResultItem[]>(() => {
     const q = query.trim().toLowerCase();
     const items: ResultItem[] = [];
 
     // Pages (always show at top when query is empty)
-    for (const group of NAV_GROUPS) {
+    for (const group of getNavGroups(partnerType)) {
       for (const item of group.items) {
         if (!q || item.label.toLowerCase().includes(q)) {
           items.push({
@@ -120,7 +124,7 @@ export function CommandPalette() {
     }
 
     return items.slice(0, 30);
-  }, [query, reservations, guests]);
+  }, [query, reservations, guests, partnerType]);
 
   const groups = useMemo(() => {
     const map = new Map<string, ResultItem[]>();
