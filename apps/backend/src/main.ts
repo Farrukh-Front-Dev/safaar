@@ -3,7 +3,8 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
-import { json, urlencoded } from 'express';
+import { json, static as expressStatic, urlencoded } from 'express';
+import { join } from 'node:path';
 import { AppModule } from './app.module';
 import { ApiResponseInterceptor } from './common/api-response.interceptor';
 import { HttpErrorFilter } from './common/http-error.filter';
@@ -13,9 +14,18 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
   const apiPrefix = config.get<string>('API_PREFIX', 'v1');
+  const uploadRoot = config.get<string>(
+    'UPLOADS_DIR',
+    join(process.cwd(), 'uploads'),
+  );
 
   // Uchala frontend (user, partner, admin) shu API'ga ulanadi.
-  app.use(helmet());
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
+  app.use('/uploads', expressStatic(uploadRoot));
   app.use(json({ limit: '1mb' }));
   app.use(urlencoded({ extended: true, limit: '1mb' }));
   app.enableCors({

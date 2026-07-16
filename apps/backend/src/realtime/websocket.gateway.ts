@@ -21,6 +21,12 @@ interface AuthenticatedSocket extends Socket {
   actorType?: string;
 }
 
+interface SupportPresenceParticipant {
+  userId: string;
+  role?: string;
+  actorType?: string;
+}
+
 @WebSocketGateway({
   cors: {
     origin: '*',
@@ -36,9 +42,14 @@ export class RealtimeGateway
   @WebSocketServer()
   server!: Server;
 
+  private readonly clients = new Map<string, AuthenticatedSocket>();
+  private readonly supportRoomsByClient = new Map<string, Set<string>>();
+
   // ── Connection lifecycle ──────────────────────────────────────────────
 
   handleConnection(client: AuthenticatedSocket) {
+    this.clients.set(client.id, client);
+
     try {
       const token =
         (client.handshake.auth?.token as string) ??
@@ -80,6 +91,27 @@ export class RealtimeGateway
   }
 
   handleDisconnect(client: AuthenticatedSocket) {
+    const supportRooms = this.supportRoomsByClient.get(client.id) ?? new Set();
+
+    for (const room of supportRooms) {
+      if (client.userId) {
+        this.server.to(room).emit(SERVER_EVENTS.SUPPORT_TYPING, {
+          ticketId: this.supportTicketId(room),
+          isTyping: false,
+          userId: client.userId,
+          role: client.role,
+          actorType: client.actorType,
+        });
+      }
+    }
+
+    this.supportRoomsByClient.delete(client.id);
+    this.clients.delete(client.id);
+
+    for (const room of supportRooms) {
+      this.emitSupportPresence(room);
+    }
+
     this.logger.debug(
       `Client disconnected: ${client.id} (user=${client.userId ?? 'anon'})`,
     );
@@ -88,23 +120,74 @@ export class RealtimeGateway
   // ── Client → Server messages ──────────────────────────────────────────
 
   @SubscribeMessage(CLIENT_EVENTS.ROOM_JOIN)
-  handleRoomJoin(
+  async handleRoomJoin(
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() data: { room: string },
   ) {
     if (!data?.room) return;
-    void client.join(data.room);
+    await client.join(data.room);
+
+    if (this.isSupportRoom(data.room)) {
+      const rooms = this.supportRoomsByClient.get(client.id) ?? new Set();
+      rooms.add(data.room);
+      this.supportRoomsByClient.set(client.id, rooms);
+      this.emitSupportPresence(data.room);
+    }
+
     this.logger.debug(`Client ${client.id} joined room: ${data.room}`);
   }
 
   @SubscribeMessage(CLIENT_EVENTS.ROOM_LEAVE)
-  handleRoomLeave(
+  async handleRoomLeave(
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() data: { room: string },
   ) {
     if (!data?.room) return;
-    void client.leave(data.room);
+
+    if (this.isSupportRoom(data.room) && client.userId) {
+      client.to(data.room).emit(SERVER_EVENTS.SUPPORT_TYPING, {
+        ticketId: this.supportTicketId(data.room),
+        isTyping: false,
+        userId: client.userId,
+        role: client.role,
+        actorType: client.actorType,
+      });
+    }
+
+    await client.leave(data.room);
+
+    if (this.isSupportRoom(data.room)) {
+      const rooms = this.supportRoomsByClient.get(client.id);
+      rooms?.delete(data.room);
+      if (rooms?.size === 0) {
+        this.supportRoomsByClient.delete(client.id);
+      }
+      this.emitSupportPresence(data.room);
+    }
+
     this.logger.debug(`Client ${client.id} left room: ${data.room}`);
+  }
+
+  @SubscribeMessage(CLIENT_EVENTS.SUPPORT_TYPING)
+  handleSupportTyping(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() data: { ticketId?: string; isTyping?: boolean },
+  ) {
+    const ticketId = data?.ticketId?.trim();
+    if (!client.userId || !ticketId || typeof data.isTyping !== 'boolean') {
+      return;
+    }
+
+    const room = `support:${ticketId}`;
+    if (!client.rooms.has(room)) return;
+
+    client.to(room).emit(SERVER_EVENTS.SUPPORT_TYPING, {
+      ticketId,
+      isTyping: data.isTyping,
+      userId: client.userId,
+      role: client.role,
+      actorType: client.actorType,
+    });
   }
 
   // ── Server → Client events (via EventEmitter2) ───────────────────────
@@ -248,5 +331,71 @@ export class RealtimeGateway
   @OnEvent(SERVER_EVENTS.ADMIN_DASHBOARD_UPDATED)
   handleAdminDashboardUpdated() {
     this.server.to('admin:all').emit(SERVER_EVENTS.ADMIN_DASHBOARD_UPDATED, {});
+  }
+
+  @OnEvent(SERVER_EVENTS.HOTEL_LISTING_CHANGED)
+  handleHotelListingChanged(payload: {
+    hotelId: string;
+    partnerId?: string | null;
+    status: string;
+    action: string;
+    sections: string[];
+    occurredAt: string;
+  }) {
+    this.server
+      .to('admin:all')
+      .emit(SERVER_EVENTS.HOTEL_LISTING_CHANGED, payload);
+    if (payload.partnerId) {
+      this.server
+        .to(`partner:${payload.partnerId}`)
+        .emit(SERVER_EVENTS.HOTEL_LISTING_CHANGED, payload);
+    }
+  }
+
+  @OnEvent(SERVER_EVENTS.HOTEL_SUBMITTED_FOR_REVIEW)
+  handleHotelSubmittedForReview(payload: Record<string, unknown>) {
+    this.server
+      .to('admin:all')
+      .emit(SERVER_EVENTS.HOTEL_SUBMITTED_FOR_REVIEW, payload);
+  }
+
+  @OnEvent(SERVER_EVENTS.HOTEL_MODERATION_CHANGED)
+  handleHotelModerationChanged(payload: Record<string, unknown>) {
+    this.server
+      .to('admin:all')
+      .emit(SERVER_EVENTS.HOTEL_MODERATION_CHANGED, payload);
+    const partnerId = payload['partnerId'];
+    if (typeof partnerId === 'string' && partnerId) {
+      this.server
+        .to(`partner:${partnerId}`)
+        .emit(SERVER_EVENTS.HOTEL_MODERATION_CHANGED, payload);
+    }
+  }
+
+  private isSupportRoom(room: string): boolean {
+    return room.startsWith('support:') && room.length > 'support:'.length;
+  }
+
+  private supportTicketId(room: string): string {
+    return room.slice('support:'.length);
+  }
+
+  private emitSupportPresence(room: string) {
+    if (!this.isSupportRoom(room)) return;
+
+    const participants = new Map<string, SupportPresenceParticipant>();
+    for (const client of this.clients.values()) {
+      if (!client.userId || !client.rooms.has(room)) continue;
+      participants.set(client.userId, {
+        userId: client.userId,
+        role: client.role,
+        actorType: client.actorType,
+      });
+    }
+
+    this.server.to(room).emit(SERVER_EVENTS.SUPPORT_PRESENCE_CHANGED, {
+      ticketId: this.supportTicketId(room),
+      participants: [...participants.values()],
+    });
   }
 }

@@ -6,8 +6,17 @@ import {
 } from '@nestjs/common';
 import { Role } from '@agoda/types';
 import { randomUUID } from 'node:crypto';
+import { mkdir, unlink, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 import type { RequestActor } from '../common/actor';
 import { PostgresService } from '../infrastructure/postgres.service';
+
+export interface UploadedFile {
+  buffer: Buffer;
+  originalname: string;
+  mimetype: string;
+  size: number;
+}
 
 @Injectable()
 export class UploadsService {
@@ -17,6 +26,7 @@ export class UploadsService {
     actor: RequestActor | undefined,
     type: 'image' | 'document',
     body: Record<string, unknown>,
+    file?: UploadedFile,
   ) {
     const currentActor: RequestActor = actor ?? {
       id: '00000000-0000-0000-0000-000000000000',
@@ -24,34 +34,23 @@ export class UploadsService {
       role: Role.USER,
       roles: [Role.USER],
     };
-    const mimeType = String(body.mime_type ?? body.mimeType ?? '');
-    const size = Number(body.size ?? 0);
-    this.assertUploadAllowed(type, mimeType, size);
-
-    const now = new Date().toISOString();
-    const id = randomUUID();
-    const objectKey = `${currentActor.actorType}/${currentActor.id}/${randomUUID()}`;
-    const url = `https://cdn.uzbron.uz/mock/${type}/${Date.now()}`;
-
-    const [file] = await this.pg.query(
-      `INSERT INTO media_files (id, owner_type, owner_id, bucket, object_key, url, mime_type, size, visibility, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-       RETURNING *`,
-      [
-        id,
-        currentActor.actorType,
-        currentActor.id,
-        type,
-        objectKey,
-        url,
-        mimeType,
-        size,
-        'private',
-        now,
-      ],
+    return this.storeMedia(
+      currentActor.actorType,
+      currentActor.id,
+      type,
+      body,
+      file,
     );
+  }
 
-    return file;
+  async createForOwner(
+    ownerType: string,
+    ownerId: string,
+    type: 'image' | 'document',
+    body: Record<string, unknown>,
+    file: UploadedFile,
+  ) {
+    return this.storeMedia(ownerType, ownerId, type, body, file);
   }
 
   presign(actor: RequestActor | undefined, body: Record<string, unknown>) {
@@ -140,6 +139,93 @@ export class UploadsService {
         code: 'UPLOAD_SIZE_INVALID',
         message: 'Fayl hajmi ruxsat etilgan chegaradan tashqarida',
       });
+    }
+  }
+
+  private async storeMedia(
+    ownerType: string,
+    ownerId: string,
+    type: 'image' | 'document',
+    body: Record<string, unknown>,
+    file?: UploadedFile,
+  ) {
+    const mimeType =
+      file?.mimetype ?? String(body.mime_type ?? body.mimeType ?? '');
+    const size = file?.size ?? Number(body.size ?? 0);
+    this.assertUploadAllowed(type, mimeType, size);
+
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    const stored = file ? await this.persistFile(type, file) : undefined;
+    const objectKey =
+      stored?.objectKey ?? `${ownerType}/${ownerId}/${randomUUID()}`;
+    const url =
+      stored?.url ?? `https://cdn.uzbron.uz/mock/${type}/${Date.now()}`;
+
+    try {
+      const [media] = await this.pg.query(
+        `INSERT INTO media_files (id, owner_type, owner_id, bucket, object_key, url, mime_type, size, visibility, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         RETURNING *`,
+        [
+          id,
+          ownerType,
+          ownerId,
+          type,
+          objectKey,
+          url,
+          mimeType,
+          size,
+          stored ? 'public' : 'private',
+          now,
+        ],
+      );
+      return media;
+    } catch (error) {
+      if (stored) await unlink(stored.absolutePath).catch(() => undefined);
+      throw error;
+    }
+  }
+
+  private async persistFile(type: 'image' | 'document', file: UploadedFile) {
+    const extension = this.extensionForMime(file.mimetype);
+    const filename = `${randomUUID()}${extension}`;
+    const relativePath = join(type, filename);
+    const absolutePath = join(this.uploadRoot(), relativePath);
+
+    await mkdir(dirname(absolutePath), { recursive: true });
+    await writeFile(absolutePath, file.buffer, { flag: 'wx' });
+
+    return {
+      absolutePath,
+      objectKey: relativePath,
+      url: `${this.publicOrigin()}/uploads/${relativePath.replace(/\\/g, '/')}`,
+    };
+  }
+
+  private uploadRoot(): string {
+    return process.env.UPLOADS_DIR ?? join(process.cwd(), 'uploads');
+  }
+
+  private publicOrigin(): string {
+    return (
+      process.env.PUBLIC_API_ORIGIN ??
+      `http://localhost:${process.env.PORT ?? '4000'}`
+    ).replace(/\/$/, '');
+  }
+
+  private extensionForMime(mimeType: string): string {
+    switch (mimeType) {
+      case 'image/jpeg':
+        return '.jpg';
+      case 'image/png':
+        return '.png';
+      case 'image/webp':
+        return '.webp';
+      case 'application/pdf':
+        return '.pdf';
+      default:
+        return '.bin';
     }
   }
 

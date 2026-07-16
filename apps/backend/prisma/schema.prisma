@@ -363,6 +363,10 @@ model MediaFile {
   mimeType    String    @map("mime_type") @db.VarChar(120)
   size        Int
   visibility  String    @default("private") @db.VarChar(32)
+  caption     String?
+  category    String?   @db.VarChar(32)
+  sortOrder   Int       @default(0) @map("sort_order")
+  isCover     Boolean   @default(false) @map("is_cover")
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
   deletedAt   DateTime? @map("deleted_at") @db.Timestamptz
 
@@ -399,6 +403,16 @@ model Hotel {
   checkInTime           String?     @map("check_in_time") @db.VarChar(5)
   checkOutTime          String?     @map("check_out_time") @db.VarChar(5)
   cancellationPolicyId  String?     @map("cancellation_policy_id") @db.Uuid
+  cancellationPolicyCode String    @default("MODERATE") @map("cancellation_policy_code") @db.VarChar(32)
+  smokingAllowed        Boolean    @default(false) @map("smoking_allowed")
+  petsAllowed           Boolean    @default(false) @map("pets_allowed")
+  childrenAllowed       Boolean    @default(true) @map("children_allowed")
+  extraFees             Json       @default("[]") @map("extra_fees")
+  rulesCompletedAt      DateTime?  @map("rules_completed_at") @db.Timestamptz
+  submittedAt           DateTime?  @map("submitted_at") @db.Timestamptz
+  reviewedAt            DateTime?  @map("reviewed_at") @db.Timestamptz
+  reviewedBy            String?    @map("reviewed_by") @db.Uuid
+  rejectionReason       String?    @map("rejection_reason")
   createdAt             DateTime    @default(now()) @map("created_at") @db.Timestamptz
   updatedAt             DateTime    @updatedAt @map("updated_at") @db.Timestamptz
   deletedAt             DateTime?   @map("deleted_at") @db.Timestamptz
@@ -425,6 +439,7 @@ model HotelTranslation {
   hotelId     String   @map("hotel_id") @db.Uuid
   language    Language
   name        String   @db.VarChar(255)
+  shortDescription String? @map("short_description")
   description String?
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz

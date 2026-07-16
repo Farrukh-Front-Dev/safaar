@@ -67,6 +67,10 @@ export class HotelsService {
       params,
     );
 
+    const listingData = await this.loadListingData(
+      rows.map((row) => String((row as Record<string, unknown>).id)),
+    );
+
     const mapped = rows.map((r: Record<string, unknown>) => ({
       id: r.id,
       partner_organization_id: r.partner_organization_id,
@@ -84,15 +88,12 @@ export class HotelsService {
       check_out_time: r.check_out_time,
       created_at: r.created_at,
       updated_at: r.updated_at,
-      name: { uz: r.name, ru: r.name, en: r.name },
-      description: {
-        uz: r.description,
-        ru: r.description,
-        en: r.description,
-      },
+      name: listingData.names.get(String(r.id)) ?? localized(r.name),
+      description:
+        listingData.descriptions.get(String(r.id)) ?? localized(r.description),
       city: { id: r.city_id, region_id: r.region_id, name: r.city_name },
-      amenities: [],
-      images: [],
+      amenities: listingData.amenities.get(String(r.id)) ?? [],
+      images: listingData.images.get(String(r.id)) ?? [],
       min_price: Number(r.min_price || 0),
     }));
 
@@ -132,6 +133,7 @@ export class HotelsService {
     }
 
     const h = rows[0] as Record<string, unknown>;
+    const listingData = await this.loadListingData([String(h.id)]);
     const roomRows = await this.pg.query(
       `SELECT hr.id::text, hr.hotel_id::text, hr.room_type_id::text, hr.code,
         hr.base_occupancy, hr.max_adults, hr.max_children,
@@ -170,15 +172,12 @@ export class HotelsService {
       check_out_time: h.check_out_time,
       created_at: h.created_at,
       updated_at: h.updated_at,
-      name: { uz: h.name, ru: h.name, en: h.name },
-      description: {
-        uz: h.description,
-        ru: h.description,
-        en: h.description,
-      },
+      name: listingData.names.get(String(h.id)) ?? localized(h.name),
+      description:
+        listingData.descriptions.get(String(h.id)) ?? localized(h.description),
       city: { id: h.city_id, region_id: h.region_id, name: h.city_name },
-      amenities: [],
-      images: [],
+      amenities: listingData.amenities.get(String(h.id)) ?? [],
+      images: listingData.images.get(String(h.id)) ?? [],
       rooms,
     };
   }
@@ -254,6 +253,80 @@ export class HotelsService {
     );
   }
 
+  private async loadListingData(ids: string[]) {
+    if (ids.length === 0) {
+      return {
+        names: new Map<string, Record<string, string | null>>(),
+        descriptions: new Map<string, Record<string, string | null>>(),
+        images: new Map<string, string[]>(),
+        amenities: new Map<string, string[]>(),
+      };
+    }
+
+    const [translations, media, amenities] = await Promise.all([
+      this.pg.query<{
+        hotel_id: string;
+        language: string;
+        name: string | null;
+        description: string | null;
+      }>(
+        `SELECT hotel_id::text, language::text, name, description
+         FROM hotel_translations
+         WHERE hotel_id = ANY($1::uuid[])`,
+        [ids],
+      ),
+      this.pg.query<{ hotel_id: string; url: string }>(
+        `SELECT owner_id::text as hotel_id, url
+         FROM media_files
+         WHERE owner_type = 'hotel'
+           AND owner_id = ANY($1::uuid[])
+           AND deleted_at IS NULL
+           AND url IS NOT NULL
+         ORDER BY sort_order ASC, created_at ASC`,
+        [ids],
+      ),
+      this.pg.query<{ hotel_id: string; code: string }>(
+        `SELECT ha.hotel_id::text, a.code
+         FROM hotel_amenities ha
+         JOIN amenities a ON a.id = ha.amenity_id
+         WHERE ha.hotel_id = ANY($1::uuid[])
+         ORDER BY a.code ASC`,
+        [ids],
+      ),
+    ]);
+
+    const names = new Map<string, Record<string, string | null>>();
+    const descriptions = new Map<string, Record<string, string | null>>();
+    const images = new Map<string, string[]>();
+    const amenityMap = new Map<string, string[]>();
+
+    for (const row of translations) {
+      const name = names.get(row.hotel_id) ?? { uz: null, ru: null, en: null };
+      const description = descriptions.get(row.hotel_id) ?? {
+        uz: null,
+        ru: null,
+        en: null,
+      };
+      if (row.language in name) name[row.language] = row.name;
+      if (row.language in description)
+        description[row.language] = row.description;
+      names.set(row.hotel_id, name);
+      descriptions.set(row.hotel_id, description);
+    }
+    for (const row of media) {
+      const list = images.get(row.hotel_id) ?? [];
+      list.push(row.url);
+      images.set(row.hotel_id, list);
+    }
+    for (const row of amenities) {
+      const list = amenityMap.get(row.hotel_id) ?? [];
+      list.push(row.code);
+      amenityMap.set(row.hotel_id, list);
+    }
+
+    return { names, descriptions, images, amenities: amenityMap };
+  }
+
   async map(query: QueryLike) {
     const hotels = (await this.findAll(query)) as {
       items: Array<Record<string, unknown>>;
@@ -279,6 +352,19 @@ export class HotelsService {
 
     return Math.max(1, Math.ceil((end - start) / 86_400_000));
   }
+}
+
+function localized(value: unknown): Record<string, string | null> {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    const source = value as Record<string, unknown>;
+    return {
+      uz: source.uz == null ? null : String(source.uz),
+      ru: source.ru == null ? null : String(source.ru),
+      en: source.en == null ? null : String(source.en),
+    };
+  }
+  const text = value == null ? null : String(value);
+  return { uz: text, ru: text, en: text };
 }
 
 function first(value: string | string[] | undefined): string | undefined {

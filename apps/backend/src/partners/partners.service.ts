@@ -3,6 +3,8 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { BookingStatus, Role } from '@agoda/types';
 import type { RequestActor } from '../common/actor';
@@ -15,6 +17,7 @@ import { PostgresService } from '../infrastructure/postgres.service';
 import { JobQueueService } from '../infrastructure/job-queue.service';
 import { hashSecret, partnerApiPepper, randomToken } from '../auth/security';
 import { randomUUID } from 'node:crypto';
+import { EventsService } from '../realtime/events.service';
 
 type HotelListingStatus = 'draft' | 'pending_review' | 'published' | 'hidden';
 type PublicPartnerStatus =
@@ -23,8 +26,6 @@ type PublicPartnerStatus =
   | 'reviewing'
   | 'approved'
   | 'rejected';
-
-const DEMO_PARTNER_ORGANIZATION_ID = '00000000-0000-3001-0000-000000000001';
 
 function localizedText(
   body: Record<string, unknown>,
@@ -74,6 +75,7 @@ export class PartnersService {
   constructor(
     private readonly pg: PostgresService,
     private readonly jobs: JobQueueService,
+    @Optional() private readonly events?: EventsService,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -550,13 +552,23 @@ export class PartnersService {
   }
 
   async submitHotelReview(actor: RequestActor | undefined, id: string) {
-    await this.assertHotel(id, actor);
+    await this.assertListingSubmissionReady(actor, id);
     const now = new Date().toISOString();
     const result = await this.pg.query(
-      `UPDATE hotels SET status = 'pending_review', updated_at = $1 WHERE id = $2 RETURNING *`,
+      `UPDATE hotels
+       SET status = 'pending_review',
+           submitted_at = $1,
+           reviewed_at = null,
+           reviewed_by = null,
+           rejection_reason = null,
+           updated_at = $1
+       WHERE id = $2
+       RETURNING *`,
       [now, id],
     );
-    return result[0];
+    const updated = result[0];
+    this.notifyListingChanged(updated, actor, 'submitted', ['status']);
+    return updated;
   }
 
   async addHotelImage(
@@ -565,23 +577,77 @@ export class PartnersService {
     body: Record<string, unknown>,
   ) {
     await this.assertHotel(id, actor);
-    const imageUrl = this.optionalString(body.url ?? body.image_url);
-    if (!imageUrl) {
-      throw new BadRequestException({
-        code: 'IMAGE_URL_REQUIRED',
-        message: 'Rasm URL manzili kerak',
-      });
+    const uploadedFileId = this.optionalString(body.file_id ?? body.fileId);
+
+    if (uploadedFileId) {
+      if (!actor?.id) {
+        throw new ForbiddenException({
+          code: 'IMAGE_OWNER_REQUIRED',
+          message: 'Rasm egasi aniqlanmadi',
+        });
+      }
+
+      const [uploaded] = await this.pg.query<{
+        id: string;
+        url: string | null;
+      }>(
+        `SELECT id::text, url
+         FROM media_files
+         WHERE id = $1::uuid
+           AND owner_id = $2::uuid
+           AND deleted_at IS NULL`,
+        [uploadedFileId, actor.id],
+      );
+      if (!uploaded?.url) {
+        throw new BadRequestException({
+          code: 'IMAGE_UPLOAD_NOT_FOUND',
+          message: 'Yuklangan rasm topilmadi yoki sizga tegishli emas',
+        });
+      }
+
+      const [order] = await this.pg.query<{
+        next_order: number;
+        image_count: number;
+      }>(
+        `SELECT coalesce(max(sort_order) + 1, 0)::int as next_order,
+                count(*)::int as image_count
+         FROM media_files
+         WHERE owner_type = 'hotel' AND owner_id = $1::uuid AND deleted_at IS NULL`,
+        [id],
+      );
+
+      await this.pg.query(
+        `UPDATE media_files
+         SET owner_type = 'hotel', owner_id = $1::uuid, bucket = 'image',
+             visibility = 'public',
+             caption = nullif($3, ''),
+             category = nullif($4, ''),
+             sort_order = $5,
+             is_cover = $6
+         WHERE id = $2::uuid AND deleted_at IS NULL`,
+        [
+          id,
+          uploaded.id,
+          String(body.caption ?? ''),
+          String(body.category ?? ''),
+          order?.next_order ?? 0,
+          (order?.image_count ?? 0) === 0,
+        ],
+      );
+      await this.touchHotel(id, new Date().toISOString());
+      this.notifyListingChanged(
+        { id, partner_organization_id: actor.organizationId },
+        actor,
+        'updated',
+        ['media'],
+      );
+      return { hotel_id: id, image_id: uploaded.id, image_url: uploaded.url };
     }
 
-    const imageId = randomUUID();
-    const now = new Date().toISOString();
-    await this.pg.query(
-      `INSERT INTO media_files (id, owner_type, owner_id, bucket, object_key, url, mime_type, size, visibility, created_at)
-       VALUES ($1, 'hotel', $2::uuid, 'external', $3, $3, 'image/*', 0, 'public', $4)`,
-      [imageId, id, imageUrl, now],
-    );
-    await this.touchHotel(id, now);
-    return { hotel_id: id, image_id: imageId, image_url: imageUrl };
+    throw new BadRequestException({
+      code: 'IMAGE_UPLOAD_REQUIRED',
+      message: 'Rasmni avval serverga yuklash kerak',
+    });
   }
 
   async deleteHotelImage(
@@ -602,6 +668,12 @@ export class PartnersService {
       [now, id, imageId],
     );
     await this.touchHotel(id, now);
+    this.notifyListingChanged(
+      { id, partner_organization_id: actor?.organizationId },
+      actor,
+      'updated',
+      ['media'],
+    );
     return {
       hotel_id: id,
       image_id: result[0]?.id ?? imageId,
@@ -992,37 +1064,89 @@ export class PartnersService {
     await this.assertHotel(id, actor);
     const now = new Date().toISOString();
 
-    const nameUz = String(body.name_uz ?? body.name ?? '');
-    const nameRu = String(body.name_ru ?? body.name ?? '');
-    const nameEn = String(body.name_en ?? body.name ?? '');
-    const descUz = String(body.description_uz ?? body.description ?? '');
-    const descRu = String(body.description_ru ?? body.description ?? '');
-    const descEn = String(body.description_en ?? body.description ?? '');
-    const stars = body.stars ? Number(body.stars) : undefined;
+    const existing = await this.pg.query<{
+      language: string;
+      name: string;
+      short_description: string | null;
+      description: string | null;
+    }>(
+      `SELECT language::text, name, short_description, description
+       FROM hotel_translations WHERE hotel_id = $1::uuid`,
+      [id],
+    );
+    const current = new Map(existing.map((row) => [row.language, row]));
+    const value = (
+      language: string,
+      field: string,
+      fallbackField: string,
+      fallback = '',
+    ) => {
+      const localized = body[`${field}_${language}`];
+      if (localized !== undefined) return String(localized);
+      const generic = body[field] ?? body[fallbackField];
+      if (generic !== undefined) return String(generic);
+      return String(
+        current.get(language)?.[field as 'name' | 'description'] ?? fallback,
+      );
+    };
+    const shortValue = (language: string) => {
+      const localized =
+        body[`short_description_${language}`] ??
+        body[`shortDescription_${language}`];
+      if (localized !== undefined) return String(localized);
+      const generic = body.short_description ?? body.shortDescription;
+      if (generic !== undefined) return String(generic);
+      return String(current.get(language)?.short_description ?? '');
+    };
+    const nameUz = value('uz', 'name', 'name_uz');
+    const nameRu = value('ru', 'name', 'name_ru');
+    const nameEn = value('en', 'name', 'name_en');
+    const descUz = value('uz', 'description', 'fullDescription');
+    const descRu = value('ru', 'description', 'fullDescription');
+    const descEn = value('en', 'description', 'fullDescription');
+    const shortUz = shortValue('uz');
+    const shortRu = shortValue('ru');
+    const shortEn = shortValue('en');
+    const stars = body.stars !== undefined ? Number(body.stars) : undefined;
 
     // Update translations
-    if (nameUz || descUz) {
+    if (nameUz || descUz || shortUz) {
       await this.pg.query(
-        `INSERT INTO hotel_translations (hotel_id, language, name, description, created_at, updated_at)
-         VALUES ($1, 'uz', $2, $3, $4, $4)
-         ON CONFLICT (hotel_id, language) DO UPDATE SET name = $2, description = $3, updated_at = $4`,
-        [id, nameUz, descUz, now],
+        `INSERT INTO hotel_translations
+           (id, hotel_id, language, name, short_description, description, created_at, updated_at)
+         VALUES ($1, $2, 'uz', $3, $4, $5, $6, $6)
+         ON CONFLICT (hotel_id, language) DO UPDATE SET
+           name = EXCLUDED.name,
+           short_description = EXCLUDED.short_description,
+           description = EXCLUDED.description,
+           updated_at = EXCLUDED.updated_at`,
+        [randomUUID(), id, nameUz, shortUz, descUz, now],
       );
     }
-    if (nameRu || descRu) {
+    if (nameRu || descRu || shortRu) {
       await this.pg.query(
-        `INSERT INTO hotel_translations (hotel_id, language, name, description, created_at, updated_at)
-         VALUES ($1, 'ru', $2, $3, $4, $4)
-         ON CONFLICT (hotel_id, language) DO UPDATE SET name = $2, description = $3, updated_at = $4`,
-        [id, nameRu, descRu, now],
+        `INSERT INTO hotel_translations
+           (id, hotel_id, language, name, short_description, description, created_at, updated_at)
+         VALUES ($1, $2, 'ru', $3, $4, $5, $6, $6)
+         ON CONFLICT (hotel_id, language) DO UPDATE SET
+           name = EXCLUDED.name,
+           short_description = EXCLUDED.short_description,
+           description = EXCLUDED.description,
+           updated_at = EXCLUDED.updated_at`,
+        [randomUUID(), id, nameRu, shortRu, descRu, now],
       );
     }
-    if (nameEn || descEn) {
+    if (nameEn || descEn || shortEn) {
       await this.pg.query(
-        `INSERT INTO hotel_translations (hotel_id, language, name, description, created_at, updated_at)
-         VALUES ($1, 'en', $2, $3, $4, $4)
-         ON CONFLICT (hotel_id, language) DO UPDATE SET name = $2, description = $3, updated_at = $4`,
-        [id, nameEn, descEn, now],
+        `INSERT INTO hotel_translations
+           (id, hotel_id, language, name, short_description, description, created_at, updated_at)
+         VALUES ($1, $2, 'en', $3, $4, $5, $6, $6)
+         ON CONFLICT (hotel_id, language) DO UPDATE SET
+           name = EXCLUDED.name,
+           short_description = EXCLUDED.short_description,
+           description = EXCLUDED.description,
+           updated_at = EXCLUDED.updated_at`,
+        [randomUUID(), id, nameEn, shortEn, descEn, now],
       );
     }
 
@@ -1034,7 +1158,10 @@ export class PartnersService {
       );
     }
 
+    await this.touchHotel(id, now);
+
     const hotel = await this.assertHotel(id, actor);
+    this.notifyListingChanged(hotel, actor, 'updated', ['general']);
     return hotel;
   }
 
@@ -1077,9 +1204,12 @@ export class PartnersService {
         `UPDATE hotels SET ${sets.join(', ')} WHERE id = $${idx} RETURNING *`,
         params,
       );
+      await this.touchHotel(id, now);
     }
 
-    return this.assertHotel(id, actor);
+    const hotel = await this.assertHotel(id, actor);
+    this.notifyListingChanged(hotel, actor, 'updated', ['location']);
+    return hotel;
   }
 
   async updateListingRules(
@@ -1095,6 +1225,12 @@ export class PartnersService {
 
     const checkInTime = body.checkInTime ?? body.check_in_time ?? undefined;
     const checkOutTime = body.checkOutTime ?? body.check_out_time ?? undefined;
+    const cancellationPolicy =
+      body.cancellationPolicy ?? body.cancellation_policy ?? undefined;
+    const smokingAllowed = body.smokingAllowed ?? body.smoking_allowed;
+    const petsAllowed = body.petsAllowed ?? body.pets_allowed;
+    const childrenAllowed = body.childrenAllowed ?? body.children_allowed;
+    const extraFees = body.extraFees ?? body.extra_fees;
 
     if (checkInTime !== undefined) {
       sets.push(`check_in_time = $${idx++}`);
@@ -1104,25 +1240,52 @@ export class PartnersService {
       sets.push(`check_out_time = $${idx++}`);
       params.push(String(checkOutTime));
     }
+    if (cancellationPolicy !== undefined) {
+      sets.push(`cancellation_policy_code = $${idx++}`);
+      params.push(String(cancellationPolicy).toUpperCase());
+    }
+    if (typeof smokingAllowed === 'boolean') {
+      sets.push(`smoking_allowed = $${idx++}`);
+      params.push(smokingAllowed);
+    }
+    if (typeof petsAllowed === 'boolean') {
+      sets.push(`pets_allowed = $${idx++}`);
+      params.push(petsAllowed);
+    }
+    if (typeof childrenAllowed === 'boolean') {
+      sets.push(`children_allowed = $${idx++}`);
+      params.push(childrenAllowed);
+    }
+    if (Array.isArray(extraFees)) {
+      sets.push(`extra_fees = $${idx++}::jsonb`);
+      params.push(JSON.stringify(extraFees));
+    }
+    if (checkInTime !== undefined || checkOutTime !== undefined) {
+      const rulesComplete =
+        typeof checkInTime === 'string' &&
+        checkInTime.trim().length > 0 &&
+        typeof checkOutTime === 'string' &&
+        checkOutTime.trim().length > 0;
+      sets.push(`rules_completed_at = $${idx++}`);
+      params.push(rulesComplete ? now : null);
+    }
 
     if (sets.length > 0) {
       sets.push(`updated_at = $${idx++}`);
       params.push(now);
       params.push(id);
       await this.pg.query(
-        `UPDATE hotels SET ${sets.join(', ')} WHERE id = $${idx}`,
-        params,
+        `UPDATE hotels SET ${sets.join(', ')},
+           status = CASE WHEN status = 'published' THEN 'pending_review'::"HotelStatus" ELSE status END,
+           submitted_at = CASE WHEN status = 'published' THEN $${idx} ELSE submitted_at END
+         WHERE id = $${idx + 1}`,
+        [...params, now, id],
       );
     }
 
-    return {
-      ...(await this.assertHotel(id, actor)),
-      cancellation_policy: body.cancellationPolicy ?? body.cancellation_policy,
-      smoking_allowed: body.smokingAllowed ?? body.smoking_allowed,
-      pets_allowed: body.petsAllowed ?? body.pets_allowed,
-      children_allowed: body.childrenAllowed ?? body.children_allowed,
-      extra_fees: body.extraFees ?? body.extra_fees ?? [],
-    };
+    const hotel = await this.assertHotel(id, actor);
+    this.notifyListingChanged(hotel, actor, 'updated', ['rules']);
+    return hotel;
   }
 
   async updateListingAmenities(
@@ -1133,7 +1296,14 @@ export class PartnersService {
     await this.assertHotel(id, actor);
     const now = new Date().toISOString();
     if (Array.isArray(body.amenities)) {
-      const codes = body.amenities.map(String);
+      const codes = [
+        ...new Set(
+          body.amenities
+            .map(String)
+            .map((code) => code.trim())
+            .filter(Boolean),
+        ),
+      ];
 
       // Resolve codes → UUIDs from the amenities table
       const resolved = await this.pg.query<{ code: string; id: string }>(
@@ -1141,13 +1311,21 @@ export class PartnersService {
         [codes],
       );
       const codeToId = new Map(resolved.map((r) => [r.code, r.id]));
+      const unknownCodes = codes.filter((code) => !codeToId.has(code));
+
+      if (unknownCodes.length > 0) {
+        throw new BadRequestException({
+          code: 'AMENITY_NOT_FOUND',
+          message: 'Qulayliklar katalogdan topilmadi',
+          fields: unknownCodes,
+        });
+      }
 
       await this.pg.query(`DELETE FROM hotel_amenities WHERE hotel_id = $1`, [
         id,
       ]);
       for (const code of codes) {
         const amenityId = codeToId.get(code);
-        if (!amenityId) continue; // skip unknown codes silently
         await this.pg.query(
           `INSERT INTO hotel_amenities (hotel_id, amenity_id)
            VALUES ($1::uuid, $2::uuid)
@@ -1155,12 +1333,17 @@ export class PartnersService {
           [id, amenityId],
         );
       }
-      await this.pg.query(`UPDATE hotels SET updated_at = $1 WHERE id = $2`, [
-        now,
-        id,
-      ]);
+      await this.pg.query(
+        `UPDATE hotels SET updated_at = $1,
+           status = CASE WHEN status = 'published' THEN 'pending_review'::"HotelStatus" ELSE status END,
+           submitted_at = CASE WHEN status = 'published' THEN $1 ELSE submitted_at END
+         WHERE id = $2`,
+        [now, id],
+      );
     }
-    return this.hotel(actor, id);
+    const hotel = await this.hotel(actor, id);
+    this.notifyListingChanged(hotel, actor, 'updated', ['amenities']);
+    return hotel;
   }
 
   async updateListingStatus(
@@ -1168,24 +1351,40 @@ export class PartnersService {
     id: string,
     body: Record<string, unknown>,
   ) {
-    await this.assertHotel(id, actor);
     const now = new Date().toISOString();
     const status = listingStatus(body.status);
+    if (status === 'published') {
+      throw new ForbiddenException({
+        code: 'LISTING_REVIEW_REQUIRED',
+        message: "Hamkor e'lonni to'g'ridan-to'g'ri nashr qila olmaydi",
+      });
+    }
+    if (status === 'pending_review') {
+      await this.assertListingSubmissionReady(actor, id);
+    } else {
+      await this.assertHotel(id, actor);
+    }
     const result = await this.pg.query(
-      `UPDATE hotels SET status = $1, updated_at = $2 WHERE id = $3 RETURNING *`,
+      `UPDATE hotels SET status = $1, updated_at = $2,
+         submitted_at = CASE WHEN $1 = 'pending_review' THEN $2 ELSE submitted_at END,
+         reviewed_at = CASE WHEN $1 = 'pending_review' THEN null ELSE reviewed_at END,
+         reviewed_by = CASE WHEN $1 = 'pending_review' THEN null ELSE reviewed_by END,
+         rejection_reason = CASE WHEN $1 = 'pending_review' THEN null ELSE rejection_reason END
+       WHERE id = $3 RETURNING *`,
       [status, now, id],
     );
-    return result[0];
+    const updated = result[0];
+    this.notifyListingChanged(
+      updated,
+      actor,
+      status === 'pending_review' ? 'submitted' : 'updated',
+      ['status'],
+    );
+    return updated;
   }
 
   async publishListing(actor: RequestActor | undefined, id: string) {
-    await this.assertHotel(id, actor);
-    const now = new Date().toISOString();
-    const result = await this.pg.query(
-      `UPDATE hotels SET status = 'pending_review', updated_at = $1 WHERE id = $2 RETURNING *`,
-      [now, id],
-    );
-    return result[0];
+    return this.submitHotelReview(actor, id);
   }
 
   // ---------------------------------------------------------------------------
@@ -1920,15 +2119,13 @@ export class PartnersService {
   // ---------------------------------------------------------------------------
 
   private organizationId(actor: RequestActor | undefined): string {
-    return (
-      (
-        actor ?? {
-          id: 'demo-partner-user-id',
-          actorType: 'partner' as const,
-          role: Role.PARTNER,
-        }
-      ).organizationId ?? DEMO_PARTNER_ORGANIZATION_ID
-    );
+    if (!actor?.organizationId) {
+      throw new UnauthorizedException({
+        code: 'PARTNER_ORGANIZATION_REQUIRED',
+        message: 'Partner tashkiloti aniqlanmadi',
+      });
+    }
+    return actor.organizationId;
   }
 
   private normalizePhone(value: unknown): string {
@@ -2032,15 +2229,24 @@ export class PartnersService {
         hotel_id: string;
         language: string;
         name: string | null;
+        short_description: string | null;
         description: string | null;
       }>(
-        `SELECT hotel_id::text, language::text, name, description
+        `SELECT hotel_id::text, language::text, name, short_description, description
          FROM hotel_translations
          WHERE hotel_id = ANY($1::uuid[])`,
         [ids],
       ),
-      this.pg.query<{ id: string; owner_id: string; url: string }>(
-        `SELECT id::text, owner_id::text, url
+      this.pg.query<{
+        id: string;
+        owner_id: string;
+        url: string;
+        caption: string | null;
+        category: string | null;
+        sort_order: number;
+        is_cover: boolean;
+      }>(
+        `SELECT id::text, owner_id::text, url, caption, category, sort_order, is_cover
          FROM media_files
          WHERE owner_type = 'hotel'
            AND owner_id = ANY($1::uuid[])
@@ -2059,6 +2265,7 @@ export class PartnersService {
     ]);
 
     const nameMap = new Map<string, Record<string, string>>();
+    const shortDescriptionMap = new Map<string, Record<string, string>>();
     const descriptionMap = new Map<string, Record<string, string>>();
     const imageUrlMap = new Map<string, string[]>();
     const imageIdMap = new Map<string, string[]>();
@@ -2066,10 +2273,15 @@ export class PartnersService {
 
     for (const row of translations) {
       const names = nameMap.get(row.hotel_id) ?? {};
+      const shortDescriptions = shortDescriptionMap.get(row.hotel_id) ?? {};
       const descriptions = descriptionMap.get(row.hotel_id) ?? {};
       if (row.name) names[row.language] = row.name;
+      if (row.short_description) {
+        shortDescriptions[row.language] = row.short_description;
+      }
       if (row.description) descriptions[row.language] = row.description;
       nameMap.set(row.hotel_id, names);
+      shortDescriptionMap.set(row.hotel_id, shortDescriptions);
       descriptionMap.set(row.hotel_id, descriptions);
     }
 
@@ -2111,18 +2323,52 @@ export class PartnersService {
           String(row['slug'] ?? 'Mehmonxona'),
         ),
         description: localizedTextFromMap(descriptionMap.get(id), ''),
+        short_description: localizedTextFromMap(
+          shortDescriptionMap.get(id),
+          '',
+        ),
         amenities: amenityMap.get(id) ?? [],
         images: imageUrlMap.get(id) ?? [],
         image_ids: imageIdMap.get(id) ?? [],
+        rules_completed_at: row['rules_completed_at'] ?? null,
+        cancellation_policy_code: String(
+          row['cancellation_policy_code'] ?? 'MODERATE',
+        ),
+        smoking_allowed: Boolean(row['smoking_allowed'] ?? false),
+        pets_allowed: Boolean(row['pets_allowed'] ?? false),
+        children_allowed: Boolean(row['children_allowed'] ?? true),
+        extra_fees: row['extra_fees'] ?? [],
       };
     });
   }
 
   private async touchHotel(id: string, date = new Date().toISOString()) {
-    await this.pg.query(`UPDATE hotels SET updated_at = $1 WHERE id = $2`, [
-      date,
-      id,
-    ]);
+    await this.pg.query(
+      `UPDATE hotels SET
+         updated_at = $1,
+         status = CASE WHEN status = 'published' THEN 'pending_review'::"HotelStatus" ELSE status END,
+         submitted_at = CASE WHEN status = 'published' THEN $1 ELSE submitted_at END
+       WHERE id = $2`,
+      [date, id],
+    );
+  }
+
+  private notifyListingChanged(
+    hotel: Record<string, unknown>,
+    actor: RequestActor | undefined,
+    action: 'updated' | 'submitted',
+    sections: string[],
+  ) {
+    const hotelId = String(hotel['id'] ?? '');
+    if (!hotelId || !this.events) return;
+    const partnerId = hotel['partner_organization_id'] ?? actor?.organizationId;
+    this.events.hotelListingChanged({
+      hotelId,
+      partnerId: partnerId ? String(partnerId) : null,
+      status: String(hotel['status'] ?? 'pending_review'),
+      action,
+      sections,
+    });
   }
 
   private async resolveCityId(value: unknown): Promise<string> {
@@ -2178,6 +2424,90 @@ export class PartnersService {
       });
     }
     return organizations[0];
+  }
+
+  private async assertListingSubmissionReady(
+    actor: RequestActor | undefined,
+    id: string,
+  ) {
+    const hotel = await this.assertHotel(id, actor);
+    const [translations, media, amenities, rooms] = await Promise.all([
+      this.pg.query<{
+        name: string | null;
+        short_description: string | null;
+        description: string | null;
+      }>(
+        `SELECT name, short_description, description
+         FROM hotel_translations
+         WHERE hotel_id = $1::uuid`,
+        [id],
+      ),
+      this.pg.query<{ count: number }>(
+        `SELECT count(*)::int AS count
+         FROM media_files
+         WHERE owner_type = 'hotel'
+           AND owner_id = $1::uuid
+           AND deleted_at IS NULL
+           AND url IS NOT NULL`,
+        [id],
+      ),
+      this.pg.query<{ count: number }>(
+        `SELECT count(*)::int AS count
+         FROM hotel_amenities
+         WHERE hotel_id = $1::uuid`,
+        [id],
+      ),
+      this.pg.query<{ count: number }>(
+        `SELECT count(*)::int AS count
+         FROM hotel_rooms
+         WHERE hotel_id = $1::uuid
+           AND status = 'active'`,
+        [id],
+      ),
+    ]);
+
+    const hasName = translations.some(
+      (row) => (row.name ?? '').trim().length >= 3,
+    );
+    const hasShortDescription = translations.some(
+      (row) => (row.short_description ?? '').trim().length >= 20,
+    );
+    const hasFullDescription = translations.some(
+      (row) => (row.description ?? '').trim().length >= 100,
+    );
+    const hasLocation =
+      String(hotel['address'] ?? '').trim().length > 0 &&
+      hotel['latitude'] !== null &&
+      hotel['latitude'] !== undefined &&
+      hotel['longitude'] !== null &&
+      hotel['longitude'] !== undefined;
+    const hasRules = Boolean(
+      hotel['rules_completed_at'] &&
+      hotel['check_in_time'] &&
+      hotel['check_out_time'],
+    );
+
+    const sections = {
+      general: hasName && hasShortDescription && hasFullDescription,
+      location: hasLocation,
+      media: Number(media[0]?.count ?? 0) >= 3,
+      amenities: Number(amenities[0]?.count ?? 0) >= 3,
+      rules: hasRules,
+      rooms: Number(rooms[0]?.count ?? 0) > 0,
+    };
+    const missing = Object.entries(sections)
+      .filter(([, complete]) => !complete)
+      .map(([section]) => section);
+
+    if (missing.length > 0) {
+      throw new BadRequestException({
+        code: 'HOTEL_INCOMPLETE',
+        message: "E'lon to'liq to'ldirilmagan",
+        fields: missing,
+      });
+    }
+
+    return hotel;
   }
 
   private async assertHotel(id: string, actor?: RequestActor) {

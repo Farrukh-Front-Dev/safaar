@@ -96,4 +96,24 @@ export class EventsService {
   adminDashboardUpdated() {
     this.emitter.emit(SERVER_EVENTS.ADMIN_DASHBOARD_UPDATED, {});
   }
+
+  hotelListingChanged(payload: {
+    hotelId: string;
+    partnerId?: string | null;
+    status: string;
+    action: 'updated' | 'submitted' | 'moderated';
+    sections: string[];
+  }) {
+    const event = {
+      ...payload,
+      occurredAt: new Date().toISOString(),
+    };
+    this.emitter.emit(SERVER_EVENTS.HOTEL_LISTING_CHANGED, event);
+    if (payload.action === 'submitted') {
+      this.emitter.emit(SERVER_EVENTS.HOTEL_SUBMITTED_FOR_REVIEW, event);
+    }
+    if (payload.action === 'moderated') {
+      this.emitter.emit(SERVER_EVENTS.HOTEL_MODERATION_CHANGED, event);
+    }
+  }
 }

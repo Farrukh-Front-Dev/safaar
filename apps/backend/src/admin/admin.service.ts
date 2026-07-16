@@ -91,6 +91,133 @@ function objectValue(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
+function localizedObject(value: unknown): Record<string, string | null> {
+  const source = objectValue(
+    typeof value === 'string'
+      ? (() => {
+          try {
+            return JSON.parse(value) as unknown;
+          } catch {
+            return { uz: value };
+          }
+        })()
+      : value,
+  );
+  return {
+    uz: source['uz'] == null ? null : String(source['uz']),
+    ru: source['ru'] == null ? null : String(source['ru']),
+    en: source['en'] == null ? null : String(source['en']),
+  };
+}
+
+function nullableNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function jsonArray(value: unknown): unknown[] {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function localizedObjectFromRows(rows: DbRow[] | undefined) {
+  const value: Record<string, string | null> = {
+    uz: null,
+    ru: null,
+    en: null,
+  };
+  for (const row of rows ?? []) {
+    const language = String(row['language']);
+    if (language in value) {
+      value[language] = row['name'] == null ? null : String(row['name']);
+    }
+  }
+  return value;
+}
+
+function localizedDescriptionFromRows(rows: DbRow[] | undefined) {
+  const value: Record<string, string | null> = {
+    uz: null,
+    ru: null,
+    en: null,
+  };
+  for (const row of rows ?? []) {
+    const language = String(row['language']);
+    if (language in value) {
+      value[language] =
+        row['description'] == null ? null : String(row['description']);
+    }
+  }
+  return value;
+}
+
+function minRoomPrice(
+  roomTypes: Array<{ rooms: Array<{ base_price: number }> }>,
+): number | null {
+  const prices = roomTypes.flatMap((type) =>
+    type.rooms
+      .map((room) => room.base_price)
+      .filter((price) => Number.isFinite(price) && price > 0),
+  );
+  return prices.length > 0 ? Math.min(...prices) : null;
+}
+
+function listingCompleteness(
+  row: DbRow,
+  media: Array<{ url: string }>,
+  amenities: Array<{ code: string }>,
+  roomSummary: { active_room_count: number },
+) {
+  const name = localizedObject(row['name']);
+  const shortDescription = localizedObject(row['short_description']);
+  const fullDescription = localizedObject(row['full_description']);
+  const hasName = Object.values(name).some(
+    (value) => (value ?? '').trim().length >= 3,
+  );
+  const hasShortDescription = Object.values(shortDescription).some(
+    (value) => (value ?? '').trim().length >= 20,
+  );
+  const hasFullDescription = Object.values(fullDescription).some(
+    (value) => (value ?? '').trim().length >= 100,
+  );
+  const hasCoordinates =
+    nullableNumber(row['latitude']) !== null &&
+    nullableNumber(row['longitude']) !== null;
+  const sections = {
+    general: hasName && hasShortDescription && hasFullDescription,
+    location: Boolean(String(row['address'] ?? '').trim()) && hasCoordinates,
+    media: media.length >= 3,
+    amenities: amenities.length >= 3,
+    rules: Boolean(
+      row['rules_completed_at'] &&
+      row['check_in_time'] &&
+      row['check_out_time'],
+    ),
+    rooms: roomSummary.active_room_count > 0,
+  };
+  const completed = Object.values(sections).filter(Boolean).length;
+  const missingFields = Object.entries(sections)
+    .filter(([, complete]) => !complete)
+    .map(([section]) => section);
+  const isComplete = completed === Object.keys(sections).length;
+  return {
+    score: Math.round((completed / Object.keys(sections).length) * 100),
+    is_complete: isComplete,
+    is_publishable: isComplete,
+    missing_fields: missingFields,
+    sections,
+  };
+}
+
 function normalizeSettingsGroup(group: string): string {
   const normalized = group.trim().toLowerCase();
   if (!/^[a-z0-9_-]{1,80}$/.test(normalized)) {
@@ -1074,10 +1201,7 @@ export class AdminService {
         po.status::text,
         po.default_commission_rate::float8,
         po.rejection_reason,
-        jsonb_build_array(
-          jsonb_build_object('name', 'STIR guvohnoma', 'type', 'tax_certificate', 'url', '#'),
-          jsonb_build_object('name', 'Litsenziya', 'type', 'license', 'url', '#')
-        ) as documents,
+        '[]'::jsonb as documents,
         po.created_at,
         po.updated_at
       from partner_organizations po
@@ -1129,10 +1253,6 @@ export class AdminService {
         message: 'Partner topilmadi',
       });
     }
-    if (rows[0].status === 'approved') {
-      await this.ensureApprovedPartnerHotel(rows[0]);
-      await this.ensureApprovedPartnerBusCompany(rows[0]);
-    }
     return rows[0];
   }
 
@@ -1174,20 +1294,11 @@ export class AdminService {
       });
     }
 
-    const hotel =
-      status === 'approved'
-        ? await this.ensureApprovedPartnerHotel(rows[0])
-        : undefined;
-    const busCompany =
-      status === 'approved'
-        ? await this.ensureApprovedPartnerBusCompany(rows[0])
-        : undefined;
-
     await this.audit('partner.moderation', actor, { partner_id: id, status });
     this.invalidateAdminCache();
     this.events.partnerDashboardUpdated(id);
     this.events.adminDashboardUpdated();
-    return { ...rows[0], hotel, bus_company: busCompany };
+    return rows[0];
   }
 
   async partnerStatus(
@@ -1224,8 +1335,8 @@ export class AdminService {
     }
 
     if (newStatus === 'approved') {
-      await this.ensureApprovedPartnerHotel(rows[0]);
-      await this.ensureApprovedPartnerBusCompany(rows[0]);
+      // Partner approval is intentionally separate from listing moderation.
+      // It must not fabricate or publish a hotel/bus listing.
     } else {
       await this.syncPartnerPublicVisibility(id, newStatus);
     }
@@ -1509,60 +1620,12 @@ export class AdminService {
   }
 
   async hotels(query: QueryLike = {}) {
-    return this.rows(`
-      select
-        h.id::text,
-        h.partner_organization_id::text,
-        h.slug,
-        h.city_id::text,
-        coalesce(jsonb_object_agg(ht.language, ht.name) filter (where ht.id is not null), '{}'::jsonb) as name,
-        h.address,
-        h.latitude::float8,
-        h.longitude::float8,
-        h.stars,
-        h.rating_average::float8,
-        h.reviews_count,
-        h.status::text,
-        h.check_in_time,
-        h.check_out_time,
-        h.created_at,
-        h.updated_at
-      from hotels h
-      left join hotel_translations ht on ht.hotel_id = h.id
-      where h.deleted_at is null
-      group by h.id
-      order by h.created_at desc
-      ${this.limitClause(query)}
-    `);
+    const rows = await this.hotelBaseRows(query);
+    return this.hydrateAdminHotels(rows, false);
   }
 
   async hotel(id: string) {
-    const rows = await this.rows(
-      `
-        select
-          h.id::text,
-          h.partner_organization_id::text,
-          h.slug,
-          h.city_id::text,
-          coalesce(jsonb_object_agg(ht.language, ht.name) filter (where ht.id is not null), '{}'::jsonb) as name,
-          h.address,
-          h.latitude::float8,
-          h.longitude::float8,
-          h.stars,
-          h.rating_average::float8,
-          h.reviews_count,
-          h.status::text,
-          h.check_in_time,
-          h.check_out_time,
-          h.created_at,
-          h.updated_at
-        from hotels h
-        left join hotel_translations ht on ht.hotel_id = h.id
-        where h.id = $1::uuid and h.deleted_at is null
-        group by h.id
-      `,
-      [id],
-    );
+    const rows = await this.hotelBaseRows({}, id);
 
     if (!rows[0]) {
       throw new NotFoundException({
@@ -1570,16 +1633,370 @@ export class AdminService {
         message: 'Hotel topilmadi',
       });
     }
-    return rows[0];
+    const [detail] = await this.hydrateAdminHotels(rows, true);
+    return detail;
   }
 
-  async hotelStatus(id: string, status: 'published' | 'hidden' | 'rejected') {
+  private async hotelBaseRows(query: QueryLike = {}, id?: string) {
+    const where = ['h.deleted_at is null'];
+    const params: unknown[] = [];
+    if (id) {
+      where.push('h.id = $1::uuid');
+      params.push(id);
+    }
+
+    const limit = id ? '' : this.limitClause(query);
+    return this.rows(
+      `
+        select
+          h.id::text,
+          h.partner_organization_id::text,
+          h.slug,
+          h.city_id::text,
+          coalesce(jsonb_object_agg(ht.language, ht.name) filter (where ht.id is not null), '{}'::jsonb) as name,
+          coalesce(jsonb_object_agg(ht.language, coalesce(ht.short_description, '')) filter (where ht.id is not null), '{}'::jsonb) as short_description,
+          coalesce(jsonb_object_agg(ht.language, coalesce(ht.description, '')) filter (where ht.id is not null), '{}'::jsonb) as full_description,
+          h.address,
+          h.latitude::float8,
+          h.longitude::float8,
+          h.stars,
+          h.rating_average::float8,
+          h.reviews_count,
+          h.status::text,
+          h.featured,
+          h.check_in_time,
+          h.check_out_time,
+          h.cancellation_policy_code,
+          h.smoking_allowed,
+          h.pets_allowed,
+          h.children_allowed,
+          h.extra_fees,
+          h.rules_completed_at,
+          h.submitted_at,
+          h.reviewed_at,
+          h.reviewed_by::text,
+          h.rejection_reason,
+          h.created_at,
+          h.updated_at,
+          po.id::text as partner_id,
+          po.legal_name as partner_legal_name,
+          po.brand_name as partner_brand_name,
+          po.status::text as partner_status,
+          c.name as city_name,
+          r.id::text as region_id,
+          r.name as region_name
+        from hotels h
+        left join partner_organizations po on po.id = h.partner_organization_id
+        left join cities c on c.id = h.city_id
+        left join regions r on r.id = c.region_id
+        left join hotel_translations ht on ht.hotel_id = h.id
+        where ${where.join(' and ')}
+        group by h.id, po.id, c.id, r.id
+        order by h.updated_at desc
+        ${limit}
+      `,
+      params,
+    );
+  }
+
+  private async hydrateAdminHotels(rows: DbRow[], detail: boolean) {
+    if (rows.length === 0) return [];
+    const hotelIds = rows.map((row) => String(row['id']));
+    const [mediaRows, amenityRows, roomRows] = await Promise.all([
+      this.rows(
+        `select id::text, owner_id::text as hotel_id, url, mime_type,
+                caption, category, sort_order, is_cover
+         from media_files
+         where owner_type = 'hotel'
+           and owner_id = any($1::uuid[])
+           and deleted_at is null
+           and url is not null
+         order by sort_order asc, created_at asc`,
+        [hotelIds],
+      ),
+      this.rows(
+        `select ha.hotel_id::text, a.id::text, a.code, a.name
+         from hotel_amenities ha
+         join amenities a on a.id = ha.amenity_id
+         where ha.hotel_id = any($1::uuid[])
+         order by a.code asc`,
+        [hotelIds],
+      ),
+      this.rows(
+        `select hr.id::text, hr.hotel_id::text, hr.room_type_id::text,
+                hr.code, hr.base_occupancy, hr.max_adults, hr.max_children,
+                hr.total_inventory, hr.base_price::float8, hr.status::text,
+                rt.code as room_type_code, rt.name as room_type_name
+         from hotel_rooms hr
+         join room_types rt on rt.id = hr.room_type_id
+         where hr.hotel_id = any($1::uuid[])
+         order by rt.code asc, hr.code asc`,
+        [hotelIds],
+      ),
+    ]);
+
+    const roomIds = roomRows.map((row) => String(row['id']));
+    const [roomTranslationRows, roomAmenityRows] = roomIds.length
+      ? await Promise.all([
+          this.rows(
+            `select room_id::text, language::text, name, description
+             from hotel_room_translations
+             where room_id = any($1::uuid[])`,
+            [roomIds],
+          ),
+          this.rows(
+            `select ra.room_id::text, a.id::text, a.code, a.name
+             from room_amenities ra
+             join amenities a on a.id = ra.amenity_id
+             where ra.room_id = any($1::uuid[])`,
+            [roomIds],
+          ),
+        ])
+      : [[], []];
+
+    const mediaByHotel = new Map<string, DbRow[]>();
+    const amenitiesByHotel = new Map<string, DbRow[]>();
+    const roomsByHotel = new Map<string, DbRow[]>();
+    const roomTranslationsById = new Map<string, DbRow[]>();
+    const roomAmenitiesById = new Map<string, DbRow[]>();
+
+    for (const row of mediaRows) {
+      const list = mediaByHotel.get(String(row['hotel_id'])) ?? [];
+      list.push(row);
+      mediaByHotel.set(String(row['hotel_id']), list);
+    }
+    for (const row of amenityRows) {
+      const list = amenitiesByHotel.get(String(row['hotel_id'])) ?? [];
+      list.push(row);
+      amenitiesByHotel.set(String(row['hotel_id']), list);
+    }
+    for (const row of roomRows) {
+      const list = roomsByHotel.get(String(row['hotel_id'])) ?? [];
+      list.push(row);
+      roomsByHotel.set(String(row['hotel_id']), list);
+    }
+    for (const row of roomTranslationRows) {
+      const list = roomTranslationsById.get(String(row['room_id'])) ?? [];
+      list.push(row);
+      roomTranslationsById.set(String(row['room_id']), list);
+    }
+    for (const row of roomAmenityRows) {
+      const list = roomAmenitiesById.get(String(row['room_id'])) ?? [];
+      list.push(row);
+      roomAmenitiesById.set(String(row['room_id']), list);
+    }
+
+    return rows.map((row) => {
+      const hotelId = String(row['id']);
+      const media = (mediaByHotel.get(hotelId) ?? []).map((item) => ({
+        id: String(item['id']),
+        url: String(item['url']),
+        mime_type: String(item['mime_type'] ?? 'image/*'),
+        caption: item['caption'] ? String(item['caption']) : null,
+        category: item['category'] ? String(item['category']) : null,
+        sort_order: Number(item['sort_order'] ?? 0),
+        is_cover: Boolean(item['is_cover']),
+      }));
+      const amenities = (amenitiesByHotel.get(hotelId) ?? []).map((item) => ({
+        id: String(item['id']),
+        code: String(item['code']),
+        name: localizedObject(item['name']),
+      }));
+      const roomTypes = this.groupAdminRoomTypes(
+        roomsByHotel.get(hotelId) ?? [],
+        roomTranslationsById,
+        roomAmenitiesById,
+      );
+      const coverImage =
+        media.find((item) => item.is_cover) ?? media[0] ?? null;
+      const roomSummary = {
+        room_type_count: roomTypes.length,
+        active_room_count: roomTypes.reduce(
+          (total, type) =>
+            total +
+            type.rooms.filter((room) => room.status === 'active').length,
+          0,
+        ),
+        total_inventory: roomTypes.reduce(
+          (total, type) =>
+            total +
+            type.rooms.reduce((sum, room) => sum + room.total_inventory, 0),
+          0,
+        ),
+        min_price: minRoomPrice(roomTypes),
+      };
+      const completeness = listingCompleteness(
+        row,
+        media,
+        amenities,
+        roomSummary,
+      );
+      const base = {
+        ...row,
+        id: hotelId,
+        status: String(row['status']),
+        name: localizedObject(row['name']),
+        short_description: localizedObject(row['short_description']),
+        full_description: localizedObject(row['full_description']),
+        description: localizedObject(row['full_description']),
+        latitude: nullableNumber(row['latitude']),
+        longitude: nullableNumber(row['longitude']),
+        stars: Number(row['stars'] ?? 0),
+        rating_average: Number(row['rating_average'] ?? 0),
+        reviews_count: Number(row['reviews_count'] ?? 0),
+        featured: Boolean(row['featured']),
+        images: media.map((item) => item.url),
+        image_ids: media.map((item) => item.id),
+        amenities: amenities.map((item) => item.code),
+        city: row['city_id']
+          ? {
+              id: String(row['city_id']),
+              name: localizedObject(row['city_name']),
+              region: row['region_id']
+                ? {
+                    id: String(row['region_id']),
+                    name: localizedObject(row['region_name']),
+                  }
+                : null,
+            }
+          : null,
+        partner: row['partner_id']
+          ? {
+              id: String(row['partner_id']),
+              legal_name: String(row['partner_legal_name'] ?? ''),
+              brand_name: String(row['partner_brand_name'] ?? ''),
+              status: String(row['partner_status'] ?? ''),
+            }
+          : null,
+        cover_image: coverImage,
+        image_count: media.length,
+        amenity_count: amenities.length,
+        room_summary: roomSummary,
+        completeness,
+        created_at: row['created_at'],
+        updated_at: row['updated_at'],
+      };
+
+      if (!detail) return base;
+      return {
+        ...base,
+        media,
+        amenities,
+        rules: {
+          check_in_time: row['check_in_time']
+            ? String(row['check_in_time'])
+            : null,
+          check_out_time: row['check_out_time']
+            ? String(row['check_out_time'])
+            : null,
+          cancellation_policy_code: String(
+            row['cancellation_policy_code'] ?? 'MODERATE',
+          ),
+          smoking_allowed: Boolean(row['smoking_allowed']),
+          pets_allowed: Boolean(row['pets_allowed']),
+          children_allowed: Boolean(row['children_allowed']),
+          extra_fees: jsonArray(row['extra_fees']),
+          completed_at: row['rules_completed_at']
+            ? String(row['rules_completed_at'])
+            : null,
+        },
+        room_types: roomTypes,
+        moderation: {
+          submitted_at: row['submitted_at']
+            ? String(row['submitted_at'])
+            : null,
+          reviewed_at: row['reviewed_at'] ? String(row['reviewed_at']) : null,
+          reviewed_by: row['reviewed_by'] ? String(row['reviewed_by']) : null,
+          rejection_reason: row['rejection_reason']
+            ? String(row['rejection_reason'])
+            : null,
+        },
+      };
+    });
+  }
+
+  private groupAdminRoomTypes(
+    rows: DbRow[],
+    translationsById: Map<string, DbRow[]>,
+    amenitiesById: Map<string, DbRow[]>,
+  ) {
+    const grouped = new Map<
+      string,
+      {
+        id: string;
+        code: string;
+        name: Record<string, string | null>;
+        rooms: DbRow[];
+      }
+    >();
+    for (const row of rows) {
+      const id = String(row['room_type_id']);
+      const group = grouped.get(id) ?? {
+        id,
+        code: String(row['room_type_code'] ?? ''),
+        name: localizedObject(row['room_type_name']),
+        rooms: [],
+      };
+      group.rooms.push(row);
+      grouped.set(id, group);
+    }
+
+    return [...grouped.values()].map((type) => ({
+      id: type.id,
+      code: type.code,
+      name: type.name,
+      rooms: type.rooms.map((row) => ({
+        id: String(row['id']),
+        code: String(row['code']),
+        name: localizedObjectFromRows(translationsById.get(String(row['id']))),
+        description: localizedDescriptionFromRows(
+          translationsById.get(String(row['id'])),
+        ),
+        base_occupancy: Number(row['base_occupancy'] ?? 0),
+        max_adults: Number(row['max_adults'] ?? 0),
+        max_children: Number(row['max_children'] ?? 0),
+        total_inventory: Number(row['total_inventory'] ?? 0),
+        base_price: Number(row['base_price'] ?? 0),
+        status: String(row['status'] ?? 'active'),
+        amenities: (amenitiesById.get(String(row['id'])) ?? []).map((item) => ({
+          id: String(item['id']),
+          code: String(item['code']),
+          name: localizedObject(item['name']),
+        })),
+      })),
+    }));
+  }
+
+  async hotelStatus(
+    actor: RequestActor | undefined,
+    id: string,
+    status: 'published' | 'hidden' | 'rejected',
+    reason = '',
+  ) {
+    const current = await this.hotel(id);
+    if (status === 'published' && !current.completeness?.is_publishable) {
+      throw new BadRequestException({
+        code: 'HOTEL_INCOMPLETE',
+        message: "E'lon to'liq to'ldirilmagan",
+        fields: current.completeness?.missing_fields ?? [],
+      });
+    }
+    if (status === 'rejected' && !reason.trim()) {
+      throw new BadRequestException({
+        code: 'REJECTION_REASON_REQUIRED',
+        message: 'Rad etish sababi kerak',
+      });
+    }
     const rows = await this.rows(
       `update hotels
-       set status = $2, updated_at = now()
+       set status = $2,
+           rejection_reason = case when $2 = 'rejected' then nullif($3, '') else null end,
+           reviewed_at = now(),
+           reviewed_by = $4::uuid,
+           updated_at = now()
        where id = $1::uuid and deleted_at is null
        returning id::text, partner_organization_id::text, slug, status::text, updated_at`,
-      [id, status],
+      [id, status, reason.trim(), adminActorUuid(actor)],
     );
 
     if (!rows[0]) {
@@ -1589,7 +2006,16 @@ export class AdminService {
       });
     }
     this.invalidateAdminCache();
-    return rows[0];
+    this.invalidatePublicHotelCache();
+    const updated = await this.hotel(id);
+    this.events.hotelListingChanged({
+      hotelId: id,
+      partnerId: String(rows[0]['partner_organization_id']),
+      status,
+      action: 'moderated',
+      sections: ['status'],
+    });
+    return updated;
   }
 
   async trips(query: QueryLike = {}) {

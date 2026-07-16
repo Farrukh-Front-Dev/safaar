@@ -227,23 +227,37 @@ export class AdminController {
 
   @Post('hotels/:id/publish')
   @Permissions(Permission.PartnersWrite)
-  hotelPublish(@Param('id') id: string) {
-    return this.adminService.hotelStatus(id, 'published');
+  hotelPublish(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+  ) {
+    return this.adminService.hotelStatus(actor, id, 'published');
   }
 
   @Post('hotels/:id/reject')
   @Permissions(Permission.PartnersWrite)
-  hotelReject(@Param('id') id: string) {
-    return this.adminService.hotelStatus(id, 'rejected');
+  hotelReject(
+    @CurrentActor() actor: RequestActor | undefined,
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.adminService.hotelStatus(
+      actor,
+      id,
+      'rejected',
+      String(body.reason ?? ''),
+    );
   }
 
   @Patch('hotels/:id/visibility')
   @Permissions(Permission.PartnersWrite)
   hotelVisibility(
+    @CurrentActor() actor: RequestActor | undefined,
     @Param('id') id: string,
     @Body() body: Record<string, unknown>,
   ) {
     return this.adminService.hotelStatus(
+      actor,
       id,
       body.visible === false ? 'hidden' : 'published',
     );

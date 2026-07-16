@@ -85,4 +85,71 @@ describe('PartnersService frontend action endpoints', () => {
       expect.arrayContaining([5, expect.any(String), hotelId]),
     );
   });
+
+  it('rejects review submission until every listing section is complete', async () => {
+    pgMock.query
+      .mockResolvedValueOnce([hotelRow])
+      .mockResolvedValueOnce([
+        {
+          name: 'Hotel',
+          short_description: 'Qisqa tavsif',
+          description: 'Batafsil tavsif',
+        },
+      ])
+      .mockResolvedValueOnce([{ count: 3 }])
+      .mockResolvedValueOnce([{ count: 1 }])
+      .mockResolvedValueOnce([{ count: 1 }]);
+
+    await expect(
+      service.updateListingStatus(actor, hotelId, { status: 'UNDER_REVIEW' }),
+    ).rejects.toThrow("E'lon to'liq to'ldirilmagan");
+  });
+
+  it('writes submitted_at when a complete listing enters review', async () => {
+    const completeHotel = {
+      ...hotelRow,
+      address: 'Samarqand, Registon kochasi 1',
+      latitude: 39.65,
+      longitude: 66.96,
+      rules_completed_at: new Date().toISOString(),
+    };
+    pgMock.query
+      .mockResolvedValueOnce([completeHotel])
+      .mockResolvedValueOnce([
+        {
+          name: 'Hotel',
+          short_description: 'Yetarlicha uzun qisqa tavsif matni',
+          description:
+            'Bu mehmonxona haqida mijozga ko‘rinadigan yetarlicha uzun batafsil tavsif matni mavjud. Mehmonlar uchun muhim xizmatlar va qulayliklar batafsil tushuntiriladi.',
+        },
+      ])
+      .mockResolvedValueOnce([{ count: 3 }])
+      .mockResolvedValueOnce([{ count: 3 }])
+      .mockResolvedValueOnce([{ count: 1 }])
+      .mockResolvedValueOnce([{ ...completeHotel, status: 'pending_review' }]);
+
+    const result = await service.updateListingStatus(actor, hotelId, {
+      status: 'UNDER_REVIEW',
+    });
+
+    expect(result).toMatchObject({ status: 'pending_review' });
+    expect(pgMock.query).toHaveBeenLastCalledWith(
+      expect.stringContaining('submitted_at = CASE'),
+      expect.arrayContaining(['pending_review', expect.any(String), hotelId]),
+    );
+  });
+
+  it('rejects amenity codes that are not in the catalog', async () => {
+    pgMock.query
+      .mockResolvedValueOnce([hotelRow])
+      .mockResolvedValueOnce([
+        { code: 'wifi', id: '00000000-0000-0000-0000-000000000004' },
+      ]);
+
+    await expect(
+      service.updateListingAmenities(actor, hotelId, {
+        amenities: ['wifi', 'unknown-amenity'],
+      }),
+    ).rejects.toThrow('Qulayliklar katalogdan topilmadi');
+  });
 });
