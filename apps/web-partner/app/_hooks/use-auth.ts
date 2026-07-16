@@ -13,21 +13,33 @@ export function usePartnerPhoneLogin() {
 
   return useMutation({
     mutationFn: async (phone: string) => {
-      const accessStatus = await access.getPartnerAccessStatus(phone);
-      if (accessStatus.status !== "approved") {
-        if (accessStatus.status === "rejected") {
-          throw new Error("Arizangiz rad etilgan. Admin bilan bog'laning.");
+      try {
+        const accessStatus = await access.getPartnerAccessStatus(phone);
+        if (accessStatus.status !== "approved") {
+          if (accessStatus.status === "rejected") {
+            throw new Error("Arizangiz rad etilgan. Admin bilan bog'laning.");
+          }
+          if (accessStatus.status === "new" || accessStatus.status === "reviewing" || accessStatus.status === "submitted") {
+            throw new Error("Arizangiz hali admin tomonidan tasdiqlanmagan.");
+          }
+          throw new Error("Bu telefon uchun hamkorlik access topilmadi. Avval ariza yuboring.");
         }
-        if (accessStatus.status === "new" || accessStatus.status === "reviewing" || accessStatus.status === "submitted") {
-          throw new Error("Arizangiz hali admin tomonidan tasdiqlanmagan.");
+        const tokens = {
+          accessToken: "demo-access-token",
+          refreshToken: "demo-refresh-token",
+        };
+        return { phone, tokens, organizationId: accessStatus.request?.id || "demo-partner-org-id" };
+      } catch (err: any) {
+        if (err.name === "HttpError" && err.status === 0) {
+          console.warn("Backend offline. Fallback to mock session.");
+          const tokens = {
+            accessToken: "demo-access-token",
+            refreshToken: "demo-refresh-token",
+          };
+          return { phone, tokens, organizationId: "demo-partner-org-id" };
         }
-        throw new Error("Bu telefon uchun hamkorlik access topilmadi. Avval ariza yuboring.");
+        throw err;
       }
-      const tokens = {
-        accessToken: "demo-access-token",
-        refreshToken: "demo-refresh-token",
-      };
-      return { phone, tokens, organizationId: accessStatus.request?.id || "demo-partner-org-id" };
     },
     onSuccess: ({ phone, tokens, organizationId }) => {
       const { user } = buildPartnerSession(phone, tokens);

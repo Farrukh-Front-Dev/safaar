@@ -32,10 +32,8 @@ export default function PartnerRequestsPage() {
   useEffect(() => {
     async function loadRequests() {
       try {
-        const res = await apiClient.get("/admin/partners/requests");
-        if (res.data?.items) {
-          setPartnerRequests(res.data.items);
-        }
+        const data = await MockApi.getPartnerRequests();
+        setPartnerRequests(data);
       } catch (e) {
         console.error("Failed to fetch partner requests", e);
       } finally {

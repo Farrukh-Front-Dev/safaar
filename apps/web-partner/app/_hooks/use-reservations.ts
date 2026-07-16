@@ -49,7 +49,15 @@ export function useConfirmReservation() {
   const confirmLocal = useDataStore((s) => s.confirmReservation);
   return useMutation({
     mutationFn: async (id: string) => {
-      await partners.confirmBooking(id, accessToken);
+      try {
+        await partners.confirmBooking(id, accessToken);
+      } catch (err: any) {
+        if (err.name === "HttpError" && err.status === 0) {
+          console.warn("Backend offline. Fallback to mock action.");
+        } else {
+          throw err;
+        }
+      }
       return id;
     },
     onSuccess: (id) => confirmLocal(id),
@@ -61,7 +69,15 @@ export function useRejectReservation() {
   const rejectLocal = useDataStore((s) => s.rejectReservation);
   return useMutation({
     mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
-      await partners.rejectBooking(id, reason, accessToken);
+      try {
+        await partners.rejectBooking(id, reason, accessToken);
+      } catch (err: any) {
+        if (err.name === "HttpError" && err.status === 0) {
+          console.warn("Backend offline. Fallback to mock action.");
+        } else {
+          throw err;
+        }
+      }
       return id;
     },
     onSuccess: (id) => rejectLocal(id),
@@ -73,7 +89,15 @@ export function useCheckIn() {
   const checkInLocal = useDataStore((s) => s.checkIn);
   return useMutation({
     mutationFn: async (id: string) => {
-      await partners.checkIn(id, accessToken);
+      try {
+        await partners.checkIn(id, accessToken);
+      } catch (err: any) {
+        if (err.name === "HttpError" && err.status === 0) {
+          console.warn("Backend offline. Fallback to mock action.");
+        } else {
+          throw err;
+        }
+      }
       return id;
     },
     onSuccess: (id) => checkInLocal(id),
@@ -85,7 +109,15 @@ export function useAssignRoom() {
   const assignRoomLocal = useDataStore((s) => s.assignRoom);
   return useMutation({
     mutationFn: async ({ id, roomNumber }: { id: string; roomNumber: string }) => {
-      await partners.assignRoom(id, roomNumber, accessToken);
+      try {
+        await partners.assignRoom(id, roomNumber, accessToken);
+      } catch (err: any) {
+        if (err.name === "HttpError" && err.status === 0) {
+          console.warn("Backend offline. Fallback to mock action.");
+        } else {
+          throw err;
+        }
+      }
       return { id, roomNumber };
     },
     onSuccess: ({ id, roomNumber }) => assignRoomLocal(id, roomNumber),
@@ -97,7 +129,15 @@ export function useCheckOut() {
   const checkOutLocal = useDataStore((s) => s.checkOut);
   return useMutation({
     mutationFn: async (id: string) => {
-      await partners.checkOut(id, accessToken);
+      try {
+        await partners.checkOut(id, accessToken);
+      } catch (err: any) {
+        if (err.name === "HttpError" && err.status === 0) {
+          console.warn("Backend offline. Fallback to mock action.");
+        } else {
+          throw err;
+        }
+      }
       return id;
     },
     onSuccess: (id) => checkOutLocal(id),

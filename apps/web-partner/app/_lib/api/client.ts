@@ -107,16 +107,24 @@ export async function request<T>(
   }
 
   if (!response.ok) {
-    let payload: ApiError | undefined;
+    let payload: any;
     try {
-      payload = (await response.json()) as ApiError;
+      payload = await response.json();
     } catch {
       // ignore
     }
+
+    const apiError: ApiError = {
+      message: payload?.error?.message ?? payload?.message ?? response.statusText,
+      fields: payload?.error?.fields ?? payload?.fields,
+      code: payload?.error?.code ?? payload?.code,
+      statusCode: response.status,
+    };
+
     throw new HttpError(
       response.status,
-      payload?.message ?? response.statusText,
-      payload,
+      apiError.message,
+      apiError,
     );
   }
 
