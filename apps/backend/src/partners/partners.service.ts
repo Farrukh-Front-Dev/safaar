@@ -1050,7 +1050,9 @@ export class PartnersService {
     let idx = 1;
 
     if (body.city_id !== undefined || body.city !== undefined) {
-      const resolvedCityId = await this.resolveCityId(body.city_id ?? body.city);
+      const resolvedCityId = await this.resolveCityId(
+        body.city_id ?? body.city,
+      );
       sets.push(`city_id = $${idx++}`);
       params.push(resolvedCityId);
     }

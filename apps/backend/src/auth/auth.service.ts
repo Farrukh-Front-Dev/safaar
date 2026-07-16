@@ -168,11 +168,11 @@ export class AuthService {
     }
 
     return {
-      ...await this.issueTokens({
+      ...(await this.issueTokens({
         actorId: String(user['id']),
         actorType: 'user',
         role: Role.USER,
-      }),
+      })),
       user,
     };
   }
@@ -332,11 +332,11 @@ export class AuthService {
     };
     this.socialAccountStore.push(social);
     return {
-      ...await this.issueTokens({
+      ...(await this.issueTokens({
         actorId: String(user['id']),
         actorType: 'user',
         role: Role.USER,
-      }),
+      })),
       user,
       social_account: social,
     };
@@ -406,12 +406,12 @@ export class AuthService {
     }
 
     return {
-      ...await this.issueTokens({
+      ...(await this.issueTokens({
         actorId: partnerUser.id,
         actorType: 'partner',
         role: Role.PARTNER,
         organizationId: partnerUser.organization_id,
-      }),
+      })),
       organization_id: partnerUser.organization_id,
       partner_role: partnerUser.role,
     };
@@ -452,12 +452,12 @@ export class AuthService {
 
     if (!admin.totp_secret) {
       return {
-        ...await this.issueTokens({
+        ...(await this.issueTokens({
           actorId: admin.id,
           actorType: 'admin',
           role: admin.role,
           roles: admin.roles,
-        }),
+        })),
         admin: this.publicAdmin(admin),
       };
     }
@@ -500,12 +500,12 @@ export class AuthService {
 
     this.twoFactorChallenges.delete(challengeId);
     return {
-      ...await this.issueTokens({
+      ...(await this.issueTokens({
         actorId: challenge.admin.id,
         actorType: 'admin',
         role: challenge.admin.role,
         roles: challenge.admin.roles,
-      }),
+      })),
       admin: this.publicAdmin(challenge.admin),
     };
   }
@@ -946,12 +946,12 @@ export class AuthService {
     const actorId = row['user_id'] ? String(row['user_id']) : organizationId;
 
     return {
-      ...await this.issueTokens({
+      ...(await this.issueTokens({
         actorId,
         actorType: 'partner',
         role: Role.PARTNER,
         organizationId,
-      }),
+      })),
       organization_id: organizationId,
       partner_role: String(row['partner_role'] ?? 'owner'),
     };
@@ -1000,12 +1000,12 @@ export class AuthService {
     const actorId = row['user_id'] ? String(row['user_id']) : organizationId;
 
     return {
-      ...await this.issueTokens({
+      ...(await this.issueTokens({
         actorId,
         actorType: 'partner',
         role: Role.PARTNER,
         organizationId,
-      }),
+      })),
       organization_id: organizationId,
       organizationId,
       partner_role: String(row['partner_role'] ?? 'owner'),

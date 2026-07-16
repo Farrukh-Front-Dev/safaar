@@ -8,6 +8,7 @@ import { randomUUID } from 'node:crypto';
 import { BookingStatus, Role } from '@agoda/types';
 import type { RequestActor } from '../common/actor';
 import { PostgresService } from '../infrastructure/postgres.service';
+import { EventsService } from '../realtime/events.service';
 
 /**
  * DB-level booking status constants (lowercase, matching pg enum values).
@@ -25,7 +26,10 @@ const BS = {
 
 @Injectable()
 export class BookingsService {
-  constructor(private readonly pg: PostgresService) {}
+  constructor(
+    private readonly pg: PostgresService,
+    private readonly events: EventsService,
+  ) {}
 
   async createHotel(
     actor: RequestActor | undefined,
@@ -77,6 +81,9 @@ export class BookingsService {
     });
 
     const payment = await this.createPayment(booking);
+    this.events.bookingStatusChanged(booking);
+    this.events.partnerDashboardUpdated(booking.partner_organization_id);
+    this.events.adminDashboardUpdated();
     return { booking, payment };
   }
 
@@ -163,6 +170,9 @@ export class BookingsService {
     }
 
     const payment = await this.createPayment(booking);
+    this.events.bookingStatusChanged(booking);
+    this.events.partnerDashboardUpdated(booking.partner_organization_id);
+    this.events.adminDashboardUpdated();
     return { booking, payment };
   }
 
@@ -228,6 +238,7 @@ export class BookingsService {
       actor,
     );
 
+    this.events.bookingStatusChanged(updated);
     return updated;
   }
 
@@ -289,7 +300,7 @@ export class BookingsService {
       ],
     );
 
-    return {
+    const msg = {
       id: messageId,
       booking_id: id,
       sender_type: currentActor.actorType,
@@ -298,6 +309,18 @@ export class BookingsService {
       body: String(body.body ?? ''),
       created_at: now,
     };
+
+    // Fetch booking for partner context
+    const [booking] = await this.pg.query(
+      'SELECT partner_organization_id FROM bookings WHERE id = $1',
+      [id],
+    );
+    this.events.bookingMessageCreated(
+      id,
+      msg,
+      booking?.partner_organization_id,
+    );
+    return msg;
   }
 
   async readMessage(

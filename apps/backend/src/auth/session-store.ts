@@ -66,10 +66,8 @@ class AuthSessionStore {
       actorId: String(row.actor_id),
       actorType: String(row.actor_type) as ActorType,
       role: String(row.role) as Role,
-      roles: (row.roles as unknown as Role[]) ?? [],
-      organizationId: row.organization_id
-        ? String(row.organization_id)
-        : null,
+      roles: (row.roles as Role[]) ?? [],
+      organizationId: row.organization_id ? String(row.organization_id) : null,
       familyId: String(row.family_id),
       refreshHash: String(row.refresh_hash),
       refreshJti: String(row.refresh_jti),
@@ -117,16 +115,15 @@ class AuthSessionStore {
       ],
     );
 
-    return this.rowToRecord(rows[0] as Record<string, unknown>);
+    return this.rowToRecord(rows[0]);
   }
 
   async get(id: string | undefined): Promise<AuthSessionRecord | undefined> {
     if (!id) return undefined;
-    const rows = await this.query(
-      'SELECT * FROM auth_sessions WHERE id = $1',
-      [id],
-    );
-    return rows[0] ? this.rowToRecord(rows[0] as Record<string, unknown>) : undefined;
+    const rows = await this.query('SELECT * FROM auth_sessions WHERE id = $1', [
+      id,
+    ]);
+    return rows[0] ? this.rowToRecord(rows[0]) : undefined;
   }
 
   async isActive(id: string | undefined): Promise<boolean> {
@@ -143,7 +140,7 @@ class AuthSessionStore {
        ORDER BY created_at DESC`,
       [actorId],
     );
-    return rows.map((r) => this.rowToRecord(r as Record<string, unknown>));
+    return rows.map((r) => this.rowToRecord(r));
   }
 
   async rotate(
@@ -185,10 +182,17 @@ class AuthSessionStore {
            updated_at = $5
        WHERE id = $6
        RETURNING *`,
-      [newRefreshHash, nextRefreshJti, nextRefreshJti, newRefreshExpiresAt, now, sessionId],
+      [
+        newRefreshHash,
+        nextRefreshJti,
+        nextRefreshJti,
+        newRefreshExpiresAt,
+        now,
+        sessionId,
+      ],
     );
 
-    return this.rowToRecord(rows[0] as Record<string, unknown>);
+    return this.rowToRecord(rows[0]);
   }
 
   async revokeSession(id: string): Promise<boolean> {

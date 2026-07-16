@@ -25,6 +25,7 @@ import { CmsModule } from './cms/cms.module';
 import { PromosModule } from './promos/promos.module';
 import { PartnerApiModule } from './partner-api/partner-api.module';
 import { StatsModule } from './stats/stats.module';
+import { RealtimeModule } from './realtime/realtime.module';
 import { validateEnv } from './config/env.validation';
 import { MaintenanceGuard } from './common/maintenance.guard';
 
@@ -66,6 +67,7 @@ import { MaintenanceGuard } from './common/maintenance.guard';
     PartnerApiModule,
     StatsModule,
     AdminModule,
+    RealtimeModule,
   ],
   controllers: [AppController],
   providers: [

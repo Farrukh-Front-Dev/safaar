@@ -7,10 +7,14 @@ import { Role } from '@agoda/types';
 import { randomUUID } from 'node:crypto';
 import type { RequestActor } from '../common/actor';
 import { PostgresService } from '../infrastructure/postgres.service';
+import { EventsService } from '../realtime/events.service';
 
 @Injectable()
 export class SupportService {
-  constructor(private readonly pg: PostgresService) {}
+  constructor(
+    private readonly pg: PostgresService,
+    private readonly events: EventsService,
+  ) {}
 
   private defaultActor(): RequestActor {
     return {
@@ -46,6 +50,7 @@ export class SupportService {
       ],
     );
 
+    this.events.supportTicketUpdated(ticket);
     return ticket;
   }
 
@@ -92,22 +97,26 @@ export class SupportService {
     const now = new Date().toISOString();
     const messageId = randomUUID();
 
-    const senderType = a.actorType === 'partner' ? 'partner' : a.actorType === 'admin' ? 'admin' : 'user';
+    const senderType =
+      a.actorType === 'partner'
+        ? 'partner'
+        : a.actorType === 'admin'
+          ? 'admin'
+          : 'user';
 
     const [message] = await this.pg.query(
       `INSERT INTO support_messages (id, ticket_id, sender_type, sender_id, body, created_at)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [
-        messageId,
-        id,
-        senderType,
-        a.id,
-        String(body.body ?? ''),
-        now,
-      ],
+      [messageId, id, senderType, a.id, String(body.body ?? ''), now],
     );
 
+    // Fetch ticket for broadcast context
+    const [ticket] = await this.pg.query(
+      'SELECT * FROM support_tickets WHERE id = $1',
+      [id],
+    );
+    this.events.supportMessageCreated(id, message, ticket ?? { id });
     return message;
   }
 
@@ -127,6 +136,7 @@ export class SupportService {
       [status, now, id],
     );
 
+    this.events.supportTicketUpdated(ticket);
     return ticket;
   }
 

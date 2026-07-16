@@ -3,6 +3,7 @@ import type { RequestActor } from '../common/actor';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { JobQueueService } from '../infrastructure/job-queue.service';
 import { PostgresService } from '../infrastructure/postgres.service';
+import { EventsService } from '../realtime/events.service';
 import { AdminService } from './admin.service';
 
 describe('AdminService frontend action endpoints', () => {
@@ -31,6 +32,16 @@ describe('AdminService frontend action endpoints', () => {
       } as unknown as AppCacheService,
       { add: jest.fn() } as unknown as JobQueueService,
       pgMock as unknown as PostgresService,
+      {
+        partnerRequestCreated: jest.fn(),
+        partnerRequestDecided: jest.fn(),
+        partnerDashboardUpdated: jest.fn(),
+        bookingStatusChanged: jest.fn(),
+        adminDashboardUpdated: jest.fn(),
+        notificationCreated: jest.fn(),
+        supportTicketUpdated: jest.fn(),
+        supportMessageCreated: jest.fn(),
+      } as unknown as EventsService,
     );
   });
 

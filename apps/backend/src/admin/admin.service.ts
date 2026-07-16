@@ -15,6 +15,7 @@ import {
 import { AppCacheService } from '../infrastructure/cache.service';
 import { JobQueueService } from '../infrastructure/job-queue.service';
 import { PostgresService } from '../infrastructure/postgres.service';
+import { EventsService } from '../realtime/events.service';
 
 type DbRow = Record<string, unknown>;
 
@@ -152,6 +153,7 @@ export class AdminService {
     private readonly cache: AppCacheService,
     private readonly jobs: JobQueueService,
     private readonly postgres: PostgresService,
+    private readonly events: EventsService,
   ) {}
 
   private async rows(sql: string, params: readonly unknown[] = []) {
@@ -956,6 +958,7 @@ export class AdminService {
     );
 
     await this.audit('user.admin_message', actor, { user_id: id });
+    this.events.notificationCreated(id, rows[0]);
     return rows[0];
   }
 
@@ -1182,6 +1185,8 @@ export class AdminService {
 
     await this.audit('partner.moderation', actor, { partner_id: id, status });
     this.invalidateAdminCache();
+    this.events.partnerDashboardUpdated(id);
+    this.events.adminDashboardUpdated();
     return { ...rows[0], hotel, bus_company: busCompany };
   }
 
@@ -1229,6 +1234,8 @@ export class AdminService {
       status: newStatus,
     });
     this.invalidateAdminCache();
+    this.events.partnerDashboardUpdated(id);
+    this.events.adminDashboardUpdated();
     return rows[0];
   }
 
@@ -1727,6 +1734,8 @@ export class AdminService {
 
     await this.audit('booking.admin_cancel', actor, { booking_id: id });
     this.invalidateAdminCache();
+    this.events.bookingStatusChanged(rows[0]);
+    this.events.adminDashboardUpdated();
     return rows[0];
   }
 
@@ -1759,6 +1768,8 @@ export class AdminService {
       });
     }
     this.invalidateAdminCache();
+    this.events.bookingStatusChanged(rows[0]);
+    this.events.adminDashboardUpdated();
     return rows[0];
   }
 
@@ -2258,6 +2269,8 @@ export class AdminService {
       });
     }
     this.invalidateAdminCache();
+    this.events.supportTicketUpdated(rows[0]);
+    this.events.adminDashboardUpdated();
     return rows[0];
   }
 
@@ -2291,6 +2304,14 @@ export class AdminService {
     );
 
     await this.supportStatus(id, { status: 'in_progress' });
+
+    // Broadcast message to all ticket participants
+    const [ticket] = await this.rows(
+      'SELECT * FROM support_tickets WHERE id = $1::uuid',
+      [id],
+    );
+    this.events.supportMessageCreated(id, rows[0], ticket ?? { id });
+
     return rows[0];
   }
 

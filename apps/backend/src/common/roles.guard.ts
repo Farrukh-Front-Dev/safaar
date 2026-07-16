@@ -93,7 +93,7 @@ export class RolesGuard implements CanActivate {
       return;
     }
 
-    if (!await authSessionStore.isActive(actor.sessionId)) {
+    if (!(await authSessionStore.isActive(actor.sessionId))) {
       throw new UnauthorizedException({
         code: 'AUTH_SESSION_REVOKED',
         message: 'Sessiya bekor qilingan yoki muddati tugagan',
