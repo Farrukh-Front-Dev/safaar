@@ -44,9 +44,15 @@ export class EventsService {
     message: Record<string, unknown>,
     ticket: Record<string, unknown>,
   ) {
+    const text = String(message['body'] ?? message['message'] ?? '');
+    const normalized = {
+      ...message,
+      body: text,
+      message: text,
+    };
     this.emitter.emit(SERVER_EVENTS.SUPPORT_MESSAGE_CREATED, {
       ticketId,
-      message,
+      message: normalized,
       ticket,
       partnerId: ticket['actor_type'] === 'partner' ? ticket['actor_id'] : null,
       userId: ticket['user_id'],
@@ -68,9 +74,15 @@ export class EventsService {
     message: Record<string, unknown>,
     partnerId?: string,
   ) {
+    const text = String(message['body'] ?? message['message'] ?? '');
+    const normalized = {
+      ...message,
+      body: text,
+      message: text,
+    };
     this.emitter.emit(SERVER_EVENTS.BOOKING_MESSAGE_CREATED, {
       bookingId,
-      message,
+      message: normalized,
       partnerId,
     });
   }
