@@ -100,6 +100,26 @@ export class AppCacheService implements OnModuleDestroy {
     });
   }
 
+  /** Reads and deletes a short-lived value atomically when Redis is available. */
+  async take<T>(key: string): Promise<T | undefined> {
+    if (!this.enabled) {
+      return undefined;
+    }
+
+    const redisValue = await this.redisGetDel(key);
+    if (redisValue !== undefined) {
+      return JSON.parse(redisValue) as T;
+    }
+
+    const entry = this.memory.get(key);
+    this.memory.delete(key);
+    if (!entry || Date.now() >= entry.expiresAt) {
+      return undefined;
+    }
+
+    return JSON.parse(entry.value) as T;
+  }
+
   async del(key: string): Promise<void> {
     this.memory.delete(key);
     if (!this.redis) {
@@ -181,6 +201,20 @@ export class AppCacheService implements OnModuleDestroy {
       return true;
     } catch {
       return false;
+    }
+  }
+
+  private async redisGetDel(key: string): Promise<string | undefined> {
+    if (!this.redis) {
+      return undefined;
+    }
+
+    try {
+      await this.ensureRedisConnected();
+      const value = await this.redis.getdel(key);
+      return value ?? undefined;
+    } catch {
+      return undefined;
     }
   }
 

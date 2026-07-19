@@ -118,12 +118,13 @@ model User {
   id                String        @id @default(uuid()) @db.Uuid
   firstName         String?       @map("first_name") @db.VarChar(100)
   lastName          String?       @map("last_name") @db.VarChar(100)
-  phone             String        @unique @db.VarChar(20)
+  phone             String?       @unique @db.VarChar(20)
   email             String?       @unique @db.VarChar(255)
   status            UserStatus    @default(unverified)
   preferredLanguage Language      @default(uz) @map("preferred_language")
   blockedReason     String?       @map("blocked_reason")
   phoneVerifiedAt   DateTime?     @map("phone_verified_at") @db.Timestamptz
+  emailVerifiedAt   DateTime?     @map("email_verified_at") @db.Timestamptz
   lastLoginAt       DateTime?     @map("last_login_at") @db.Timestamptz
   createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz
   updatedAt         DateTime      @updatedAt @map("updated_at") @db.Timestamptz
@@ -410,9 +411,11 @@ model Hotel {
   extraFees             Json       @default("[]") @map("extra_fees")
   rulesCompletedAt      DateTime?  @map("rules_completed_at") @db.Timestamptz
   submittedAt           DateTime?  @map("submitted_at") @db.Timestamptz
+  submittedBy           String?    @map("submitted_by") @db.Uuid
   reviewedAt            DateTime?  @map("reviewed_at") @db.Timestamptz
   reviewedBy            String?    @map("reviewed_by") @db.Uuid
   rejectionReason       String?    @map("rejection_reason")
+  nextDraftPreparedAt   DateTime?  @map("next_draft_prepared_at") @db.Timestamptz
   createdAt             DateTime    @default(now()) @map("created_at") @db.Timestamptz
   updatedAt             DateTime    @updatedAt @map("updated_at") @db.Timestamptz
   deletedAt             DateTime?   @map("deleted_at") @db.Timestamptz
@@ -656,6 +659,9 @@ model Booking {
   cancelReasonText            String?           @map("cancel_reason_text")
   policySnapshot              Json              @map("policy_snapshot")
   priceSnapshot               Json              @map("price_snapshot")
+  guestName                   String?           @map("guest_name") @db.VarChar(200)
+  guestEmail                  String?           @map("guest_email") @db.VarChar(255)
+  guestPhone                  String?           @map("guest_phone") @db.VarChar(20)
   createdAt                   DateTime          @default(now()) @map("created_at") @db.Timestamptz
   updatedAt                   DateTime          @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -875,6 +881,7 @@ model SupportTicket {
   updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 
   messages SupportMessage[]
+  user     User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([userId, status])
   @@index([userId, status, createdAt])

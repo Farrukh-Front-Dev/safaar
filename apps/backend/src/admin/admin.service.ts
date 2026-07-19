@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { BookingStatus, Role } from '@agoda/types';
+import { BookingStatus, Role } from '@Safaar/types';
 import { randomUUID } from 'node:crypto';
 import type { RequestActor } from '../common/actor';
 import {
@@ -14,7 +14,10 @@ import {
 } from '../common/pagination';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { JobQueueService } from '../infrastructure/job-queue.service';
-import { PostgresService } from '../infrastructure/postgres.service';
+import {
+  PostgresService,
+  type PostgresTransaction,
+} from '../infrastructure/postgres.service';
 import { EventsService } from '../realtime/events.service';
 
 type DbRow = Record<string, unknown>;
@@ -108,6 +111,11 @@ function localizedObject(value: unknown): Record<string, string | null> {
     ru: source['ru'] == null ? null : String(source['ru']),
     en: source['en'] == null ? null : String(source['en']),
   };
+}
+
+function localizedLabel(value: unknown, fallback: string): string {
+  const localized = localizedObject(value);
+  return localized.uz ?? localized.ru ?? localized.en ?? fallback;
 }
 
 function nullableNumber(value: unknown): number | null {
@@ -1987,35 +1995,234 @@ export class AdminService {
         message: 'Rad etish sababi kerak',
       });
     }
-    const rows = await this.rows(
-      `update hotels
-       set status = $2,
-           rejection_reason = case when $2 = 'rejected' then nullif($3, '') else null end,
-           reviewed_at = now(),
-           reviewed_by = $4::uuid,
-           updated_at = now()
-       where id = $1::uuid and deleted_at is null
-       returning id::text, partner_organization_id::text, slug, status::text, updated_at`,
-      [id, status, reason.trim(), adminActorUuid(actor)],
+    const now = new Date().toISOString();
+    const normalizedReason = reason.trim();
+    const hotelName = localizedLabel(
+      current.name,
+      String(field(current, 'slug') ?? 'Mehmonxona'),
     );
+    const moderation = await this.postgres.transaction(async (transaction) => {
+      const lockedRows = await transaction.query<DbRow>(
+        `select id::text, partner_organization_id::text, city_id::text,
+                status::text, submitted_by::text, next_draft_prepared_at
+         from hotels
+         where id = $1::uuid and deleted_at is null
+         for update`,
+        [id],
+      );
+      const locked = lockedRows[0];
+      if (!locked) {
+        throw new NotFoundException({
+          code: 'HOTEL_NOT_FOUND',
+          message: 'Hotel topilmadi',
+        });
+      }
+      const previousStatus = String(locked['status']);
+      const moderationRows = await transaction.query<DbRow>(
+        `update hotels
+         set status = $2::"HotelStatus",
+             rejection_reason = case when $2::"HotelStatus" = 'rejected'::"HotelStatus" then nullif($3, '') else null end,
+             reviewed_at = $5,
+             reviewed_by = $4::uuid,
+             updated_at = $5
+         where id = $1::uuid and deleted_at is null
+         returning id::text, partner_organization_id::text, slug, status::text, updated_at`,
+        [id, status, normalizedReason, adminActorUuid(actor), now],
+      );
 
-    if (!rows[0]) {
-      throw new NotFoundException({
-        code: 'HOTEL_NOT_FOUND',
-        message: 'Hotel topilmadi',
-      });
-    }
+      if (!moderationRows[0]) {
+        throw new NotFoundException({
+          code: 'HOTEL_NOT_FOUND',
+          message: 'Hotel topilmadi',
+        });
+      }
+
+      let draftId: string | null = null;
+      if (status === 'published' || status === 'rejected') {
+        if (!locked['next_draft_prepared_at']) {
+          await transaction.query(
+            `update hotels
+             set next_draft_prepared_at = $2
+             where id = $1::uuid and next_draft_prepared_at is null`,
+            [id, now],
+          );
+          draftId = await this.prepareNextHotelDraft(transaction, locked, now);
+        } else {
+          const drafts = await transaction.query<{ id: string }>(
+            `select id::text
+             from hotels
+             where partner_organization_id = $1::uuid
+               and status = 'draft'
+               and deleted_at is null
+             order by updated_at desc
+             limit 1`,
+            [String(locked['partner_organization_id'])],
+          );
+          draftId = drafts[0]?.id ?? null;
+        }
+      }
+
+      let notification: DbRow | null = null;
+      let notificationRecipientId: string | null = null;
+      if (
+        (status === 'published' || status === 'rejected') &&
+        previousStatus !== status
+      ) {
+        notificationRecipientId = String(
+          locked['submitted_by'] ?? locked['partner_organization_id'],
+        );
+        const title =
+          status === 'published'
+            ? "E'loningiz muvaffaqiyatli tasdiqlandi"
+            : "E'loningiz rad etildi";
+        const body =
+          status === 'published'
+            ? `"${hotelName}" e'loni muvaffaqiyatli tasdiqlandi.`
+            : `"${hotelName}" e'loni rad etildi. Sabab: ${normalizedReason}`;
+        const notifications = await transaction.query<DbRow>(
+          `insert into notifications
+             (id, user_id, owner_type, owner_id, title, body, created_at)
+           values ($1::uuid, null, 'partner', $2::uuid, $3, $4, $5)
+           returning id::text, user_id::text, owner_type, owner_id::text,
+                     title, body, read_at, created_at`,
+          [randomUUID(), notificationRecipientId, title, body, now],
+        );
+        notification = notifications[0] ?? null;
+      }
+
+      return {
+        rows: moderationRows,
+        previousStatus,
+        draftId,
+        notification,
+        notificationRecipientId,
+      };
+    });
+    const rows = moderation.rows;
     this.invalidateAdminCache();
     this.invalidatePublicHotelCache();
     const updated = await this.hotel(id);
+    if (moderation.notification && moderation.notificationRecipientId) {
+      this.events.notificationCreated(
+        moderation.notificationRecipientId,
+        moderation.notification,
+      );
+    }
     this.events.hotelListingChanged({
       hotelId: id,
       partnerId: String(rows[0]['partner_organization_id']),
       status,
+      previousStatus: moderation.previousStatus,
+      rejectionReason: status === 'rejected' ? normalizedReason : null,
+      notificationId: moderation.notification
+        ? String(moderation.notification['id'])
+        : null,
+      draftId: moderation.draftId,
       action: 'moderated',
       sections: ['status'],
     });
+    this.events.partnerDashboardUpdated(
+      String(rows[0]['partner_organization_id']),
+    );
     return updated;
+  }
+
+  private async prepareNextHotelDraft(
+    transaction: PostgresTransaction,
+    source: DbRow,
+    now: string,
+  ): Promise<string> {
+    const sourceId = String(source['id']);
+    const organizationId = String(source['partner_organization_id']);
+    const cityId = String(source['city_id']);
+    const drafts = await transaction.query<DbRow>(
+      `select h.id::text,
+              exists(select 1 from bookings b where b.hotel_id = h.id) as has_bookings
+       from hotels h
+       where h.partner_organization_id = $1::uuid
+         and h.id <> $2::uuid
+         and h.status = 'draft'
+         and h.deleted_at is null
+       order by h.updated_at desc
+       limit 1
+       for update of h`,
+      [organizationId, sourceId],
+    );
+    const reusableDraft = drafts[0];
+
+    if (reusableDraft && reusableDraft['has_bookings'] !== true) {
+      const draftId = String(reusableDraft['id']);
+      await transaction.query(
+        `delete from hotel_amenities where hotel_id = $1::uuid`,
+        [draftId],
+      );
+      await transaction.query(
+        `update media_files
+         set deleted_at = $2, is_cover = false
+         where owner_type = 'hotel'
+           and owner_id = $1::uuid
+           and deleted_at is null`,
+        [draftId, now],
+      );
+      await transaction.query(
+        `delete from hotel_rooms where hotel_id = $1::uuid`,
+        [draftId],
+      );
+      await transaction.query(
+        `update hotels
+         set city_id = $2::uuid,
+             address = '', latitude = null, longitude = null, stars = 0,
+             rating_average = 0, reviews_count = 0, status = 'draft',
+             featured = false, check_in_time = null, check_out_time = null,
+             cancellation_policy_id = null,
+             cancellation_policy_code = 'MODERATE',
+             smoking_allowed = false, pets_allowed = false,
+             children_allowed = true, extra_fees = '[]'::jsonb,
+             rules_completed_at = null, submitted_at = null,
+             submitted_by = null,
+             reviewed_at = null, reviewed_by = null,
+             rejection_reason = null, next_draft_prepared_at = null,
+             updated_at = $3
+         where id = $1::uuid`,
+        [draftId, cityId, now],
+      );
+      await this.resetHotelDraftTranslations(transaction, draftId, now);
+      return draftId;
+    }
+
+    const draftId = randomUUID();
+    const slug = `draft-${organizationId.slice(0, 8)}-${draftId.slice(0, 8)}`;
+    await transaction.query(
+      `insert into hotels
+         (id, partner_organization_id, slug, city_id, address,
+          latitude, longitude, stars, rating_average, reviews_count,
+          status, check_in_time, check_out_time, created_at, updated_at)
+       values
+         ($1::uuid, $2::uuid, $3, $4::uuid, '',
+          null, null, 0, 0, 0,
+          'draft', null, null, $5, $5)`,
+      [draftId, organizationId, slug, cityId, now],
+    );
+    await this.resetHotelDraftTranslations(transaction, draftId, now);
+    return draftId;
+  }
+
+  private async resetHotelDraftTranslations(
+    transaction: PostgresTransaction,
+    draftId: string,
+    now: string,
+  ): Promise<void> {
+    await transaction.query(
+      `insert into hotel_translations
+         (hotel_id, language, name, short_description, description, created_at, updated_at)
+       values
+         ($1::uuid, 'uz', '', '', '', $2, $2),
+         ($1::uuid, 'ru', '', '', '', $2, $2),
+         ($1::uuid, 'en', '', '', '', $2, $2)
+       on conflict (hotel_id, language) do update
+       set name = '', short_description = '', description = '', updated_at = $2`,
+      [draftId, now],
+    );
   }
 
   async trips(query: QueryLike = {}) {

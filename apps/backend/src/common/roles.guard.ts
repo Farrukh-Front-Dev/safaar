@@ -6,7 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Role } from '@agoda/types';
+import { Role } from '@Safaar/types';
 import { PostgresService } from '../infrastructure/postgres.service';
 import { authSessionStore } from '../auth/session-store';
 import { demoAuthEnabled } from '../auth/security';

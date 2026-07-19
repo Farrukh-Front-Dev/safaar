@@ -1,12 +1,17 @@
-import { Role } from '@agoda/types';
+import { Role } from '@Safaar/types';
 import type { RequestActor } from '../common/actor';
 import { JobQueueService } from '../infrastructure/job-queue.service';
 import { PostgresService } from '../infrastructure/postgres.service';
+import { EventsService } from '../realtime/events.service';
 import { PartnersService } from './partners.service';
 
 describe('PartnersService frontend action endpoints', () => {
   let service: PartnersService;
   let pgMock: jest.Mocked<Pick<PostgresService, 'query'>>;
+  let eventsMock: {
+    hotelListingChanged: jest.Mock;
+    adminDashboardUpdated: jest.Mock;
+  };
   const actor: RequestActor = {
     id: '00000000-0000-0000-0000-000000000001',
     actorType: 'partner',
@@ -36,10 +41,49 @@ describe('PartnersService frontend action endpoints', () => {
     pgMock = {
       query: jest.fn().mockResolvedValue([hotelRow]),
     };
+    eventsMock = {
+      hotelListingChanged: jest.fn(),
+      adminDashboardUpdated: jest.fn(),
+    };
     service = new PartnersService(
       pgMock as unknown as PostgresService,
       { add: jest.fn() } as unknown as JobQueueService,
+      eventsMock as unknown as EventsService,
     );
+  });
+
+  it('returns active drafts before previously submitted hotels', async () => {
+    pgMock.query.mockResolvedValueOnce([]);
+
+    await service.hotels(actor);
+
+    expect(pgMock.query).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "ORDER BY CASE WHEN status = 'draft' THEN 0 ELSE 1 END",
+      ),
+      [actor.organizationId, 50, 0],
+    );
+    expect(pgMock.query.mock.calls[0]?.[0]).toContain('AND deleted_at IS NULL');
+  });
+
+  it('keeps a reset draft name empty instead of falling back to its slug', async () => {
+    pgMock.query
+      .mockResolvedValueOnce([{ ...hotelRow, slug: 'draft-partner-1234' }])
+      .mockResolvedValueOnce([
+        {
+          hotel_id: hotelId,
+          language: 'uz',
+          name: '',
+          short_description: '',
+          description: '',
+        },
+      ])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    const [draft] = await service.hotels(actor);
+
+    expect(draft.name).toEqual({ uz: '', ru: '', en: '' });
   });
 
   it('supports room type and bulk room buttons from the partner listing UI', async () => {
@@ -84,6 +128,32 @@ describe('PartnersService frontend action endpoints', () => {
       expect.stringContaining('UPDATE hotels'),
       expect.arrayContaining([5, expect.any(String), hotelId]),
     );
+  });
+
+  it('keeps listing rules SQL placeholders aligned', async () => {
+    await service.updateListingRules(actor, hotelId, {
+      checkInTime: '15:00',
+      checkOutTime: '11:00',
+    });
+
+    const updateCall = pgMock.query.mock.calls.find(
+      ([sql]) =>
+        typeof sql === 'string' && sql.includes('rules_completed_at = $3'),
+    );
+
+    expect(updateCall).toBeDefined();
+    expect(updateCall?.[0]).toContain(
+      "submitted_at = CASE WHEN status = 'published' THEN $5",
+    );
+    expect(updateCall?.[0]).toContain('WHERE id = $6');
+    expect(updateCall?.[1]).toEqual([
+      '15:00',
+      '11:00',
+      expect.any(String),
+      expect.any(String),
+      expect.any(String),
+      hotelId,
+    ]);
   });
 
   it('rejects review submission until every listing section is complete', async () => {
@@ -134,9 +204,28 @@ describe('PartnersService frontend action endpoints', () => {
 
     expect(result).toMatchObject({ status: 'pending_review' });
     expect(pgMock.query).toHaveBeenLastCalledWith(
-      expect.stringContaining('submitted_at = CASE'),
-      expect.arrayContaining(['pending_review', expect.any(String), hotelId]),
+      expect.stringContaining('status = $1::"HotelStatus"'),
+      expect.arrayContaining([
+        'pending_review',
+        expect.any(String),
+        actor.id,
+        hotelId,
+      ]),
     );
+    expect(pgMock.query.mock.calls.at(-1)?.[0]).toContain(
+      `$1::"HotelStatus" = 'pending_review'::"HotelStatus"`,
+    );
+    expect(pgMock.query.mock.calls.at(-1)?.[0]).toContain(
+      'submitted_by = CASE',
+    );
+    expect(eventsMock.hotelListingChanged).toHaveBeenCalledWith({
+      hotelId,
+      partnerId: actor.organizationId,
+      status: 'pending_review',
+      action: 'submitted',
+      sections: ['status'],
+    });
+    expect(eventsMock.adminDashboardUpdated).toHaveBeenCalledTimes(1);
   });
 
   it('rejects amenity codes that are not in the catalog', async () => {

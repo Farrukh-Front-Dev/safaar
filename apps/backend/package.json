@@ -1,5 +1,5 @@
 {
-  "name": "@agoda/backend",
+  "name": "@Safaar/backend",
   "version": "0.0.1",
   "description": "",
   "author": "",
@@ -8,7 +8,7 @@
   "scripts": {
     "build": "nest build",
     "build:backend": "npm run build",
-    "build:types": "npm run build -w @agoda/types",
+    "build:types": "npm run build -w @Safaar/types",
     "dev:backend": "npm run start:dev",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "NODE_OPTIONS='--no-network-family-autoselection' nest start",
@@ -37,7 +37,7 @@
     "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
-    "@agoda/types": "*",
+    "@Safaar/types": "*",
     "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.4",

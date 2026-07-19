@@ -1,5 +1,5 @@
 import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
-import { Role } from '@agoda/types';
+import { Role } from '@Safaar/types';
 import { hmacSha256 } from '../../src/auth/security';
 import { AuthService } from '../../src/auth/auth.service';
 import { buildActorFromHeaders } from '../../src/common/actor';

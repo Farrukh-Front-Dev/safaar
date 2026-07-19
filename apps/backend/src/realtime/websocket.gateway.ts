@@ -10,7 +10,7 @@ import {
 } from '@nestjs/websockets';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Server, Socket } from 'socket.io';
-import { Role } from '@agoda/types';
+import { Role } from '@Safaar/types';
 import { verifyJwt } from '../auth/security';
 import { SERVER_EVENTS, CLIENT_EVENTS } from './events';
 
@@ -338,6 +338,10 @@ export class RealtimeGateway
     hotelId: string;
     partnerId?: string | null;
     status: string;
+    previousStatus?: string;
+    rejectionReason?: string | null;
+    notificationId?: string | null;
+    draftId?: string | null;
     action: string;
     sections: string[];
     occurredAt: string;

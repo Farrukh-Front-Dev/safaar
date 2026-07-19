@@ -4,7 +4,7 @@ import {
   Injectable,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { Role } from '@agoda/types';
+import { Role } from '@Safaar/types';
 import { demoAuthEnabled } from '../auth/security';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { PostgresService } from '../infrastructure/postgres.service';

@@ -5,7 +5,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { BookingStatus, Role } from '@agoda/types';
+import { BookingStatus, Role } from '@Safaar/types';
 import type { RequestActor } from '../common/actor';
 import { PostgresService } from '../infrastructure/postgres.service';
 import { EventsService } from '../realtime/events.service';
@@ -69,6 +69,9 @@ export class BookingsService {
       subtotal,
       hotel_id: hotel.id,
       trip_id: null,
+      guest_name: String(dto.guest_name ?? dto.guestName ?? ''),
+      guest_email: String(dto.guest_email ?? dto.guestEmail ?? ''),
+      guest_phone: String(dto.guest_phone ?? dto.guestPhone ?? ''),
       price_snapshot: {
         room_id: room.id,
         check_in: checkIn,
@@ -77,6 +80,11 @@ export class BookingsService {
         rooms,
         adults: Number(dto.adults ?? dto.guests ?? 1),
         children: Number(dto.children ?? 0),
+        guest: {
+          name: String(dto.guest_name ?? dto.guestName ?? ''),
+          email: String(dto.guest_email ?? dto.guestEmail ?? ''),
+          phone: String(dto.guest_phone ?? dto.guestPhone ?? ''),
+        },
       },
     });
 
@@ -378,6 +386,9 @@ export class BookingsService {
       trip_id: string | null;
       expires_at?: string;
       price_snapshot: Record<string, unknown>;
+      guest_name?: string;
+      guest_email?: string;
+      guest_phone?: string;
     },
   ) {
     const id = randomUUID();
@@ -391,6 +402,10 @@ export class BookingsService {
       input.confirmation_mode === 'request_confirmation'
         ? new Date(Date.now() + 30 * 60_000).toISOString()
         : null;
+
+    const guestName = input.guest_name ?? null;
+    const guestEmail = input.guest_email ?? null;
+    const guestPhone = input.guest_phone ?? null;
 
     const bookingRow = {
       id,
@@ -418,6 +433,9 @@ export class BookingsService {
       cancel_reason_text: null,
       policy_snapshot: {},
       price_snapshot: input.price_snapshot,
+      guest_name: guestName,
+      guest_email: guestEmail,
+      guest_phone: guestPhone,
       created_at: now,
       updated_at: now,
     };
@@ -432,6 +450,7 @@ export class BookingsService {
         partner_confirmation_deadline, expires_at,
         confirmed_at, cancelled_at, cancel_reason_text,
         policy_snapshot, price_snapshot,
+        guest_name, guest_email, guest_phone,
         created_at, updated_at
       ) VALUES (
         $1, $2, $3, $4,
@@ -442,7 +461,8 @@ export class BookingsService {
         $19, $20,
         $21, $22, $23,
         $24, $25,
-        $26, $27
+        $26, $27, $28,
+        $29, $30
       )`,
       [
         bookingRow.id,
@@ -470,6 +490,9 @@ export class BookingsService {
         bookingRow.cancel_reason_text,
         JSON.stringify(bookingRow.policy_snapshot),
         JSON.stringify(bookingRow.price_snapshot),
+        bookingRow.guest_name,
+        bookingRow.guest_email,
+        bookingRow.guest_phone,
         bookingRow.created_at,
         bookingRow.updated_at,
       ],

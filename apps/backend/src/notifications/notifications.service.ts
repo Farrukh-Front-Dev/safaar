@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Role } from '@agoda/types';
+import { Role } from '@Safaar/types';
 import { randomUUID } from 'node:crypto';
 import type { RequestActor } from '../common/actor';
 import { PostgresService } from '../infrastructure/postgres.service';
@@ -21,10 +21,13 @@ export class NotificationsService {
       role: Role.USER,
       roles: [Role.USER],
     };
+    const ownerType = this.ownerType(currentActor);
 
     const notifications = await this.pg.query(
-      'SELECT * FROM notifications WHERE owner_id = $1 ORDER BY created_at DESC',
-      [currentActor.id],
+      `SELECT * FROM notifications
+       WHERE owner_id = $1::uuid AND owner_type = $2
+       ORDER BY created_at DESC`,
+      [currentActor.id, ownerType],
     );
 
     return notifications;
@@ -50,7 +53,11 @@ export class NotificationsService {
       });
     }
 
-    this.assertOwner(currentActor, notification.owner_id);
+    this.assertOwner(
+      currentActor,
+      notification.owner_id,
+      notification.owner_type,
+    );
 
     const now = new Date().toISOString();
     const [updated] = await this.pg.query(
@@ -68,11 +75,13 @@ export class NotificationsService {
       role: Role.USER,
       roles: [Role.USER],
     };
+    const ownerType = this.ownerType(currentActor);
 
     const now = new Date().toISOString();
     await this.pg.query(
-      'UPDATE notifications SET read_at = $1 WHERE owner_id = $2 AND read_at IS NULL',
-      [now, currentActor.id],
+      `UPDATE notifications SET read_at = $1
+       WHERE owner_id = $2::uuid AND owner_type = $3 AND read_at IS NULL`,
+      [now, currentActor.id, ownerType],
     );
 
     return { owner_id: currentActor.id, read_all: true };
@@ -89,6 +98,7 @@ export class NotificationsService {
     const token = {
       id: randomUUID(),
       owner_id: currentActor.id,
+      owner_type: this.ownerType(currentActor),
       token: String(body.token ?? ''),
       platform: String(body.platform ?? 'web'),
       created_at: new Date().toISOString(),
@@ -114,17 +124,21 @@ export class NotificationsService {
     }
 
     const token = this.pushTokens[idx];
-    this.assertOwner(currentActor, token['owner_id']);
+    this.assertOwner(currentActor, token['owner_id'], token['owner_type']);
 
     token['deleted_at'] = new Date().toISOString();
     return { id, deleted: true };
   }
 
-  private assertOwner(actor: RequestActor, ownerId: unknown) {
+  private assertOwner(
+    actor: RequestActor,
+    ownerId: unknown,
+    ownerType: unknown,
+  ) {
     if (
       actor.role === Role.SUPER_ADMIN ||
       actor.actorType === 'admin' ||
-      ownerId === actor.id
+      (ownerId === actor.id && ownerType === this.ownerType(actor))
     ) {
       return;
     }
@@ -133,5 +147,9 @@ export class NotificationsService {
       code: 'RESOURCE_FORBIDDEN',
       message: 'Bu resurs sizga tegishli emas',
     });
+  }
+
+  private ownerType(actor: RequestActor): string {
+    return actor.actorType === 'partner' ? 'partner' : actor.actorType;
   }
 }

@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
-import { BookingStatus } from '@agoda/types';
+import { BookingStatus } from '@Safaar/types';
 import { PostgresService } from '../infrastructure/postgres.service';
 import {
   hashSecret,

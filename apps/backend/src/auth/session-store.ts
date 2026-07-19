@@ -1,4 +1,4 @@
-import { Role, type ActorType } from '@agoda/types';
+import { Role, type ActorType } from '@Safaar/types';
 import { Pool, type QueryResultRow } from 'pg';
 import { hashSecret, jwtSecurityConfig } from './security';
 

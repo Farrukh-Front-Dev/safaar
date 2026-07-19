@@ -1,6 +1,13 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Pool, type QueryResultRow } from 'pg';
+import { Pool, type PoolClient, type QueryResultRow } from 'pg';
+
+export interface PostgresTransaction {
+  query<T extends QueryResultRow = QueryResultRow>(
+    sql: string,
+    params?: readonly unknown[],
+  ): Promise<T[]>;
+}
 
 @Injectable()
 export class PostgresService implements OnModuleDestroy {
@@ -71,6 +78,29 @@ export class PostgresService implements OnModuleDestroy {
     throw lastError instanceof Error ? lastError : new Error(String(lastError));
   }
 
+  async transaction<T>(
+    operation: (transaction: PostgresTransaction) => Promise<T>,
+  ): Promise<T> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const result = await operation(this.transactionClient(client));
+      await client.query('COMMIT');
+      return result;
+    } catch (error) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        this.logger.error(
+          `Transaction rollback xatosi: ${rollbackError instanceof Error ? rollbackError.message : String(rollbackError)}`,
+        );
+      }
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   async onModuleDestroy() {
     await this.pool.end();
   }
@@ -89,6 +119,20 @@ export class PostgresService implements OnModuleDestroy {
         query: summarizeSql(sql),
       }),
     );
+  }
+
+  private transactionClient(client: PoolClient): PostgresTransaction {
+    return {
+      query: async <T extends QueryResultRow = QueryResultRow>(
+        sql: string,
+        params: readonly unknown[] = [],
+      ): Promise<T[]> => {
+        const startedAt = performance.now();
+        const result = await client.query<T>(sql, [...params]);
+        this.logQuery(sql, startedAt, result.rowCount ?? result.rows.length);
+        return result.rows;
+      },
+    };
   }
 }
 

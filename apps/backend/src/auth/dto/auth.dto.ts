@@ -15,6 +15,24 @@ export class SendOtpDto {
   phone!: string;
 }
 
+export class SendEmailOtpDto {
+  @ApiProperty({ example: 'user@uzbron.uz' })
+  @IsEmail()
+  email!: string;
+}
+
+export class VerifyEmailOtpRequestDto extends SendEmailOtpDto {
+  @ApiPropertyOptional({ example: 'otp-challenge-id' })
+  @IsOptional()
+  @IsString()
+  challenge_id?: string;
+
+  @ApiProperty({ example: '482913' })
+  @IsString()
+  @Length(6, 6)
+  code!: string;
+}
+
 export class VerifyOtpRequestDto extends SendOtpDto {
   @ApiPropertyOptional({ example: 'otp-challenge-id' })
   @IsOptional()
@@ -48,6 +66,11 @@ export class CompleteProfileDto {
   @IsEmail()
   email?: string;
 
+  @ApiPropertyOptional({ example: 'P@ssw0rd!' })
+  @IsOptional()
+  @IsString()
+  password?: string;
+
   @ApiPropertyOptional({ enum: ['uz', 'ru', 'en'] })
   @IsOptional()
   @IsIn(['uz', 'ru', 'en'])
@@ -66,12 +89,43 @@ export class OAuthTokenDto {
   email?: string;
 }
 
+export class OAuthExchangeDto {
+  @ApiProperty({ example: 'one-time-oauth-code' })
+  @IsString()
+  @IsNotEmpty()
+  code!: string;
+}
+
 export class LoginDto {
   @ApiProperty({ example: 'partner@uzbron.uz' })
   @IsEmail()
   email!: string;
 
   @ApiProperty({ example: 'password' })
+  @IsString()
+  @IsNotEmpty()
+  password!: string;
+}
+
+export class UserLoginDto {
+  @ApiProperty({ example: 'user@uzbron.uz' })
+  @IsEmail()
+  email!: string;
+
+  @ApiProperty({ example: 'P@ssw0rd!' })
+  @IsString()
+  @IsNotEmpty()
+  password!: string;
+}
+
+export class UserForgotPasswordDto {
+  @ApiProperty({ example: 'user@uzbron.uz' })
+  @IsEmail()
+  email!: string;
+}
+
+export class UserResetPasswordDto extends VerifyEmailOtpRequestDto {
+  @ApiProperty({ example: 'N3wP@ssw0rd!' })
   @IsString()
   @IsNotEmpty()
   password!: string;

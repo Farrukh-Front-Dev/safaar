@@ -1,6 +1,7 @@
 interface EnvironmentConfig {
   NODE_ENV: string;
   APP_NAME: string;
+  WEB_USER_URL: string;
   PORT: number;
   API_PREFIX: string;
   BUSINESS_TIMEZONE: string;
@@ -35,6 +36,12 @@ interface EnvironmentConfig {
   SMTP_USER?: string;
   SMTP_PASS?: string;
   SMTP_FROM?: string;
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
+  GOOGLE_CALLBACK_URL?: string;
+  FACEBOOK_APP_ID?: string;
+  FACEBOOK_APP_SECRET?: string;
+  FACEBOOK_CALLBACK_URL?: string;
 }
 
 function toNumber(value: unknown, fallback: number): number {
@@ -100,6 +107,7 @@ export function validateEnv(
   return {
     NODE_ENV: nodeEnv,
     APP_NAME: String(config.APP_NAME ?? 'uzbron-api'),
+    WEB_USER_URL: String(config.WEB_USER_URL ?? 'http://localhost:3000'),
     PORT: toNumber(config.PORT, 4000),
     API_PREFIX: String(config.API_PREFIX ?? 'v1'),
     BUSINESS_TIMEZONE: String(config.BUSINESS_TIMEZONE ?? 'Asia/Tashkent'),
@@ -156,5 +164,23 @@ export function validateEnv(
     SMTP_USER: config.SMTP_USER ? String(config.SMTP_USER) : undefined,
     SMTP_PASS: config.SMTP_PASS ? String(config.SMTP_PASS) : undefined,
     SMTP_FROM: config.SMTP_FROM ? String(config.SMTP_FROM) : undefined,
+    GOOGLE_CLIENT_ID: config.GOOGLE_CLIENT_ID
+      ? String(config.GOOGLE_CLIENT_ID)
+      : undefined,
+    GOOGLE_CLIENT_SECRET: config.GOOGLE_CLIENT_SECRET
+      ? String(config.GOOGLE_CLIENT_SECRET)
+      : undefined,
+    GOOGLE_CALLBACK_URL: config.GOOGLE_CALLBACK_URL
+      ? String(config.GOOGLE_CALLBACK_URL)
+      : undefined,
+    FACEBOOK_APP_ID: config.FACEBOOK_APP_ID
+      ? String(config.FACEBOOK_APP_ID)
+      : undefined,
+    FACEBOOK_APP_SECRET: config.FACEBOOK_APP_SECRET
+      ? String(config.FACEBOOK_APP_SECRET)
+      : undefined,
+    FACEBOOK_CALLBACK_URL: config.FACEBOOK_CALLBACK_URL
+      ? String(config.FACEBOOK_CALLBACK_URL)
+      : undefined,
   };
 }

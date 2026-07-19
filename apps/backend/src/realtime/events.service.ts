@@ -101,6 +101,10 @@ export class EventsService {
     hotelId: string;
     partnerId?: string | null;
     status: string;
+    previousStatus?: string;
+    rejectionReason?: string | null;
+    notificationId?: string | null;
+    draftId?: string | null;
     action: 'updated' | 'submitted' | 'moderated';
     sections: string[];
   }) {

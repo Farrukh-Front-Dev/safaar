@@ -3,12 +3,17 @@ import {
   Controller,
   Delete,
   Get,
+  HttpException,
   Param,
   Post,
+  Query,
+  Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { Role } from '@agoda/types';
+import { Role } from '@Safaar/types';
+import type { Request, Response } from 'express';
 import { CurrentActor, type RequestActor } from '../common/actor';
 import { Roles } from '../common/roles.decorator';
 import { RolesGuard } from '../common/roles.guard';
@@ -18,12 +23,18 @@ import {
   CompleteProfileDto,
   ForgotPasswordDto,
   LoginDto,
+  OAuthExchangeDto,
   OAuthTokenDto,
   RefreshTokenDto,
   ResetPasswordDto,
+  SendEmailOtpDto,
   SendOtpDto,
   TotpSetupConfirmDto,
+  UserForgotPasswordDto,
+  UserLoginDto,
+  UserResetPasswordDto,
   Verify2faDto,
+  VerifyEmailOtpRequestDto,
   VerifyOtpRequestDto,
 } from './dto/auth.dto';
 
@@ -33,13 +44,13 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('user/send-otp')
-  requestOtp(@Body() dto: SendOtpDto) {
-    return this.authService.sendUserOtp(dto.phone);
+  requestEmailOtp(@Body() dto: SendEmailOtpDto) {
+    return this.authService.sendUserEmailOtp(dto.email);
   }
 
   @Post('user/verify-otp')
-  verifyOtp(@Body() dto: VerifyOtpRequestDto) {
-    return this.authService.verifyUserOtp(dto);
+  verifyEmailOtp(@Body() dto: VerifyEmailOtpRequestDto) {
+    return this.authService.verifyUserEmailOtp(dto);
   }
 
   @Post('otp/request')
@@ -75,14 +86,48 @@ export class AuthController {
     );
   }
 
+  @Post('user/login')
+  userLogin(@Body() body: UserLoginDto) {
+    return this.authService.userLogin(
+      body as unknown as Record<string, unknown>,
+    );
+  }
+
+  @Post('user/forgot-password')
+  userForgotPassword(@Body() body: UserForgotPasswordDto) {
+    return this.authService.userForgotPassword(body.email);
+  }
+
+  @Post('user/reset-password')
+  userResetPassword(@Body() body: UserResetPasswordDto) {
+    return this.authService.userResetPassword({
+      email: body.email,
+      code: body.code,
+      challenge_id: body.challenge_id,
+      password: body.password,
+    });
+  }
+
+  @Get('providers')
+  providers() {
+    return this.authService.oauthProviders();
+  }
+
   @Get('google')
-  googleRedirect() {
-    return this.authService.oauthRedirect('google');
+  googleRedirect(
+    @Query() query: Record<string, unknown>,
+    @Res() response: Response,
+  ) {
+    return this.startOAuth('google', query, response);
   }
 
   @Get('google/callback')
-  googleCallback() {
-    return this.authService.oauthCallback('google');
+  googleCallback(
+    @Query() query: Record<string, unknown>,
+    @Req() request: Request,
+    @Res() response: Response,
+  ) {
+    return this.finishOAuth('google', query, request, response);
   }
 
   @Post('google/token')
@@ -94,13 +139,20 @@ export class AuthController {
   }
 
   @Get('facebook')
-  facebookRedirect() {
-    return this.authService.oauthRedirect('facebook');
+  facebookRedirect(
+    @Query() query: Record<string, unknown>,
+    @Res() response: Response,
+  ) {
+    return this.startOAuth('facebook', query, response);
   }
 
   @Get('facebook/callback')
-  facebookCallback() {
-    return this.authService.oauthCallback('facebook');
+  facebookCallback(
+    @Query() query: Record<string, unknown>,
+    @Req() request: Request,
+    @Res() response: Response,
+  ) {
+    return this.finishOAuth('facebook', query, request, response);
   }
 
   @Post('facebook/token')
@@ -109,6 +161,11 @@ export class AuthController {
       'facebook',
       body as unknown as Record<string, unknown>,
     );
+  }
+
+  @Post('oauth/exchange')
+  oauthExchange(@Body() body: OAuthExchangeDto) {
+    return this.authService.oauthExchange(body.code);
   }
 
   @Get('social-accounts')
@@ -272,5 +329,126 @@ export class AuthController {
     @Param('id') id: string,
   ) {
     return this.authService.revokeSession(actor, id);
+  }
+
+  private async startOAuth(
+    provider: 'google' | 'facebook',
+    query: Record<string, unknown>,
+    response: Response,
+  ) {
+    const result = await this.authService.oauthRedirect(provider, query);
+    response.cookie(this.oauthCookieName(provider), result.state, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 10 * 60_000,
+      path: '/',
+    });
+    response.cookie(
+      this.oauthReturnCookieName(provider),
+      JSON.stringify({
+        locale: this.oauthLocale(query['locale']),
+        next: this.safeNext(query['next']),
+      }),
+      {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 10 * 60_000,
+        path: '/',
+      },
+    );
+    return response.redirect(302, result.redirectUrl);
+  }
+
+  private async finishOAuth(
+    provider: 'google' | 'facebook',
+    query: Record<string, unknown>,
+    request: Request,
+    response: Response,
+  ) {
+    const cookieName = this.oauthCookieName(provider);
+    const returnCookieName = this.oauthReturnCookieName(provider);
+    const fallback = this.oauthReturnContext(
+      this.cookieValue(request.headers.cookie, returnCookieName),
+    );
+    try {
+      const result = await this.authService.oauthCallback(
+        provider,
+        query,
+        this.cookieValue(request.headers.cookie, cookieName),
+      );
+      response.clearCookie(cookieName, { path: '/' });
+      response.clearCookie(returnCookieName, { path: '/' });
+      const target = new URL(
+        `/${result.locale}/auth/social-callback`,
+        this.webUserUrl(),
+      );
+      target.searchParams.set('code', result.code);
+      if (result.next) target.searchParams.set('next', result.next);
+      return response.redirect(302, target.toString());
+    } catch (error) {
+      response.clearCookie(cookieName, { path: '/' });
+      response.clearCookie(returnCookieName, { path: '/' });
+      const target = new URL(`/${fallback.locale}/login`, this.webUserUrl());
+      target.searchParams.set('socialError', this.oauthErrorCode(error));
+      if (fallback.next) target.searchParams.set('next', fallback.next);
+      return response.redirect(302, target.toString());
+    }
+  }
+
+  private oauthCookieName(provider: 'google' | 'facebook'): string {
+    return `safaar_oauth_${provider}_state`;
+  }
+
+  private oauthReturnCookieName(provider: 'google' | 'facebook'): string {
+    return `safaar_oauth_${provider}_return`;
+  }
+
+  private cookieValue(header: string | undefined, name: string) {
+    if (!header) return undefined;
+    for (const item of header.split(';')) {
+      const [key, ...value] = item.trim().split('=');
+      if (key === name) return decodeURIComponent(value.join('='));
+    }
+    return undefined;
+  }
+
+  private webUserUrl(): string {
+    return process.env.WEB_USER_URL ?? 'http://localhost:3000';
+  }
+
+  private oauthReturnContext(value: string | undefined): {
+    locale: 'uz' | 'ru' | 'en';
+    next: string;
+  } {
+    try {
+      const parsed = JSON.parse(value ?? '{}') as Record<string, unknown>;
+      return {
+        locale: this.oauthLocale(parsed['locale']),
+        next: this.safeNext(parsed['next']),
+      };
+    } catch {
+      return { locale: 'uz', next: '' };
+    }
+  }
+
+  private oauthLocale(value: unknown): 'uz' | 'ru' | 'en' {
+    return value === 'ru' || value === 'en' ? value : 'uz';
+  }
+
+  private safeNext(value: unknown): string {
+    const next = String(value ?? '');
+    return next.startsWith('/') && !next.startsWith('//') ? next : '';
+  }
+
+  private oauthErrorCode(error: unknown): string {
+    if (error instanceof HttpException) {
+      const response = error.getResponse();
+      if (response && typeof response === 'object' && 'code' in response) {
+        return String((response as { code?: unknown }).code ?? 'OAUTH_FAILED');
+      }
+    }
+    return 'OAUTH_FAILED';
   }
 }

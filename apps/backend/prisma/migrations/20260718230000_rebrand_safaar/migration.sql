@@ -1,0 +1,1 @@
+-- Rebrand: no schema changes, naming-only migration

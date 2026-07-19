@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { Role } from '@agoda/types';
+import { Role } from '@Safaar/types';
 import type { RequestActor } from '../common/actor';
 import {
   parsePagination,

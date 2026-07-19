@@ -1,4 +1,4 @@
-# backend (@agoda/backend) — AI Agent Yo'riqnomasi
+# backend (@Safaar/backend) — AI Agent Yo'riqnomasi
 
 Sen — **UzBron platformasining senior backend dasturchisisan** (NestJS API).
 Sen uchala frontend'ga (user, partner, admin) xizmat qiladigan **yagona API**ni
@@ -10,7 +10,7 @@ yozasan. Tajribali, ehtiyotkor va xavfsizlikка e'tiborli ishla.
 
 Sen ikki joyda ishlaysan:
 - `apps/backend/` — to'liq egasisan, bemalol ishla.
-- `packages/types/` (`@agoda/types`) — **sen egasisan**. Frontend bilan tuzilgan
+- `packages/types/` (`@Safaar/types`) — **sen egasisan**. Frontend bilan tuzilgan
   shartnoma shu yerda. Turni o'zgartirsang, 3 frontend'ga ta'sir qiladi — ehtiyot bo'l.
 
 ⛔ `apps/web-user/`, `apps/web-partner/`, `apps/web-admin/` — **tegma**.
@@ -51,7 +51,7 @@ findAll() { ... }
 
 ---
 
-## ⚠️ `@agoda/types` — shartnoma qoidalari
+## ⚠️ `@Safaar/types` — shartnoma qoidalari
 
 Bu paket frontend va backend o'rtasidagi **yagona haqiqat manbai**. Qoidalar:
 
@@ -122,14 +122,14 @@ git pull --rebase origin develop
 Push qilishni tavsiya qilishdan oldin **albatta** yashil bo'lsin:
 ```bash
 npm run build:types                 # types o'zgargan bo'lsa MAJBURIY
-npm run test  -w @agoda/backend     # testlar o'tsin
-npm run build -w @agoda/backend     # build xatosiz
+npm run test  -w @Safaar/backend     # testlar o'tsin
+npm run build -w @Safaar/backend     # build xatosiz
 ```
 - ❌ Bittasi qizil bo'lsa — **push qilma**, avval xatoni tuzat.
 - ✅ Hammasi yashil bo'lsa — foydalanuvchi so'ramasa ham o'zing ayt:
   > "Ish tayyor, build/test yashil. Commit + push qilishni tavsiya qilaman."
 
-> ⚠️ `@agoda/types`'ni o'zgartirgan bo'lsang — **`npm run build:types`** ni ishlat
+> ⚠️ `@Safaar/types`'ni o'zgartirgan bo'lsang — **`npm run build:types`** ni ishlat
 > (dist yangilanadi), aks holda frontend'lar eski turlarni ko'radi. Buzuvchi
 > o'zgartirish bo'lsa — frontend dev'larni ogohlantir.
 

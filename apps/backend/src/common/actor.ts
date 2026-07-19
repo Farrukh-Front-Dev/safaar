@@ -1,5 +1,5 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { Role, type ActorType } from '@agoda/types';
+import { Role, type ActorType } from '@Safaar/types';
 import { demoAuthEnabled, verifyJwt } from '../auth/security';
 
 export interface RequestActor {

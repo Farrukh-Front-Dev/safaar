@@ -6,7 +6,7 @@ import {
   Optional,
   UnauthorizedException,
 } from '@nestjs/common';
-import { BookingStatus, Role } from '@agoda/types';
+import { BookingStatus, Role } from '@Safaar/types';
 import type { RequestActor } from '../common/actor';
 import {
   paginateArray,
@@ -425,7 +425,12 @@ export class PartnersService {
     const orderDir = pagination.order === 'asc' ? 'ASC' : 'DESC';
 
     const rows = await this.pg.query(
-      `SELECT * FROM hotels WHERE partner_organization_id = $1 ORDER BY ${sortColumn} ${orderDir} LIMIT $2 OFFSET $3`,
+      `SELECT * FROM hotels
+       WHERE partner_organization_id = $1
+         AND deleted_at IS NULL
+       ORDER BY CASE WHEN status = 'draft' THEN 0 ELSE 1 END,
+                ${sortColumn} ${orderDir}
+       LIMIT $2 OFFSET $3`,
       [organizationId, pagination.limit, pagination.offset],
     );
     return this.hydratePartnerHotels(rows);
@@ -554,17 +559,19 @@ export class PartnersService {
   async submitHotelReview(actor: RequestActor | undefined, id: string) {
     await this.assertListingSubmissionReady(actor, id);
     const now = new Date().toISOString();
+    const submittedBy = this.submissionActorId(actor);
     const result = await this.pg.query(
       `UPDATE hotels
        SET status = 'pending_review',
-           submitted_at = $1,
-           reviewed_at = null,
-           reviewed_by = null,
-           rejection_reason = null,
-           updated_at = $1
-       WHERE id = $2
-       RETURNING *`,
-      [now, id],
+            submitted_at = $1,
+            submitted_by = $2::uuid,
+            reviewed_at = null,
+            reviewed_by = null,
+            rejection_reason = null,
+            updated_at = $1
+        WHERE id = $3
+        RETURNING *`,
+      [now, submittedBy, id],
     );
     const updated = result[0];
     this.notifyListingChanged(updated, actor, 'submitted', ['status']);
@@ -1273,7 +1280,6 @@ export class PartnersService {
     if (sets.length > 0) {
       sets.push(`updated_at = $${idx++}`);
       params.push(now);
-      params.push(id);
       await this.pg.query(
         `UPDATE hotels SET ${sets.join(', ')},
            status = CASE WHEN status = 'published' THEN 'pending_review'::"HotelStatus" ELSE status END,
@@ -1353,6 +1359,7 @@ export class PartnersService {
   ) {
     const now = new Date().toISOString();
     const status = listingStatus(body.status);
+    const submittedBy = this.submissionActorId(actor);
     if (status === 'published') {
       throw new ForbiddenException({
         code: 'LISTING_REVIEW_REQUIRED',
@@ -1365,13 +1372,14 @@ export class PartnersService {
       await this.assertHotel(id, actor);
     }
     const result = await this.pg.query(
-      `UPDATE hotels SET status = $1, updated_at = $2,
-         submitted_at = CASE WHEN $1 = 'pending_review' THEN $2 ELSE submitted_at END,
-         reviewed_at = CASE WHEN $1 = 'pending_review' THEN null ELSE reviewed_at END,
-         reviewed_by = CASE WHEN $1 = 'pending_review' THEN null ELSE reviewed_by END,
-         rejection_reason = CASE WHEN $1 = 'pending_review' THEN null ELSE rejection_reason END
-       WHERE id = $3 RETURNING *`,
-      [status, now, id],
+      `UPDATE hotels SET status = $1::"HotelStatus", updated_at = $2,
+         submitted_at = CASE WHEN $1::"HotelStatus" = 'pending_review'::"HotelStatus" THEN $2 ELSE submitted_at END,
+         submitted_by = CASE WHEN $1::"HotelStatus" = 'pending_review'::"HotelStatus" THEN $3::uuid ELSE submitted_by END,
+         reviewed_at = CASE WHEN $1::"HotelStatus" = 'pending_review'::"HotelStatus" THEN null ELSE reviewed_at END,
+         reviewed_by = CASE WHEN $1::"HotelStatus" = 'pending_review'::"HotelStatus" THEN null ELSE reviewed_by END,
+         rejection_reason = CASE WHEN $1::"HotelStatus" = 'pending_review'::"HotelStatus" THEN null ELSE rejection_reason END
+       WHERE id = $4 RETURNING *`,
+      [status, now, submittedBy, id],
     );
     const updated = result[0];
     this.notifyListingChanged(
@@ -1522,7 +1530,16 @@ export class PartnersService {
     const orderDir = pagination.order === 'asc' ? 'ASC' : 'DESC';
 
     return this.pg.query(
-      `SELECT * FROM bookings WHERE partner_organization_id = $1 ORDER BY ${sortColumn} ${orderDir} LIMIT $2 OFFSET $3`,
+      `SELECT b.*,
+              u.first_name AS user_first_name,
+              u.last_name  AS user_last_name,
+              u.email      AS user_email,
+              u.phone      AS user_phone
+       FROM bookings b
+       LEFT JOIN users u ON u.id = b.user_id
+       WHERE b.partner_organization_id = $1
+       ORDER BY ${sortColumn} ${orderDir}
+       LIMIT $2 OFFSET $3`,
       [organizationId, pagination.limit, pagination.offset],
     );
   }
@@ -2128,6 +2145,15 @@ export class PartnersService {
     return actor.organizationId;
   }
 
+  private submissionActorId(actor: RequestActor | undefined): string {
+    const actorId = String(actor?.id ?? '');
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      actorId,
+    )
+      ? actorId
+      : this.organizationId(actor);
+  }
+
   private normalizePhone(value: unknown): string {
     const raw = String(value ?? '').trim();
     if (!raw) {
@@ -2320,7 +2346,7 @@ export class PartnersService {
         reviews_count: Number(row['reviews_count'] ?? 0),
         name: localizedTextFromMap(
           nameMap.get(id),
-          String(row['slug'] ?? 'Mehmonxona'),
+          row['status'] === 'draft' ? '' : String(row['slug'] ?? 'Mehmonxona'),
         ),
         description: localizedTextFromMap(descriptionMap.get(id), ''),
         short_description: localizedTextFromMap(
@@ -2369,6 +2395,9 @@ export class PartnersService {
       action,
       sections,
     });
+    if (action === 'submitted') {
+      this.events.adminDashboardUpdated();
+    }
   }
 
   private async resolveCityId(value: unknown): Promise<string> {
