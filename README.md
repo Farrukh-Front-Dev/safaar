@@ -51,7 +51,7 @@ npm run test                # testlar
 
 ## Loyiha haqida
 
-**SAFAAR.uz** — O'zbekistonning shahar mehmonxonalaridan tortib tog' bag'ridagi eng chekka oromgohlargacha bo'lgan barcha dam olish joylarini bitta platformada birlashtiruvchi milliy bron ekotizimi. To'liq texnik topshiriq: [`TZ_UzBron_Platform.md`](./TZ_UzBron_Platform.md).
+**SAFAAR.uz** — O'zbekistonning shahar mehmonxonalaridan tortib tog' bag'ridagi eng chekka oromgohlargacha bo'lgan barcha dam olish joylarini bitta platformada birlashtiruvchi milliy bron ekotizimi. To'liq texnik topshiriq: [`TZ_Safaar_Platform.md`](./TZ_Safaar_Platform.md).
 
 ---
 

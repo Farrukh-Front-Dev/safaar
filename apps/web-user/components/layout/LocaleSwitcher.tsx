@@ -60,7 +60,7 @@ export function LocaleSwitcher({ current, light }: { current: Locale; light?: bo
           light
             ? open
               ? "border-primary-200 bg-primary-50 text-primary-700 shadow-sm"
-              : "border-slate-200 bg-white text-slate-900 shadow-btn hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:shadow-btn-active active:scale-[0.97]"
+              : "border-slate-300 bg-white text-slate-900 shadow-btn hover:bg-slate-50 hover:border-slate-400 hover:shadow-btn-hover active:bg-slate-100 active:shadow-btn-active active:scale-[0.97]"
             : open
               ? "border-white/50 bg-white/20 text-white shadow-sm"
               : "border-white/40 bg-transparent text-white/80 hover:bg-white/10 hover:border-white/60 hover:text-white",

@@ -26,7 +26,6 @@
     "total": "Summa",
     "type": "Tur",
     "hotel": "Mehmonxona",
-    "bus": "Avtobus",
     "view": "Ko'rish",
     "statuses": {
       "PENDING": "Kutilmoqda",
@@ -42,7 +41,6 @@
     "title": "Sevimlilar",
     "empty": "Sevimlilar ro'yxati bo'sh.",
     "hotel": "Mehmonxona",
-    "bus": "Avtobus",
     "view": "Ko'rish"
   },
   "bonuses": {

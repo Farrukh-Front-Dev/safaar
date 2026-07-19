@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getSession } from "@/lib/auth/session";
-import { getProfile } from "@/lib/api/users";
+import { api } from "@/lib/api";
 import { Card, CardBody } from "@/components/ui/Card";
 import { ProfileForm } from "@/components/account/ProfileForm";
 import type { ProfileView } from "@/types/view";
@@ -22,7 +22,7 @@ export default async function AccountProfilePage({
   }
 
   const dict = await getDictionary(locale, "account");
-  const profile: ProfileView | null = await getProfile(session).catch(
+  const profile: ProfileView | null = await api.users.getProfile({ token: session.accessToken }).catch(
     () => null,
   );
 
@@ -30,7 +30,7 @@ export default async function AccountProfilePage({
     return (
       <Card>
         <CardBody>
-          <p className="text-sm text-amber-700 dark:text-amber-300">
+          <p className="text-sm text-amber-700">
             {dict.profile.error}
           </p>
         </CardBody>

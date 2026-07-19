@@ -1,4 +1,4 @@
-# UzBron Monorepo — AI Agent Yo'riqnomasi
+# Safaar Monorepo — AI Agent Yo'riqnomasi
 
 Bu fayl monorepo **root**ida. Agar AI agent shu darajadan ishlayotgan bo'lsa,
 quyidagi tuzilma va chegaralarga **qat'iy** rioya qilsin.
@@ -10,16 +10,16 @@ quyidagi tuzilma va chegaralarga **qat'iy** rioya qilsin.
 
 ## Loyiha haqida
 
-**UzBron** — O'zbekiston bo'ylab mehmonxona va avtobus bron qilish platformasi
+**Safaar** — O'zbekiston bo'ylab mehmonxonalarni bron qilish platformasi
 (Agoda'ga o'xshash). Bitta npm workspace monorepo: 3 ta mustaqil frontend +
 1 ta backend API + umumiy turlar paketi.
 
 ```
 apps/
 ├── backend/      @agoda/backend      NestJS API        → :4000
-├── web-user/     @agoda/web-user     uzbron.uz         → :3000   (mijozlar)
-├── web-partner/  @agoda/web-partner  partner.uzbron.uz → :3001   (hamkorlar)
-└── web-admin/    @agoda/web-admin    admin.uzbron.uz   → :3002   (super admin)
+├── web-user/     @agoda/web-user     safaar.uz         → :3000   (mijozlar)
+├── web-partner/  @agoda/web-partner  partner.safaar.uz → :3001   (hamkorlar)
+└── web-admin/    @agoda/web-admin    admin.safaar.uz   → :3002   (super admin)
 packages/
 └── types/        @agoda/types        API shartnomasi (umumiy TS turlari)
 ```

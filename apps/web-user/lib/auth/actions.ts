@@ -2,8 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { Role } from "@agoda/types";
-import { ApiRequestError } from "@/lib/api";
-import { completeProfile, sendOtp, verifyOtp } from "@/lib/api/auth";
+import { api, ApiRequestError } from "@/lib/api";
 import { clearSession, getSession, setSession } from "@/lib/auth/session";
 import { defaultLocale, isLocale } from "@/i18n/config";
 
@@ -18,11 +17,11 @@ export async function requestOtpAction(
   _prev: OtpState,
   formData: FormData,
 ): Promise<OtpState> {
-  const email = String(formData.get("email") ?? "").trim();
-  if (!email) return { ok: false, error: "EMAIL_REQUIRED" };
+  const phone = String(formData.get("phone") ?? "").trim();
+  if (!phone) return { ok: false, error: "PHONE_REQUIRED" };
 
   try {
-    const result = await sendOtp(email);
+    const result = await api.auth.sendOtp(phone);
     return { ok: true, devCode: result.devCode };
   } catch (error) {
     return {
@@ -43,17 +42,18 @@ export async function verifyOtpAction(
   _prev: VerifyState,
   formData: FormData,
 ): Promise<VerifyState> {
-  const email = String(formData.get("email") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
   const code = String(formData.get("code") ?? "").trim();
   const rawLocale = String(formData.get("locale") ?? defaultLocale);
   const locale = isLocale(rawLocale) ? rawLocale : defaultLocale;
   const next = String(formData.get("next") ?? "");
   const firstName = String(formData.get("firstName") ?? "").trim();
   const lastName = String(formData.get("lastName") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
   try {
-    const result = await verifyOtp(email, code);
+    const result = await api.auth.verifyOtp(phone, code);
     await setSession({
       userId: result.user.id,
       role: Role.USER,
@@ -72,10 +72,10 @@ export async function verifyOtpAction(
         const passwordError = validatePassword(password);
         if (passwordError) return { error: passwordError };
 
-        await completeProfile(session.accessToken, {
+        await api.auth.completeProfile(session.accessToken, {
           firstName,
           lastName: lastName || undefined,
-          email,
+          email: email || undefined,
           password: password || undefined,
         });
         await setSession({ ...session });
@@ -128,7 +128,7 @@ export async function completeProfileAction(
     const session = await getSession();
     if (!session) return { error: "SESSION_EXPIRED" };
 
-    await completeProfile(session.accessToken, {
+    await api.auth.completeProfile(session.accessToken, {
       firstName,
       lastName: lastName || undefined,
       email,

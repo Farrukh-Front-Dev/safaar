@@ -1,8 +1,7 @@
 "use server";
 
-import { ApiRequestError } from "@/lib/api";
+import { api, ApiRequestError } from "@/lib/api";
 import { getSession } from "@/lib/auth/session";
-import { addFavorite, removeFavorite } from "@/lib/api/users";
 
 /**
  * Sevimli (favorite) server action'lari. Client `FavoriteButton` ularni
@@ -28,7 +27,10 @@ export async function addFavoriteAction(
   if (!targetId) return { ok: false };
 
   try {
-    const favorite = await addFavorite(session, { targetType, targetId });
+    const favorite = await api.users.addFavorite(
+      { targetType, targetId },
+      { token: session.accessToken },
+    );
     return { ok: true, id: favorite.id };
   } catch (error) {
     return {
@@ -46,7 +48,7 @@ export async function removeFavoriteAction(
   if (!favoriteId) return { ok: false };
 
   try {
-    await removeFavorite(session, favoriteId);
+    await api.users.removeFavorite(favoriteId, { token: session.accessToken });
     return { ok: true };
   } catch {
     return { ok: false };

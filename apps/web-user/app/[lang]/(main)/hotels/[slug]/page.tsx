@@ -2,12 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
-import { getHotel } from "@/lib/api/hotels";
-import { getAmenities } from "@/lib/api/catalog";
-import { getHotelReviews } from "@/lib/api/reviews";
-import { findFavoriteId } from "@/lib/api/users";
+import { api, ApiRequestError } from "@/lib/api";
 import { getSession } from "@/lib/auth/session";
-import { ApiRequestError } from "@/lib/api";
 import { formatSum } from "@/lib/money";
 import { HotelGallery } from "@/components/hotels/HotelGallery";
 import { RoomList } from "@/components/hotels/RoomList";
@@ -35,7 +31,7 @@ export async function generateMetadata({
   const { lang, slug } = await params;
   if (!isLocale(lang)) return {};
   try {
-    const hotel = await getHotel(lang, slug);
+    const hotel = await api.hotels.getHotel(lang, slug);
     return {
       title: `${hotel.name} — Safaar`,
       description: hotel.description?.slice(0, 160),
@@ -60,7 +56,7 @@ export default async function HotelDetailPage({
   const dict = await getDictionary(locale, "hotelDetail");
 
   // 404 → notFound(); boshqa xato → null (xato holati ko'rsatiladi).
-  const hotel = await getHotel(locale, slug).catch((error: unknown) => {
+  const hotel = await api.hotels.getHotel(locale, slug).catch((error: unknown) => {
     if (error instanceof ApiRequestError && error.statusCode === 404) {
       notFound();
     }
@@ -77,16 +73,16 @@ export default async function HotelDetailPage({
     );
   }
 
-  const amenities = await getAmenities(locale).catch(() => []);
+  const amenities = await api.catalog.getAmenities(locale).catch(() => []);
   const amenityName = new Map(amenities.map((a) => [a.id, a.name]));
 
   const session = await getSession();
   const favoriteId = session
-    ? await findFavoriteId(session, hotel.id).catch(() => null)
+    ? await api.users.findFavoriteId(hotel.id, { token: session.accessToken }).catch(() => null)
     : null;
   const favDict = await getDictionary(locale, "favorites");
 
-  const reviews = await getHotelReviews(hotel.id).catch(() => []);
+  const reviews = await api.reviews.getHotelReviews(hotel.id).catch(() => []);
   const reviewsDict = await getDictionary(locale, "reviews");
 
   return (

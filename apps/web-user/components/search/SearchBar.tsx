@@ -40,11 +40,10 @@ export function SearchBar({
     sanatoriums: "sanatorium",
     resorts: "resort",
   };
-  const [activeType, setActiveType] = useState<PropertyType>(
+  const activeType =
     typePathsReverse[typeFromPath] ||
-      (searchParams.get("type") as PropertyType) ||
-      "hotel",
-  );
+    (searchParams.get("type") as PropertyType) ||
+    "hotel";
   const today = new Date().toISOString().split("T")[0];
 
   const typePaths: Record<PropertyType, string> = {
@@ -54,10 +53,6 @@ export function SearchBar({
     sanatorium: `/${locale}/sanatoriums`,
     resort: `/${locale}/resorts`,
   };
-
-  function onTypeChange(type: PropertyType) {
-    setActiveType(type);
-  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -167,11 +162,11 @@ export function SearchBar({
           </div>
         </div>
 
-        {/* Desktop search button — overhanging */}
+        {/* Desktop search button */}
         <div className="relative hidden h-0 justify-center md:flex">
           <button
             type="submit"
-            className="absolute -top-3 inline-flex items-center gap-2.5 rounded-full bg-blue-600 px-10 py-3.5 text-sm font-bold uppercase tracking-wider text-white shadow-lg shadow-blue-200 transition-all duration-200 hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-200 active:scale-[0.97]"
+            className="absolute top-4 inline-flex items-center gap-2.5 rounded-full bg-blue-600 px-10 py-3.5 text-sm font-bold uppercase tracking-wider text-white shadow-lg shadow-blue-200 transition-all duration-200 hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-200 active:scale-[0.97]"
           >
             <Search className="h-4 w-4" />
             <span>{dict.submit}</span>
@@ -179,7 +174,7 @@ export function SearchBar({
         </div>
       </form>
 
-      <div className="h-8 max-md:hidden" />
+      <div className="h-16 max-md:hidden" />
     </div>
   );
 }

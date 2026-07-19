@@ -28,11 +28,11 @@ export function BackButton({ href, className }: Props) {
       onClick={handleClick}
       aria-label="Orqaga"
       className={cn(
-        "inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-btn transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 hover:shadow-btn-hover active:scale-[0.97] active:shadow-btn-active",
+        "inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-800 shadow-btn transition-all duration-150 hover:border-slate-400 hover:bg-slate-50 hover:text-slate-900 hover:shadow-btn-hover active:scale-[0.97] active:shadow-btn-active",
         className,
       )}
     >
-      <ArrowLeft className="h-4 w-4" aria-hidden />
+      <ArrowLeft className="h-4 w-4" strokeWidth={2.5} aria-hidden />
     </button>
   );
 }

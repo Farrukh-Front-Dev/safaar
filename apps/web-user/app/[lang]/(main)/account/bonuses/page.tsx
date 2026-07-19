@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getSession } from "@/lib/auth/session";
-import { getBonuses } from "@/lib/api/users";
+import { api } from "@/lib/api";
 import { formatSum } from "@/lib/money";
 import { Card, CardBody } from "@/components/ui/Card";
 import type { BonusView } from "@/types/view";
@@ -24,7 +24,7 @@ export default async function AccountBonusesPage({
   }
 
   const dict = await getDictionary(locale, "account");
-  const bonuses: BonusView | null = await getBonuses(session).catch(() => null);
+  const bonuses: BonusView | null = await api.users.getBonuses({ token: session.accessToken }).catch(() => null);
 
   const balanceSum = bonuses?.balanceSum ?? 0;
   const entries = bonuses?.entries ?? [];
@@ -59,7 +59,7 @@ export default async function AccountBonusesPage({
         <Card>
           <CardBody className="flex flex-col gap-3">
             <h2 className="text-sm font-semibold">{dict.bonuses.history}</h2>
-            <ul className="flex flex-col divide-y divide-black/5 dark:divide-white/10">
+            <ul className="flex flex-col divide-y divide-black/5">
               {entries.map((entry) => {
                 const positive = entry.amountSum >= 0;
                 return (
@@ -78,8 +78,8 @@ export default async function AccountBonusesPage({
                     <span
                       className={
                         positive
-                          ? "font-semibold text-green-600 dark:text-green-400"
-                          : "font-semibold text-red-600 dark:text-red-400"
+                          ? "font-semibold text-green-600"
+                          : "font-semibold text-red-600"
                       }
                     >
                       {positive ? "+" : "−"}

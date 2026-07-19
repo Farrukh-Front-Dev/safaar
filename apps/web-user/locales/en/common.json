@@ -9,7 +9,6 @@
     "sanatoriums": "Sanatoriums",
     "resorts": "Resorts",
     "restaurants": "Restaurants",
-    "transport": "Transport",
     "attractions": "Attractions",
     "about": "About us",
     "help": "Help",
@@ -33,7 +32,6 @@
   },
   "search": {
     "hotelsTab": "Hotel",
-    "busesTab": "Bus",
     "city": "City",
     "cityPlaceholder": "Select a city",
     "checkIn": "Check-in",
@@ -42,7 +40,7 @@
     "submit": "Search"
   },
   "footer": {
-    "tagline": "Book hotels and buses across Uzbekistan.",
+    "tagline": "Book hotels and resort stays across Uzbekistan.",
     "rights": "All rights reserved."
   }
 }

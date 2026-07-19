@@ -13,6 +13,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { Role } from "@agoda/types";
+import { config } from "../config";
 
 const COOKIE_NAME = "safaar_session";
 const MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 kun
@@ -42,7 +43,7 @@ export async function setSession(session: Session): Promise<void> {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
-    secure: process.env.NODE_ENV === "production",
+    secure: config.isProd,
     maxAge: MAX_AGE_SECONDS,
   });
 }
@@ -52,7 +53,9 @@ export async function clearSession(): Promise<void> {
   store.delete(COOKIE_NAME);
 }
 
-/** Backend dev auth headerlari (himoyalangan endpointlar uchun). */
+/** Backend auth headerlari (himoyalangan endpointlar uchun). */
 export function devAuthHeaders(session: Session): Record<string, string> {
-  return { "x-user-role": session.role, "x-user-id": session.userId };
+  return {
+    Authorization: `Bearer ${session.accessToken}`,
+  };
 }

@@ -9,7 +9,6 @@
     "sanatoriums": "Sanatoriylar",
     "resorts": "Oromgohlar",
     "restaurants": "Restoranlar",
-    "transport": "Transport",
     "attractions": "Attraksionlar",
     "about": "Biz haqimizda",
     "help": "Yordam",
@@ -33,7 +32,6 @@
   },
   "search": {
     "hotelsTab": "Mehmonxona",
-    "busesTab": "Avtobus",
     "city": "Shahar",
     "cityPlaceholder": "Shaharni tanlang",
     "checkIn": "Kirish sanasi",
@@ -42,7 +40,7 @@
     "submit": "Qidirish"
   },
   "footer": {
-    "tagline": "O'zbekiston bo'ylab mehmonxona va avtobus bron qilish.",
+    "tagline": "O'zbekiston bo'ylab mehmonxona va dam olish joylarini bron qilish.",
     "rights": "Barcha huquqlar himoyalangan."
   }
 }

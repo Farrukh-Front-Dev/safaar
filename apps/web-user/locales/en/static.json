@@ -1,9 +1,9 @@
 {
   "about": {
     "title": "About us",
-    "intro": "Safaar is an online platform for booking hotels and bus tickets across Uzbekistan. Our goal is to make travel easy, reliable and affordable for everyone.",
+    "intro": "Safaar is an online platform for booking hotels across Uzbekistan. Our goal is to make travel easy, reliable and affordable for everyone.",
     "missionTitle": "Our mission",
-    "mission": "By bringing local hotels and bus companies together on a single platform, we offer customers transparent prices and a convenient booking experience.",
+    "mission": "By bringing local hotels together on a single platform, we offer customers transparent prices and a convenient booking experience.",
     "stats": {
       "cities": "Cities",
       "partners": "Partners",
@@ -17,7 +17,7 @@
       },
       {
         "title": "Convenience",
-        "text": "Book a hotel or bus in a few steps — from any device."
+        "text": "Book a hotel in a few steps — from any device."
       },
       {
         "title": "Local focus",
@@ -31,7 +31,7 @@
     "faqs": [
       {
         "q": "How do I make a booking?",
-        "a": "Search for a hotel or bus, choose the right option and click \"Book\". Confirmation is done via an SMS code sent to your phone number."
+        "a": "Search for a hotel, choose the right option and click \"Book\". Confirmation is done via an SMS code sent to your phone number."
       },
       {
         "q": "How do I pay?",
@@ -55,7 +55,7 @@
     "sections": [
       {
         "heading": "1. General terms",
-        "body": "By using the Safaar platform, you agree to these terms. The platform acts as an intermediary for booking hotel and bus services."
+        "body": "By using the Safaar platform, you agree to these terms. The platform acts as an intermediary for booking hotel services."
       },
       {
         "heading": "2. Booking and payment",

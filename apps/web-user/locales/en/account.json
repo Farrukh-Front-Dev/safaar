@@ -26,7 +26,6 @@
     "total": "Total",
     "type": "Type",
     "hotel": "Hotel",
-    "bus": "Bus",
     "view": "View",
     "statuses": {
       "PENDING": "Pending",
@@ -42,7 +41,6 @@
     "title": "Favorites",
     "empty": "Your favorites list is empty.",
     "hotel": "Hotel",
-    "bus": "Bus",
     "view": "View"
   },
   "bonuses": {

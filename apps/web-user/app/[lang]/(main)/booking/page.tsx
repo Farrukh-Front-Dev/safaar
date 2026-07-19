@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getSession } from "@/lib/auth/session";
-import { getHotel } from "@/lib/api/hotels";
-import { CheckoutForm } from "@/components/checkout/CheckoutForm";
+import { api } from "@/lib/api";
+import { CheckoutForm } from "./_components/CheckoutForm";
 import { BackButton } from "@/components/ui/BackButton";
 
 export const metadata: Metadata = {
@@ -52,7 +52,7 @@ export default async function CheckoutPage({
 
   const dict = await getDictionary(locale, "checkout");
 
-  const hotel = await getHotel(locale, hotelId).catch(() => null);
+  const hotel = await api.hotels.getHotel(locale, hotelId).catch(() => null);
   const room = hotel?.rooms.find((r) => r.id === roomId);
   if (!hotel || !room) {
     redirect(`/${locale}/hotels`);

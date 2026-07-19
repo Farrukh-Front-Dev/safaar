@@ -1,0 +1,31 @@
+{
+  "name": "@agoda/api-client",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Safaar platformasi uchun umumiy isomorphic API client va SDK.",
+  "main": "./dist/index.js",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "src",
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@agoda/types": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

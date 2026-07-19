@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getSession } from "@/lib/auth/session";
-import { getFavorites } from "@/lib/api/users";
+import { api } from "@/lib/api";
 import { Card, CardBody } from "@/components/ui/Card";
 import type { FavoriteView } from "@/types/view";
 
@@ -23,7 +23,7 @@ export default async function AccountFavoritesPage({
   }
 
   const dict = await getDictionary(locale, "account");
-  const favorites: FavoriteView[] = await getFavorites(session).catch(() => []);
+  const favorites: FavoriteView[] = await api.users.getFavorites({ token: session.accessToken }).catch(() => []);
 
   if (favorites.length === 0) {
     return (
@@ -37,7 +37,6 @@ export default async function AccountFavoritesPage({
 
   const typeLabels: Record<string, string> = {
     hotel: dict.favorites.hotel,
-    bus: dict.favorites.bus,
   };
 
   return (
@@ -48,10 +47,10 @@ export default async function AccountFavoritesPage({
           <li key={favorite.id}>
             <Card>
               <CardBody className="flex items-center gap-3">
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
                   {typeLabel}
                 </span>
-                <span className="text-sm text-slate-600 dark:text-slate-300">
+                <span className="text-sm text-slate-600">
                   {favorite.targetId}
                 </span>
               </CardBody>

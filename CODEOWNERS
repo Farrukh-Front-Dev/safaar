@@ -1,16 +1,16 @@
-# UzBron — kod egaligi (CODEOWNERS)
+# Safaar — kod egaligi (CODEOWNERS)
 #
 # Har bir papkani kim boshqarishi shu yerda belgilanadi.
 # Birov boshqa papkaga PR yuborsa, GitHub avtomatik egadan review so'raydi.
 # (Ishlashi uchun har bir username repo'ga collaborator/a'zo bo'lishi shart.)
 
-# Mijozlar sayti — uzbron.uz
+# Mijozlar sayti — safaar.uz
 /apps/web-user/        @Farrukh-Front-Dev
 
-# Hamkor kabineti — partner.uzbron.uz
+# Hamkor kabineti — partner.safaar.uz
 /apps/web-partner/     @adhambek7717
 
-# Super Admin — admin.uzbron.uz
+# Super Admin — admin.safaar.uz
 /apps/web-admin/       @adhambek7717
 
 # Backend API + umumiy turlar shartnomasi

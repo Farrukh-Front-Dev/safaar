@@ -1,9 +1,9 @@
 {
   "about": {
     "title": "Biz haqimizda",
-    "intro": "Safaar — O'zbekiston bo'ylab mehmonxona va avtobus chiptalarini onlayn bron qilish platformasi. Bizning maqsadimiz — sayohatni har bir inson uchun oson, ishonchli va arzon qilish.",
+    "intro": "Safaar — O'zbekiston bo'ylab mehmonxonalarni onlayn bron qilish platformasi. Bizning maqsadimiz — sayohatni har bir inson uchun oson, ishonchli va arzon qilish.",
     "missionTitle": "Bizning maqsad",
-    "mission": "Mahalliy mehmonxonalar va avtobus kompaniyalarini yagona platformada birlashtirib, mijozlarga shaffof narxlar va qulay bron tajribasini taqdim etamiz.",
+    "mission": "Mahalliy mehmonxonalarni yagona platformada birlashtirib, mijozlarga shaffof narxlar va qulay bron tajribasini taqdim etamiz.",
     "stats": {
       "cities": "Shaharlar",
       "partners": "Hamkorlar",
@@ -17,7 +17,7 @@
       },
       {
         "title": "Qulaylik",
-        "text": "Bir necha bosqichda mehmonxona yoki avtobus bron qiling — istalgan qurilmadan."
+        "text": "Bir necha bosqichda mehmonxona bron qiling — istalgan qurilmadan."
       },
       {
         "title": "Mahalliylik",
@@ -31,7 +31,7 @@
     "faqs": [
       {
         "q": "Qanday qilib bron qilaman?",
-        "a": "Mehmonxona yoki avtobusni qidiring, mosini tanlang va \"Bron qilish\" tugmasini bosing. Telefon raqamingiz orqali SMS-kod bilan tasdiqlanadi."
+        "a": "Mehmonxonani qidiring, mosini tanlang va \"Bron qilish\" tugmasini bosing. Telefon raqamingiz orqali SMS-kod bilan tasdiqlanadi."
       },
       {
         "q": "To'lovni qanday amalga oshiraman?",
@@ -55,7 +55,7 @@
     "sections": [
       {
         "heading": "1. Umumiy qoidalar",
-        "body": "Safaar platformasidan foydalanish orqali siz ushbu shartlarga rozilik bildirasiz. Platforma mehmonxona va avtobus xizmatlarini bron qilish uchun vositachi sifatida xizmat qiladi."
+        "body": "Safaar platformasidan foydalanish orqali siz ushbu shartlarga rozilik bildirasiz. Platforma mehmonxona xizmatlarini bron qilish uchun vositachi sifatida xizmat qiladi."
       },
       {
         "heading": "2. Bron va to'lov",

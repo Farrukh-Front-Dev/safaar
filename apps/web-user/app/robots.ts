@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://safaar.uz";
+import { config } from "@/lib/config";
+
+const SITE_URL = config.siteUrl;
 
 /**
  * robots.txt — public sahifalarni indekslashga ruxsat, shaxsiy/auth

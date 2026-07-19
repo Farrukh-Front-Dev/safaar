@@ -2,18 +2,14 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
-import { getCities } from "@/lib/api/catalog";
-import { getFeaturedHotels } from "@/lib/api/hotels";
-import { getDeals, getPublicStats } from "@/lib/api/cms";
-import { SearchTabs } from "@/components/search/SearchTabs";
-import { Hero } from "@/components/home/Hero";
-import { CityCardsSection } from "@/components/home/CityCardsSection";
-import { TrustBar } from "@/components/home/TrustBar";
-import { FeaturedHotelsCarousel } from "@/components/home/FeaturedHotelsCarousel";
-import { DealsSection, type DealItem } from "@/components/home/DealsSection";
-import { PartnersSection } from "@/components/home/PartnersSection";
-import { WhySafaar } from "@/components/home/WhySafaar";
-import { ReviewsSection } from "@/components/home/ReviewsSection";
+import { api } from "@/lib/api";
+import { SearchBar } from "@/components/search/SearchBar";
+import { Hero } from "./_components/Hero";
+import { CityCardsSection } from "./_components/CityCardsSection";
+import { TrustBar } from "./_components/TrustBar";
+import { FeaturedHotelsCarousel } from "./_components/FeaturedHotelsCarousel";
+import { DealsSection, type DealItem } from "./_components/DealsSection";
+import { WhySafaar } from "./_components/WhySafaar";
 import type { HotelListItem } from "@/types/view";
 
 export async function generateMetadata({
@@ -41,23 +37,27 @@ export default async function HomePage({
     getDictionary(locale, "home"),
   ]);
 
-  const cities = await getCities(locale).catch(() => []);
-  const featuredResult = await getFeaturedHotels(locale, { limit: 4 }).catch(
+  const cities = await api.catalog.getCities(locale).catch(() => []);
+  const featuredResult = await api.hotels.getFeaturedHotels(locale, { limit: 4 }).catch(
     () => null,
   );
-  let hotels: HotelListItem[] = featuredResult?.items ?? [];
-  if (hotels.length === 0) {
-    hotels = [
-      { id: "mock-f1", slug: "tashkent-city-palace", name: "Tashkent City Palace", cityName: "Toshkent", stars: 5, rating: 4.8, reviewsCount: 234, minPriceSum: 650000, imageUrl: "/Tashkent-city-skyline.jpeg" },
-      { id: "mock-f2", slug: "samarkand-plaza", name: "Samarkand Plaza", cityName: "Samarqand", stars: 5, rating: 4.7, reviewsCount: 189, minPriceSum: 520000, imageUrl: "/Samarkand-Registan-cinematic.jpeg" },
-      { id: "mock-f3", slug: "grand-bukhara", name: "Grand Bukhara Hotel", cityName: "Buxoro", stars: 4, rating: 4.6, reviewsCount: 312, minPriceSum: 380000, imageUrl: "/Bukhara-old-city-golden-hour.jpeg" },
-      { id: "mock-f4", slug: "khiva-ichan-kala", name: "Ichan-Kala Premier", cityName: "Xiva", stars: 4, rating: 4.9, reviewsCount: 156, minPriceSum: 450000, imageUrl: "/Khiva-Ichan-Kala-aerial.jpeg" },
-      { id: "mock-f5", slug: "chimgan-alpine", name: "Chimgan Alpine Resort", cityName: "Chimgan", stars: 3, rating: 4.5, reviewsCount: 98, minPriceSum: 290000, imageUrl: "/Chimgan-mountains-landscape.jpeg" },
-      { id: "mock-f6", slug: "charvak-lake", name: "Charvak Lake Hotel", cityName: "Charvak", stars: 3, rating: 4.4, reviewsCount: 143, minPriceSum: 350000, imageUrl: "/Charvak-Lake-drone.jpeg" },
-    ];
+
+  const FEATURED_FALLBACK: HotelListItem[] = [
+    { id: "mock-f1", slug: "tashkent-city-palace", name: "Tashkent City Palace", cityName: "Toshkent", stars: 5, rating: 4.8, reviewsCount: 234, minPriceSum: 650000, imageUrl: "/Tashkent-city-skyline.jpeg" },
+    { id: "mock-f2", slug: "samarkand-plaza", name: "Samarkand Plaza", cityName: "Samarqand", stars: 5, rating: 4.7, reviewsCount: 189, minPriceSum: 520000, imageUrl: "/Samarkand-Registan-cinematic.jpeg" },
+    { id: "mock-f3", slug: "grand-bukhara", name: "Grand Bukhara Hotel", cityName: "Buxoro", stars: 4, rating: 4.6, reviewsCount: 312, minPriceSum: 380000, imageUrl: "/Bukhara-old-city-golden-hour.jpeg" },
+    { id: "mock-f4", slug: "khiva-ichan-kala", name: "Ichan-Kala Premier", cityName: "Xiva", stars: 4, rating: 4.9, reviewsCount: 156, minPriceSum: 450000, imageUrl: "/Khiva-Ichan-Kala-aerial.jpeg" },
+  ];
+
+  const fromApi = featuredResult?.items ?? [];
+  const hotels: HotelListItem[] = [...fromApi];
+  for (const fallback of FEATURED_FALLBACK) {
+    if (hotels.length >= 4) break;
+    if (hotels.some((h) => h.id === fallback.id || h.slug === fallback.slug)) continue;
+    hotels.push(fallback);
   }
 
-  const dealsResult = await getDeals(locale).catch(() => []);
+  const dealsResult = await api.cms.getDeals(locale).catch(() => []);
   const deals: DealItem[] = dealsResult.map((d) => ({
     id: d.id,
     slug: d.slug,
@@ -70,7 +70,7 @@ export default async function HomePage({
     endsAt: d.endsAt,
   }));
 
-  const stats = await getPublicStats().catch(() => null);
+  const stats = await api.cms.getPublicStats().catch(() => null);
 
   return (
     <main className="relative flex flex-1 flex-col">
@@ -79,15 +79,10 @@ export default async function HomePage({
       <div className="flex min-h-svh flex-col justify-between">
         <Hero dict={dict.hero} />
 
-        {/* Turar joy turlari filteri */}
         <div className="relative z-10">
           <section id="search-section" className="bg-slate-50 pb-10 pt-6 sm:pb-14 sm:pt-8">
             <div className="mx-auto max-w-4xl px-4">
-              <SearchTabs
-                locale={locale}
-                dict={common.search}
-                cities={cities}
-              />
+              <SearchBar locale={locale} dict={common.search} cities={cities} />
             </div>
           </section>
 
@@ -133,12 +128,6 @@ export default async function HomePage({
       <div className="py-10 sm:py-14">
         <DealsSection deals={deals} dict={dict.deals} locale={locale} />
       </div>
-
-      {/* ═══ EKRAN: Reviews ═══ */}
-      <ReviewsSection dict={dict.reviews} />
-
-      {/* ═══ EKRAN: Partners ═══ */}
-      <PartnersSection dict={dict.partners} />
 
       {/* ═══ EKRAN: Why Safaar ═══ */}
       <WhySafaar dict={dict.why} />

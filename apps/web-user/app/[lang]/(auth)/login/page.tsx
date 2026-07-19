@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getSession } from "@/lib/auth/session";
-import { LoginForm } from "@/components/auth/LoginForm";
+import { LoginForm } from "../_components/LoginForm";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },

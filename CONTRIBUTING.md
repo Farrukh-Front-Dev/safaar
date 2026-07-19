@@ -1,4 +1,4 @@
-# UzBron — Ishlash qoidalari (CONTRIBUTING)
+# Safaar — Ishlash qoidalari (CONTRIBUTING)
 
 Bu fayl jamoaning yagona ish qo'llanmasi. Har bir dasturchi (va uning AI agenti)
 shu qoidalarga amal qiladi.

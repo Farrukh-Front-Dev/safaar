@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getSession } from "@/lib/auth/session";
-import { getBooking } from "@/lib/api/bookings";
+import { api } from "@/lib/api";
 import { formatSum } from "@/lib/money";
 import { Button } from "@/components/ui/Button";
 import { BackButton } from "@/components/ui/BackButton";
@@ -25,14 +25,14 @@ export default async function BookingDetailPage({
     redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/booking/${id}`)}`);
   }
 
-  const booking: BookingView | null = await getBooking(session, id).catch(
+  const booking: BookingView | null = await api.bookings.getBooking(id, { token: session.accessToken }).catch(
     () => null,
   );
 
   if (!booking) {
     return (
       <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-16">
-        <p className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
+        <p className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
           {dict.error}
         </p>
       </main>
@@ -51,10 +51,10 @@ export default async function BookingDetailPage({
       <BackButton className="fixed left-4 top-16 z-50 md:left-8 md:top-20" />
       <h1 className="text-2xl font-bold tracking-tight">{dict.title}</h1>
 
-      <div className="flex flex-col gap-4 rounded-xl border border-black/10 p-6 dark:border-white/15">
+      <div className="flex flex-col gap-4 rounded-xl border border-black/10 p-6">
         <Row label={dict.number} value={booking.bookingNumber} />
         <Row label={dict.status}>
-          <span className="rounded-full bg-primary-100 px-3 py-1 text-sm font-medium text-primary-800 dark:bg-primary-900 dark:text-primary-200">
+          <span className="rounded-full bg-primary-100 px-3 py-1 text-sm font-medium text-primary-800">
             {statusLabel}
           </span>
         </Row>

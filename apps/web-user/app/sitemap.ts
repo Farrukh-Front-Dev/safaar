@@ -1,10 +1,12 @@
 import type { MetadataRoute } from "next";
 import { locales } from "@/i18n/config";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://safaar.uz";
+import { config } from "@/lib/config";
+
+const SITE_URL = config.siteUrl;
 
 /** Indekslanadigan public yo'llar (har til uchun takrorlanadi). */
-const PUBLIC_PATHS = ["", "/hotels", "/transport", "/attractions", "/about", "/help", "/terms"];
+const PUBLIC_PATHS = ["", "/hotels", "/attractions", "/about", "/help", "/terms"];
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();

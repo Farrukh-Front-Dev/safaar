@@ -1,0 +1,248 @@
+import { tiyinToSum } from "./money";
+import type {
+  Locale,
+  BookingView,
+  PaymentView,
+  HotelListItem,
+  HotelDetail,
+  RoomTypeView,
+  ProfileView,
+  BonusView,
+  BonusEntryView,
+  FavoriteView,
+  ReviewView,
+} from "./types";
+
+/* ───────────────────────── Locale Helpers ───────────────────────── */
+
+type Localized = Partial<Record<Locale, string>> & Record<string, string>;
+
+function pickLocale(value: Localized | undefined, locale: Locale): string {
+  if (!value) return "";
+  return value[locale] ?? value.uz ?? Object.values(value)[0] ?? "";
+}
+
+/* ───────────────────────── Booking Adapter ───────────────────────── */
+
+interface RawPayment {
+  status?: string;
+  provider?: string;
+  paymentUrl?: string;
+}
+
+interface RawBooking {
+  id?: string;
+  bookingNumber?: string;
+  status?: string;
+  type?: string;
+  totalAmount?: number;
+  createdAt?: string;
+  payment?: RawPayment;
+}
+
+interface RawEnvelope extends RawBooking {
+  booking?: RawBooking;
+  payment?: RawPayment;
+}
+
+function toPaymentView(raw: RawPayment | undefined): PaymentView | undefined {
+  if (!raw) return undefined;
+  return {
+    status: raw.status ?? "pending",
+    provider: raw.provider ?? "",
+    url: raw.paymentUrl,
+  };
+}
+
+export function toBookingView(raw: RawEnvelope): BookingView {
+  const booking: RawBooking = raw.booking ?? raw;
+  const payment = raw.payment ?? booking.payment;
+
+  return {
+    id: booking.id ?? "",
+    bookingNumber: booking.bookingNumber ?? "",
+    status: booking.status ?? "PENDING",
+    type: booking.type ?? "hotel",
+    totalSum: tiyinToSum(booking.totalAmount ?? 0),
+    currency: "UZS",
+    createdAt: booking.createdAt ?? "",
+    payment: toPaymentView(payment),
+  };
+}
+
+/* ───────────────────────── Hotel Adapter ───────────────────────── */
+
+interface RawCity {
+  id: string;
+  name: Localized;
+}
+
+interface RawRoom {
+  id: string;
+  name: Localized;
+  basePrice: number;
+  baseOccupancy?: number;
+  maxAdults?: number;
+  totalInventory?: number;
+  available?: number;
+}
+
+interface RawHotel {
+  id: string;
+  slug: string;
+  name: Localized;
+  description?: Localized;
+  address?: string;
+  stars?: number;
+  ratingAverage?: number;
+  reviewsCount?: number;
+  amenities?: string[];
+  images?: string[];
+  latitude?: number;
+  longitude?: number;
+  checkInTime?: string;
+  checkOutTime?: string;
+  minPrice?: number;
+  city?: RawCity;
+  rooms?: RawRoom[];
+}
+
+function toHotelBase(raw: RawHotel, locale: Locale): HotelListItem {
+  return {
+    id: raw.id,
+    slug: raw.slug,
+    name: pickLocale(raw.name, locale),
+    cityName: pickLocale(raw.city?.name, locale),
+    stars: raw.stars ?? 0,
+    rating: raw.ratingAverage ?? 0,
+    reviewsCount: raw.reviewsCount ?? 0,
+    minPriceSum: tiyinToSum(raw.minPrice ?? 0),
+    imageUrl: raw.images?.[0],
+  };
+}
+
+export function toHotelListItem(raw: RawHotel, locale: Locale): HotelListItem {
+  return toHotelBase(raw, locale);
+}
+
+function toRoomView(raw: RawRoom, locale: Locale): RoomTypeView {
+  return {
+    id: raw.id,
+    name: pickLocale(raw.name, locale),
+    priceSum: tiyinToSum(raw.basePrice ?? 0),
+    capacity: raw.baseOccupancy ?? raw.maxAdults ?? 1,
+    available: raw.available ?? raw.totalInventory ?? 0,
+  };
+}
+
+export function toHotelDetail(raw: RawHotel, locale: Locale): HotelDetail {
+  return {
+    ...toHotelBase(raw, locale),
+    description: pickLocale(raw.description, locale),
+    address: raw.address ?? "",
+    amenities: raw.amenities ?? [],
+    images: raw.images ?? [],
+    latitude: raw.latitude ?? 0,
+    longitude: raw.longitude ?? 0,
+    checkInTime: raw.checkInTime ?? "",
+    checkOutTime: raw.checkOutTime ?? "",
+    rooms: (raw.rooms ?? []).map((room) => toRoomView(room, locale)),
+  };
+}
+
+/* ───────────────────────── User Adapter ───────────────────────── */
+
+interface RawUser {
+  id?: string;
+  phone?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  status?: string;
+  preferredLanguage?: string;
+  bonusBalance?: number;
+  createdAt?: string;
+}
+
+export function toProfileView(raw: RawUser): ProfileView {
+  const firstName = raw.firstName ?? "";
+  const lastName = raw.lastName ?? "";
+  const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
+
+  return {
+    id: raw.id ?? "",
+    phone: raw.phone ?? "",
+    firstName,
+    lastName,
+    fullName: fullName || (raw.phone ?? ""),
+    email: raw.email ?? "",
+    bonusBalanceSum: tiyinToSum(raw.bonusBalance ?? 0),
+    preferredLanguage: raw.preferredLanguage ?? "uz",
+    status: raw.status ?? "active",
+    createdAt: raw.createdAt ?? "",
+  };
+}
+
+interface RawBonusEntry {
+  id?: string;
+  amount?: number;
+  reason?: string;
+  createdAt?: string;
+}
+
+interface RawBonuses {
+  balance?: number;
+  ledger?: RawBonusEntry[];
+}
+
+export function toBonusView(raw: RawBonuses): BonusView {
+  return {
+    balanceSum: tiyinToSum(raw.balance ?? 0),
+    currency: "UZS",
+    entries: (raw.ledger ?? []).map(toBonusEntryView),
+  };
+}
+
+function toBonusEntryView(raw: RawBonusEntry): BonusEntryView {
+  return {
+    id: raw.id ?? "",
+    amountSum: tiyinToSum(raw.amount ?? 0),
+    reason: raw.reason ?? "",
+    createdAt: raw.createdAt ?? "",
+  };
+}
+
+interface RawFavorite {
+  id?: string;
+  targetType?: string;
+  targetId?: string;
+  createdAt?: string;
+}
+
+export function toFavoriteView(raw: RawFavorite): FavoriteView {
+  return {
+    id: raw.id ?? "",
+    targetType: raw.targetType ?? "hotel",
+    targetId: raw.targetId ?? "",
+    createdAt: raw.createdAt ?? "",
+  };
+}
+
+/* ───────────────────────── Review Adapter ───────────────────────── */
+
+interface RawReview {
+  id?: string;
+  rating?: number;
+  body?: string;
+  status?: string;
+  createdAt?: string;
+}
+
+export function toReviewView(raw: RawReview): ReviewView {
+  return {
+    id: raw.id ?? "",
+    rating: typeof raw.rating === "number" ? raw.rating : 0,
+    body: raw.body ?? "",
+    createdAt: raw.createdAt ?? "",
+  };
+}

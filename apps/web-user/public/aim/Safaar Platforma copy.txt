@@ -1,0 +1,46 @@
+Safaar Platforma
+O'zbekiston uchun milliy mehmonxona va avtobus bronlash platformasi
+
+Kirish
+Safaar — O'zbekistonda bronlash jarayonini soddalashtirishga mo'ljallangan milliy yechim.
+Bozor: 36M+ aholisi, $3.2B turizm bozori, start 2024.
+Platforma mehmonxona va avtobus chiptalarini birlashtirib, hamkorlar va admin uchun to'liq boshqaruv taqdim etadi.
+
+01
+Topic 1
+
+Telefon bronlash
+Mehmonxonalarining ~80%i telefon yoki shaxsiy bronni davom ettiradi, bu mijozlar uchun noqulaylik va samaradorlik yo'qligini ko'rsatadi.
+Safaar onlayn bron, Click/Payme integratsiyasi va bron tarixini taqdim etib, telefon orqali bog'lanishni kamaytiradi.
+
+Ma'lumot tarqoq
+Narxlarni taqqoslash uchun odatda 5-10 sayt ko'rib chiqish kerak; bu vaqti va ishonchlilikni pasaytiradi.
+Safaar birlashgan qidiruv, dinamik narxlash va hamkor paneli orqali ma'lumotlarni markazlashtiradi va foydalanuvchi qarorlarini tezlashtiradi.
+
+Naqd to'lov va avtobus
+Onlayn to'lov imkoniyati cheklangan, ko'p joylarda naqd ustunligi mavjud. Avtobus chiptalari faqat kassada sotiladi, oldindan bron yo'q.
+Safaar orqali Click/Payme integratsiyasi va avtobus chiptalarini onlayn sotish joriy etiladi, naqdga bogʻliqlik kamayadi va mijoz tajribasi yaxshilanadi.
+
+Topic 2
+02
+
+Platforma xususiyatlari
+Mehmonxona va avtobus qidiruvi va bron, hamkor paneli, admin dashboard va moliyaviy hisobotlar mavjud.
+Platforma dinamik narxlash, bron tarixi, promo-kodlar va xavfsizlik (audit log) bilan hamkorlarga toʻliq boshqaruv beradi.
+
+Biznes modeli
+Asosiy daromad: komissiya 8–12% har bir muvaffaqiyatli brondan.
+Qoʻshimcha: premium hamkor obunalari, CPC reklama va B2B korporativ paketlar orqali daromad diversifikatsiya qilinadi.
+
+Yo'l xaritasi
+1-bosqich (1–3 oy): MVP — mehmonxona bron, hamkor panel, admin dashboard, Click/Payme.
+2–4 bosqichlar (4+ oy): avtobus bron, SMS OTP, ko‘p til, PWA, mobil ilovalar, kengaytirilgan hisobotlar va B2B paketlar — bosqichma-bosqich kengayish.
+
+Xulosalar
+Safaar Oʻzbekistonda bronlash jarayonini raqamlashtirib, ma'lumotni markazlashtiradi va naqd toʻlov muammosini kamaytiradi.
+Platforma mahalliy ehtiyojlarga mos, hamkorlar va foydalanuvchilar uchun toʻliq boshqaruv va daromad modellari taklif etadi.
+
+Please keep this slide for attribution
+Thanks for your attention
+Do you have any questions?
+youremail@freepik.com | +00 000 000 000  |  yourwebsite.com

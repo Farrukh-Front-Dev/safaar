@@ -1,9 +1,8 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { ApiRequestError } from "@/lib/api";
+import { api, ApiRequestError } from "@/lib/api";
 import { getSession } from "@/lib/auth/session";
-import { updateProfile } from "@/lib/api/users";
 import { defaultLocale, isLocale } from "@/i18n/config";
 
 export interface ProfileState {
@@ -30,7 +29,7 @@ export async function updateProfileAction(
   };
 
   try {
-    await updateProfile(session, input);
+    await api.users.updateProfile(input, { token: session.accessToken });
   } catch (error) {
     return {
       ok: false,

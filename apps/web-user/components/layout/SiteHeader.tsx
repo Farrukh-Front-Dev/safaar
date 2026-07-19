@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Home, Hotel, Bus, MountainSnow, HelpCircle, Building2, TreePine, HeartPulse, Mountain, UtensilsCrossed } from "lucide-react";
+import { Home, Hotel, MountainSnow, HelpCircle, Building2, TreePine, HeartPulse, Mountain, UtensilsCrossed } from "lucide-react";
 import type { Locale } from "@/i18n/config";
 import type { CommonDict } from "@/i18n/dictionaries";
 import { logoutAction } from "@/lib/auth/actions";
@@ -32,7 +32,6 @@ export function SiteHeader({
       ],
     },
     { href: `${base}/restaurants`, label: dict.nav.restaurants ?? "Restaurants", icon: <UtensilsCrossed className="h-4 w-4" /> },
-    { href: `${base}/buses`, label: dict.nav.transport, icon: <Bus className="h-4 w-4" /> },
     { href: `${base}/attractions`, label: dict.nav.attractions, icon: <MountainSnow className="h-4 w-4" /> },
     { href: `${base}/help`, label: dict.nav.help, icon: <HelpCircle className="h-4 w-4" /> },
   ];

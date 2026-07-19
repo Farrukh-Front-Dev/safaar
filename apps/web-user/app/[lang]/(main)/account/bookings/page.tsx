@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getSession } from "@/lib/auth/session";
-import { getMyBookings } from "@/lib/api/users";
+import { api } from "@/lib/api";
 import { formatSum } from "@/lib/money";
 import { bookingStatusTone, statusBadgeClasses } from "@/lib/bookingStatus";
 import { Card, CardBody } from "@/components/ui/Card";
@@ -27,7 +27,7 @@ export default async function AccountBookingsPage({
   }
 
   const dict = await getDictionary(locale, "account");
-  const bookings: BookingView[] = await getMyBookings(session).catch(() => []);
+  const bookings: BookingView[] = await api.users.getMyBookings({ token: session.accessToken }).catch(() => []);
 
   if (bookings.length === 0) {
     return (
@@ -42,7 +42,6 @@ export default async function AccountBookingsPage({
   const statuses = dict.bookings.statuses as Record<string, string>;
   const typeLabels: Record<string, string> = {
     hotel: dict.bookings.hotel,
-    bus: dict.bookings.bus,
   };
 
   return (

@@ -2,8 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import type { Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
-import { getHotels } from "@/lib/api/hotels";
-import { getCities } from "@/lib/api/catalog";
+import { api } from "@/lib/api";
 import { SearchBar } from "@/components/search/SearchBar";
 import { HotelFilters } from "@/components/hotels/HotelFilters";
 import { HotelSortSelect } from "@/components/hotels/HotelSortSelect";
@@ -64,8 +63,8 @@ export async function AccommodationPage({
   const checkOut = one(sp.check_out);
   const guests = int(one(sp.guests));
 
-  const cities = await getCities(locale).catch(() => []);
-  const hotelsResult = await getHotels(locale, {
+  const cities = await api.catalog.getCities(locale).catch(() => []);
+  const hotelsResult = await api.hotels.getHotels(locale, {
     cityId,
     stars,
     minPrice,

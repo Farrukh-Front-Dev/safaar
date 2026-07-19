@@ -1,7 +1,7 @@
 {
-  "name": "Safaar — Mehmonxona va avtobus bron qilish",
+  "name": "Safaar — Mehmonxona bron qilish",
   "short_name": "Safaar",
-  "description": "O'zbekiston bo'ylab mehmonxona va avtobuslarni onlayn bron qiling.",
+  "description": "O'zbekiston bo'ylab mehmonxonalarni onlayn bron qiling.",
   "start_url": "/uz",
   "scope": "/",
   "display": "standalone",

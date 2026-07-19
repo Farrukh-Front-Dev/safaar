@@ -7,8 +7,10 @@
  * ko'rsatiladi (tasodifiy stock foto chiqib qolmasligi uchun).
  */
 
+import { config } from "./config";
+
 /** Dev'da placeholder fotolarini ko'rsatamizmi? */
-export const SHOW_PLACEHOLDER_PHOTOS = process.env.NODE_ENV !== "production";
+export const SHOW_PLACEHOLDER_PHOTOS = config.showPlaceholderPhotos;
 
 /** Seed bo'yicha barqaror placeholder rasm URL (picsum). */
 export function placeholderPhoto(

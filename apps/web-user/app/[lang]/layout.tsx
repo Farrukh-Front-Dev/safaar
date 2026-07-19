@@ -10,6 +10,7 @@ import {
 } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
+import { config } from "@/lib/config";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -23,7 +24,7 @@ const manrope = Manrope({
   display: "swap",
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://safaar.uz";
+const SITE_URL = config.siteUrl;
 
 const OG_LOCALE: Record<Locale, string> = {
   uz: "uz_UZ",
@@ -86,7 +87,7 @@ export default async function LangLayout({
     <html
       lang={lang}
       data-scroll-behavior="smooth"
-      className={`${inter.variable} ${manrope.variable} h-full antialiased`}
+      className={`${inter.variable} ${manrope.variable} h-full subpixel-antialiased`}
     >
       <body className="flex min-h-full flex-col bg-slate-50 text-slate-900">
         {children}

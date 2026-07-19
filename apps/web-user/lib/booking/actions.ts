@@ -1,9 +1,8 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { ApiRequestError } from "@/lib/api";
+import { api, ApiRequestError } from "@/lib/api";
 import { getSession } from "@/lib/auth/session";
-import { createBusBooking, createHotelBooking } from "@/lib/api/bookings";
 import { defaultLocale, isLocale } from "@/i18n/config";
 
 export interface CheckoutState {
@@ -33,7 +32,7 @@ export async function createBookingAction(
 
   let bookingId = "";
   try {
-    const booking = await createHotelBooking(session, input);
+    const booking = await api.bookings.createHotelBooking(input, { token: session.accessToken });
     bookingId = booking.id;
   } catch (error) {
     return {
@@ -74,11 +73,11 @@ export async function createBusBookingAction(
 
   let bookingId = "";
   try {
-    const booking = await createBusBooking(session, {
+    const booking = await api.bookings.createBusBooking({
       tripId,
       seats,
       paymentMethod,
-    });
+    }, { token: session.accessToken });
     bookingId = booking.id;
   } catch (error) {
     return {
