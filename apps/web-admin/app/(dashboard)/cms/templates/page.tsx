@@ -1,12 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import Input from "@/components/ui/Input";
-import Select from "@/components/ui/Select";
-import Tabs from "@/components/ui/Tabs";
 import {
   Mail,
   MessageSquare,
@@ -14,12 +12,7 @@ import {
   Edit2,
   Play,
   Trash2,
-  X,
-  Check,
-  Copy,
-  Smartphone,
   Send,
-  Sparkles,
   Info,
   CheckCircle,
   AlertCircle

@@ -2,9 +2,10 @@
 
 import { useAdminStore } from "@/lib/store";
 import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
 import Button from "@/components/ui/Button";
 import StatusBadge from "@/components/ui/StatusBadge";
-import { CheckCircle2, XCircle, ArrowLeft, MapPin, Star, Building2, Users, Info, Wifi, Waves, Utensils, ParkingCircle, AirVent, Wine, Dumbbell } from "lucide-react";
+import { CheckCircle2, XCircle, ArrowLeft, MapPin, Star, Building2, Users, Info, Wifi, Waves, Utensils, ParkingCircle, AirVent, Wine, Dumbbell, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useState } from "react";
@@ -15,7 +16,7 @@ const LISTING_STATUS_MAP: Record<string, { label: string; color: string; bg: str
   rejected: { label: "Rad etilgan", color: "#E74C3C", bg: "rgba(231,76,60,0.12)" },
 };
 
-const AMENITY_ICONS: Record<string, any> = {
+const AMENITY_ICONS: Record<string, LucideIcon> = {
   wifi: Wifi,
   pool: Waves,
   restaurant: Utensils,
@@ -105,11 +106,14 @@ export default function ListingDetailsPage() {
           {/* Photos Gallery */}
           {listing.photos && listing.photos.length > 0 && (
             <div className="flex flex-col gap-2">
-              <div className="aspect-video w-full rounded-2xl overflow-hidden bg-[var(--bg-tertiary)]">
-                <img 
+              <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-[var(--bg-tertiary)]">
+                <Image
                   src={listing.photos[activePhoto]} 
                   alt="Hotel" 
-                  className="w-full h-full object-cover"
+                  fill
+                  unoptimized
+                  sizes="(min-width: 1024px) 660px, 100vw"
+                  className="object-cover"
                 />
               </div>
               <div className="flex gap-2 overflow-x-auto pb-2">
@@ -117,9 +121,9 @@ export default function ListingDetailsPage() {
                   <button
                     key={idx}
                     onClick={() => setActivePhoto(idx)}
-                    className={`shrink-0 w-24 h-16 rounded-lg overflow-hidden border-2 transition-all ${activePhoto === idx ? "border-[var(--primary)]" : "border-transparent hover:border-[var(--border)]"}`}
+                    className={`relative shrink-0 w-24 h-16 rounded-lg overflow-hidden border-2 transition-all ${activePhoto === idx ? "border-[var(--primary)]" : "border-transparent hover:border-[var(--border)]"}`}
                   >
-                    <img src={photo} alt="" className="w-full h-full object-cover" />
+                    <Image src={photo} alt="" fill unoptimized sizes="96px" className="object-cover" />
                   </button>
                 ))}
               </div>

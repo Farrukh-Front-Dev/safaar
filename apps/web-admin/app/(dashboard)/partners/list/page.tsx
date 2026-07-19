@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import DataTable from "@/components/ui/DataTable";
 import type { Column } from "@/components/ui/DataTable";
@@ -8,10 +8,9 @@ import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import StatusBadge from "@/components/ui/StatusBadge";
 import Pagination from "@/components/ui/Pagination";
-import { MockApi } from "@/lib/api/mock-api";
 import { formatPrice } from "@/lib/utils";
 import { PARTNER_STATUS_MAP } from "@/lib/constants";
-import { Hotel, Bus, Star, Download } from "lucide-react";
+import { Star, Download } from "lucide-react";
 import Button from "@/components/ui/Button";
 import type { Partner } from "@/types/admin";
 import { PartnerTypeDisplay } from "@/components/ui/PartnerTypeDisplay";

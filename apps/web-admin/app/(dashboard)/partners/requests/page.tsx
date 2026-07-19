@@ -8,7 +8,7 @@ import Modal from "@/components/ui/Modal";
 import { MockApi } from "@/lib/api/mock-api";
 import { formatDate } from "@/lib/utils";
 import { PARTNER_REQUEST_STATUS_MAP } from "@/lib/constants";
-import { CheckCircle, XCircle, Phone, MessageSquare, FileText, Hotel, Bus } from "lucide-react";
+import { CheckCircle, XCircle, Phone, MessageSquare, FileText } from "lucide-react";
 import type { PartnerRequest } from "@/types/admin";
 import { PartnerTypeDisplay } from "@/components/ui/PartnerTypeDisplay";
 import { toast } from "sonner";
@@ -27,17 +27,13 @@ export default function PartnerRequestsPage() {
   const [selectedRequest, setSelectedRequest] = useState<PartnerRequest | null>(null);
 
   const setPartnerRequests = useAdminStore((s) => s.setPartnerRequests);
-  const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     async function loadRequests() {
       try {
         const data = await MockApi.getPartnerRequests();
         setPartnerRequests(data);
-      } catch (e) {
-        console.error("Failed to fetch partner requests", e);
-      } finally {
-        setLoading(false);
+      } catch (error) {
+        console.error("Failed to fetch partner requests", error);
       }
     }
     loadRequests();
@@ -57,7 +53,7 @@ export default function PartnerRequestsPage() {
         toast.success("Ariza rad etildi!");
       }
       setSelectedRequest(null);
-    } catch (e) {
+    } catch {
       toast.error("Xatolik yuz berdi. Iltimos qaytadan urinib ko'ring.");
     }
   };

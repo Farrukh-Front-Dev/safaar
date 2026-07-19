@@ -13,13 +13,12 @@ import {
   Hotel, Bus, User, CreditCard, Clock, CheckCircle,
 } from "lucide-react";
 
-import { useRouter } from "next/navigation";
 import { useAdminStore } from "@/lib/store";
 import { toast } from "sonner";
+import { BookingStatus } from "@agoda/types";
 
 export default function BookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const router = useRouter();
   
   const hotelBookings = useAdminStore((s) => s.hotelBookings);
   const busBookings = useAdminStore((s) => s.busBookings);
@@ -54,9 +53,9 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
   const handleCancel = () => {
     if (confirm("Rostdan ham ushbu bronni bekor qilmoqchimisiz?")) {
       if (isHotel) {
-        updateHotelBookingStatus(id, "CANCELLED" as any);
+        updateHotelBookingStatus(id, BookingStatus.CANCELLED);
       } else {
-        updateBusBookingStatus(id, "CANCELLED" as any);
+        updateBusBookingStatus(id, BookingStatus.CANCELLED);
       }
       toast.success("Bron bekor qilindi!");
     }

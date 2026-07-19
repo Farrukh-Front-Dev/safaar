@@ -3,11 +3,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { MockApi } from "@/lib/api/mock-api";
 import type { SupportTicket, TicketMessage, TicketStatus } from "@/types/admin";
-import DataTable from "@/components/ui/DataTable";
-import type { Column } from "@/components/ui/DataTable";
-import StatusBadge from "@/components/ui/StatusBadge";
 import { formatDate } from "@/lib/utils";
-import { Eye, MessageCircle, Search, X, Send, AlertCircle, Clock, CheckCircle2 } from "lucide-react";
+import { MessageCircle, Search, X, Send, AlertCircle, Clock, CheckCircle2 } from "lucide-react";
 
 const STATUS_MAP = {
   open: { label: "Ochiq", color: "var(--danger)", bg: "rgba(231, 76, 60, 0.1)" },
@@ -29,7 +26,6 @@ export default function SupportPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | TicketStatus>("all");
   const [priorityFilter, setPriorityFilter] = useState<"all" | "low" | "medium" | "high">("all");
-  const [typeFilter, setTypeFilter] = useState<"all" | "user" | "partner">("all");
 
   // Drawer
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
@@ -83,74 +79,14 @@ export default function SupportPage() {
       const matchSearch = t.subject.toLowerCase().includes(searchQuery.toLowerCase()) || t.customerName.toLowerCase().includes(searchQuery.toLowerCase()) || t.id.toLowerCase().includes(searchQuery.toLowerCase());
       const matchStatus = statusFilter === "all" || t.status === statusFilter;
       const matchPriority = priorityFilter === "all" || t.priority === priorityFilter;
-      const matchType = typeFilter === "all" || t.customerType === typeFilter;
-      return matchSearch && matchStatus && matchPriority && matchType;
+      return matchSearch && matchStatus && matchPriority;
     });
-  }, [data, searchQuery, statusFilter, priorityFilter, typeFilter]);
+  }, [data, searchQuery, statusFilter, priorityFilter]);
 
   // Stats
   const openCount = data.filter((t) => t.status === "open").length;
   const inProgressCount = data.filter((t) => t.status === "in_progress").length;
   const closedCount = data.filter((t) => t.status === "closed").length;
-
-  const columns: Column<SupportTicket>[] = [
-    { key: "id", label: "Ticket ID", render: (row) => <span className="text-xs font-mono font-bold text-[var(--primary)]">{row.id}</span> },
-    { key: "subject", label: "Mavzu", render: (row) => <span className="font-medium text-[var(--text-primary)]">{row.subject}</span> },
-    {
-      key: "customerName",
-      label: "Mijoz / Hamkor",
-      render: (row) => (
-        <div className="flex flex-col">
-          <span className="font-medium">{row.customerName}</span>
-          <span className="text-[10px] uppercase text-[var(--text-muted)] tracking-wider">{row.customerType === "user" ? "Mijoz" : "Hamkor"}</span>
-        </div>
-      ),
-    },
-    {
-      key: "assignee",
-      label: "Xodim",
-      render: (row) => (
-        <span className="text-xs text-[var(--text-secondary)]">{row.assignee || "Biriktirilmagan"}</span>
-      ),
-    },
-    {
-      key: "status",
-      label: "Holat",
-      render: (row) => (
-        <select
-          value={row.status}
-          onChange={(e) => handleStatusChange(row.id, e.target.value as TicketStatus)}
-          className="text-xs font-bold rounded-full px-3 py-1 bg-transparent cursor-pointer border border-[var(--border)] focus:outline-none"
-          style={{ color: STATUS_MAP[row.status].color, backgroundColor: STATUS_MAP[row.status].bg }}
-        >
-          <option value="open" className="text-black bg-white">Ochiq</option>
-          <option value="in_progress" className="text-black bg-white">Jarayonda</option>
-          <option value="closed" className="text-black bg-white">Yopilgan</option>
-        </select>
-      ),
-    },
-    {
-      key: "priority",
-      label: "Muhimlik",
-      render: (row) => (
-        <span className={`px-2 py-1 rounded text-[10px] uppercase tracking-wider ${PRIORITY_MAP[row.priority].color}`}>
-          {PRIORITY_MAP[row.priority].label}
-        </span>
-      ),
-    },
-    { key: "createdAt", label: "Yuborilgan sana", render: (row) => <span className="text-sm">{formatDate(row.createdAt)}</span> },
-    {
-      key: "actions",
-      label: "",
-      render: (row) => (
-        <div className="flex justify-end gap-2">
-          <button onClick={() => handleOpenTicket(row)} className="w-8 h-8 rounded flex items-center justify-center text-[var(--primary)] hover:bg-[var(--primary)]/10">
-            <MessageCircle size={14} />
-          </button>
-        </div>
-      ),
-    },
-  ];
 
   if (loading) return <div className="flex justify-center p-12"><span className="w-8 h-8 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin" /></div>;
 
@@ -292,7 +228,7 @@ export default function SupportPage() {
           <div className="grid grid-cols-2 gap-2">
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
+              onChange={(e) => setStatusFilter(e.target.value as "all" | TicketStatus)}
               className="px-2 py-1.5 text-xs rounded-lg bg-white border border-[var(--border)] focus:outline-none"
             >
               <option value="all">Barcha holatlar</option>
@@ -302,7 +238,7 @@ export default function SupportPage() {
             </select>
             <select
               value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value as any)}
+              onChange={(e) => setPriorityFilter(e.target.value as "all" | "low" | "medium" | "high")}
               className="px-2 py-1.5 text-xs rounded-lg bg-white border border-[var(--border)] focus:outline-none"
             >
               <option value="all">Barcha daraja</option>

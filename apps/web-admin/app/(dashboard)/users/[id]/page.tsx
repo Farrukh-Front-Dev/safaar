@@ -6,7 +6,6 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import StatusBadge from "@/components/ui/StatusBadge";
 import Tabs from "@/components/ui/Tabs";
-import { mockUsers, mockHotelBookings } from "@/lib/mock-data";
 import { formatDate, formatPrice, formatDateTime } from "@/lib/utils";
 import { USER_STATUS_MAP, BOOKING_STATUS_MAP } from "@/lib/constants";
 import {

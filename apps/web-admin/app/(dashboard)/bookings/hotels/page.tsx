@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import DataTable from "@/components/ui/DataTable";
 import type { Column } from "@/components/ui/DataTable";
@@ -8,7 +8,6 @@ import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import StatusBadge from "@/components/ui/StatusBadge";
 import Pagination from "@/components/ui/Pagination";
-import { MockApi } from "@/lib/api/mock-api";
 import { formatDate, formatPrice } from "@/lib/utils";
 import { BOOKING_STATUS_MAP, PAYMENT_METHOD_MAP } from "@/lib/constants";
 import type { AdminHotelBooking } from "@/types/admin";

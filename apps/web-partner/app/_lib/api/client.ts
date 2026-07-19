@@ -68,7 +68,7 @@ export async function request<T>(
       if (auth?.state?.user?.organizationId) {
         defaultOrgId = auth.state.user.organizationId;
       }
-    } catch (e) {}
+    } catch {}
   }
 
   const {
@@ -107,7 +107,12 @@ export async function request<T>(
   }
 
   if (!response.ok) {
-    let payload: any;
+    let payload: {
+      error?: { message?: string; fields?: ApiError["fields"]; code?: string };
+      message?: string;
+      fields?: ApiError["fields"];
+      code?: string;
+    } | undefined;
     try {
       payload = await response.json();
     } catch {

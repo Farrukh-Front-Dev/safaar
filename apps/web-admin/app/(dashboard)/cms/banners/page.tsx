@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import type { CmsBanner } from "@/types/admin";
 import DataTable from "@/components/ui/DataTable";
 import type { Column } from "@/components/ui/DataTable";
@@ -10,6 +11,41 @@ import Modal from "@/components/ui/Modal";
 import { Plus, Edit2, Trash2, Power } from "lucide-react";
 import { toast } from "sonner";
 import { useAdminStore } from "@/lib/store";
+
+function hasRenderableImage(value: string) {
+  if (!value) return false;
+  if (value.startsWith("/images/banners/")) return false;
+  return value.startsWith("http") || value.startsWith("blob:") || value.startsWith("data:");
+}
+
+function BannerImage({
+  src,
+  title,
+  className = "",
+}: {
+  src: string;
+  title: string;
+  className?: string;
+}) {
+  if (hasRenderableImage(src)) {
+    return (
+      <Image
+        src={src}
+        alt={title}
+        fill
+        unoptimized
+        sizes="100vw"
+        className={`object-cover ${className}`}
+      />
+    );
+  }
+
+  return (
+    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[var(--primary)]/15 via-white to-[var(--accent)]/15 px-2 text-center text-[10px] font-semibold text-[var(--primary)]">
+      {title || "Banner"}
+    </div>
+  );
+}
 
 export default function CmsBannersPage() {
   const banners = useAdminStore((s) => s.cmsBanners);
@@ -72,7 +108,7 @@ export default function CmsBannersPage() {
 
   const columns: Column<CmsBanner>[] = [
     { key: "order", label: "Tartib", render: (row) => <span className="font-medium text-lg">{row.order}</span> },
-    { key: "imageUrl", label: "Rasm", render: (row) => <div className="w-24 h-12 bg-[var(--bg-tertiary)] rounded flex items-center justify-center text-[10px] text-[var(--text-muted)] truncate px-1" title={row.imageUrl}><img src={row.imageUrl} alt="banner" className="w-full h-full object-cover rounded" onError={(e) => (e.currentTarget.style.display = 'none')} /></div> },
+    { key: "imageUrl", label: "Rasm", render: (row) => <div className="relative w-24 h-12 bg-[var(--bg-tertiary)] rounded overflow-hidden" title={row.imageUrl}><BannerImage src={row.imageUrl} title={row.title} /></div> },
     { key: "title", label: "Sarlavha", render: (row) => <span className="font-medium">{row.title}</span> },
     { key: "link", label: "Havola (Link)", render: (row) => <span className="text-sm text-[var(--primary)] underline">{row.link}</span> },
     {
@@ -135,7 +171,7 @@ export default function CmsBannersPage() {
             <label className="text-sm font-medium text-[var(--text-primary)]">Rasm (Qurilmadan yuklash)</label>
             <label className="group relative flex h-32 w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[var(--border)] bg-[var(--bg-tertiary)] transition-colors hover:border-[var(--primary)] hover:bg-[var(--bg-secondary)] overflow-hidden">
               {formData.imageUrl ? (
-                <img src={formData.imageUrl} alt="Preview" className="h-full w-full object-cover transition-opacity group-hover:opacity-80" />
+                <BannerImage src={formData.imageUrl} title={formData.title} className="transition-opacity group-hover:opacity-80" />
               ) : (
                 <div className="flex flex-col items-center gap-2 text-[var(--text-muted)]">
                   <span className="text-2xl opacity-50">+</span>

@@ -24,14 +24,13 @@ import { ConfirmDialog } from "../../_components/ui/dialog";
 import { Input } from "../../_components/ui/input";
 import { Tooltip } from "../../_components/ui/tooltip";
 import { AssignRoomDialog } from "../../_components/domain/assign-room-dialog";
-import { OccupancyMeter } from "../../_components/domain/occupancy-meter";
 import { SourceBadge } from "../../_components/domain/source-badge";
 import { WalkInDialog } from "../../_components/domain/walk-in-dialog";
 import { PageHeader } from "../../_components/layout/page-header";
 import { useReservations } from "../../_hooks/use-reservations";
 import { useDataStore } from "../../_stores/data-store";
 import { TODAY_ISO } from "../../_lib/mocks/data";
-import { formatMoney, formatPhone } from "../../_lib/utils/format";
+import { formatMoney } from "../../_lib/utils/format";
 import { cn } from "../../_lib/utils/cn";
 import type { ReservationView } from "../../_lib/domain/types";
 
@@ -58,11 +57,6 @@ const MONTHS = [
   "noyabr",
   "dekabr",
 ];
-
-function formatTodayUz(iso: string): string {
-  const d = new Date(iso);
-  return `${WEEKDAYS[d.getDay()]}, ${d.getDate()}-${MONTHS[d.getMonth()]}`;
-}
 
 type TaskKind = "pending" | "arrival" | "departure";
 type FilterKey = "all" | TaskKind;
@@ -142,18 +136,6 @@ export function FrontDeskView() {
   }, [filter, query, tasks]);
 
   const nextTask = tasks[0];
-  const activeReservations = reservations.data.filter(
-    (reservation) =>
-      reservation.status !== BookingStatus.CANCELLED &&
-      reservation.status !== BookingStatus.EXPIRED &&
-      reservation.status !== BookingStatus.COMPLETED,
-  );
-  const balance = activeReservations.reduce(
-    (sum, reservation) =>
-      sum + Math.max(0, reservation.totalPrice - reservation.paidAmount),
-    0,
-  );
-
   const handleCheckIn = (reservation: ReservationView) => {
     setAssignReservation(reservation);
   };

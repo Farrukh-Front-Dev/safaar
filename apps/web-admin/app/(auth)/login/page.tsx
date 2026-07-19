@@ -34,8 +34,8 @@ export default function LoginPage() {
       // Zustandga saqlash
       login(data.user);
       router.push("/dashboard");
-    } catch (err: any) {
-      setError(err.message || "Xatolik yuz berdi");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Xatolik yuz berdi");
     } finally {
       setLoading(false);
     }

@@ -10,7 +10,6 @@ import {
   Calendar,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
 import {
   Card,
   CardBody,
@@ -115,7 +114,7 @@ export function ReportsView() {
                 <span className="text-right w-24">Daromad</span>
               </div>
               
-              {recentRevenue.map((d, i) => (
+              {recentRevenue.map((d) => (
                 <div key={d.date} className="grid grid-cols-[1fr_auto_auto] gap-4 py-3 px-1 border-b border-zinc-100 dark:border-zinc-800/60 last:border-0 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors rounded-md">
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-zinc-400" />
@@ -147,7 +146,7 @@ export function ReportsView() {
                 <span className="text-right">To'liqlik (%)</span>
               </div>
               
-              {recentOccupancy.map((d, i) => (
+              {recentOccupancy.map((d) => (
                 <div key={d.date} className="grid grid-cols-[1fr_auto] gap-4 py-3 px-1 border-b border-zinc-100 dark:border-zinc-800/60 last:border-0 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors rounded-md">
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-zinc-400" />
@@ -193,7 +192,7 @@ export function ReportsView() {
                 const totalSrc = mockSourceDistribution.reduce((s, r) => s + r.value, 0);
                 const sortedSrc = [...mockSourceDistribution].sort((a,b) => b.value - a.value).slice(0, 5);
                 
-                return sortedSrc.map((s, i) => {
+                return sortedSrc.map((s) => {
                   const pct = totalSrc ? Math.round((s.value / totalSrc) * 100) : 0;
                   return (
                     <div key={s.name} className="grid grid-cols-[1fr_auto_auto] gap-4 py-3 px-1 border-b border-zinc-100 dark:border-zinc-800/60 last:border-0 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors rounded-md">

@@ -1,12 +1,10 @@
 "use client";
 
-import { BedDouble, Info, Users, Sparkles, Check } from "lucide-react";
+import { Users, Sparkles, Check } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { Dialog } from "../ui/dialog";
-import { EmptyState } from "../ui/empty-state";
-import { useDataStore } from "../../_stores/data-store";
 import { useRooms } from "../../_hooks/use-rooms";
 import { useRoomTypes } from "../../_hooks/use-room-types";
 import { useAssignRoom } from "../../_hooks/use-reservations";

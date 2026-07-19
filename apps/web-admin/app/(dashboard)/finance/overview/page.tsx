@@ -6,8 +6,12 @@ import { Wallet, ArrowDownToLine, FileSpreadsheet, TrendingUp, Download } from "
 import Button from "@/components/ui/Button";
 import { formatPrice } from "@/lib/utils";
 
+interface DashboardStats {
+  revenue: number;
+}
+
 export default function FinanceOverviewPage() {
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -40,7 +44,7 @@ export default function FinanceOverviewPage() {
             </div>
             <div>
               <p className="text-sm font-medium text-[var(--text-secondary)]">Umumiy Daromad</p>
-              <h3 className="text-2xl font-bold text-[var(--text-primary)] mt-1">{formatPrice(2400000000)}</h3>
+              <h3 className="text-2xl font-bold text-[var(--text-primary)] mt-1">{formatPrice(stats?.revenue ?? 0)}</h3>
             </div>
           </div>
         </div>
@@ -52,7 +56,7 @@ export default function FinanceOverviewPage() {
             </div>
             <div>
               <p className="text-sm font-medium text-[var(--text-secondary)]">Komissiya foydasi (15%)</p>
-              <h3 className="text-2xl font-bold text-[var(--text-primary)] mt-1">{formatPrice(360000000)}</h3>
+              <h3 className="text-2xl font-bold text-[var(--text-primary)] mt-1">{formatPrice(Math.round((stats?.revenue ?? 0) * 0.15))}</h3>
             </div>
           </div>
         </div>

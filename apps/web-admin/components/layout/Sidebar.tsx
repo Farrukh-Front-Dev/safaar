@@ -6,7 +6,7 @@ import SidebarItem from "./SidebarItem";
 import {
   LayoutDashboard, Users, Building2, CalendarCheck, Wallet, PanelsTopLeft,
   MapPin, Ticket, MessageCircle, Settings, ScrollText, FileText, List,
-  Hotel, Bus, BarChart3, ArrowDownToLine, FileSpreadsheet, Image, Tag,
+  Hotel, Bus, BarChart3, ArrowDownToLine, FileSpreadsheet, ImageIcon, Tag,
   Newspaper, Mail, Settings2, CreditCard, Send, ShieldCheck,
   ChevronLeft, History
 } from "lucide-react";
@@ -31,7 +31,7 @@ const ICON_MAP: Record<string, ReactNode> = {
   BarChart3: <BarChart3 size={16} />,
   ArrowDownToLine: <ArrowDownToLine size={16} />,
   FileSpreadsheet: <FileSpreadsheet size={16} />,
-  Image: <Image size={16} />,
+  Image: <ImageIcon size={16} />,
   Tag: <Tag size={16} />,
   Newspaper: <Newspaper size={16} />,
   Mail: <Mail size={16} />,

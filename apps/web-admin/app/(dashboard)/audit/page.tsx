@@ -13,6 +13,8 @@ const mockLogs = [
   { id: "4", user: "Super Admin", action: "Tizimga kirish", target: "Auth", date: new Date(Date.now() - 86400000).toISOString(), ip: "192.168.1.100" },
 ];
 
+type AuditLog = (typeof mockLogs)[number];
+
 export default function AuditLogsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -21,8 +23,8 @@ export default function AuditLogsPage() {
     { key: "user", label: "Foydalanuvchi" },
     { key: "action", label: "Harakat" },
     { key: "target", label: "Obyekt" },
-    { key: "ip", label: "IP Manzil", render: (row: any) => <span className="font-mono text-xs">{row.ip}</span> },
-    { key: "date", label: "Sana", render: (row: any) => new Date(row.date).toLocaleString("uz-UZ") },
+    { key: "ip", label: "IP Manzil", render: (row: AuditLog) => <span className="font-mono text-xs">{row.ip}</span> },
+    { key: "date", label: "Sana", render: (row: AuditLog) => new Date(row.date).toLocaleString("uz-UZ") },
   ];
 
   return (
@@ -57,7 +59,7 @@ export default function AuditLogsPage() {
 
         <div className="flex-1 overflow-auto">
           <DataTable
-            columns={columns as any}
+            columns={columns}
             data={mockLogs}
             keyField="id"
           />

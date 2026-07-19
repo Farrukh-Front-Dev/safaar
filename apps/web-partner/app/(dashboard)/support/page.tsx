@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Search, Headset, CheckCircle2 } from "lucide-react";
+import { Send, Headset, CheckCircle2 } from "lucide-react";
 import { PageHeader } from "../../_components/layout/page-header";
 import { Button } from "../../_components/ui/button";
 import { Input } from "../../_components/ui/input";
