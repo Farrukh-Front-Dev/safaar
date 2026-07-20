@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
+import { AttractionsView } from "@/components/catalog/AttractionsView";
 
 export async function generateMetadata({
   params,
@@ -10,8 +11,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { lang } = await params;
   if (!isLocale(lang)) return {};
-  const common = await getDictionary(lang, "common");
-  return { title: common.nav.attractions };
+  const common = await getDictionary(lang as Locale, "common");
+  return {
+    title: `${common.nav.attractions} — Safaar`,
+    description: "O'zbekistonning tarixiy obidalari va diqqatga sazovor maskanlari.",
+  };
 }
 
 export default async function AttractionsPage({
@@ -21,17 +25,10 @@ export default async function AttractionsPage({
 }) {
   const { lang } = await params;
   if (!isLocale(lang)) notFound();
-  const locale = lang as Locale;
-  const common = await getDictionary(locale, "common");
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-10 pt-14 md:pt-32">
-      <h1 className="text-3xl font-bold text-slate-900">
-        {common.nav.attractions}
-      </h1>
-      <p className="mt-4 text-slate-600">
-        Tez kunda...
-      </p>
+    <main className="flex flex-1 flex-col">
+      <AttractionsView />
     </main>
   );
 }
