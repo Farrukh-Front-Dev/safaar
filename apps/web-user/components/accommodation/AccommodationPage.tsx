@@ -41,11 +41,6 @@ export async function AccommodationPage({
   basePath,
   title,
 }: AccommodationPageProps) {
-  const [common, dict] = await Promise.all([
-    getDictionary(locale, "common"),
-    getDictionary(locale, "hotels"),
-  ]);
-
   const cityId = one(sp.city_id);
   const starsRaw = int(one(sp.stars));
   const stars =
@@ -63,16 +58,26 @@ export async function AccommodationPage({
   const checkOut = one(sp.check_out);
   const guests = int(one(sp.guests));
 
-  const cities = await api.catalog.getCities(locale).catch(() => []);
-  const hotelsResult = await api.hotels.getHotels(locale, {
-    cityId,
-    stars,
-    minPrice,
-    maxPrice,
-    sort,
-    page,
-    limit: PAGE_SIZE,
-  }).catch(() => null);
+  // SENIOR OPTIMIZATION: Parallelize dictionaries and API calls to eliminate sequential waterfall
+  const [common, dict, [citiesRes, hotelsRes]] = await Promise.all([
+    getDictionary(locale, "common"),
+    getDictionary(locale, "hotels"),
+    Promise.allSettled([
+      api.catalog.getCities(locale),
+      api.hotels.getHotels(locale, {
+        cityId,
+        stars,
+        minPrice,
+        maxPrice,
+        sort,
+        page,
+        limit: PAGE_SIZE,
+      }),
+    ]),
+  ]);
+
+  const cities = citiesRes.status === "fulfilled" ? citiesRes.value : [];
+  const hotelsResult = hotelsRes.status === "fulfilled" ? hotelsRes.value : null;
 
   const loadFailed = hotelsResult === null;
   const all: HotelListItem[] = hotelsResult?.items ?? [];
@@ -113,9 +118,9 @@ export async function AccommodationPage({
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{title}</h1>
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl dark:text-white">{title}</h1>
             {!loadFailed && (
-              <p aria-live="polite" className="text-xs text-slate-500 sm:text-sm">
+              <p aria-live="polite" className="text-xs text-slate-500 sm:text-sm dark:text-slate-400">
                 {dict.resultsCount.replace("{count}", String(total))}
               </p>
             )}
@@ -138,16 +143,16 @@ export async function AccommodationPage({
 
         <section aria-label={dict.title}>
           {loadFailed ? (
-            <div className="flex flex-col items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm font-medium text-amber-800 shadow-btn">
+            <div className="flex flex-col items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm font-medium text-amber-800 shadow-btn dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300">
               <p>{dict.error}</p>
               <Link href={retryHref}>
                 <Button variant="secondary">{dict.retry}</Button>
               </Link>
             </div>
           ) : items.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-white py-16 text-center shadow-btn">
-              <p className="font-medium text-slate-700">{dict.empty}</p>
-              <p className="text-sm text-slate-500">{dict.emptyHint}</p>
+            <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-white py-16 text-center shadow-btn dark:border-slate-800 dark:bg-slate-900">
+              <p className="font-medium text-slate-700 dark:text-slate-200">{dict.empty}</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{dict.emptyHint}</p>
               <Link href={clearedHref}>
                 <Button variant="secondary">{dict.clearFilters}</Button>
               </Link>
