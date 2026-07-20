@@ -13,7 +13,7 @@ Har bir dasturchi **faqat o'z papkasida** ishlaydi. To'liq jadval — `CODEOWNER
 |---|---|---|
 | @FarrukhDev-io     | `apps/web-user/`    | 3000 |
 | @adhambek7717      | `apps/web-partner/` | 3001 |
-| @scarygun          | `apps/web-admin/`   | 3002 |
+| @adhambek7717      | `apps/web-admin/`   | 3002 |
 | @Lazizdeveloper    | `apps/backend/` + `packages/types/` | 4000 |
 
 **Chegara qoidasi:**

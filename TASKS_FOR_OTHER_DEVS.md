@@ -34,7 +34,7 @@
 
 ---
 
-## 3. 🛡️ Web-Admin Dasturchisi Uchun (`apps/web-admin/` — @adhambek7717 / @scarygun)
+## 3. 🛡️ Web-Admin Dasturchisi Uchun (`apps/web-admin/` — @adhambek7717)
 
 - [ ] **Moderatsiya va Tasdiq**: Yangi hamkor mehmonxonalarini moderatsiyadan o'tkazish (Pending ➔ Approved) va `web-user` qidiruv katalogida ko'rinishini faollashtirish.
 
