@@ -2,7 +2,6 @@
 
 import {
   AlertCircle,
-  BedDouble,
   CalendarDays,
   CalendarPlus,
   LogIn,
@@ -29,10 +28,15 @@ import { WalkInDialog } from "../../_components/domain/walk-in-dialog";
 import { PageHeader } from "../../_components/layout/page-header";
 import { useReservations } from "../../_hooks/use-reservations";
 import { useDataStore } from "../../_stores/data-store";
+import { useAuthStore } from "../../_stores/auth-store";
 import { TODAY_ISO } from "../../_lib/mocks/data";
 import { formatMoney } from "../../_lib/utils/format";
 import { cn } from "../../_lib/utils/cn";
+import { getPartnerLabels } from "../../_lib/utils/partner-labels";
 import type { ReservationView } from "../../_lib/domain/types";
+
+// "IN_HOUSE" — backend'da BookingStatus enum'da yo'q, lekin frontend'da qo'llaniladi
+const IN_HOUSE = "IN_HOUSE" as const;
 
 const WEEKDAYS = [
   "Yakshanba",
@@ -74,6 +78,9 @@ const TASK_ORDER: Record<TaskKind, number> = {
 
 export function FrontDeskView() {
   const reservations = useReservations();
+  const user = useAuthStore((s) => s.user);
+  const partnerType = user?.partnerType ?? "hotel";
+  const labels = getPartnerLabels(partnerType);
 
   const checkIn = useDataStore((s) => s.checkIn);
   const checkOut = useDataStore((s) => s.checkOut);
@@ -100,7 +107,7 @@ export function FrontDeskView() {
         r.status === BookingStatus.CONFIRMED
       ) {
         arr.push({ kind: "arrival", reservation: r });
-      } else if (r.checkOut === TODAY_ISO && r.status === "IN_HOUSE") {
+      } else if (r.checkOut === TODAY_ISO && r.status === IN_HOUSE) {
         arr.push({ kind: "departure", reservation: r });
       }
     }
@@ -136,24 +143,25 @@ export function FrontDeskView() {
   }, [filter, query, tasks]);
 
   const nextTask = tasks[0];
+
   const handleCheckIn = (reservation: ReservationView) => {
     setAssignReservation(reservation);
   };
 
   const handleCheckOut = (reservation: ReservationView) => {
     checkOut(reservation.id);
-    toast.success(`Check-out qilindi: ${reservation.guest.fullName}`);
+    toast.success(`${labels.checkOutLabel}: ${reservation.guest.fullName}`);
   };
 
   const handleConfirm = (reservation: ReservationView) => {
     confirmReservation(reservation.id);
-    toast.success(`Bron tasdiqlandi: ${reservation.id}`);
+    toast.success(`${labels.reservationLabel} tasdiqlandi: ${reservation.id}`);
   };
 
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto">
       <PageHeader
-        eyebrow="Front Desk"
+        eyebrow={labels.dashboardEyebrow}
         title={
           <div className="flex items-center gap-3 mt-1">
             <div className="flex flex-col overflow-hidden rounded-lg border border-zinc-200/80 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:border-zinc-800 dark:bg-zinc-950 w-[3.25rem] shrink-0">
@@ -169,7 +177,7 @@ export function FrontDeskView() {
                 {WEEKDAYS[new Date(TODAY_ISO).getDay()]}
               </span>
               <span className="text-sm font-medium leading-none text-zinc-500 dark:text-zinc-400">
-                Bugungi vazifalar va navbat
+                {labels.frontDeskDescription}
               </span>
             </div>
           </div>
@@ -183,13 +191,11 @@ export function FrontDeskView() {
             </Button>
             <Button onClick={() => setWalkInOpen(true)}>
               <CalendarPlus className="mr-2 h-4 w-4" aria-hidden />
-              Yangi bron
+              {labels.newBookingLabel}
             </Button>
           </div>
         }
       />
-
-
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
         {/* Asosiy vazifalar qismi */}
@@ -206,22 +212,22 @@ export function FrontDeskView() {
                 active={filter === "pending"}
                 count={counts.pending}
                 onClick={() => setFilter("pending")}
-                label="Zudlik"
+                label="Yangi"
               />
               <FilterTab
                 active={filter === "arrival"}
                 count={counts.arrival}
                 onClick={() => setFilter("arrival")}
-                label="Keladi"
+                label={labels.checkInLabel}
               />
               <FilterTab
                 active={filter === "departure"}
                 count={counts.departure}
                 onClick={() => setFilter("departure")}
-                label="Ketadi"
+                label={labels.checkOutLabel}
               />
             </div>
-            
+
             <div className="relative shrink-0 lg:w-64">
               <Search
                 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
@@ -229,7 +235,7 @@ export function FrontDeskView() {
               />
               <Input
                 type="search"
-                placeholder="Qidirish..."
+                placeholder={`${labels.guestLabel} yoki ID qidirish...`}
                 className="h-10 w-full rounded-lg bg-zinc-50 dark:bg-zinc-950/50 pl-9 border-none focus-visible:ring-1 focus-visible:ring-brand-500 transition-shadow"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
@@ -256,6 +262,7 @@ export function FrontDeskView() {
                   key={`${kind}-${reservation.id}`}
                   kind={kind}
                   reservation={reservation}
+                  labels={labels}
                   onCheckIn={() => handleCheckIn(reservation)}
                   onCheckOut={() => handleCheckOut(reservation)}
                   onConfirm={() => handleConfirm(reservation)}
@@ -277,14 +284,14 @@ export function FrontDeskView() {
             <CardBody className="p-5 flex flex-col gap-4">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-brand-500" aria-hidden />
-                <h2 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Diqqat markazida</h2>
+                <h2 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Navbatdagi vazifa</h2>
               </div>
-              
+
               {nextTask ? (
-                <NextTaskCard task={nextTask} />
+                <NextTaskCard task={nextTask} labels={labels} />
               ) : (
                 <div className="rounded-lg bg-zinc-50 dark:bg-zinc-900/50 p-4 text-sm text-center text-zinc-500 dark:text-zinc-400">
-                  Hozircha shoshilinch vazifa yo'q.
+                  Hozircha shoshilinch vazifa yo'q. 🎉
                 </div>
               )}
             </CardBody>
@@ -293,8 +300,8 @@ export function FrontDeskView() {
           <Card className="border-none shadow-sm ring-1 ring-zinc-200/50 dark:ring-zinc-800/50 bg-gradient-to-br from-brand-50 to-white dark:from-brand-950/20 dark:to-zinc-950">
             <CardBody className="p-5 flex flex-col gap-3">
               <h2 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 mb-1">Tezkor yo'nalishlar</h2>
-              <QuickLink href="/reservations" icon={<Users />} label="Barcha bronlar" />
-              <QuickLink href="/calendar" icon={<CalendarDays />} label="Bandlik kalendari" />
+              <QuickLink href="/reservations" icon={<Users />} label={labels.reservationsTitle} />
+              <QuickLink href="/calendar" icon={<CalendarDays />} label={labels.calendarTitle.split(" ")[0]} />
             </CardBody>
           </Card>
         </aside>
@@ -310,7 +317,7 @@ export function FrontDeskView() {
           if (assignReservation) {
             checkIn(assignReservation.id);
             toast.success(
-              `Check-in qilindi: ${assignReservation.guest.fullName}`,
+              `${labels.checkInLabel}: ${assignReservation.guest.fullName}`,
             );
           }
         }}
@@ -322,9 +329,9 @@ export function FrontDeskView() {
         onConfirm={() => {
           if (!confirmReject) return;
           rejectReservation(confirmReject.id);
-          toast.success(`Bron rad etildi: ${confirmReject.id}`);
+          toast.success(`${labels.reservationLabel} rad etildi: ${confirmReject.id}`);
         }}
-        title="Bron rad etilsinmi?"
+        title={`${labels.reservationLabel} rad etilsinmi?`}
         description={
           confirmReject
             ? `${confirmReject.name} ning bronini rad etmoqchimisiz?`
@@ -338,10 +345,10 @@ export function FrontDeskView() {
 }
 
 // ==========================================
-// Helper Components (Redesigned for Soft UI)
+// Helper Components
 // ==========================================
 
-
+import type { PartnerLabels } from "../../_lib/utils/partner-labels";
 
 function FilterTab({
   active,
@@ -360,8 +367,8 @@ function FilterTab({
       onClick={onClick}
       className={cn(
         "relative px-4 py-2 text-sm font-medium transition-all duration-200 rounded-md flex items-center gap-2 whitespace-nowrap",
-        active 
-          ? "bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-200/50 dark:bg-zinc-800 dark:text-white dark:ring-zinc-700/50" 
+        active
+          ? "bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-200/50 dark:bg-zinc-800 dark:text-white dark:ring-zinc-700/50"
           : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200/30 dark:hover:text-zinc-200 dark:hover:bg-zinc-800/30"
       )}
     >
@@ -379,26 +386,22 @@ function FilterTab({
 const TASK_META: Record<
   TaskKind,
   {
-    label: string;
     icon: React.ReactNode;
     iconClass: string;
     bgClass: string;
   }
 > = {
   pending: {
-    label: "Yangi",
     icon: <AlertCircle className="h-5 w-5" aria-hidden />,
     iconClass: "text-amber-600 dark:text-amber-400",
     bgClass: "bg-amber-50 dark:bg-amber-900/30",
   },
   arrival: {
-    label: "Keladi",
     icon: <LogIn className="h-5 w-5" aria-hidden />,
     iconClass: "text-emerald-600 dark:text-emerald-400",
     bgClass: "bg-emerald-50 dark:bg-emerald-900/30",
   },
   departure: {
-    label: "Ketadi",
     icon: <LogOut className="h-5 w-5" aria-hidden />,
     iconClass: "text-zinc-500 dark:text-zinc-400",
     bgClass: "bg-zinc-100 dark:bg-zinc-800",
@@ -408,6 +411,7 @@ const TASK_META: Record<
 function TaskCard({
   kind,
   reservation,
+  labels,
   onCheckIn,
   onCheckOut,
   onConfirm,
@@ -415,6 +419,7 @@ function TaskCard({
 }: {
   kind: TaskKind;
   reservation: ReservationView;
+  labels: PartnerLabels;
   onCheckIn: () => void;
   onCheckOut: () => void;
   onConfirm: () => void;
@@ -423,64 +428,76 @@ function TaskCard({
   const balance = Math.max(0, reservation.totalPrice - reservation.paidAmount);
   const meta = TASK_META[kind];
 
+  const kindLabel =
+    kind === "pending"
+      ? "Yangi"
+      : kind === "arrival"
+      ? labels.checkInLabel
+      : labels.checkOutLabel;
+
   return (
     <div className="group relative flex flex-col gap-4 rounded-xl border border-zinc-200/60 bg-white p-4 shadow-sm transition-all duration-200 hover:border-zinc-300 hover:shadow-md dark:border-zinc-800/60 dark:bg-zinc-900 md:flex-row md:items-center">
-      
+
       {/* Icon Badge */}
       <div className={cn("hidden md:flex h-12 w-12 shrink-0 items-center justify-center rounded-full", meta.bgClass, meta.iconClass)}>
-         {meta.icon}
+        {meta.icon}
       </div>
 
       {/* Main Info */}
       <div className="flex-1 min-w-0">
         <div className="flex flex-wrap items-center gap-3">
-           <div className={cn("md:hidden flex h-6 w-6 items-center justify-center rounded-full", meta.bgClass, meta.iconClass)}>
-             <span className="[&>svg]:h-3 [&>svg]:w-3">{meta.icon}</span>
-           </div>
-           <Link href={`/reservations/${reservation.id}`} className="text-base font-semibold text-zinc-900 hover:text-brand-600 dark:text-zinc-100 dark:hover:text-brand-400">
-              {reservation.guest.fullName}
-           </Link>
-           <SourceBadge source={reservation.source} />
+          <div className={cn("md:hidden flex h-6 w-6 items-center justify-center rounded-full", meta.bgClass, meta.iconClass)}>
+            <span className="[&>svg]:h-3 [&>svg]:w-3">{meta.icon}</span>
+          </div>
+          <Link href={`/reservations/${reservation.id}`} className="text-base font-semibold text-zinc-900 hover:text-brand-600 dark:text-zinc-100 dark:hover:text-brand-400">
+            {reservation.guest.fullName}
+          </Link>
+          <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-semibold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+            {kindLabel}
+          </span>
+          <SourceBadge source={reservation.source} />
         </div>
-        
+
         <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-500 dark:text-zinc-400">
-           {/* Room Type */}
-           <div className="flex items-center gap-1.5">
-             <BedDouble className="h-4 w-4 text-zinc-400" />
-             <span>
-               {reservation.roomTypeName}
-               {reservation.roomNumber && <strong className="text-zinc-700 dark:text-zinc-300 ml-1">· {reservation.roomNumber}</strong>}
-             </span>
-           </div>
-           {/* Duration */}
-           <div className="flex items-center gap-1.5">
-             <CalendarDays className="h-4 w-4 text-zinc-400" />
-             <span>{reservation.nights} kecha</span>
-           </div>
-           {/* Price & Balance */}
-           <div className="flex items-center gap-1.5 font-medium">
-             <Wallet className="h-4 w-4 text-zinc-400" />
-             {kind === "departure" ? (
-               balance > 0 ? (
-                 <span className="text-red-600 dark:text-red-400">Qarzdorlik: {formatMoney(balance)}</span>
-               ) : (
-                 <span className="text-emerald-600 dark:text-emerald-400">To'liq to'langan</span>
-               )
-             ) : (
-               <span>{formatMoney(reservation.totalPrice)}</span>
-             )}
-           </div>
+          {/* Unit type */}
+          {reservation.roomTypeName && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-zinc-400">📋</span>
+              <span>
+                {reservation.roomTypeName}
+                {reservation.roomNumber && <strong className="text-zinc-700 dark:text-zinc-300 ml-1">· {reservation.roomNumber}</strong>}
+              </span>
+            </div>
+          )}
+          {/* Duration */}
+          <div className="flex items-center gap-1.5">
+            <CalendarDays className="h-4 w-4 text-zinc-400" />
+            <span>{reservation.nights} kecha</span>
+          </div>
+          {/* Price & Balance */}
+          <div className="flex items-center gap-1.5 font-medium">
+            <Wallet className="h-4 w-4 text-zinc-400" />
+            {kind === "departure" ? (
+              balance > 0 ? (
+                <span className="text-red-600 dark:text-red-400">Qarzdorlik: {formatMoney(balance)}</span>
+              ) : (
+                <span className="text-emerald-600 dark:text-emerald-400">To'liq to'langan ✓</span>
+              )
+            ) : (
+              <span>{formatMoney(reservation.totalPrice)}</span>
+            )}
+          </div>
         </div>
       </div>
-      
+
       {/* Actions */}
       <div className="flex items-center gap-2 pt-4 border-t border-zinc-100 dark:border-zinc-800/60 md:pt-0 md:border-t-0 md:pl-4 md:border-l">
-        <Tooltip content="Mijozga qo'ng'iroq qilish" side="top">
+        <Tooltip content={`${labels.guestLabel}ga qo'ng'iroq`} side="top">
           <a href={`tel:+${reservation.guest.phone}`} className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-zinc-400 hover:text-brand-600 hover:bg-brand-50 transition-colors">
             <Phone className="h-4 w-4" />
           </a>
         </Tooltip>
-        
+
         <div className="flex-1 flex justify-end gap-2">
           {kind === "pending" && (
             <>
@@ -494,12 +511,12 @@ function TaskCard({
           )}
           {kind === "arrival" && (
             <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={onCheckIn}>
-              Check-in qilish
+              {labels.checkInLabel}
             </Button>
           )}
           {kind === "departure" && (
             <Button variant="outline" size="sm" onClick={onCheckOut} className="border-zinc-200 hover:bg-zinc-50">
-              Check-out qilib yopish
+              {labels.checkOutLabel}
             </Button>
           )}
         </div>
@@ -508,8 +525,15 @@ function TaskCard({
   );
 }
 
-function NextTaskCard({ task }: { task: Task }) {
+function NextTaskCard({ task, labels }: { task: Task; labels: PartnerLabels }) {
   const meta = TASK_META[task.kind];
+  const kindLabel =
+    task.kind === "pending"
+      ? "Yangi"
+      : task.kind === "arrival"
+      ? labels.checkInLabel
+      : labels.checkOutLabel;
+
   return (
     <Link
       href={`/reservations/${task.reservation.id}`}
@@ -523,7 +547,7 @@ function NextTaskCard({ task }: { task: Task }) {
           {task.reservation.guest.fullName}
         </p>
         <p className="truncate text-xs text-zinc-500 mt-0.5">
-          {meta.label} · {task.reservation.roomTypeName}
+          {kindLabel} · {task.reservation.roomTypeName}
         </p>
       </div>
     </Link>
