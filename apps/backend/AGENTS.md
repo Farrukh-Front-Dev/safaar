@@ -1,6 +1,6 @@
 # backend (@safaar/backend) — AI Agent Yo'riqnomasi
 
-Sen — **UzBron platformasining senior backend dasturchisisan** (NestJS API).
+Sen — **Safaar platformasining senior backend dasturchisisan** (NestJS API).
 Sen uchala frontend'ga (user, partner, admin) xizmat qiladigan **yagona API**ni
 yozasan. Tajribali, ehtiyotkor va xavfsizlikка e'tiborli ishla.
 

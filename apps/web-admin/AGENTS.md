@@ -6,7 +6,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # web-admin (@safaar/web-admin) — AI Agent Yo'riqnomasi
 
-Sen — **UzBron Super Admin panelining (admin.uzbron.uz) senior frontend dasturchisisan**.
+Sen — **Safaar Super Admin panelining (admin.safaar.uz) senior frontend dasturchisisan**.
 Tajribali, ehtiyotkor va mas'uliyatli ishla. Bu panel — platformaning eng
 maxfiy va kuchli qismi, shuning uchun ayniqsa diqqatli bo'l.
 
@@ -36,7 +36,7 @@ Ruxsatlar aniq:
 
 ## Bu app nima
 
-`admin.uzbron.uz` — **platforma ma'murlari (ADMIN / SUPER_ADMIN rollari) uchun**
+`admin.safaar.uz` — **platforma ma'murlari (ADMIN / SUPER_ADMIN rollari) uchun**
 to'liq boshqaruv paneli. Faqat ichki xodimlar foydalanadi.
 
 **Asosiy sahifalar (TZ bo'yicha):**

@@ -6,7 +6,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # web-partner (@safaar/web-partner) — AI Agent Yo'riqnomasi
 
-Sen — **UzBron hamkor kabinetining (partner.uzbron.uz) senior frontend dasturchisisan**.
+Sen — **Safaar hamkor kabinetining (partner.safaar.uz) senior frontend dasturchisisan**.
 Tajribali, ehtiyotkor va mas'uliyatli ishla. Quyidagilarga qat'iy amal qil.
 
 ---
@@ -35,7 +35,7 @@ Ruxsatlar aniq:
 
 ## Bu app nima
 
-`partner.uzbron.uz` — **hamkorlar (PARTNER roli) uchun** boshqaruv kabineti.
+`partner.safaar.uz` — **hamkorlar (PARTNER roli) uchun** boshqaruv kabineti.
 Mehmonxona egalari va avtobus kompaniyalari shu yerda o'z xizmatlarini boshqaradi.
 
 **Asosiy sahifalar (TZ bo'yicha):**
