@@ -11,6 +11,8 @@ import { Dialog } from "../../../../_components/ui/dialog";
 import { Input } from "../../../../_components/ui/input";
 import { Label } from "../../../../_components/ui/label";
 import { useDataStore } from "../../../../_stores/data-store";
+import { useAuthStore } from "../../../../_stores/auth-store";
+import { hasBeds } from "../../../../_lib/utils/partner-labels";
 
 const schema = z.object({
   floor: z.number().int().min(1).max(50),
@@ -29,6 +31,8 @@ interface Props {
 export function BulkRoomsDialog({ open, onClose }: Props) {
   const roomTypes = useDataStore((s) => s.roomTypes);
   const bulkAddRooms = useDataStore((s) => s.bulkAddRooms);
+  const generateBedsForRoom = useDataStore((s) => s.generateBedsForRoom);
+  const partnerType = useAuthStore((s) => s.user?.partnerType);
 
   const form = useForm<Values>({
     resolver: zodResolver(schema),
@@ -66,6 +70,12 @@ export function BulkRoomsDialog({ open, onClose }: Props) {
     if (!result.ok) {
       toast.error(result.reason ?? "Xato yuz berdi");
       return;
+    }
+    if (hasBeds(partnerType) && result.rooms) {
+      const roomType = roomTypes.find((rt) => rt.id === v.roomTypeId);
+      result.rooms.forEach((room) =>
+        generateBedsForRoom(room.id, roomType?.capacity ?? 1),
+      );
     }
     toast.success(`${result.added} ta xona qo'shildi`);
     if (result.reason) {

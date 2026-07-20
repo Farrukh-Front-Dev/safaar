@@ -23,7 +23,7 @@ import { Card, CardBody } from "../../_components/ui/card";
 import { ConfirmDialog } from "../../_components/ui/dialog";
 import { EmptyState } from "../../_components/ui/empty-state";
 import { Input } from "../../_components/ui/input";
-import { AssignRoomDialog } from "../../_components/domain/assign-room-dialog";
+import { CheckInDialog } from "../../_components/domain/check-in-dialog";
 import { ReservationStatusBadge } from "../../_components/domain/reservation-status-badge";
 import { SourceBadge } from "../../_components/domain/source-badge";
 import { WalkInDialog } from "../../_components/domain/walk-in-dialog";
@@ -384,7 +384,7 @@ export function ReservationsView() {
       </div>
 
       <WalkInDialog open={walkInOpen} onClose={() => setWalkInOpen(false)} />
-      <AssignRoomDialog
+      <CheckInDialog
         open={Boolean(assignTarget)}
         onClose={() => setAssignTarget(null)}
         reservation={assignTarget}

@@ -1,0 +1,128 @@
+"use client";
+
+import { BedSingle, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "../../../../_components/ui/button";
+import { Drawer } from "../../../../_components/ui/drawer";
+import { EmptyState } from "../../../../_components/ui/empty-state";
+import { RoomStatusBadge } from "../../../../_components/domain/room-status-badge";
+import { useDataStore } from "../../../../_stores/data-store";
+import { RoomStatus, type Room } from "../../../../_lib/domain/types";
+
+interface Props {
+  open: boolean;
+  onClose: () => void;
+  room: Room | null;
+}
+
+/** Dormitory xonasi ichidagi alohida yotoqlarni boshqarish (faqat hostel). */
+export function BedManagementDialog({ open, onClose, room }: Props) {
+  const beds = useDataStore((s) => s.beds);
+  const addBed = useDataStore((s) => s.addBed);
+  const updateBed = useDataStore((s) => s.updateBed);
+  const deleteBed = useDataStore((s) => s.deleteBed);
+
+  const roomBeds = room
+    ? beds.filter((b) => b.roomId === room.id).sort((a, b) => a.label.localeCompare(b.label))
+    : [];
+
+  const handleAdd = () => {
+    if (!room) return;
+    const result = addBed({
+      roomId: room.id,
+      label: `${roomBeds.length + 1}-o'rin`,
+    });
+    if (!result.ok) {
+      toast.error(result.reason ?? "Qo'shib bo'lmadi");
+      return;
+    }
+    toast.success("Yotoq qo'shildi");
+  };
+
+  const handleToggleListed = (bedId: string, isListed: boolean) => {
+    const result = updateBed(bedId, { isListed: !isListed });
+    if (!result.ok) toast.error(result.reason ?? "O'zgartirib bo'lmadi");
+  };
+
+  const handleDelete = (bedId: string, label: string) => {
+    if (!confirm(`Rostdan ham ${label} ni o'chirmoqchimisiz?`)) return;
+    const result = deleteBed(bedId);
+    if (!result.ok) {
+      toast.error(result.reason ?? "O'chirib bo'lmadi");
+      return;
+    }
+    toast.success(`${label} o'chirildi`);
+  };
+
+  return (
+    <Drawer
+      open={open}
+      onClose={onClose}
+      title={room ? `Xona ${room.number} — Yotoqlar` : "Yotoqlar"}
+      description="Har bir yotoq mustaqil band qilinadi va tizimda alohida kuzatiladi."
+      size="md"
+      footer={
+        <>
+          <Button variant="outline" onClick={onClose}>
+            Yopish
+          </Button>
+          <Button onClick={handleAdd}>
+            <Plus className="h-4 w-4" aria-hidden />
+            Yotoq qo'shish
+          </Button>
+        </>
+      }
+    >
+      {roomBeds.length === 0 ? (
+        <EmptyState
+          icon={<BedSingle className="h-10 w-10" aria-hidden />}
+          title="Hozircha yotoq yo'q"
+          description="Bu dormitory xonaga birinchi yotoqni qo'shing."
+          action={
+            <Button onClick={handleAdd}>
+              <Plus className="h-4 w-4" aria-hidden />
+              Birinchi yotoqni qo'shish
+            </Button>
+          }
+        />
+      ) : (
+        <div className="flex flex-col gap-2">
+          {roomBeds.map((bed) => (
+            <div
+              key={bed.id}
+              className="flex items-center justify-between gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5"
+            >
+              <div className="flex items-center gap-3">
+                <BedSingle className="h-4 w-4 text-zinc-400" aria-hidden />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">{bed.label}</span>
+                  <RoomStatusBadge status={bed.status} className="mt-0.5" />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-1.5 text-xs text-[var(--muted-foreground)] cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    className="h-3.5 w-3.5 rounded border-[var(--border)] accent-brand-700"
+                    checked={bed.isListed}
+                    onChange={() => handleToggleListed(bed.id, bed.isListed)}
+                  />
+                  Sotuvda
+                </label>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(bed.id, bed.label)}
+                  disabled={bed.status === RoomStatus.OCCUPIED}
+                  aria-label={`${bed.label} ni o'chirish`}
+                  className="rounded-md p-1.5 text-red-600 transition-colors hover:bg-red-50 disabled:opacity-30 disabled:cursor-not-allowed dark:hover:bg-red-950/30"
+                >
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </Drawer>
+  );
+}

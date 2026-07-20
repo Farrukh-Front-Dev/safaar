@@ -12,6 +12,7 @@ import {
 import {
   ReservationSource,
   RoomStatus,
+  type Bed,
   type FrontDeskStats,
   type GuestProfile,
   type ReservationView,
@@ -34,6 +35,8 @@ export interface WalkInDraft {
   phone: string;
   roomTypeId: string;
   roomNumber?: string;
+  /** Faqat hostel: oldindan tanlangan yotoq. */
+  bedId?: string;
   checkIn: string;
   checkOut: string;
   adults: number;
@@ -57,6 +60,14 @@ export interface RoomDraft {
   number: string;
   floor: number;
   roomTypeId: string;
+  status?: RoomStatus;
+  isListed?: boolean;
+  nightlyPrice?: number;
+}
+
+export interface BedDraft {
+  roomId: string;
+  label: string;
   status?: RoomStatus;
   isListed?: boolean;
   nightlyPrice?: number;
@@ -101,6 +112,7 @@ interface DataState {
   reservations: ReservationView[];
   rooms: Room[];
   roomTypes: RoomType[];
+  beds: Bed[];
   guests: GuestProfile[];
   listing: Listing;
 
@@ -113,6 +125,7 @@ interface DataState {
   addReservation: (draft: WalkInDraft) => ReservationView;
 
   assignRoom: (reservationId: string, roomNumber: string) => void;
+  assignBed: (reservationId: string, bedId: string) => void;
 
   // Room status (housekeeping)
   setRoomStatus: (roomId: string, status: RoomStatus) => void;
@@ -130,7 +143,20 @@ interface DataState {
     ok: boolean;
     reason?: string;
     added: number;
+    rooms?: Room[];
   };
+  /** Dacha uchun: yagona xona turi + xona bo'lishini kafolatlaydi (idempotent). */
+  ensureSingleUnitRoom: (defaultName: string) => Room;
+
+  // Bed CRUD (faqat hostel dormitory xonalari uchun)
+  addBed: (draft: BedDraft) => { ok: boolean; reason?: string; bed?: Bed };
+  updateBed: (
+    id: string,
+    draft: Partial<Omit<BedDraft, "roomId">>,
+  ) => { ok: boolean; reason?: string };
+  deleteBed: (id: string) => { ok: boolean; reason?: string };
+  /** Dormitory xonasi uchun N ta yotoq avtomatik yaratadi. */
+  generateBedsForRoom: (roomId: string, count: number) => Bed[];
 
   // Listing (e'lon) mutations
   updateListingGeneral: (draft: ListingGeneralDraft) => void;
@@ -166,6 +192,7 @@ export const useDataStore = create<DataState>((set, get) => ({
   reservations: mockReservations,
   rooms: mockRooms,
   roomTypes: mockRoomTypes,
+  beds: [],
   guests: mockGuests,
   listing: mockListing,
 
@@ -191,7 +218,26 @@ export const useDataStore = create<DataState>((set, get) => ({
       const reservations = state.reservations.map((r) =>
         r.id === id ? { ...r, status: "IN_HOUSE" as const } : r,
       );
-      const rooms = reservation?.roomNumber
+      if (!reservation) return { reservations };
+
+      if (reservation.bedId) {
+        const beds = state.beds.map((b) =>
+          b.id === reservation.bedId
+            ? {
+                ...b,
+                status: RoomStatus.OCCUPIED,
+                occupant: {
+                  guestName: reservation.guest.fullName,
+                  reservationId: reservation.id,
+                  checkOut: reservation.checkOut,
+                },
+              }
+            : b,
+        );
+        return { reservations, beds };
+      }
+
+      const rooms = reservation.roomNumber
         ? state.rooms.map((rm) =>
             rm.number === reservation.roomNumber
               ? {
@@ -216,13 +262,31 @@ export const useDataStore = create<DataState>((set, get) => ({
       ),
     })),
 
+  assignBed: (reservationId: string, bedId: string) =>
+    set((state) => ({
+      reservations: state.reservations.map((r) =>
+        r.id === reservationId ? { ...r, bedId } : r,
+      ),
+    })),
+
   checkOut: (id) =>
     set((state) => {
       const reservation = state.reservations.find((r) => r.id === id);
       const reservations = state.reservations.map((r) =>
         r.id === id ? { ...r, status: BookingStatus.COMPLETED } : r,
       );
-      const rooms = reservation?.roomNumber
+      if (!reservation) return { reservations };
+
+      if (reservation.bedId) {
+        const beds = state.beds.map((b) =>
+          b.id === reservation.bedId
+            ? { ...b, status: RoomStatus.VACANT_DIRTY, occupant: undefined }
+            : b,
+        );
+        return { reservations, beds };
+      }
+
+      const rooms = reservation.roomNumber
         ? state.rooms.map((rm) =>
             rm.number === reservation.roomNumber
               ? {
@@ -251,6 +315,7 @@ export const useDataStore = create<DataState>((set, get) => ({
       roomTypeId: draft.roomTypeId,
       roomTypeName: roomType?.name ?? "—",
       roomNumber: draft.roomNumber,
+      bedId: draft.bedId,
       checkIn: draft.checkIn,
       checkOut: draft.checkOut,
       nights: draft.nights,
@@ -341,7 +406,10 @@ export const useDataStore = create<DataState>((set, get) => ({
     ) {
       return { ok: false, reason: `Xona ${draft.number} allaqachon mavjud.` };
     }
-    if (existing.status === RoomStatus.OCCUPIED) {
+    const hasOccupiedBed = state.beds.some(
+      (b) => b.roomId === existing.id && b.status === RoomStatus.OCCUPIED,
+    );
+    if (existing.status === RoomStatus.OCCUPIED || hasOccupiedBed) {
       return {
         ok: false,
         reason: "Bu xonada mehmon bor. Avval check-out qiling.",
@@ -376,13 +444,19 @@ export const useDataStore = create<DataState>((set, get) => ({
     const state = get();
     const room = state.rooms.find((r) => r.id === id);
     if (!room) return { ok: false, reason: "Xona topilmadi." };
-    if (room.status === RoomStatus.OCCUPIED) {
+    const hasOccupiedBed = state.beds.some(
+      (b) => b.roomId === id && b.status === RoomStatus.OCCUPIED,
+    );
+    if (room.status === RoomStatus.OCCUPIED || hasOccupiedBed) {
       return {
         ok: false,
         reason: "Bu xonada mehmon bor. Avval check-out qiling.",
       };
     }
-    set({ rooms: state.rooms.filter((r) => r.id !== id) });
+    set({
+      rooms: state.rooms.filter((r) => r.id !== id),
+      beds: state.beds.filter((b) => b.roomId !== id),
+    });
     return { ok: true };
   },
 
@@ -430,10 +504,105 @@ export const useDataStore = create<DataState>((set, get) => ({
     return {
       ok: true,
       added: newRooms.length,
+      rooms: newRooms,
       ...(conflicts.length > 0
         ? { reason: `O'tkazib yuborilgan (mavjud): ${conflicts.join(", ")}` }
         : {}),
     };
+  },
+
+  ensureSingleUnitRoom: (defaultName) => {
+    const state = get();
+    if (state.rooms.length > 0) return state.rooms[0];
+
+    const roomType: RoomType = {
+      id: `rt-${Date.now().toString(36)}`,
+      name: defaultName,
+      basePrice: 0,
+      capacity: 2,
+      amenities: [],
+    };
+    const room: Room = {
+      id: "room-unit-1",
+      number: "1",
+      floor: 1,
+      roomTypeId: roomType.id,
+      roomTypeName: roomType.name,
+      isListed: true,
+      nightlyPrice: roomType.basePrice,
+      status: RoomStatus.VACANT_CLEAN,
+    };
+    set({ roomTypes: [...state.roomTypes, roomType], rooms: [room] });
+    return room;
+  },
+
+  addBed: (draft) => {
+    const state = get();
+    const room = state.rooms.find((r) => r.id === draft.roomId);
+    if (!room) return { ok: false, reason: "Xona topilmadi." };
+    const bed: Bed = {
+      id: `bed-${Date.now().toString(36)}-${Math.round(Math.random() * 1000)}`,
+      roomId: draft.roomId,
+      label: draft.label,
+      status: draft.status ?? RoomStatus.VACANT_CLEAN,
+      isListed: draft.isListed ?? true,
+      nightlyPrice: draft.nightlyPrice,
+    };
+    set({ beds: [...state.beds, bed] });
+    return { ok: true, bed };
+  },
+
+  updateBed: (id, draft) => {
+    const state = get();
+    const existing = state.beds.find((b) => b.id === id);
+    if (!existing) return { ok: false, reason: "Yotoq topilmadi." };
+    if (draft.status !== undefined && existing.status === RoomStatus.OCCUPIED) {
+      return {
+        ok: false,
+        reason: "Bu yotoqda mehmon bor. Avval check-out qiling.",
+      };
+    }
+    set({
+      beds: state.beds.map((b) =>
+        b.id === id
+          ? {
+              ...b,
+              label: draft.label ?? b.label,
+              status: draft.status ?? b.status,
+              isListed: draft.isListed ?? b.isListed,
+              nightlyPrice: draft.nightlyPrice,
+            }
+          : b,
+      ),
+    });
+    return { ok: true };
+  },
+
+  deleteBed: (id) => {
+    const state = get();
+    const bed = state.beds.find((b) => b.id === id);
+    if (!bed) return { ok: false, reason: "Yotoq topilmadi." };
+    if (bed.status === RoomStatus.OCCUPIED) {
+      return {
+        ok: false,
+        reason: "Bu yotoqda mehmon bor. Avval check-out qiling.",
+      };
+    }
+    set({ beds: state.beds.filter((b) => b.id !== id) });
+    return { ok: true };
+  },
+
+  generateBedsForRoom: (roomId, count) => {
+    const state = get();
+    const newBeds: Bed[] = Array.from({ length: count }, (_, i) => ({
+      id: `bed-${roomId}-${i + 1}`,
+      roomId,
+      label: `${i + 1}-o'rin`,
+      status: RoomStatus.VACANT_CLEAN,
+      isListed: true,
+    }));
+    set({ beds: [...state.beds, ...newBeds] });
+    return newBeds;
   },
 
   // ─── Listing (e'lon) mutations ───────────────────────────────────
@@ -587,10 +756,13 @@ export const useDataStore = create<DataState>((set, get) => ({
   },
 
   getStats: () => {
-    const { reservations, rooms } = get();
+    const { reservations, rooms, beds } = get();
     const today = TODAY_ISO;
-    const occupied = rooms.filter((r) => r.status === RoomStatus.OCCUPIED).length;
-    const total = rooms.length;
+    const occupied =
+      beds.length > 0
+        ? beds.filter((b) => b.status === RoomStatus.OCCUPIED).length
+        : rooms.filter((r) => r.status === RoomStatus.OCCUPIED).length;
+    const total = beds.length > 0 ? beds.length : rooms.length;
     const arrivals = reservations.filter(
       (r) => r.checkIn === today && r.status === BookingStatus.CONFIRMED,
     ).length;

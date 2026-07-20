@@ -1,20 +1,37 @@
 "use client";
 
-import { BedDouble, Users } from "lucide-react";
-import { useMemo, useState } from "react";
+import { BedDouble, BedSingle, Users } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "../../_components/layout/page-header";
 import { useRooms } from "../../_hooks/use-rooms";
 import { useRoomTypes } from "../../_hooks/use-room-types";
-import { type Room, type RoomType } from "../../_lib/domain/types";
+import { RoomStatus, type Bed, type Room, type RoomType } from "../../_lib/domain/types";
 import { RoomDialog } from "../settings/rooms/_dialogs/room-dialog";
+import { BedManagementDialog } from "../settings/rooms/_dialogs/bed-management-dialog";
 import { Button } from "../../_components/ui/button";
 import { formatMoney } from "../../_lib/utils/format";
+import { useAuthStore } from "../../_stores/auth-store";
+import { useDataStore } from "../../_stores/data-store";
+import { getPartnerLabels, hasBeds, isDacha } from "../../_lib/utils/partner-labels";
 
 export function RoomsView() {
+  const router = useRouter();
   const { data: rooms } = useRooms();
   const { data: roomTypes } = useRoomTypes();
+  const beds = useDataStore((s) => s.beds);
+  const partnerType = useAuthStore((s) => s.user?.partnerType);
+  const labels = getPartnerLabels(partnerType);
+  const isHostel = hasBeds(partnerType);
+  const isDachaType = isDacha(partnerType);
+
   const [addingRoom, setAddingRoom] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
+  const [managingBedsFor, setManagingBedsFor] = useState<Room | null>(null);
+
+  useEffect(() => {
+    if (isDachaType) router.replace("/listing");
+  }, [isDachaType, router]);
 
   // Qavatlar bo'yicha guruhlash
   const floors = useMemo(() => {
@@ -39,18 +56,20 @@ export function RoomsView() {
     return sortedFloors;
   }, [rooms]);
 
+  if (isDachaType) return null;
+
   return (
     <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-10">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <PageHeader
           eyebrow="Operatsion"
-          title="Xonalar Xaritasi (Room Map)"
-          description="Mehmonxonadagi barcha xonalarning qavatma-qavat joylashuvi va xususiyatlari."
+          title={labels.unitsPageTitle}
+          description={labels.unitsPageDescription}
         />
         <div className="mt-4 sm:mt-0">
           <Button onClick={() => setAddingRoom(true)}>
             <BedDouble className="mr-2 h-4 w-4" />
-            Yangi xona qo'shish
+            {labels.addUnitLabel}
           </Button>
         </div>
       </div>
@@ -60,20 +79,24 @@ export function RoomsView() {
           <section key={floor} className="flex flex-col gap-4">
             <div className="flex items-center gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-2">
               <h2 className="text-xl font-bold text-zinc-900 dark:text-white">{floor}-Qavat</h2>
-              <span className="text-sm font-medium text-zinc-500">{rooms.length} ta xona</span>
+              <span className="text-sm font-medium text-zinc-500">
+                {rooms.length} ta {labels.unitSingular}
+              </span>
             </div>
-            
+
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {rooms.map(room => {
                 const roomType = roomTypes.find(t => t.id === room.roomTypeId);
+                const roomBeds = isHostel ? beds.filter((b) => b.roomId === room.id) : [];
                 return (
-                  <button
+                  <RoomCard
                     key={room.id}
-                    className="text-left"
-                    onClick={() => setEditingRoom(room)}
-                  >
-                    <RoomCard room={room} roomType={roomType} />
-                  </button>
+                    room={room}
+                    roomType={roomType}
+                    beds={isHostel ? roomBeds : undefined}
+                    onEdit={() => setEditingRoom(room)}
+                    onManageBeds={isHostel ? () => setManagingBedsFor(room) : undefined}
+                  />
                 );
               })}
             </div>
@@ -81,24 +104,52 @@ export function RoomsView() {
         ))}
       </div>
 
-      <RoomDialog 
-        open={addingRoom} 
-        onClose={() => setAddingRoom(false)} 
-        editing={null} 
+      <RoomDialog
+        open={addingRoom}
+        onClose={() => setAddingRoom(false)}
+        editing={null}
       />
-      
+
       <RoomDialog
         open={!!editingRoom}
         onClose={() => setEditingRoom(null)}
         editing={editingRoom}
       />
+
+      <BedManagementDialog
+        open={!!managingBedsFor}
+        onClose={() => setManagingBedsFor(null)}
+        room={managingBedsFor}
+      />
     </div>
   );
 }
 
-function RoomCard({ room, roomType }: { room: Room; roomType?: RoomType }) {
+function RoomCard({
+  room,
+  roomType,
+  beds,
+  onEdit,
+  onManageBeds,
+}: {
+  room: Room;
+  roomType?: RoomType;
+  beds?: Bed[];
+  onEdit: () => void;
+  onManageBeds?: () => void;
+}) {
+  const freeBeds = beds?.filter((b) => b.status === RoomStatus.VACANT_CLEAN).length ?? 0;
+
   return (
-    <div className="flex h-full w-full flex-col rounded-xl border border-zinc-200 bg-white p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-1 dark:border-zinc-800 dark:bg-[var(--surface-muted)]">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onEdit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") onEdit();
+      }}
+      className="relative flex h-full w-full cursor-pointer flex-col rounded-xl border border-zinc-200 bg-white p-4 text-left shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-1 dark:border-zinc-800 dark:bg-[var(--surface-muted)]"
+    >
       <div className="flex items-start justify-between">
         <span className="text-2xl font-bold text-zinc-900 dark:text-white">
           {room.number}
@@ -107,12 +158,12 @@ function RoomCard({ room, roomType }: { room: Room; roomType?: RoomType }) {
           <BedDouble className="h-4 w-4" />
         </div>
       </div>
-      
+
       <div className="mt-4 flex flex-col gap-1.5">
         <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 line-clamp-1">
           {room.roomTypeName}
         </span>
-        
+
         <div className="flex items-center gap-3 text-xs font-medium text-zinc-500">
           <span className="flex items-center gap-1">
             <Users className="h-3.5 w-3.5" />
@@ -126,11 +177,27 @@ function RoomCard({ room, roomType }: { room: Room; roomType?: RoomType }) {
         </div>
       </div>
 
-      <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800/80">
-        <span className="text-[11px] font-medium text-[var(--muted-foreground)]">1 kechaga:</span>
-        <div className="font-semibold text-brand-700 dark:text-brand-300 mt-0.5">
-          {roomType ? formatMoney(roomType.basePrice) : "—"}
+      <div className="mt-4 flex items-center justify-between gap-2 pt-4 border-t border-zinc-100 dark:border-zinc-800/80">
+        <div>
+          <span className="text-[11px] font-medium text-[var(--muted-foreground)]">1 kechaga:</span>
+          <div className="font-semibold text-brand-700 dark:text-brand-300 mt-0.5">
+            {roomType ? formatMoney(roomType.basePrice) : "—"}
+          </div>
         </div>
+
+        {beds && onManageBeds && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onManageBeds();
+            }}
+            className="flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-[11px] font-medium text-zinc-600 hover:bg-[var(--surface-muted)] dark:text-zinc-300"
+          >
+            <BedSingle className="h-3 w-3" aria-hidden />
+            {freeBeds}/{beds.length} bo'sh
+          </button>
+        )}
       </div>
     </div>
   );

@@ -22,7 +22,7 @@ import { EmptyState } from "../../_components/ui/empty-state";
 import { ConfirmDialog } from "../../_components/ui/dialog";
 import { Input } from "../../_components/ui/input";
 import { Tooltip } from "../../_components/ui/tooltip";
-import { AssignRoomDialog } from "../../_components/domain/assign-room-dialog";
+import { CheckInDialog } from "../../_components/domain/check-in-dialog";
 import { SourceBadge } from "../../_components/domain/source-badge";
 import { WalkInDialog } from "../../_components/domain/walk-in-dialog";
 import { PageHeader } from "../../_components/layout/page-header";
@@ -309,7 +309,7 @@ export function FrontDeskView() {
 
       <WalkInDialog open={walkInOpen} onClose={() => setWalkInOpen(false)} />
 
-      <AssignRoomDialog
+      <CheckInDialog
         open={Boolean(assignReservation)}
         onClose={() => setAssignReservation(null)}
         reservation={assignReservation}

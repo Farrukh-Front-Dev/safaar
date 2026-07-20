@@ -11,6 +11,8 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { TODAY_ISO } from "../../_lib/mocks/data";
 import { useDataStore } from "../../_stores/data-store";
+import { useAuthStore } from "../../_stores/auth-store";
+import { getPartnerLabels, isDacha } from "../../_lib/utils/partner-labels";
 import {
   isValidPhone,
   maskPhone,
@@ -46,6 +48,8 @@ export interface WalkInInitial {
   checkOut?: string;
   roomTypeId?: string;
   roomNumber?: string;
+  /** Faqat hostel: kalendardan oldindan tanlangan yotoq. */
+  bedId?: string;
 }
 
 interface WalkInDialogProps {
@@ -63,7 +67,17 @@ export function WalkInDialog({
   const roomTypes = useDataStore((s) => s.roomTypes);
   const rooms = useDataStore((s) => s.rooms);
   const addReservation = useDataStore((s) => s.addReservation);
+  const ensureSingleUnitRoom = useDataStore((s) => s.ensureSingleUnitRoom);
+  const listingName = useDataStore((s) => s.listing.name);
+  const partnerType = useAuthStore((s) => s.user?.partnerType);
+  const labels = getPartnerLabels(partnerType);
+  const dacha = isDacha(partnerType);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (open && dacha) ensureSingleUnitRoom(listingName || "Dacha");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, dacha]);
 
   const defaultCheckIn = initialValues?.checkIn ?? TODAY_ISO;
   const defaultCheckOut =
@@ -119,6 +133,7 @@ export function WalkInDialog({
         phone: normalizePhone(values.phone),
         roomTypeId: values.roomTypeId,
         roomNumber: initialValues?.roomNumber,
+        bedId: initialValues?.bedId,
         checkIn: values.checkIn,
         checkOut: values.checkOut,
         adults: values.adults,
@@ -141,7 +156,7 @@ export function WalkInDialog({
     <Dialog
       open={open}
       onClose={onClose}
-      title="Yangi bron yaratish"
+      title={labels.walkInTitle}
       description="Resepsiyonga to'g'ridan-to'g'ri kelgan mehmon uchun."
       size="lg"
     >
@@ -177,24 +192,26 @@ export function WalkInDialog({
           )}
         </div>
 
-        <div className="flex flex-col gap-1.5 md:col-span-2">
-          <Label htmlFor="roomTypeId">Xona turi</Label>
-          <select
-            id="roomTypeId"
-            className="h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm focus:border-brand-600 focus:outline-none"
-            {...form.register("roomTypeId")}
-          >
-            {roomTypes.length === 0 ? (
-              <option value="">Avval xona turini yarating</option>
-            ) : (
-              roomTypes.map((rt) => (
-                <option key={rt.id} value={rt.id}>
-                  {rt.name} — {rt.basePrice.toLocaleString("uz-UZ")} so&apos;m
-                </option>
-              ))
-            )}
-          </select>
-        </div>
+        {!dacha && (
+          <div className="flex flex-col gap-1.5 md:col-span-2">
+            <Label htmlFor="roomTypeId">{labels.unitTypeLabel}</Label>
+            <select
+              id="roomTypeId"
+              className="h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm focus:border-brand-600 focus:outline-none"
+              {...form.register("roomTypeId")}
+            >
+              {roomTypes.length === 0 ? (
+                <option value="">Avval {labels.unitTypeLabel.toLowerCase()}ni yarating</option>
+              ) : (
+                roomTypes.map((rt) => (
+                  <option key={rt.id} value={rt.id}>
+                    {rt.name} — {rt.basePrice.toLocaleString("uz-UZ")} so&apos;m
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+        )}
 
         {initialValues?.roomNumber && (
           <div className="rounded-card border border-brand-200 bg-brand-50/60 px-3 py-2 text-sm text-brand-900 dark:border-brand-900/50 dark:bg-brand-950/25 dark:text-brand-100 md:col-span-2">
@@ -204,12 +221,12 @@ export function WalkInDialog({
         )}
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="checkIn">Kelish sanasi</Label>
+          <Label htmlFor="checkIn">{labels.checkInLabel}</Label>
           <Input id="checkIn" type="date" {...form.register("checkIn")} />
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="checkOut">Ketish sanasi</Label>
+          <Label htmlFor="checkOut">{labels.checkOutLabel}</Label>
           <Input id="checkOut" type="date" {...form.register("checkOut")} />
         </div>
 

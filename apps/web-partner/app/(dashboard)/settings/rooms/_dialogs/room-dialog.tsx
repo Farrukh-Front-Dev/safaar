@@ -10,8 +10,10 @@ import { Dialog } from "../../../../_components/ui/dialog";
 import { Input } from "../../../../_components/ui/input";
 import { Label } from "../../../../_components/ui/label";
 import { useDataStore } from "../../../../_stores/data-store";
+import { useAuthStore } from "../../../../_stores/auth-store";
 import { RoomStatus, type Room } from "../../../../_lib/domain/types";
 import { roomStatusLabel } from "../../../../_components/domain/room-status-badge";
+import { getPartnerLabels, hasBeds } from "../../../../_lib/utils/partner-labels";
 
 const schema = z.object({
   number: z
@@ -40,6 +42,10 @@ export function RoomDialog({ open, onClose, editing }: Props) {
   const addRoom = useDataStore((s) => s.addRoom);
   const updateRoom = useDataStore((s) => s.updateRoom);
   const deleteRoom = useDataStore((s) => s.deleteRoom);
+  const generateBedsForRoom = useDataStore((s) => s.generateBedsForRoom);
+  const partnerType = useAuthStore((s) => s.user?.partnerType);
+  const isHostel = hasBeds(partnerType);
+  const labels = getPartnerLabels(partnerType);
 
   const form = useForm<Values>({
     resolver: zodResolver(schema),
@@ -91,6 +97,10 @@ export function RoomDialog({ open, onClose, editing }: Props) {
         toast.error(result.reason ?? "Qo'shib bo'lmadi");
         return;
       }
+      if (isHostel && result.room) {
+        const roomType = roomTypes.find((rt) => rt.id === values.roomTypeId);
+        generateBedsForRoom(result.room.id, roomType?.capacity ?? 1);
+      }
       toast.success(`Xona ${values.number} qo'shildi`);
     }
     onClose();
@@ -116,11 +126,13 @@ export function RoomDialog({ open, onClose, editing }: Props) {
     <Dialog
       open={open}
       onClose={onClose}
-      title={editing ? `Xona ${editing.number}` : "Yangi xona"}
+      title={editing ? `Xona ${editing.number}` : `Yangi ${labels.unitTypeLabel.toLowerCase()}`}
       description={
         editing
           ? "Xona ma'lumotlarini tahrirlash"
-          : "Mehmonxonangizga yangi xona qo'shish"
+          : isHostel
+            ? "Yotoqlar soni tanlangan xona turining sig'imiga qarab avtomatik yaratiladi."
+            : "Mehmonxonangizga yangi xona qo'shish"
       }
     >
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
@@ -172,7 +184,7 @@ export function RoomDialog({ open, onClose, editing }: Props) {
             )}
           </div>
 
-          {editing && (
+          {editing && !isHostel && (
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="r-status">Xona holati</Label>
               <select

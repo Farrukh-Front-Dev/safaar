@@ -117,6 +117,7 @@ export function UserMenu({ name, phone, onLogout }: UserMenuProps) {
               className="w-full rounded-md border border-[var(--border)] bg-[var(--surface-muted)] px-2 py-1 text-xs focus:outline-none"
             >
               <option value="hotel">Mehmonxona (Hotel)</option>
+              <option value="motel">Motel</option>
               <option value="dacha">Dacha</option>
               <option value="hostel">Hostel</option>
               <option value="bus">Transport (Bus)</option>

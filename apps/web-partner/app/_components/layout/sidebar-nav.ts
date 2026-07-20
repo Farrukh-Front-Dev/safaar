@@ -13,6 +13,7 @@ import {
   Ticket,
   type LucideIcon,
 } from "lucide-react";
+import { getPartnerLabels } from "../../_lib/utils/partner-labels";
 
 export interface NavItem {
   label: string;
@@ -26,11 +27,17 @@ export interface NavGroup {
   items: NavItem[];
 }
 
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
 /**
  * Dinamik navigatsiya paneli — hamkor turiga qarab o'zgaradi.
+ *
+ * Matnlar `partner-labels.ts`dan olinadi — bu yerda ikkinchi, mustaqil
+ * terminologiya manbai yaratilmasin.
  */
 export function getNavGroups(partnerType: string): NavGroup[] {
   const type = partnerType?.toLowerCase() || "hotel";
+  const labels = getPartnerLabels(type);
 
   // 1. Avtobuslar / Transport hamkorlar uchun navigatsiya
   if (type === "bus") {
@@ -69,17 +76,17 @@ export function getNavGroups(partnerType: string): NavGroup[] {
   if (type === "dacha") {
     return [
       {
-        items: [{ label: "Boshqaruv paneli", href: "/", icon: ConciergeBell }],
+        items: [{ label: labels.dashboardTitle, href: "/", icon: ConciergeBell }],
       },
       {
         title: "Sotuv",
-        items: [{ label: "Dacha e'loni", href: "/listing", icon: Megaphone }],
+        items: [{ label: labels.listingTitle, href: "/listing", icon: Megaphone }],
       },
       {
         title: "Operatsion",
         items: [
-          { label: "Dacha kalendari", href: "/calendar", icon: CalendarDays },
-          { label: "Bronlar", href: "/reservations", icon: CalendarRange },
+          { label: labels.calendarTitle, href: "/calendar", icon: CalendarDays },
+          { label: labels.reservationsTitle, href: "/reservations", icon: CalendarRange },
         ],
       },
       {
@@ -101,17 +108,17 @@ export function getNavGroups(partnerType: string): NavGroup[] {
   if (type === "hostel") {
     return [
       {
-        items: [{ label: "Front Desk", href: "/", icon: ConciergeBell }],
+        items: [{ label: labels.dashboardTitle, href: "/", icon: ConciergeBell }],
       },
       {
         title: "Sotuv",
-        items: [{ label: "Hostel e'loni", href: "/listing", icon: Megaphone }],
+        items: [{ label: labels.listingTitle, href: "/listing", icon: Megaphone }],
       },
       {
         title: "Operatsion",
         items: [
-          { label: "Yotoqlar (Joylar)", href: "/rooms", icon: BedDouble },
-          { label: "Band qilishlar", href: "/reservations", icon: CalendarRange },
+          { label: capitalize(labels.unitPlural), href: "/rooms", icon: BedDouble },
+          { label: labels.reservationsTitle, href: "/reservations", icon: CalendarRange },
           { label: "Kalendar", href: "/calendar", icon: CalendarDays },
         ],
       },
@@ -133,17 +140,17 @@ export function getNavGroups(partnerType: string): NavGroup[] {
   // 4. Standart / Mehmonxona (Hotel, Motel, Guesthouse)
   return [
     {
-      items: [{ label: "Front Desk", href: "/", icon: ConciergeBell }],
+      items: [{ label: labels.dashboardTitle, href: "/", icon: ConciergeBell }],
     },
     {
       title: "Sotuv",
-      items: [{ label: "Mehmonxona e'loni", href: "/listing", icon: Megaphone }],
+      items: [{ label: labels.listingTitle, href: "/listing", icon: Megaphone }],
     },
     {
       title: "Operatsion",
       items: [
-        { label: "Xonalar", href: "/rooms", icon: BedDouble },
-        { label: "Bronlar", href: "/reservations", icon: CalendarRange },
+        { label: capitalize(labels.unitPlural), href: "/rooms", icon: BedDouble },
+        { label: labels.reservationsTitle, href: "/reservations", icon: CalendarRange },
         { label: "Kalendar", href: "/calendar", icon: CalendarDays },
       ],
     },

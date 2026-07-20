@@ -24,7 +24,7 @@ import {
 } from "../../../_components/ui/card";
 import { ConfirmDialog } from "../../../_components/ui/dialog";
 import { EmptyState } from "../../../_components/ui/empty-state";
-import { AssignRoomDialog } from "../../../_components/domain/assign-room-dialog";
+import { CheckInDialog } from "../../../_components/domain/check-in-dialog";
 import { ReservationStatusBadge } from "../../../_components/domain/reservation-status-badge";
 import { ReservationTimeline } from "../../../_components/domain/reservation-timeline";
 import { SourceBadge } from "../../../_components/domain/source-badge";
@@ -326,7 +326,7 @@ export function ReservationDetailView({ id }: { id: string }) {
         tone="danger"
       />
 
-      <AssignRoomDialog
+      <CheckInDialog
         open={assignOpen}
         onClose={() => setAssignOpen(false)}
         reservation={data}

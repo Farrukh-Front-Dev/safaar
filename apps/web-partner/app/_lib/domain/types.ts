@@ -66,6 +66,24 @@ export interface Room {
   };
 }
 
+/** Hostel dormitory ichidagi alohida yotoq. */
+export interface Bed {
+  id: string;
+  /** Egasi bo'lgan dormitory Room. */
+  roomId: string;
+  /** "1-o'rin", "2-o'rin"... */
+  label: string;
+  status: RoomStatus;
+  isListed: boolean;
+  /** Ixtiyoriy — yo'q bo'lsa Room/RoomType narxi ishlatiladi. */
+  nightlyPrice?: number;
+  occupant?: {
+    guestName: string;
+    reservationId: string;
+    checkOut: string;
+  };
+}
+
 /** Bron — staff ko'rinishida (mijoz va to'lov ma'lumotlari bilan). */
 export interface ReservationView {
   id: string;
@@ -82,6 +100,8 @@ export interface ReservationView {
   roomTypeName: string;
   /** Tayinlangan real xona raqami (CONFIRMED'dan keyin) */
   roomNumber?: string;
+  /** Faqat hostel: tayinlangan yotoq (Bed.id). */
+  bedId?: string;
   checkIn: string;
   checkOut: string;
   nights: number;

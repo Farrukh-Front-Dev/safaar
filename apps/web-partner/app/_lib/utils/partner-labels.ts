@@ -218,3 +218,14 @@ export function hasBuses(partnerType?: string | null): boolean {
 export function isDacha(partnerType?: string | null): boolean {
   return (partnerType ?? "hotel").toLowerCase() === "dacha";
 }
+
+/** Hostel — dormitory xonalar ichida alohida yotoqlar bo'yicha band qilinadi. */
+export function hasBeds(partnerType?: string | null): boolean {
+  return (partnerType ?? "hotel").toLowerCase() === "hostel";
+}
+
+/** Yulduzli tasniflash faqat mehmonxona-uslubidagi obyektlarga tegishli. */
+export function hasStarRating(partnerType?: string | null): boolean {
+  const type = (partnerType ?? "hotel").toLowerCase();
+  return type === "hotel" || type === "motel" || type === "guesthouse" || type === "mixed";
+}
