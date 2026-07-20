@@ -19,21 +19,30 @@ export default async function AccountBookingsPage({
   if (!isLocale(lang)) notFound();
   const locale = lang as Locale;
 
-  const session = await getSession();
+  // SENIOR OPTIMIZATION: Parallelize session & dictionary loading
+  const [session, dict] = await Promise.all([
+    getSession(),
+    getDictionary(locale, "account"),
+  ]);
+
   if (!session) {
     redirect(
       `/${locale}/login?next=${encodeURIComponent(`/${locale}/account/bookings`)}`,
     );
   }
 
-  const dict = await getDictionary(locale, "account");
   const bookings: BookingView[] = await api.users.getMyBookings({ token: session.accessToken }).catch(() => []);
 
   if (bookings.length === 0) {
     return (
       <Card>
-        <CardBody>
-          <p className="text-sm text-slate-500">{dict.bookings.empty}</p>
+        <CardBody className="py-12 text-center">
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{dict.bookings.empty}</p>
+          <Link href={`/${locale}/hotels`} className="mt-4 inline-block">
+            <Button variant="accent" size="sm">
+              Mehmonxonalarni ko'rish
+            </Button>
+          </Link>
         </CardBody>
       </Card>
     );
@@ -56,20 +65,20 @@ export default async function AccountBookingsPage({
               <CardBody className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold">
+                    <span className="font-semibold text-slate-900 dark:text-white">
                       {booking.bookingNumber}
                     </span>
-                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
+                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                       {typeLabel}
                     </span>
                   </div>
-                  <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
                     <span
                       className={`rounded-full px-3 py-1 text-xs font-semibold ${statusBadgeClasses[tone]}`}
                     >
                       {statusLabel}
                     </span>
-                    <span className="font-medium text-slate-700">
+                    <span className="font-bold text-slate-900 dark:text-white">
                       {formatSum(booking.totalSum)}
                     </span>
                   </div>

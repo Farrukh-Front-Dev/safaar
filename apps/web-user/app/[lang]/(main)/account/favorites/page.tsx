@@ -1,10 +1,23 @@
+import Link from "next/link";
+import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getSession } from "@/lib/auth/session";
 import { api } from "@/lib/api";
 import { Card, CardBody } from "@/components/ui/Card";
-import type { FavoriteView } from "@/types/view";
+import { Button } from "@/components/ui/Button";
+import { resolveImage } from "@/lib/images";
+import { formatSum } from "@/lib/money";
+import { Star, Building2 } from "lucide-react";
+import type { FavoriteView, HotelListItem } from "@/types/view";
+
+const KNOWN_MOCK_FAVORITES: Record<string, HotelListItem> = {
+  "mock-f1": { id: "mock-f1", slug: "tashkent-city-palace", name: "Tashkent City Palace", cityName: "Toshkent", stars: 5, rating: 4.8, reviewsCount: 234, minPriceSum: 650000, imageUrl: "/Tashkent-city-skyline.jpeg" },
+  "mock-f2": { id: "mock-f2", slug: "samarkand-plaza", name: "Samarkand Plaza", cityName: "Samarqand", stars: 5, rating: 4.7, reviewsCount: 189, minPriceSum: 520000, imageUrl: "/Samarkand-Registan-cinematic.jpeg" },
+  "mock-f3": { id: "mock-f3", slug: "grand-bukhara", name: "Grand Bukhara Hotel", cityName: "Buxoro", stars: 4, rating: 4.6, reviewsCount: 312, minPriceSum: 380000, imageUrl: "/Bukhara-old-city-golden-hour.jpeg" },
+  "mock-f4": { id: "mock-f4", slug: "khiva-ichan-kala", name: "Ichan-Kala Premier", cityName: "Xiva", stars: 4, rating: 4.9, reviewsCount: 156, minPriceSum: 450000, imageUrl: "/Khiva-Ichan-Kala-aerial.jpeg" },
+};
 
 export default async function AccountFavoritesPage({
   params,
@@ -15,49 +28,128 @@ export default async function AccountFavoritesPage({
   if (!isLocale(lang)) notFound();
   const locale = lang as Locale;
 
-  const session = await getSession();
+  // SENIOR OPTIMIZATION: Parallelize session & dictionary loading
+  const [session, dict] = await Promise.all([
+    getSession(),
+    getDictionary(locale, "account"),
+  ]);
+
   if (!session) {
     redirect(
       `/${locale}/login?next=${encodeURIComponent(`/${locale}/account/favorites`)}`,
     );
   }
 
-  const dict = await getDictionary(locale, "account");
-  const favorites: FavoriteView[] = await api.users.getFavorites({ token: session.accessToken }).catch(() => []);
+  const rawFavorites: FavoriteView[] = await api.users.getFavorites({ token: session.accessToken }).catch(() => []);
 
-  if (favorites.length === 0) {
+  if (rawFavorites.length === 0) {
     return (
       <Card>
-        <CardBody>
-          <p className="text-sm text-slate-500">{dict.favorites.empty}</p>
+        <CardBody className="py-12 text-center">
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{dict.favorites.empty}</p>
+          <Link href={`/${locale}/hotels`} className="mt-4 inline-block">
+            <Button variant="accent" size="sm">
+              Mehmonxonalarni kashf eting
+            </Button>
+          </Link>
         </CardBody>
       </Card>
     );
   }
 
-  const typeLabels: Record<string, string> = {
-    hotel: dict.favorites.hotel,
-  };
+  // SENIOR RESOLUTION: Fetch real hotel details for favorite target IDs or use mock fallback
+  const resolvedItems = await Promise.all(
+    rawFavorites.map(async (fav) => {
+      if (KNOWN_MOCK_FAVORITES[fav.targetId]) {
+        return { favId: fav.id, hotel: KNOWN_MOCK_FAVORITES[fav.targetId] };
+      }
+      const realHotel = await api.hotels.getHotel(locale, fav.targetId).catch(() => null);
+      if (realHotel) {
+        const item: HotelListItem = {
+          id: realHotel.id,
+          slug: realHotel.slug,
+          name: realHotel.name,
+          cityName: realHotel.cityName,
+          stars: realHotel.stars,
+          rating: realHotel.rating,
+          reviewsCount: realHotel.reviewsCount,
+          minPriceSum: realHotel.minPriceSum,
+          imageUrl: realHotel.images[0] ?? "",
+        };
+        return { favId: fav.id, hotel: item };
+      }
+      return { favId: fav.id, targetId: fav.targetId, targetType: fav.targetType };
+    })
+  );
 
   return (
-    <ul className="flex flex-col gap-4">
-      {favorites.map((favorite) => {
-        const typeLabel = typeLabels[favorite.targetType] ?? favorite.targetType;
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {resolvedItems.map((item) => {
+        if ("hotel" in item && item.hotel) {
+          const { hotel } = item;
+          const imageUrl = resolveImage(hotel.imageUrl, hotel.id, 400, 300);
+          return (
+            <Link
+              key={item.favId}
+              href={`/${locale}/hotels/${hotel.slug}`}
+              className="group block overflow-hidden rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+            >
+              <article className="flex h-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-btn transition-all duration-200 hover:bg-slate-50 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900">
+                <div className="relative aspect-square w-32 shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-800">
+                  {imageUrl ? (
+                    <Image
+                      src={imageUrl}
+                      alt={hotel.name}
+                      fill
+                      sizes="128px"
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  ) : (
+                    <span className="flex h-full items-center justify-center text-primary-400">
+                      <Building2 className="h-8 w-8" />
+                    </span>
+                  )}
+                  {hotel.rating > 0 && (
+                    <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-0.5 rounded-full border border-slate-200 bg-white/90 px-1.5 py-0.5 text-[10px] font-bold text-amber-600 shadow-btn backdrop-blur-xs dark:border-slate-700 dark:bg-slate-900/90 dark:text-amber-400">
+                      <Star className="h-3 w-3 fill-current" />
+                      {hotel.rating.toFixed(1)}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-1 flex-col justify-between p-3">
+                  <div>
+                    <h3 className="line-clamp-1 text-sm font-bold text-slate-900 dark:text-white">
+                      {hotel.name}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{hotel.cityName}</p>
+                  </div>
+
+                  <div className="mt-auto">
+                    <span className="text-sm font-bold text-primary-700 dark:text-primary-400">
+                      {formatSum(hotel.minPriceSum)}
+                    </span>
+                    <span className="text-[10px] text-slate-400"> / kecha</span>
+                  </div>
+                </div>
+              </article>
+            </Link>
+          );
+        }
+
         return (
-          <li key={favorite.id}>
-            <Card>
-              <CardBody className="flex items-center gap-3">
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                  {typeLabel}
-                </span>
-                <span className="text-sm text-slate-600">
-                  {favorite.targetId}
-                </span>
-              </CardBody>
-            </Card>
-          </li>
+          <Card key={item.favId}>
+            <CardBody className="flex items-center gap-3">
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                {item.targetType}
+              </span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                {item.targetId}
+              </span>
+            </CardBody>
+          </Card>
         );
       })}
-    </ul>
+    </div>
   );
 }
