@@ -16,12 +16,16 @@ export default async function AccountProfilePage({
   if (!isLocale(lang)) notFound();
   const locale = lang as Locale;
 
-  const session = await getSession();
+  // SENIOR OPTIMIZATION: Fetch session and dictionary in parallel
+  const [session, dict] = await Promise.all([
+    getSession(),
+    getDictionary(locale, "account"),
+  ]);
+
   if (!session) {
     redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/account`)}`);
   }
 
-  const dict = await getDictionary(locale, "account");
   const profile: ProfileView | null = await api.users.getProfile({ token: session.accessToken }).catch(
     () => null,
   );
@@ -30,7 +34,7 @@ export default async function AccountProfilePage({
     return (
       <Card>
         <CardBody>
-          <p className="text-sm text-amber-700">
+          <p className="text-sm text-amber-700 dark:text-amber-400">
             {dict.profile.error}
           </p>
         </CardBody>
@@ -49,8 +53,8 @@ export default async function AccountProfilePage({
     <Card>
       <CardBody className="flex flex-col gap-6">
         <div className="flex flex-col gap-1">
-          <h2 className="text-lg font-semibold">{dict.profile.title}</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{dict.profile.title}</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             {dict.profile.memberSince}: {memberSince}
           </p>
         </div>

@@ -39,8 +39,13 @@ export default async function CheckoutPage({
     redirect(`/${locale}/hotels`);
   }
 
-  // Auth majburiy — kirmagan bo'lsa, shu sahifaga qaytadigan qilib login'ga.
-  const session = await getSession();
+  // SENIOR OPTIMIZATION: Fetch session, dictionaries and hotel info in parallel
+  const [session, dict, hotel] = await Promise.all([
+    getSession(),
+    getDictionary(locale, "checkout"),
+    api.hotels.getHotel(locale, hotelId).catch(() => null),
+  ]);
+
   if (!session) {
     const query = new URLSearchParams({ hotelId, roomId });
     if (checkIn) query.set("checkIn", checkIn);
@@ -50,9 +55,6 @@ export default async function CheckoutPage({
     redirect(`/${locale}/login?next=${encodeURIComponent(next)}`);
   }
 
-  const dict = await getDictionary(locale, "checkout");
-
-  const hotel = await api.hotels.getHotel(locale, hotelId).catch(() => null);
   const room = hotel?.rooms.find((r) => r.id === roomId);
   if (!hotel || !room) {
     redirect(`/${locale}/hotels`);
@@ -61,7 +63,7 @@ export default async function CheckoutPage({
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-6 py-8">
       <BackButton className="fixed left-4 top-16 z-50 md:left-8 md:top-20" />
-      <h1 className="text-2xl font-bold tracking-tight">{dict.title}</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{dict.title}</h1>
       <CheckoutForm
         locale={locale}
         dict={dict}
