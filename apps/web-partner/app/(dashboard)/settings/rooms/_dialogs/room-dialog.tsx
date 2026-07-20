@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -10,7 +10,8 @@ import { Dialog } from "../../../../_components/ui/dialog";
 import { Input } from "../../../../_components/ui/input";
 import { Label } from "../../../../_components/ui/label";
 import { useDataStore } from "../../../../_stores/data-store";
-import type { Room } from "../../../../_lib/domain/types";
+import { RoomStatus, type Room } from "../../../../_lib/domain/types";
+import { roomStatusLabel } from "../../../../_components/domain/room-status-badge";
 
 const schema = z.object({
   number: z
@@ -19,7 +20,12 @@ const schema = z.object({
     .regex(/^[0-9]+$/, "Faqat raqamlar"),
   floor: z.number().int().min(1).max(50),
   roomTypeId: z.string().min(1, "Xona turini tanlang"),
+  status: z.enum(RoomStatus),
+  isListed: z.boolean(),
+  nightlyPrice: z.number().int().positive().optional(),
 });
+
+const roomStatusOptions = Object.values(RoomStatus);
 
 type Values = z.infer<typeof schema>;
 
@@ -33,6 +39,7 @@ export function RoomDialog({ open, onClose, editing }: Props) {
   const roomTypes = useDataStore((s) => s.roomTypes);
   const addRoom = useDataStore((s) => s.addRoom);
   const updateRoom = useDataStore((s) => s.updateRoom);
+  const deleteRoom = useDataStore((s) => s.deleteRoom);
 
   const form = useForm<Values>({
     resolver: zodResolver(schema),
@@ -40,6 +47,9 @@ export function RoomDialog({ open, onClose, editing }: Props) {
       number: "",
       floor: 1,
       roomTypeId: roomTypes[0]?.id ?? "",
+      status: RoomStatus.VACANT_CLEAN,
+      isListed: true,
+      nightlyPrice: undefined,
     },
   });
 
@@ -51,11 +61,17 @@ export function RoomDialog({ open, onClose, editing }: Props) {
               number: editing.number,
               floor: editing.floor,
               roomTypeId: editing.roomTypeId,
+              status: editing.status,
+              isListed: editing.isListed,
+              nightlyPrice: editing.nightlyPrice,
             }
           : {
               number: "",
               floor: 1,
               roomTypeId: roomTypes[0]?.id ?? "",
+              status: RoomStatus.VACANT_CLEAN,
+              isListed: true,
+              nightlyPrice: undefined,
             },
       );
     }
@@ -80,7 +96,21 @@ export function RoomDialog({ open, onClose, editing }: Props) {
     onClose();
   });
 
+  const handleDelete = () => {
+    if (!editing) return;
+    if (!confirm(`Rostdan ham xona ${editing.number} ni o'chirmoqchimisiz?`)) return;
+    const result = deleteRoom(editing.id);
+    if (!result.ok) {
+      toast.error(result.reason ?? "O'chirib bo'lmadi");
+      return;
+    }
+    toast.success(`Xona ${editing.number} o'chirildi.`);
+    onClose();
+  };
+
   const err = form.formState.errors;
+  const selectedRoomTypeId = useWatch({ control: form.control, name: "roomTypeId" });
+  const selectedRoomType = roomTypes.find((rt) => rt.id === selectedRoomTypeId);
 
   return (
     <Dialog
@@ -141,15 +171,87 @@ export function RoomDialog({ open, onClose, editing }: Props) {
               <p className="text-xs text-red-600">{err.roomTypeId.message}</p>
             )}
           </div>
+
+          {editing && (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="r-status">Xona holati</Label>
+              <select
+                id="r-status"
+                className="h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm focus:border-brand-600 focus:outline-none"
+                {...form.register("status")}
+              >
+                {roomStatusOptions.map((s) => (
+                  <option key={s} value={s}>
+                    {roomStatusLabel(s)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="r-price">
+              Maxsus narx <span className="text-[var(--muted-foreground)]">(ixtiyoriy)</span>
+            </Label>
+            <Input
+              id="r-price"
+              type="number"
+              min={0}
+              placeholder={
+                selectedRoomType
+                  ? `${selectedRoomType.basePrice.toLocaleString("uz-UZ")} so'm (xona turi narxi)`
+                  : "Xona turi narxi ishlatiladi"
+              }
+              aria-invalid={Boolean(err.nightlyPrice)}
+              {...form.register("nightlyPrice", {
+                setValueAs: (v) =>
+                  v === "" || v === null || v === undefined
+                    ? undefined
+                    : Number(v),
+              })}
+            />
+            {err.nightlyPrice && (
+              <p className="text-xs text-red-600">{err.nightlyPrice.message}</p>
+            )}
+          </div>
+
+          <label
+            htmlFor="r-listed"
+            className="flex items-center gap-2 sm:col-span-2 cursor-pointer select-none"
+          >
+            <input
+              id="r-listed"
+              type="checkbox"
+              className="h-4 w-4 rounded border-[var(--border)] accent-brand-700"
+              {...form.register("isListed")}
+            />
+            <span className="text-sm text-zinc-700 dark:text-zinc-300">
+              Sotuvda ko&apos;rsatilsin (mijozlarga ko&apos;rinadi)
+            </span>
+          </label>
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-[var(--border)] pt-4">
-          <Button type="button" variant="outline" onClick={onClose}>
-            Bekor qilish
-          </Button>
-          <Button type="submit" disabled={roomTypes.length === 0}>
-            {editing ? "Saqlash" : "Qo'shish"}
-          </Button>
+        <div className="flex items-center justify-between gap-2 border-t border-[var(--border)] pt-4">
+          {editing ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+              onClick={handleDelete}
+            >
+              O&apos;chirish
+            </Button>
+          ) : (
+            <span />
+          )}
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Bekor qilish
+            </Button>
+            <Button type="submit" disabled={roomTypes.length === 0}>
+              {editing ? "Saqlash" : "Qo'shish"}
+            </Button>
+          </div>
         </div>
       </form>
     </Dialog>

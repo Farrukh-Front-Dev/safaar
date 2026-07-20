@@ -57,6 +57,9 @@ export interface RoomDraft {
   number: string;
   floor: number;
   roomTypeId: string;
+  status?: RoomStatus;
+  isListed?: boolean;
+  nightlyPrice?: number;
 }
 
 export interface BulkRoomsDraft {
@@ -348,6 +351,7 @@ export const useDataStore = create<DataState>((set, get) => ({
     if (!roomType) {
       return { ok: false, reason: "Xona turi topilmadi." };
     }
+    const nextStatus = draft.status ?? existing.status;
     set({
       rooms: state.rooms.map((r) =>
         r.id === id
@@ -357,6 +361,10 @@ export const useDataStore = create<DataState>((set, get) => ({
               floor: draft.floor,
               roomTypeId: draft.roomTypeId,
               roomTypeName: roomType.name,
+              status: nextStatus,
+              isListed: draft.isListed ?? r.isListed,
+              nightlyPrice: draft.nightlyPrice,
+              occupant: nextStatus === RoomStatus.OCCUPIED ? r.occupant : undefined,
             }
           : r,
       ),

@@ -8,16 +8,12 @@ import { useRoomTypes } from "../../_hooks/use-room-types";
 import { type Room, type RoomType } from "../../_lib/domain/types";
 import { RoomDialog } from "../settings/rooms/_dialogs/room-dialog";
 import { Button } from "../../_components/ui/button";
-import { useDataStore } from "../../_stores/data-store";
-import { Dialog } from "../../_components/ui/dialog";
-import { toast } from "sonner";
 import { formatMoney } from "../../_lib/utils/format";
 
 export function RoomsView() {
   const { data: rooms } = useRooms();
   const { data: roomTypes } = useRoomTypes();
   const [addingRoom, setAddingRoom] = useState(false);
-  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
 
   // Qavatlar bo'yicha guruhlash
@@ -71,10 +67,10 @@ export function RoomsView() {
               {rooms.map(room => {
                 const roomType = roomTypes.find(t => t.id === room.roomTypeId);
                 return (
-                  <button 
-                    key={room.id} 
+                  <button
+                    key={room.id}
                     className="text-left"
-                    onClick={() => setSelectedRoom(room)}
+                    onClick={() => setEditingRoom(room)}
                   >
                     <RoomCard room={room} roomType={roomType} />
                   </button>
@@ -91,23 +87,11 @@ export function RoomsView() {
         editing={null} 
       />
       
-      <RoomDialog 
-        open={!!editingRoom} 
-        onClose={() => setEditingRoom(null)} 
-        editing={editingRoom} 
+      <RoomDialog
+        open={!!editingRoom}
+        onClose={() => setEditingRoom(null)}
+        editing={editingRoom}
       />
-
-      {selectedRoom && (
-        <RoomActionDialog
-          room={selectedRoom}
-          open={!!selectedRoom}
-          onClose={() => setSelectedRoom(null)}
-          onEdit={() => {
-            setEditingRoom(selectedRoom);
-            setSelectedRoom(null);
-          }}
-        />
-      )}
     </div>
   );
 }
@@ -149,54 +133,5 @@ function RoomCard({ room, roomType }: { room: Room; roomType?: RoomType }) {
         </div>
       </div>
     </div>
-  );
-}
-
-function RoomActionDialog({
-  room,
-  open,
-  onClose,
-  onEdit,
-}: {
-  room: Room;
-  open: boolean;
-  onClose: () => void;
-  onEdit: () => void;
-}) {
-  const deleteRoom = useDataStore((s) => s.deleteRoom);
-
-  const handleDelete = () => {
-    if (confirm(`Rostdan ham xona ${room.number} ni o'chirmoqchimisiz?`)) {
-      const res = deleteRoom(room.id);
-      if (res.ok) {
-        toast.success(`Xona ${room.number} o'chirildi.`);
-        onClose();
-      } else {
-        toast.error(res.reason || "O'chirib bo'lmadi");
-      }
-    }
-  };
-
-  return (
-    <Dialog open={open} onClose={onClose} title={`Xona ${room.number}`} size="sm">
-      <div className="flex flex-col gap-4 py-2">
-        <p className="text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-          Siz bu xonaning turini, raqamini yoki qavatini tahrirlashingiz, yoxud uni tizimdan butunlay o'chirishingiz mumkin.
-        </p>
-
-        <div className="grid grid-cols-2 gap-2 mt-2">
-          <Button variant="outline" onClick={onEdit}>
-            Tahrirlash
-          </Button>
-          <Button 
-            variant="outline" 
-            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
-            onClick={handleDelete}
-          >
-            O'chirish
-          </Button>
-        </div>
-      </div>
-    </Dialog>
   );
 }
