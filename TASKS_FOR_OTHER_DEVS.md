@@ -25,6 +25,10 @@
 - [ ] **`POST /api/hotels/:id/reviews`**: Muvaffaqiyatli bronni yakunlagan foydalanuvchilar uchun sharh va reyting (1-5 yulduz) qoldirish API.
 - [ ] **`GET /api/users/me/bonuses`**: Foydalanuvchining to'plangan bonus ballari va keshbek tarixini olish.
 
+### 🍽️ 1.5. Restoranlar va Attraksionlar API
+- [ ] **`GET /api/catalog/restaurants`**: Restoranlar katalogi (Oshxona turi, reyting, o'rtacha chek, telefon va ish vaqti).
+- [ ] **`GET /api/catalog/attractions`**: Tarixiy obidalar, ziyoratgohlar va diqqatga sazovor maskanlar ro'yxati.
+
 ---
 
 ## 2. 🤝 Web-Partner Dasturchisi Uchun (`apps/web-partner/` — @adhambek7717)
