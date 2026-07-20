@@ -6,7 +6,7 @@ import {
   Optional,
   UnauthorizedException,
 } from '@nestjs/common';
-import { BookingStatus, Role } from '@Safaar/types';
+import { BookingStatus, Role } from '@safaar/types';
 import type { RequestActor } from '../common/actor';
 import {
   paginateArray,

@@ -1,5 +1,5 @@
 import { ExecutionContext, ServiceUnavailableException } from '@nestjs/common';
-import { Role } from '@Safaar/types';
+import { Role } from '@safaar/types';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { PostgresService } from '../infrastructure/postgres.service';
 import { MaintenanceGuard } from './maintenance.guard';

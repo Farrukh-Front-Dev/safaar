@@ -1,4 +1,4 @@
-import type { BookingStatus } from "@agoda/types";
+import type { BookingStatus } from "@safaar/types";
 
 /* ────────────────────────────────────────────
    Admin User

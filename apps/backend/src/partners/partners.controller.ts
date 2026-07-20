@@ -10,7 +10,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { Role } from '@Safaar/types';
+import { Role } from '@safaar/types';
 import { CurrentActor, type RequestActor } from '../common/actor';
 import { Roles } from '../common/roles.decorator';
 import { RolesGuard } from '../common/roles.guard';

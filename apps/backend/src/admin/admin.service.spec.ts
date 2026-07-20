@@ -1,4 +1,4 @@
-import { Role } from '@Safaar/types';
+import { Role } from '@safaar/types';
 import type { RequestActor } from '../common/actor';
 import { AppCacheService } from '../infrastructure/cache.service';
 import { JobQueueService } from '../infrastructure/job-queue.service';

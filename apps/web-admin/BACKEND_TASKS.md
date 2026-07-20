@@ -25,7 +25,7 @@ Admin paneldan boshqarish uchun CRUD endpointlar:
 - `DELETE /v1/admin/cms/templates/:id` - Shablonni o'chirish
 - `POST /v1/admin/cms/templates/test` - (Ixtiyoriy) Frontend'dan kelgan o'zgaruvchilar asosida SMS yoki Email'ga test xabarini jo'natish xizmati.
 
-### 1.3. @agoda/types
+### 1.3. @safaar/types
 Iltimos, Frontend turlarda ham ushbu `CmsTemplate` (yoki `NotificationTemplate`) interfeysini `packages/types` papkasiga qo'shib qo'ying, biz uni frontenda ishlatamiz.
 
 ---

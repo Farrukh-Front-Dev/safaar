@@ -5,7 +5,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { BookingStatus, Role } from '@Safaar/types';
+import { BookingStatus, Role } from '@safaar/types';
 import type { RequestActor } from '../common/actor';
 import { PostgresService } from '../infrastructure/postgres.service';
 import { EventsService } from '../realtime/events.service';

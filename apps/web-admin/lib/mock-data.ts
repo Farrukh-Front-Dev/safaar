@@ -3,7 +3,7 @@
  * Backend API tayyor bo'lganda bu faylni o'chirib, API so'rovlariga almashtiriladi.
  */
 
-import type { BookingStatus } from "@agoda/types";
+import type { BookingStatus } from "@safaar/types";
 import type {
   DashboardStat,
   BookingTrend,

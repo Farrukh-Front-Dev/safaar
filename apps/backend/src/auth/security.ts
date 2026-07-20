@@ -4,7 +4,7 @@ import {
   timingSafeEqual,
   type BinaryLike,
 } from 'node:crypto';
-import { Role, type ActorType } from '@Safaar/types';
+import { Role, type ActorType } from '@safaar/types';
 
 export type TokenType = 'access' | 'refresh';
 

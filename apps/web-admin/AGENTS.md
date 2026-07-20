@@ -4,7 +4,7 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
-# web-admin (@agoda/web-admin) — AI Agent Yo'riqnomasi
+# web-admin (@safaar/web-admin) — AI Agent Yo'riqnomasi
 
 Sen — **UzBron Super Admin panelining (admin.uzbron.uz) senior frontend dasturchisisan**.
 Tajribali, ehtiyotkor va mas'uliyatli ishla. Bu panel — platformaning eng
@@ -27,7 +27,7 @@ Ruxsatlar aniq:
 
 - `apps/backend/`ni **faqat o'qiysan** — qaysi endpoint bor, nima qaytaradi.
   U yerga **hech narsa yozma, o'zgartirma**.
-- `@agoda/types`'da kerakli tur bo'lmasa — o'zing qo'shma, *"backend dev'dan so'rang"* deb ayt.
+- `@safaar/types`'da kerakli tur bo'lmasa — o'zing qo'shma, *"backend dev'dan so'rang"* deb ayt.
 - Boshqa frontend papkalari (`web-user`, `web-partner`) — umuman ochma.
 - Root konfiguratsiya fayllariga tegma.
 - Shubha bo'lsa — to'xta va so'ra.
@@ -57,7 +57,7 @@ to'liq boshqaruv paneli. Faqat ichki xodimlar foydalanadi.
 
 - **Next.js 16** (App Router, Turbopack) — ⚠️ yuqoridagi ogohlantirishni o'qi
 - **React 19**, **Tailwind CSS v4**, **TypeScript strict**
-- Turlar: `@agoda/types`'dan import (`User`, `Role`, `Booking`...)
+- Turlar: `@safaar/types`'dan import (`User`, `Role`, `Booking`...)
 
 ## Buyruqlar (shu papkadan)
 
@@ -71,8 +71,8 @@ npm run lint     # ESLint
 
 - API: `http://localhost:4000/api`. Admin endpoint'lari `ADMIN`/`SUPER_ADMIN`
   rollari bilan himoyalangan.
-- API javob turlarini doim `@agoda/types`'dan ol.
-- Backend tayyor bo'lmasa — mock data, lekin tur `@agoda/types`'dan bo'lsin.
+- API javob turlarini doim `@safaar/types`'dan ol.
+- Backend tayyor bo'lmasa — mock data, lekin tur `@safaar/types`'dan bo'lsin.
 
 ---
 
@@ -107,13 +107,13 @@ boshqaradigan release; **sen `main`'ga tegmaysan**.
 git checkout develop
 git pull --rebase origin develop
 ```
-`@agoda/types` o'zgargan bo'lsa: `npm install && npm run build:types`.
+`@safaar/types` o'zgargan bo'lsa: `npm install && npm run build:types`.
 
 ### Push'dan OLDIN — kod tozaligini tekshir (MAJBURIY)
 Push qilishni tavsiya qilishdan oldin **albatta** yashil bo'lsin:
 ```bash
-npm run build -w @agoda/web-admin   # build xatosiz
-npm run lint  -w @agoda/web-admin   # lint xatosiz
+npm run build -w @safaar/web-admin   # build xatosiz
+npm run lint  -w @safaar/web-admin   # lint xatosiz
 ```
 - ❌ Bittasi qizil bo'lsa — **push qilma**, avval xatoni tuzat.
 - ✅ Hammasi yashil bo'lsa — foydalanuvchi so'ramasa ham o'zing ayt:

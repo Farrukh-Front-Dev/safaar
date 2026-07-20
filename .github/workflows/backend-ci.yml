@@ -28,7 +28,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build:types
-      - run: npm run prisma:validate -w @agoda/backend
-      - run: npm run lint -w @agoda/backend
+      - run: npm run prisma:validate -w @safaar/backend
+      - run: npm run lint -w @safaar/backend
       - run: npm run test:backend
       - run: npm run build:backend

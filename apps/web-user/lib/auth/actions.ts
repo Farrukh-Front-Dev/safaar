@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { Role } from "@agoda/types";
+import { Role } from "@safaar/types";
 import { api, ApiRequestError } from "@/lib/api";
 import { clearSession, getSession, setSession } from "@/lib/auth/session";
 import { defaultLocale, isLocale } from "@/i18n/config";

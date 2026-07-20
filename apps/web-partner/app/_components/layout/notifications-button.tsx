@@ -3,7 +3,7 @@
 import { Bell, BellOff, CalendarPlus, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BookingStatus } from "@agoda/types";
+import { BookingStatus } from "@safaar/types";
 import { useReservations } from "../../_hooks/use-reservations";
 import { TODAY_ISO } from "../../_lib/mocks/data";
 import { formatDate, formatPhone } from "../../_lib/utils/format";

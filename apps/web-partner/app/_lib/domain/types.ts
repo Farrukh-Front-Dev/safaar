@@ -1,10 +1,10 @@
-import type { BookingStatus } from "@agoda/types";
+import type { BookingStatus } from "@safaar/types";
 
 /**
  * Mehmonxona staff paneli uchun domain turlari.
  *
- * `@agoda/types`'da hozir bo'lmagan kontseptlar shu yerda yashaydi.
- * Backend tayyor bo'lganda bu turlar `@agoda/types`'ga ko'chiriladi
+ * `@safaar/types`'da hozir bo'lmagan kontseptlar shu yerda yashaydi.
+ * Backend tayyor bo'lganda bu turlar `@safaar/types`'ga ko'chiriladi
  * (backend dev'dan so'rab).
  */
 

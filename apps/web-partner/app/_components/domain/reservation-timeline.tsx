@@ -9,7 +9,7 @@ import {
   Plus,
   XCircle,
 } from "lucide-react";
-import { BookingStatus } from "@agoda/types";
+import { BookingStatus } from "@safaar/types";
 import type { ReservationView } from "../../_lib/domain/types";
 import { cn } from "../../_lib/utils/cn";
 import { formatDateTime } from "../../_lib/utils/format";

@@ -15,7 +15,7 @@ import {
 
 import { useAdminStore } from "@/lib/store";
 import { toast } from "sonner";
-import { BookingStatus } from "@agoda/types";
+import { BookingStatus } from "@safaar/types";
 
 export default function BookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);

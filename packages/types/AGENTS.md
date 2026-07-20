@@ -1,4 +1,4 @@
-# @agoda/types — AI Agent Yo'riqnomasi
+# @safaar/types — AI Agent Yo'riqnomasi
 
 Bu paket — **frontend va backend o'rtasidagi yagona shartnoma (contract)**.
 Bu yerdagi TypeScript turlari API javoblarining "shaklini" belgilaydi va
@@ -32,7 +32,7 @@ src/
 
 Import qilish:
 ```ts
-import { Hotel, Booking, Role } from "@agoda/types";
+import { Hotel, Booking, Role } from "@safaar/types";
 ```
 
 ---

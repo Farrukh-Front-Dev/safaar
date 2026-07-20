@@ -1,1 +1,1 @@
-export * from "@agoda/api-client";
+export * from "@safaar/api-client";

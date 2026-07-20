@@ -1,4 +1,4 @@
-import type { Hotel } from "@agoda/types";
+import type { Hotel } from "@safaar/types";
 import { request } from "../client";
 
 /** Barcha mehmonxonalar (public). */

@@ -58,7 +58,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build:types
-      - run: npm run lint -w @agoda/web-user
+      - run: npm run lint -w @safaar/web-user
       - run: npm run build:user
 
   web-partner:
@@ -73,7 +73,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build:types
-      - run: npm run lint -w @agoda/web-partner
+      - run: npm run lint -w @safaar/web-partner
       - run: npm run build:partner
 
   web-admin:
@@ -88,7 +88,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build:types
-      - run: npm run lint -w @agoda/web-admin
+      - run: npm run lint -w @safaar/web-admin
       - run: npm run build:admin
 
   backend:
@@ -103,7 +103,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build:types
-      - run: npm run test -w @agoda/backend
+      - run: npm run test -w @safaar/backend
       - run: npm run build:backend
 
   # 3) Boundary check — har bir commit faqat o'z papkasiga tegganligini tekshiradi
@@ -145,7 +145,7 @@ jobs:
               OWNER=""
 
               case "$FILE" in
-                # @Farrukh-Front-Dev
+                # @FarrukhDev-io
                 apps/web-user/*)
                   OWNER="farrukh"
                   ;;

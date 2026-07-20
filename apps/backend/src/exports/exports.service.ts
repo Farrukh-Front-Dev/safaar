@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Role } from '@Safaar/types';
+import { Role } from '@safaar/types';
 import { randomUUID } from 'node:crypto';
 import type { RequestActor } from '../common/actor';
 import { PostgresService } from '../infrastructure/postgres.service';

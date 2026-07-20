@@ -19,7 +19,7 @@ import type {
   CmsBanner,
   AdminListing,
 } from "@/types/admin";
-import type { BookingStatus } from "@agoda/types";
+import type { BookingStatus } from "@safaar/types";
 
 interface AdminState {
   partners: Partner[];

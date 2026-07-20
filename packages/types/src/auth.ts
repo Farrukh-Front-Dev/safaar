@@ -42,3 +42,20 @@ export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
 }
+
+export type OAuthProvider = "google" | "yandex" | "telegram" | "apple" | "facebook";
+
+export interface OAuthProviderAvailability {
+  google?: boolean;
+  yandex?: boolean;
+  telegram?: boolean;
+  apple?: boolean;
+  facebook?: boolean;
+}
+
+export interface OAuthExchangeResult {
+  tokens?: AuthTokens;
+  user?: unknown;
+  requiresRegistration?: boolean;
+  tempToken?: string;
+}

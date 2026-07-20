@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { BookingStatus } from "@agoda/types";
+import { BookingStatus } from "@safaar/types";
 import {
   mockGuests,
   mockReservations,

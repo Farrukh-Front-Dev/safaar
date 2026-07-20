@@ -1,4 +1,4 @@
-import { BookingStatus } from "@agoda/types";
+import { BookingStatus } from "@safaar/types";
 import { Badge } from "../ui/badge";
 
 const labels: Record<BookingStatus, string> = {

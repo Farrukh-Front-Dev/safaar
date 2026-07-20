@@ -14,7 +14,7 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
-import { BookingStatus } from "@agoda/types";
+import { BookingStatus } from "@safaar/types";
 import { Button } from "../../../_components/ui/button";
 import {
   Card,

@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { AuthTokens, Role } from "@agoda/types";
+import type { AuthTokens, Role } from "@safaar/types";
 
 export interface AuthUser {
   id: string;

@@ -3,7 +3,7 @@
  *
  * Backend `HotelRecord`da mos maydonlar bor (name, description, amenities,
  * images, check_in_time, check_out_time, stars, status). Real backend
- * kelganda bu turlar `@agoda/types` ga ko'chiriladi.
+ * kelganda bu turlar `@safaar/types` ga ko'chiriladi.
  */
 
 /** E'lon nashr holati (mehmonxona hayotidagi bosqichlar). */

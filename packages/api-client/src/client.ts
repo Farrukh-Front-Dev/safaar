@@ -1,4 +1,4 @@
-import type { ApiError, ApiResponse } from "@agoda/types";
+import type { ApiError, ApiResponse } from "@safaar/types";
 
 let currentBaseUrl =
   typeof process !== "undefined" && process.env && process.env.NEXT_PUBLIC_API_URL

@@ -30,7 +30,7 @@ Bu **marketplace admin emas**. Bir kishi bir mehmonxonani boshqaradi.
 
 | | |
 |---|---|
-| **App nomi** | `@agoda/web-partner` |
+| **App nomi** | `@safaar/web-partner` |
 | **Domen** | `partner.uzbron.uz` (dev: `localhost:3001`) |
 | **Auditoriya** | **Bir mehmonxona staff** (rol: `PARTNER`) |
 | **Til** | O'zbek (asosiy), Rus, Ingliz |
@@ -53,7 +53,7 @@ Bu **marketplace admin emas**. Bir kishi bir mehmonxonani boshqaradi.
 | Ikona | lucide-react | latest |
 | Tema | next-themes (light/dark/system) | latest |
 | Sana | Intl API + date-fns | latest |
-| Turlar | `@agoda/types` (workspace) | * |
+| Turlar | `@safaar/types` (workspace) | * |
 
 ---
 
@@ -136,7 +136,7 @@ soni, summa, manba (UzBron/Walk-in/Telefon), status, harakatlar.
 
 > **Eslatma:** `IN_HOUSE` UI status — backend `Booking` turi shu paytda
 > `CONFIRMED` + check-in qilingan vaqtni belgilab beradi. Tip kontrakti
-> `@agoda/types`'da `BookingStatus.PENDING/CONFIRMED/CANCELLED/COMPLETED`'dan
+> `@safaar/types`'da `BookingStatus.PENDING/CONFIRMED/CANCELLED/COMPLETED`'dan
 > tashqari yangi status kerakmi — backend dev'dan so'raladi.
 
 **Filterlar:** status, sana oralig'i, xona turi, manba, qidiruv (ID/telefon/ism).

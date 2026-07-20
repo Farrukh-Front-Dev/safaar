@@ -9,7 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Role } from '@Safaar/types';
+import { Role } from '@safaar/types';
 import { CurrentActor, type RequestActor } from '../common/actor';
 import { Roles } from '../common/roles.decorator';
 import { RolesGuard } from '../common/roles.guard';

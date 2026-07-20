@@ -1,5 +1,5 @@
 {
-  "name": "@agoda/api-client",
+  "name": "@safaar/api-client",
   "version": "0.1.0",
   "private": true,
   "description": "Safaar platformasi uchun umumiy isomorphic API client va SDK.",
@@ -23,7 +23,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@agoda/types": "*"
+    "@safaar/types": "*"
   },
   "devDependencies": {
     "typescript": "^5"

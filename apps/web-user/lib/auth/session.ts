@@ -12,7 +12,7 @@
  */
 import "server-only";
 import { cookies } from "next/headers";
-import { Role } from "@agoda/types";
+import { Role } from "@safaar/types";
 import { config } from "../config";
 
 const COOKIE_NAME = "safaar_session";

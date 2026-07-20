@@ -11,7 +11,7 @@ Har bir dasturchi **faqat o'z papkasida** ishlaydi. To'liq jadval — `CODEOWNER
 
 | Dasturchi | Papka | Port |
 |---|---|---|
-| @Farrukh-Front-Dev | `apps/web-user/`    | 3000 |
+| @FarrukhDev-io     | `apps/web-user/`    | 3000 |
 | @adhambek7717      | `apps/web-partner/` | 3001 |
 | @scarygun          | `apps/web-admin/`   | 3002 |
 | @Lazizdeveloper    | `apps/backend/` + `packages/types/` | 4000 |
@@ -100,9 +100,9 @@ Yashil bo'lmasa — PR ochma, avval tuzat.
 
 ---
 
-## 5. `@agoda/types` (shartnoma) bilan ishlash
+## 5. `@safaar/types` (shartnoma) bilan ishlash
 
-- API javob turlarini doim `@agoda/types`'dan import qil — qo'lda yozma.
+- API javob turlarini doim `@safaar/types`'dan import qil — qo'lda yozma.
 - Bu paketni faqat **backend dev** o'zgartiradi.
 - Backend yangi tur qo'shsa: `npm run build:types` (dist yangilanadi), keyin
   frontend'da avtomatik paydo bo'ladi.
@@ -167,7 +167,7 @@ git pull --rebase origin develop
 # 2) O'z papkangda ishla: apps/web-partner/... (sahifani yoz)
 
 # 3) Ishlaydiganini tekshir
-npm run lint -w @agoda/web-partner
+npm run lint -w @safaar/web-partner
 npm run build:partner
 
 # 4) Commit qil (faqat o'z fayllaring)

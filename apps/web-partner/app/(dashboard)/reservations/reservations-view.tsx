@@ -17,7 +17,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { BookingStatus } from "@agoda/types";
+import { BookingStatus } from "@safaar/types";
 import { Button } from "../../_components/ui/button";
 import { Card, CardBody } from "../../_components/ui/card";
 import { ConfirmDialog } from "../../_components/ui/dialog";

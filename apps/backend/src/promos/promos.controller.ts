@@ -1,5 +1,5 @@
 import { Body, Controller, Post, UseGuards } from '@nestjs/common';
-import { Role } from '@Safaar/types';
+import { Role } from '@safaar/types';
 import { Roles } from '../common/roles.decorator';
 import { RolesGuard } from '../common/roles.guard';
 import { PromosService } from './promos.service';

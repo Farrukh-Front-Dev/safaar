@@ -20,8 +20,8 @@
     ],
     "paths": {
       "@/*": ["./*"],
-      "@agoda/types": ["../../packages/types/src/index.ts"],
-      "@agoda/types/*": ["../../packages/types/src/*"]
+      "@safaar/types": ["../../packages/types/src/index.ts"],
+      "@safaar/types/*": ["../../packages/types/src/*"]
     }
   },
   "include": [

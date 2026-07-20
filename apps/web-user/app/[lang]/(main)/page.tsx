@@ -10,6 +10,7 @@ import { TrustBar } from "./_components/TrustBar";
 import { FeaturedHotelsCarousel } from "./_components/FeaturedHotelsCarousel";
 import { DealsSection, type DealItem } from "./_components/DealsSection";
 import { WhySafaar } from "./_components/WhySafaar";
+import { PartnersShowcase } from "./_components/PartnersShowcase";
 import type { HotelListItem } from "@/types/view";
 
 export async function generateMetadata({
@@ -137,7 +138,10 @@ export default async function HomePage({
         <CityCardsSection locale={locale} dict={dict.popularCities} />
       </div>
 
-      {/* ═══ EKRAN 4: Trust Bar ═══ */}
+      {/* ═══ EKRAN 4: Ishonchli hamkorlar ═══ */}
+      <PartnersShowcase dict={dict.partners} />
+
+      {/* ═══ EKRAN 5: Trust Bar ═══ */}
       <TrustBar dict={dict.trust} stats={stats} />
     </main>
   );

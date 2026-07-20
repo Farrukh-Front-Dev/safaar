@@ -1,4 +1,4 @@
-import { Role } from '@Safaar/types';
+import { Role } from '@safaar/types';
 import type { RequestActor } from './actor';
 
 export const Permission = {

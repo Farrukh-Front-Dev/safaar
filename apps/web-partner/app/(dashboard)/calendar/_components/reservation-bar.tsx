@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { BookingStatus } from "@agoda/types";
+import { BookingStatus } from "@safaar/types";
 import type { ReservationView } from "../../../_lib/domain/types";
 import { cn } from "../../../_lib/utils/cn";
 import { formatDate, formatMoney, formatPhone } from "../../../_lib/utils/format";

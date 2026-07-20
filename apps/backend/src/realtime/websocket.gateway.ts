@@ -10,7 +10,7 @@ import {
 } from '@nestjs/websockets';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Server, Socket } from 'socket.io';
-import { Role } from '@Safaar/types';
+import { Role } from '@safaar/types';
 import { verifyJwt } from '../auth/security';
 import { SERVER_EVENTS, CLIENT_EVENTS } from './events';
 

@@ -15,7 +15,7 @@ import {
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { BookingStatus } from "@agoda/types";
+import { BookingStatus } from "@safaar/types";
 import { Button } from "../../_components/ui/button";
 import { Card, CardBody } from "../../_components/ui/card";
 import { EmptyState } from "../../_components/ui/empty-state";

@@ -14,7 +14,7 @@ import {
   type OAuthExchangeResult,
   type OAuthProvider,
   type OAuthProviderAvailability,
-} from '@Safaar/types';
+} from '@safaar/types';
 import type { RequestActor } from '../common/actor';
 import { JOBS } from '../jobs/job-names';
 import { PostgresService } from '../infrastructure/postgres.service';

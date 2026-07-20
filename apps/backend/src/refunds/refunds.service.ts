@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { Role } from '@Safaar/types';
+import { Role } from '@safaar/types';
 import type { RequestActor } from '../common/actor';
 import { PostgresService } from '../infrastructure/postgres.service';
 

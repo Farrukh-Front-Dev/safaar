@@ -1,5 +1,5 @@
 {
-  "name": "@agoda/types",
+  "name": "@safaar/types",
   "version": "0.1.0",
   "private": true,
   "description": "UzBron platformasi uchun umumiy TypeScript turlari (frontend va backend o'rtasidagi API shartnomasi).",

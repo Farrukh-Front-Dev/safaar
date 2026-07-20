@@ -1,4 +1,4 @@
-import type { AuthTokens, VerifyOtpDto } from "@agoda/types";
+import type { AuthTokens, VerifyOtpDto } from "@safaar/types";
 import { request } from "../client";
 
 export interface OtpRequestResponse {

@@ -1,6 +1,6 @@
 import { Building2, MapPin, Star, Headphones } from "lucide-react";
 import type { HomeDict } from "@/i18n/dictionaries";
-import type { PublicStatsView } from "@agoda/api-client";
+import type { PublicStatsView } from "@safaar/api-client";
 
 /**
  * Ishonch qatori — raqamlar + to'lov logolari.

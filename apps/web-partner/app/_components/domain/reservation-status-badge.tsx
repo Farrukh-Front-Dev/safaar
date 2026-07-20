@@ -5,7 +5,7 @@ import {
   House,
   XCircle,
 } from "lucide-react";
-import { BookingStatus } from "@agoda/types";
+import { BookingStatus } from "@safaar/types";
 import { Badge } from "../ui/badge";
 import type { ReservationUiStatus } from "../../_lib/domain/types";
 

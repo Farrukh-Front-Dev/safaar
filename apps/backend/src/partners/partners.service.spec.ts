@@ -1,4 +1,4 @@
-import { Role } from '@Safaar/types';
+import { Role } from '@safaar/types';
 import type { RequestActor } from '../common/actor';
 import { JobQueueService } from '../infrastructure/job-queue.service';
 import { PostgresService } from '../infrastructure/postgres.service';

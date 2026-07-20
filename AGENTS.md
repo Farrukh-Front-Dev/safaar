@@ -16,12 +16,12 @@ quyidagi tuzilma va chegaralarga **qat'iy** rioya qilsin.
 
 ```
 apps/
-├── backend/      @agoda/backend      NestJS API        → :4000
-├── web-user/     @agoda/web-user     safaar.uz         → :3000   (mijozlar)
-├── web-partner/  @agoda/web-partner  partner.safaar.uz → :3001   (hamkorlar)
-└── web-admin/    @agoda/web-admin    admin.safaar.uz   → :3002   (super admin)
+├── backend/      @safaar/backend      NestJS API        → :4000
+├── web-user/     @safaar/web-user     safaar.uz         → :3000   (mijozlar)
+├── web-partner/  @safaar/web-partner  partner.safaar.uz → :3001   (hamkorlar)
+└── web-admin/    @safaar/web-admin    admin.safaar.uz   → :3002   (super admin)
 packages/
-└── types/        @agoda/types        API shartnomasi (umumiy TS turlari)
+└── types/        @safaar/types        API shartnomasi (umumiy TS turlari)
 ```
 
 Uchala sayt ham **bitta backend API**'ga ulanadi; ruxsatlar rol asosida (RBAC):
@@ -66,7 +66,7 @@ Har bir papkaning **bitta egasi** bor (`CODEOWNERS` fayliga qarang). AI agent
 
 ```bash
 npm install            # barcha workspace'larni o'rnatish
-npm run build:types    # @agoda/types ni birinchi build qilish (MAJBURIY birinchi)
+npm run build:types    # @safaar/types ni birinchi build qilish (MAJBURIY birinchi)
 npm run dev:user       # web-user    → :3000
 npm run dev:partner    # web-partner → :3001
 npm run dev:admin      # web-admin   → :3002

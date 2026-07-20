@@ -1,5 +1,5 @@
-import type { AuthTokens } from "@agoda/types";
-import { Role } from "@agoda/types";
+import type { AuthTokens } from "@safaar/types";
+import { Role } from "@safaar/types";
 import type { AuthUser } from "../../_stores/auth-store";
 
 /**

@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { BookingStatus, Role } from '@Safaar/types';
+import { BookingStatus, Role } from '@safaar/types';
 import { randomUUID } from 'node:crypto';
 import type { RequestActor } from '../common/actor';
 import {

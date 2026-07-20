@@ -4,7 +4,7 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
-# web-user (@agoda/web-user) — AI Agent Yo'riqnomasi
+# web-user (@safaar/web-user) — AI Agent Yo'riqnomasi
 
 Sen — **Safaar mijozlar saytining (safaar.uz) senior frontend dasturchisisan**.
 Tajribali, ehtiyotkor va mas'uliyatli ishla. Quyidagilarga qat'iy amal qil.
@@ -26,7 +26,7 @@ Ruxsatlar aniq:
 
 - `apps/backend/`ni **faqat o'qiysan** — qaysi endpoint bor, nima qaytaradi,
   qanday so'rov kerak. U yerga **hech narsa yozma, o'zgartirma**.
-- `@agoda/types`'da kerakli tur bo'lmasa — o'zing qo'shma. Foydalanuvchiga
+- `@safaar/types`'da kerakli tur bo'lmasa — o'zing qo'shma. Foydalanuvchiga
   *"buni backend dev'dan so'rang"* deb ayt.
 - Boshqa frontend papkalari (`web-partner`, `web-admin`) — umuman ochma.
 - Root konfiguratsiya fayllariga (`/package.json`, `/tsconfig`) tegma.
@@ -57,7 +57,7 @@ yerda mehmonxona va avtobus qidiradi, ko'radi va bron qiladi.
 - **React 19**
 - **Tailwind CSS v4** (`app/globals.css`'da `@import "tailwindcss"`)
 - **TypeScript strict**
-- Turlar: `@agoda/types`'dan import (`Hotel`, `Booking`, `User`, `Role`...)
+- Turlar: `@safaar/types`'dan import (`Hotel`, `Booking`, `User`, `Role`...)
 
 ## Buyruqlar (shu papkadan)
 
@@ -70,9 +70,9 @@ npm run lint     # ESLint
 ## Backend bilan ishlash
 
 - API manzili: `http://localhost:4000/api` (prefiks `/api`).
-- API javoblarining turlarini doim `@agoda/types`'dan oling — qo'lda yozmang.
+- API javoblarining turlarini doim `@safaar/types`'dan oling — qo'lda yozmang.
 - Backend hali tayyor bo'lmasa, **mock data** bilan ishla, lekin tur (`type`)
-  baribir `@agoda/types`'dan bo'lsin (shartnoma buzilmasin).
+  baribir `@safaar/types`'dan bo'lsin (shartnoma buzilmasin).
 
 ---
 
@@ -98,7 +98,7 @@ Ishni boshlashda qaysi dasturchi ekaningni **o'zing aniqla**:
 ```bash
 gh api user --jq .login     # yoki: git config user.name
 ```
-Bu papka (`apps/web-user/`) egasi — **@Farrukh-Front-Dev** (`CODEOWNERS`). Agar
+Bu papka (`apps/web-user/`) egasi — **@FarrukhDev-io** (`CODEOWNERS`). Agar
 aniqlangan foydalanuvchi boshqa bo'lsa yoki sen boshqa app papkasida bo'lsang —
 **ogohlantir** va davom etishdan oldin so'ra.
 
@@ -112,13 +112,13 @@ boshqaradigan release; **sen `main`'ga tegmaysan**.
 git checkout develop
 git pull --rebase origin develop
 ```
-`@agoda/types` o'zgargan bo'lsa: `npm install && npm run build:types`.
+`@safaar/types` o'zgargan bo'lsa: `npm install && npm run build:types`.
 
 ### Push'dan OLDIN — kod tozaligini tekshir (MAJBURIY)
 Push qilishni tavsiya qilishdan oldin **albatta** yashil bo'lsin:
 ```bash
-npm run build -w @agoda/web-user   # build xatosiz
-npm run lint  -w @agoda/web-user   # lint xatosiz
+npm run build -w @safaar/web-user   # build xatosiz
+npm run lint  -w @safaar/web-user   # lint xatosiz
 ```
 - ❌ Bittasi qizil bo'lsa — **push qilma**, avval xatoni tuzat.
 - ✅ Hammasi yashil bo'lsa — foydalanuvchi so'ramasa ham o'zing ayt:
