@@ -35,8 +35,11 @@ import {
   useCheckIn,
 } from "../../_hooks/use-reservations";
 import { cn } from "../../_lib/utils/cn";
-import type { ReservationUiStatus, ReservationView } from "../../_lib/domain/types";
+import type { Bed, ReservationUiStatus, ReservationView } from "../../_lib/domain/types";
 import { formatDate, formatMoney, formatPhone } from "../../_lib/utils/format";
+import { useAuthStore } from "../../_stores/auth-store";
+import { useDataStore } from "../../_stores/data-store";
+import { getPartnerLabels } from "../../_lib/utils/partner-labels";
 
 type FilterKey = "all" | ReservationUiStatus;
 
@@ -49,13 +52,13 @@ const FILTERS: { key: FilterKey; label: string }[] = [
   { key: BookingStatus.CANCELLED, label: "Bekor qilingan" },
 ];
 
-function exportToCsv(items: ReservationView[]) {
+function exportToCsv(items: ReservationView[], unitLabel: string, beds: Bed[]) {
   const headers = [
     "ID",
     "Mijoz",
     "Telefon",
-    "Xona turi",
-    "Xona",
+    `${unitLabel} turi`,
+    unitLabel,
     "Kelish",
     "Ketish",
     "Kech.",
@@ -64,20 +67,23 @@ function exportToCsv(items: ReservationView[]) {
     "Status",
     "Manba",
   ];
-  const rows = items.map((r) => [
-    r.id,
-    r.guest.fullName,
-    `+${r.guest.phone}`,
-    r.roomTypeName,
-    r.roomNumber ?? "",
-    r.checkIn,
-    r.checkOut,
-    r.nights,
-    r.totalPrice,
-    r.paidAmount,
-    r.status,
-    r.source,
-  ]);
+  const rows = items.map((r) => {
+    const bed = r.bedId ? beds.find((b) => b.id === r.bedId) : undefined;
+    return [
+      r.id,
+      r.guest.fullName,
+      `+${r.guest.phone}`,
+      r.roomTypeName,
+      [r.roomNumber, bed?.label].filter(Boolean).join(" · "),
+      r.checkIn,
+      r.checkOut,
+      r.nights,
+      r.totalPrice,
+      r.paidAmount,
+      r.status,
+      r.source,
+    ];
+  });
   const csv = [headers, ...rows]
     .map((row) =>
       row
@@ -109,6 +115,9 @@ export function ReservationsView() {
   const confirmReservation = useConfirmReservation();
   const rejectReservation = useRejectReservation();
   const checkIn = useCheckIn();
+  const beds = useDataStore((s) => s.beds);
+  const partnerType = useAuthStore((s) => s.user?.partnerType);
+  const labels = getPartnerLabels(partnerType);
 
   const [filter, setFilter] = useState<FilterKey>("all");
   const [query, setQuery] = useState("");
@@ -204,7 +213,7 @@ export function ReservationsView() {
     <div className="flex flex-col gap-5">
       <PageHeader
         eyebrow="Bron boshqaruvi"
-        title="Bronlar"
+        title={labels.reservationsTitle}
         description="Web-userdan kelgan buyurtmalar, walk-in bronlar, to'lov va check-in jarayonlari."
         actions={
           <>
@@ -213,7 +222,7 @@ export function ReservationsView() {
               size="sm"
               disabled={filtered.length === 0}
               onClick={() => {
-                exportToCsv(filtered);
+                exportToCsv(filtered, labels.unitSingular, beds);
                 toast.success(`${filtered.length} ta bron eksport qilindi`);
               }}
             >
@@ -222,7 +231,7 @@ export function ReservationsView() {
             </Button>
             <Button size="sm" onClick={() => setWalkInOpen(true)}>
               <CalendarPlus className="h-4 w-4" aria-hidden />
-              Walk-in bron
+              {labels.walkInTitle}
             </Button>
           </>
         }
@@ -485,6 +494,9 @@ function ReservationCard({
   const balance = Math.max(0, reservation.totalPrice - reservation.paidAmount);
   const canConfirm = reservation.status === BookingStatus.PENDING;
   const canCheckIn = reservation.status === BookingStatus.CONFIRMED;
+  const beds = useDataStore((s) => s.beds);
+  const partnerType = useAuthStore((s) => s.user?.partnerType);
+  const labels = getPartnerLabels(partnerType);
 
   return (
     <Card interactive>
@@ -535,8 +547,14 @@ function ReservationCard({
               />
               <MiniInfo
                 icon={<BedDouble />}
-                label="Xona"
-                value={`${reservation.roomTypeName}${reservation.roomNumber ? ` · ${reservation.roomNumber}` : ""}`}
+                label={labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1)}
+                value={`${reservation.roomTypeName}${
+                  reservation.roomNumber ? ` · ${reservation.roomNumber}` : ""
+                }${
+                  reservation.bedId
+                    ? ` · ${beds.find((b) => b.id === reservation.bedId)?.label ?? ""}`
+                    : ""
+                }`}
               />
             </div>
 

@@ -41,6 +41,9 @@ import {
   formatMoney,
   formatPhone,
 } from "../../../_lib/utils/format";
+import { useAuthStore } from "../../../_stores/auth-store";
+import { useDataStore } from "../../../_stores/data-store";
+import { getPartnerLabels } from "../../../_lib/utils/partner-labels";
 
 export function ReservationDetailView({ id }: { id: string }) {
   const { data } = useReservation(id);
@@ -48,6 +51,9 @@ export function ReservationDetailView({ id }: { id: string }) {
   const rejectReservation = useRejectReservation();
   const checkIn = useCheckIn();
   const checkOut = useCheckOut();
+  const beds = useDataStore((s) => s.beds);
+  const partnerType = useAuthStore((s) => s.user?.partnerType);
+  const labels = getPartnerLabels(partnerType);
 
   const [confirmDialog, setConfirmDialog] = useState<
     "reject" | "cancel" | null
@@ -129,7 +135,7 @@ export function ReservationDetailView({ id }: { id: string }) {
                 size="sm"
                 onClick={() => setAssignOpen(true)}
               >
-                Check-in qilish
+                {labels.checkInLabel}
               </Button>
             )}
             {canCheckOut && (
@@ -139,11 +145,11 @@ export function ReservationDetailView({ id }: { id: string }) {
                 loading={checkOut.isPending}
                 onClick={() => {
                   checkOut.mutate(data.id, {
-                    onSuccess: () => toast.success("Check-out qilindi"),
+                    onSuccess: () => toast.success(`${labels.checkOutLabel} qilindi`),
                   });
                 }}
               >
-                Check-out qilish
+                {labels.checkOutLabel}
               </Button>
             )}
             {canCancel && !canConfirm && (
@@ -172,13 +178,15 @@ export function ReservationDetailView({ id }: { id: string }) {
             <CardBody className="grid gap-4 sm:grid-cols-2">
               <InfoItem
                 icon={<BedDouble className="h-4 w-4" aria-hidden />}
-                label="Xona"
+                label={labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1)}
                 value={
                   <>
                     {data.roomTypeName}
                     {data.roomNumber && (
                       <span className="ml-1 font-mono text-brand-700 dark:text-brand-300">
                         · {data.roomNumber}
+                        {data.bedId &&
+                          ` · ${beds.find((b) => b.id === data.bedId)?.label ?? ""}`}
                       </span>
                     )}
                   </>
@@ -332,7 +340,7 @@ export function ReservationDetailView({ id }: { id: string }) {
         reservation={data}
         onAssigned={() => {
           checkIn.mutate(data.id, {
-            onSuccess: () => toast.success("Check-in qilindi"),
+            onSuccess: () => toast.success(`${labels.checkInLabel} qilindi`),
           });
         }}
       />

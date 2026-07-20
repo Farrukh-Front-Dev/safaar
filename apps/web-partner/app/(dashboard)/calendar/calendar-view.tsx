@@ -13,15 +13,20 @@ import { Button } from "../../_components/ui/button";
 import { Card, CardBody } from "../../_components/ui/card";
 import { EmptyState } from "../../_components/ui/empty-state";
 import { Tooltip } from "../../_components/ui/tooltip";
-import { WalkInDialog } from "../../_components/domain/walk-in-dialog";
+import { WalkInDialog, type WalkInInitial } from "../../_components/domain/walk-in-dialog";
 import { PageHeader } from "../../_components/layout/page-header";
 import { useRooms } from "../../_hooks/use-rooms";
 import { useReservations } from "../../_hooks/use-reservations";
 import { useRoomTypes } from "../../_hooks/use-room-types";
+import { useAuthStore } from "../../_stores/auth-store";
+import { useDataStore } from "../../_stores/data-store";
 import { cn } from "../../_lib/utils/cn";
 import { formatMoney } from "../../_lib/utils/format";
 import { TODAY_ISO } from "../../_lib/mocks/data";
+import { getPartnerLabels, hasBeds, isDacha } from "../../_lib/utils/partner-labels";
+import type { ReservationView } from "../../_lib/domain/types";
 import { ReservationBar } from "./_components/reservation-bar";
+import { DachaAvailabilityView } from "./_components/dacha-availability-view";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const WEEKDAY_LABEL = ["Yak", "Du", "Se", "Cho", "Pa", "Ju", "Sha"];
@@ -42,6 +47,20 @@ const MONTH_LABEL = [
 
 type ViewMode = 7 | 14 | 30;
 
+/** Kalendar qatori — mehmonxona uchun bitta xona, hostel uchun bitta yotoq. */
+interface CalendarRow {
+  key: string;
+  roomTypeId: string;
+  primaryLabel: string;
+  secondaryLabel: string;
+  isListed: boolean;
+  nightlyPrice?: number;
+  roomNumber: string;
+  bedId?: string;
+  /** Bu qatorga tegishli bronni aniqlash uchun. */
+  matches: (r: ReservationView) => boolean;
+}
+
 function addDays(iso: string, days: number): string {
   const d = new Date(iso);
   d.setDate(d.getDate() + days);
@@ -55,20 +74,20 @@ function dayDiff(a: string, b: string): number {
 }
 
 export function CalendarView() {
+  const partnerType = useAuthStore((s) => s.user?.partnerType);
+  const labels = getPartnerLabels(partnerType);
+  const isHostel = hasBeds(partnerType);
+
   const { data: rooms } = useRooms();
   const { data: reservations } = useReservations();
   const { data: roomTypes } = useRoomTypes();
+  const beds = useDataStore((s) => s.beds);
 
   const [viewMode, setViewMode] = useState<ViewMode>(14);
   const [startOffset, setStartOffset] = useState(0);
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [walkInOpen, setWalkInOpen] = useState(false);
-  const [walkInInitial, setWalkInInitial] = useState<{
-    checkIn?: string;
-    checkOut?: string;
-    roomTypeId?: string;
-    roomNumber?: string;
-  }>({});
+  const [walkInInitial, setWalkInInitial] = useState<WalkInInitial>({});
 
   const startDate = addDays(TODAY_ISO, startOffset);
   const days = useMemo(
@@ -77,17 +96,49 @@ export function CalendarView() {
     [startDate, viewMode],
   );
 
-  const filteredRooms = useMemo(() => {
-    if (typeFilter === "all") return rooms;
-    return rooms.filter((r) => r.roomTypeId === typeFilter);
-  }, [rooms, typeFilter]);
+  // Har bir mehmonxona xonasi (yoki hostel yotog'i) — bitta kalendar qatori
+  const allRows = useMemo<CalendarRow[]>(() => {
+    if (isHostel) {
+      return beds.map((bed) => {
+        const room = rooms.find((r) => r.id === bed.roomId);
+        return {
+          key: bed.id,
+          roomTypeId: room?.roomTypeId ?? "",
+          primaryLabel: room ? `${room.number} · ${bed.label}` : bed.label,
+          secondaryLabel: room?.roomTypeName ?? "",
+          isListed: bed.isListed,
+          nightlyPrice: bed.nightlyPrice ?? room?.nightlyPrice,
+          roomNumber: room?.number ?? "",
+          bedId: bed.id,
+          matches: (r) => r.bedId === bed.id,
+        };
+      });
+    }
+    return rooms.map((room) => ({
+      key: room.id,
+      roomTypeId: room.roomTypeId,
+      primaryLabel: room.number,
+      secondaryLabel: room.roomTypeName,
+      isListed: room.isListed,
+      nightlyPrice: room.nightlyPrice,
+      roomNumber: room.number,
+      matches: (r) => !r.bedId && r.roomNumber === room.number,
+    }));
+  }, [isHostel, beds, rooms]);
 
-  const sortedRooms = useMemo(
+  const filteredRows = useMemo(() => {
+    if (typeFilter === "all") return allRows;
+    return allRows.filter((row) => row.roomTypeId === typeFilter);
+  }, [allRows, typeFilter]);
+
+  const sortedRows = useMemo(
     () =>
-      [...filteredRooms].sort(
-        (a, b) => Number(a.number) - Number(b.number),
+      [...filteredRows].sort(
+        (a, b) =>
+          Number(a.roomNumber) - Number(b.roomNumber) ||
+          a.primaryLabel.localeCompare(b.primaryLabel),
       ),
-    [filteredRooms],
+    [filteredRows],
   );
 
   // Cell o'lchami view mode'ga qarab
@@ -98,19 +149,19 @@ export function CalendarView() {
   const headerHeight = 56;
 
   // Bo'sh katakka klik — yangi bron yaratish
-  const handleEmptyClick = (roomNumber: string, dateIso: string) => {
-    const room = rooms.find((r) => r.number === roomNumber);
+  const handleEmptyClick = (row: CalendarRow, dateIso: string) => {
     setWalkInInitial({
       checkIn: dateIso,
       checkOut: addDays(dateIso, 1),
-      roomTypeId: room?.roomTypeId,
-      roomNumber,
+      roomTypeId: row.roomTypeId,
+      roomNumber: row.roomNumber,
+      bedId: row.bedId,
     });
     setWalkInOpen(true);
   };
 
-  // Har bir xona uchun joriy oynadagi bronlar
-  const reservationsByRoom = useMemo(() => {
+  // Har bir qator uchun joriy oynadagi bronlar
+  const reservationsByRow = useMemo(() => {
     const map = new Map<
       string,
       Array<{
@@ -122,39 +173,42 @@ export function CalendarView() {
       }>
     >();
 
-    for (const r of reservations) {
-      if (
-        r.status === BookingStatus.CANCELLED ||
-        r.status === BookingStatus.EXPIRED ||
-        !r.roomNumber
-      ) {
-        continue;
+    for (const row of sortedRows) {
+      for (const r of reservations) {
+        if (
+          r.status === BookingStatus.CANCELLED ||
+          r.status === BookingStatus.EXPIRED ||
+          !r.roomNumber ||
+          !row.matches(r)
+        ) {
+          continue;
+        }
+
+        const ciOffset = dayDiff(r.checkIn, startDate);
+        const coOffset = dayDiff(r.checkOut, startDate);
+
+        // Oraliqdan tashqarida bo'lsa — o'tkazib yuborish
+        if (coOffset <= 0 || ciOffset >= viewMode) continue;
+
+        const visibleStart = Math.max(0, ciOffset);
+        const visibleEnd = Math.min(viewMode, coOffset);
+        if (visibleEnd <= visibleStart) continue;
+
+        const entry = {
+          reservation: r,
+          startCol: visibleStart + 2, // +1 sticky room col + 1 (1-indexed grid)
+          spanCols: visibleEnd - visibleStart,
+          truncatedStart: ciOffset < 0,
+          truncatedEnd: coOffset > viewMode,
+        };
+
+        const existing = map.get(row.key) ?? [];
+        existing.push(entry);
+        map.set(row.key, existing);
       }
-
-      const ciOffset = dayDiff(r.checkIn, startDate);
-      const coOffset = dayDiff(r.checkOut, startDate);
-
-      // Oraliqdan tashqarida bo'lsa — o'tkazib yuborish
-      if (coOffset <= 0 || ciOffset >= viewMode) continue;
-
-      const visibleStart = Math.max(0, ciOffset);
-      const visibleEnd = Math.min(viewMode, coOffset);
-      if (visibleEnd <= visibleStart) continue;
-
-      const entry = {
-        reservation: r,
-        startCol: visibleStart + 2, // +1 sticky room col + 1 (1-indexed grid)
-        spanCols: visibleEnd - visibleStart,
-        truncatedStart: ciOffset < 0,
-        truncatedEnd: coOffset > viewMode,
-      };
-
-      const existing = map.get(r.roomNumber) ?? [];
-      existing.push(entry);
-      map.set(r.roomNumber, existing);
     }
     return map;
-  }, [reservations, startDate, viewMode]);
+  }, [sortedRows, reservations, startDate, viewMode]);
 
   const periodLabel = useMemo(() => {
     const last = addDays(startDate, viewMode - 1);
@@ -182,16 +236,18 @@ export function CalendarView() {
       total,
       paid,
       balance: total - paid,
-      listedRooms: sortedRooms.filter((room) => room.isListed).length,
+      listedRows: sortedRows.filter((row) => row.isListed).length,
     };
-  }, [reservations, sortedRooms, startDate, viewMode]);
+  }, [reservations, sortedRows, startDate, viewMode]);
+
+  if (isDacha(partnerType)) return <DachaAvailabilityView />;
 
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
         eyebrow="Operatsion"
-        title="Kalendar"
-        description="Har bir real xona bo'yicha bandlik, to'lov va kelish-ketish sanalarini aniq ko'ring."
+        title={labels.calendarTitle}
+        description={labels.calendarDescription}
         actions={
           <Button
             size="sm"
@@ -201,15 +257,15 @@ export function CalendarView() {
             }}
           >
             <Plus className="h-4 w-4" aria-hidden />
-            Yangi bron
+            {labels.newBookingLabel}
           </Button>
         }
       />
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <CalendarMetric
-          label="E'londagi xonalar"
-          value={`${periodStats.listedRooms} / ${sortedRooms.length}`}
+          label={labels.availabilityLabel}
+          value={`${periodStats.listedRows} / ${sortedRows.length}`}
           hint="turistlarga sotuvda"
         />
         <CalendarMetric
@@ -295,14 +351,14 @@ export function CalendarView() {
           </span>
         </div>
 
-        {/* Room type filter */}
+        {/* Xona/dorm turi filtri */}
         <select
-          aria-label="Xona turi"
+          aria-label={labels.unitTypeLabel}
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
           className="h-9 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm focus:border-brand-600 focus:outline-none"
         >
-          <option value="all">Barcha xona turlari</option>
+          <option value="all">Barcha {labels.unitTypeLabel.toLowerCase()}lari</option>
           {roomTypes.map((rt) => (
             <option key={rt.id} value={rt.id}>
               {rt.name}
@@ -319,7 +375,7 @@ export function CalendarView() {
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span className="h-3 w-3 rounded-sm bg-accent-500" aria-hidden />
-          Mehmonxonada
+          Band (ichkarida)
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span className="h-3 w-3 rounded-sm bg-amber-400" aria-hidden />
@@ -336,13 +392,13 @@ export function CalendarView() {
       </div>
 
       {/* Asosiy grid */}
-      {sortedRooms.length === 0 ? (
+      {sortedRows.length === 0 ? (
         <Card>
           <CardBody>
             <EmptyState
               icon={<CalendarDays className="h-10 w-10" aria-hidden />}
-              title="Xonalar yo'q"
-              description="Avval Sozlamalar → Xonalar bo'limidan xonalarni qo'shing."
+              title={`${labels.unitPlural.charAt(0).toUpperCase()}${labels.unitPlural.slice(1)} yo'q`}
+              description="Avval Sozlamalar bo'limidan qo'shing."
             />
           </CardBody>
         </Card>
@@ -356,7 +412,7 @@ export function CalendarView() {
               gridAutoRows: `${rowHeight}px`,
             }}
           >
-            {/* Header (sticky top) — Xona bo'sh katak */}
+            {/* Header (sticky top) — bo'sh katak */}
             <div
               style={{
                 gridRow: 1,
@@ -369,7 +425,8 @@ export function CalendarView() {
               }}
               className="flex items-center justify-center border-b border-r border-[var(--border)] bg-[var(--surface-muted)] text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]"
             >
-              Xona
+              {labels.unitSingular.charAt(0).toUpperCase()}
+              {labels.unitSingular.slice(1)}
             </div>
 
             {/* Header — kun katakchalari */}
@@ -413,22 +470,22 @@ export function CalendarView() {
               );
             })}
 
-            {/* Har bir xona uchun qator */}
-            {sortedRooms.map((room, rIdx) => {
+            {/* Har bir qator uchun — xona yoki yotoq */}
+            {sortedRows.map((row, rIdx) => {
               const gridRow = rIdx + 2;
-              const bars = reservationsByRoom.get(room.number) ?? [];
+              const bars = reservationsByRow.get(row.key) ?? [];
               return (
                 <RoomRow
-                  key={room.id}
-                  number={room.number}
-                  typeName={room.roomTypeName}
-                  isListed={room.isListed}
-                  nightlyPrice={room.nightlyPrice}
+                  key={row.key}
+                  primaryLabel={row.primaryLabel}
+                  secondaryLabel={row.secondaryLabel}
+                  isListed={row.isListed}
+                  nightlyPrice={row.nightlyPrice}
                   gridRow={gridRow}
                   days={days}
                   cellWidth={cellWidth}
                   bars={bars}
-                  onEmptyClick={handleEmptyClick}
+                  onEmptyClick={(dateIso) => handleEmptyClick(row, dateIso)}
                 />
               );
             })}
@@ -446,12 +503,12 @@ export function CalendarView() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// Bitta xona qatori — sticky raqam ustun + kun katakchalari + bronlar
+// Bitta qator — sticky yorliq ustun + kun katakchalari + bronlar
 // ─────────────────────────────────────────────────────────────────────────
 
 interface RoomRowProps {
-  number: string;
-  typeName: string;
+  primaryLabel: string;
+  secondaryLabel: string;
   isListed: boolean;
   nightlyPrice?: number;
   gridRow: number;
@@ -464,12 +521,12 @@ interface RoomRowProps {
     truncatedStart: boolean;
     truncatedEnd: boolean;
   }>;
-  onEmptyClick: (roomNumber: string, dateIso: string) => void;
+  onEmptyClick: (dateIso: string) => void;
 }
 
 function RoomRow({
-  number,
-  typeName,
+  primaryLabel,
+  secondaryLabel,
   isListed,
   nightlyPrice,
   gridRow,
@@ -481,7 +538,7 @@ function RoomRow({
   void cellWidth;
   return (
     <>
-      {/* Sticky xona ustuni */}
+      {/* Sticky yorliq ustuni */}
       <div
         style={{
           gridRow,
@@ -494,7 +551,7 @@ function RoomRow({
       >
         <div className="flex w-full items-center justify-between gap-2">
           <span className="font-mono text-sm font-bold leading-none">
-            {number}
+            {primaryLabel}
           </span>
           <span
             className={cn(
@@ -508,7 +565,7 @@ function RoomRow({
           </span>
         </div>
         <span className="mt-1 truncate text-[10px] text-[var(--muted-foreground)]">
-          {typeName}
+          {secondaryLabel}
           {nightlyPrice ? ` · ${formatMoney(nightlyPrice)}` : ""}
         </span>
       </div>
@@ -522,8 +579,8 @@ function RoomRow({
           <button
             key={iso}
             type="button"
-            onClick={() => onEmptyClick(number, iso)}
-            aria-label={`Xona ${number}, ${iso} uchun bron yaratish`}
+            onClick={() => onEmptyClick(iso)}
+            aria-label={`${primaryLabel}, ${iso} uchun bron yaratish`}
             style={{ gridRow, gridColumn: i + 2 }}
             className={cn(
               "border-b border-r border-[var(--border)] transition-colors hover:bg-brand-50 dark:hover:bg-brand-900/20",

@@ -12,6 +12,8 @@ import { Input } from "../../../_components/ui/input";
 import { Label } from "../../../_components/ui/label";
 import { useListing } from "../../../_hooks/use-listing";
 import { useDataStore } from "../../../_stores/data-store";
+import { useAuthStore } from "../../../_stores/auth-store";
+import { hasStarRating } from "../../../_lib/utils/partner-labels";
 import { cn } from "../../../_lib/utils/cn";
 
 const schema = z.object({
@@ -32,6 +34,8 @@ export function GeneralEditor({
 }) {
   const { data } = useListing();
   const update = useDataStore((s) => s.updateListingGeneral);
+  const partnerType = useAuthStore((s) => s.user?.partnerType);
+  const showStars = hasStarRating(partnerType);
 
   const form = useForm<Values>({
     resolver: zodResolver(schema),
@@ -60,7 +64,7 @@ export function GeneralEditor({
       open={open}
       onClose={onClose}
       title="Umumiy ma'lumotlar"
-      description="Mehmonxona nomi, tavsif va yulduzlar."
+      description={`Nomi, tavsif${showStars ? " va yulduzlar" : ""}.`}
       size="lg"
       footer={
         <>
@@ -89,37 +93,39 @@ export function GeneralEditor({
         </div>
 
         {/* Yulduzlar */}
-        <div className="flex flex-col gap-1.5">
-          <Label>Yulduzlar</Label>
-          <div className="flex items-center gap-2">
-            <div className="inline-flex items-center gap-1">
-              {[1, 2, 3, 4, 5].map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() =>
-                    form.setValue("stars", n, { shouldDirty: true })
-                  }
-                  aria-label={`${n} yulduz`}
-                  className="rounded-md p-1 transition-transform hover:scale-110"
-                >
-                  <Star
-                    className={cn(
-                      "h-7 w-7",
-                      n <= currentStars
-                        ? "fill-amber-400 stroke-amber-500"
-                        : "fill-transparent stroke-zinc-300",
-                    )}
-                    aria-hidden
-                  />
-                </button>
-              ))}
+        {showStars && (
+          <div className="flex flex-col gap-1.5">
+            <Label>Yulduzlar</Label>
+            <div className="flex items-center gap-2">
+              <div className="inline-flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() =>
+                      form.setValue("stars", n, { shouldDirty: true })
+                    }
+                    aria-label={`${n} yulduz`}
+                    className="rounded-md p-1 transition-transform hover:scale-110"
+                  >
+                    <Star
+                      className={cn(
+                        "h-7 w-7",
+                        n <= currentStars
+                          ? "fill-amber-400 stroke-amber-500"
+                          : "fill-transparent stroke-zinc-300",
+                      )}
+                      aria-hidden
+                    />
+                  </button>
+                ))}
+              </div>
+              <span className="text-sm text-[var(--muted-foreground)]">
+                {currentStars} yulduzli
+              </span>
             </div>
-            <span className="text-sm text-[var(--muted-foreground)]">
-              {currentStars} yulduzli
-            </span>
           </div>
-        </div>
+        )}
 
         {/* Qisqa tavsif */}
         <div className="flex flex-col gap-1.5">

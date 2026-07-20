@@ -427,6 +427,8 @@ function TaskCard({
 }) {
   const balance = Math.max(0, reservation.totalPrice - reservation.paidAmount);
   const meta = TASK_META[kind];
+  const beds = useDataStore((s) => s.beds);
+  const bed = reservation.bedId ? beds.find((b) => b.id === reservation.bedId) : undefined;
 
   const kindLabel =
     kind === "pending"
@@ -465,7 +467,12 @@ function TaskCard({
               <span className="text-zinc-400">📋</span>
               <span>
                 {reservation.roomTypeName}
-                {reservation.roomNumber && <strong className="text-zinc-700 dark:text-zinc-300 ml-1">· {reservation.roomNumber}</strong>}
+                {reservation.roomNumber && (
+                  <strong className="text-zinc-700 dark:text-zinc-300 ml-1">
+                    · {reservation.roomNumber}
+                    {bed && ` · ${bed.label}`}
+                  </strong>
+                )}
               </span>
             </div>
           )}
@@ -527,6 +534,8 @@ function TaskCard({
 
 function NextTaskCard({ task, labels }: { task: Task; labels: PartnerLabels }) {
   const meta = TASK_META[task.kind];
+  const beds = useDataStore((s) => s.beds);
+  const bed = task.reservation.bedId ? beds.find((b) => b.id === task.reservation.bedId) : undefined;
   const kindLabel =
     task.kind === "pending"
       ? "Yangi"
@@ -548,6 +557,7 @@ function NextTaskCard({ task, labels }: { task: Task; labels: PartnerLabels }) {
         </p>
         <p className="truncate text-xs text-zinc-500 mt-0.5">
           {kindLabel} · {task.reservation.roomTypeName}
+          {bed && ` · ${bed.label}`}
         </p>
       </div>
     </Link>

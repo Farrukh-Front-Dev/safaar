@@ -9,10 +9,14 @@ import { Input } from "../../_components/ui/input";
 import { PageHeader } from "../../_components/layout/page-header";
 import { useGuests } from "../../_hooks/use-guests";
 import { formatDate, formatMoney, formatPhone } from "../../_lib/utils/format";
+import { useAuthStore } from "../../_stores/auth-store";
+import { getPartnerLabels } from "../../_lib/utils/partner-labels";
 
 export function GuestsView() {
   const { data } = useGuests();
   const router = useRouter();
+  const partnerType = useAuthStore((s) => s.user?.partnerType);
+  const labels = getPartnerLabels(partnerType);
   const [query, setQuery] = useState("");
   const [vipOnly, setVipOnly] = useState(false);
 
@@ -35,7 +39,7 @@ export function GuestsView() {
       <PageHeader
         eyebrow="Mijoz"
         title="Mijozlar"
-        description="Mehmonlar profili, tashriflar tarixi va VIP belgilash."
+        description={`${labels.guestLabel} profili, tashriflar tarixi va VIP belgilash.`}
       />
 
       <div className="flex flex-wrap items-center gap-2">
@@ -80,7 +84,7 @@ export function GuestsView() {
           description={
             vipOnly || query
               ? "Filterni o'zgartirib ko'ring yoki boshqa kalit so'z yozing."
-              : "Mehmonlar mehmonxonangizga kelganda shu yerda paydo bo'ladi."
+              : `${labels.guestLabel}lar kelganda shu yerda paydo bo'ladi.`
           }
         />
       ) : (

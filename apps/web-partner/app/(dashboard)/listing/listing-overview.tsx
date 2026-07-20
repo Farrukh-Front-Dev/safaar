@@ -31,6 +31,7 @@ import { LocationEditor } from "./_editors/location-editor";
 import { RulesEditor } from "./_editors/rules-editor";
 import { RoomDialog } from "../settings/rooms/_dialogs/room-dialog";
 import { RoomTypeDialog } from "../settings/rooms/_dialogs/room-type-dialog";
+import { DachaUnitPanel } from "./_components/dacha-unit-panel";
 import {
   AMENITY_GROUPS,
   CANCELLATION_POLICY_INFO,
@@ -41,6 +42,8 @@ import { useListing } from "../../_hooks/use-listing";
 import { useRooms } from "../../_hooks/use-rooms";
 import { useRoomTypes } from "../../_hooks/use-room-types";
 import { useDataStore } from "../../_stores/data-store";
+import { useAuthStore } from "../../_stores/auth-store";
+import { getPartnerLabels, hasBeds, hasStarRating, isDacha } from "../../_lib/utils/partner-labels";
 import { cn } from "../../_lib/utils/cn";
 import { formatMoney } from "../../_lib/utils/format";
 
@@ -67,7 +70,13 @@ export function ListingOverview() {
   const { data: listing } = useListing();
   const { data: rooms } = useRooms();
   const { data: roomTypes } = useRoomTypes();
+  const beds = useDataStore((s) => s.beds);
   const setStatus = useDataStore((s) => s.setListingStatus);
+  const partnerType = useAuthStore((s) => s.user?.partnerType);
+  const labels = getPartnerLabels(partnerType);
+  const showStars = hasStarRating(partnerType);
+  const dacha = isDacha(partnerType);
+  const isHostel = hasBeds(partnerType);
   const [openEditor, setOpenEditor] = useState<OpenEditor>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [roomTypeDialogOpen, setRoomTypeDialogOpen] = useState(false);
@@ -82,11 +91,22 @@ export function ListingOverview() {
   const roomAds = roomTypes.map((roomType) => {
     const relatedRooms = rooms.filter((room) => room.roomTypeId === roomType.id);
     const listedCount = relatedRooms.filter((room) => room.isListed).length;
+    const relatedBeds = beds.filter((bed) =>
+      relatedRooms.some((room) => room.id === bed.roomId),
+    );
+    const listedBedCount = relatedBeds.filter((bed) => bed.isListed).length;
     const prices = relatedRooms
       .map((room) => room.nightlyPrice ?? roomType.basePrice)
       .filter((price) => price > 0);
     const minPrice = prices.length > 0 ? Math.min(...prices) : roomType.basePrice;
-    return { roomType, relatedRooms, listedCount, minPrice };
+    return {
+      roomType,
+      relatedRooms,
+      listedCount,
+      minPrice,
+      totalBeds: relatedBeds.length,
+      listedBedCount,
+    };
   });
 
   const sections = useMemo<ListingSection[]>(() => {
@@ -107,12 +127,14 @@ export function ListingOverview() {
       {
         id: "general",
         title: "Asosiy ma'lumot",
-        subtitle: "Nomi, qisqa tavsif, batafsil matn va yulduzlar",
+        subtitle: `Nomi, qisqa tavsif, batafsil matn${showStars ? " va yulduzlar" : ""}`,
         action: "Matnni tahrirlash",
         complete: generalComplete,
         summary: listing.name
-          ? `${listing.name} · ${listing.stars} yulduz`
-          : "Mehmonxona nomi kiritilmagan",
+          ? showStars
+            ? `${listing.name} · ${listing.stars} yulduz`
+            : listing.name
+          : "Nomi kiritilmagan",
         icon: <FileText className="h-4 w-4" aria-hidden />,
         missing: !generalComplete
           ? "Nomi, qisqa tavsif yoki batafsil tavsifni to'ldiring."
@@ -176,7 +198,7 @@ export function ListingOverview() {
           : undefined,
       },
     ];
-  }, [cover, listing]);
+  }, [cover, listing, showStars]);
 
   const completedCount = sections.filter((section) => section.complete).length;
   const progress = Math.round((completedCount / sections.length) * 100);
@@ -243,7 +265,8 @@ export function ListingOverview() {
                       </span>
                     </div>
                     <h1 className="mt-1 text-2xl font-semibold sm:text-[28px]">
-                      Mehmonxona sahifasini tayyorlash
+                      {labels.listingTitle}ni tayyorlash
+
                     </h1>
                     <p className="mt-1 max-w-2xl text-sm leading-6 text-[var(--muted-foreground)]">
                       Mijozlar ko'radigan ma'lumotlarni bir joyda boshqaring:
@@ -337,11 +360,13 @@ export function ListingOverview() {
                         : "Xarita nuqtasi kerak"
                     }
                   />
-                  <Signal
-                    label="Xona e'lonlari"
-                    value={`${roomAds.length} tur`}
-                    hint={`${listedRooms.length} xona sotuvda`}
-                  />
+                  {!dacha && (
+                    <Signal
+                      label={labels.unitTypesTitle}
+                      value={`${roomAds.length} tur`}
+                      hint={`${listedRooms.length} ${labels.unitPlural} sotuvda`}
+                    />
+                  )}
                 </div>
               </div>
 
@@ -350,6 +375,7 @@ export function ListingOverview() {
                 name={listing.name}
                 city={listing.city}
                 stars={listing.stars}
+                showStars={showStars}
                 shortDescription={listing.shortDescription}
                 photosCount={listing.photos.length}
                 onOpen={() => setPreviewOpen(true)}
@@ -370,18 +396,24 @@ export function ListingOverview() {
           ))}
         </div>
 
-        <RoomListingsPanel
-          roomAds={roomAds}
-          onAddRoomType={() => {
-            setEditingRoomType(null);
-            setRoomTypeDialogOpen(true);
-          }}
-          onEditRoomType={(roomType) => {
-            setEditingRoomType(roomType);
-            setRoomTypeDialogOpen(true);
-          }}
-          onAddRoom={() => setRoomDialogOpen(true)}
-        />
+        {dacha ? (
+          <DachaUnitPanel listingName={listing.name} />
+        ) : (
+          <RoomListingsPanel
+            roomAds={roomAds}
+            labels={labels}
+            isHostel={isHostel}
+            onAddRoomType={() => {
+              setEditingRoomType(null);
+              setRoomTypeDialogOpen(true);
+            }}
+            onEditRoomType={(roomType) => {
+              setEditingRoomType(roomType);
+              setRoomTypeDialogOpen(true);
+            }}
+            onAddRoom={() => setRoomDialogOpen(true)}
+          />
+        )}
       </section>
 
       <aside className="flex min-w-0 flex-col gap-4 xl:sticky xl:top-20 xl:self-start">
@@ -438,7 +470,7 @@ export function ListingOverview() {
             />
             <ChecklistItem
               done={roomAds.length > 0 && listedRooms.length > 0}
-              label="Xona e'lonlari"
+              label={labels.unitTypesTitle}
             />
           </CardBody>
         </Card>
@@ -501,6 +533,8 @@ export function ListingOverview() {
 
 function RoomListingsPanel({
   roomAds,
+  labels,
+  isHostel,
   onAddRoomType,
   onEditRoomType,
   onAddRoom,
@@ -510,7 +544,11 @@ function RoomListingsPanel({
     relatedRooms: import("../../_lib/domain/types").Room[];
     listedCount: number;
     minPrice: number;
+    totalBeds: number;
+    listedBedCount: number;
   }>;
+  labels: import("../../_lib/utils/partner-labels").PartnerLabels;
+  isHostel: boolean;
   onAddRoomType: () => void;
   onEditRoomType: (roomType: import("../../_lib/domain/types").RoomType) => void;
   onAddRoom: () => void;
@@ -521,24 +559,24 @@ function RoomListingsPanel({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <span className="text-[11px] font-semibold uppercase tracking-widest text-brand-700 dark:text-brand-300">
-              Xona e'lonlari
+              {labels.unitTypesTitle}
             </span>
             <h2 className="mt-1 text-xl font-semibold">
-              Turist tanlaydigan xona variantlari
+              Turist tanlaydigan {labels.unitSingular} variantlari
             </h2>
             <p className="mt-1 max-w-2xl text-sm leading-6 text-[var(--muted-foreground)]">
               Web-userda turist sana, narx, sig'im va qulaylik filtrlarini
-              tanlaganda shu xona e'lonlari ichidan mos variantlarni ko'radi.
+              tanlaganda shu e'lonlar ichidan mos variantlarni ko'radi.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={onAddRoom}>
               <Plus className="h-4 w-4" aria-hidden />
-              Real xona qo'shish
+              {labels.addUnitLabel}
             </Button>
             <Button size="sm" onClick={onAddRoomType}>
               <BedDouble className="h-4 w-4" aria-hidden />
-              Xona e'loni qo'shish
+              {labels.unitTypeLabel} qo'shish
             </Button>
           </div>
         </div>
@@ -550,35 +588,38 @@ function RoomListingsPanel({
               aria-hidden
             />
             <h3 className="mt-3 text-sm font-semibold">
-              Hali xona e'loni yo'q
+              Hali {labels.unitTypeLabel.toLowerCase()} yo'q
             </h3>
             <p className="mx-auto mt-1 max-w-md text-sm leading-6 text-[var(--muted-foreground)]">
-              Avval Standart, Lyuks yoki Family kabi xona e'lonini yarating.
-              Keyin real xona raqamlarini shu e'longa bog'laysiz.
+              Avval Standart, Lyuks yoki Family kabi {labels.unitTypeLabel.toLowerCase()}ni
+              yarating. Keyin real {labels.unitSingular} raqamlarini shu e'longa bog'laysiz.
             </p>
             <Button className="mt-4" onClick={onAddRoomType}>
               <Plus className="h-4 w-4" aria-hidden />
-              Birinchi xona e'lonini yaratish
+              Birinchi {labels.unitTypeLabel.toLowerCase()}ni yaratish
             </Button>
           </div>
         ) : (
           <div className="grid gap-3 lg:grid-cols-2">
-            {roomAds.map(({ roomType, relatedRooms, listedCount, minPrice }) => (
-              <RoomAdCard
-                key={roomType.id}
-                name={roomType.name}
-                capacity={roomType.capacity}
-                description={roomType.description}
-                imageUrl={roomType.imageUrl}
-                bedType={roomType.bedType}
-                sizeSqm={roomType.sizeSqm}
-                amenities={roomType.amenities}
-                minPrice={minPrice}
-                totalRooms={relatedRooms.length}
-                listedCount={listedCount}
-                onEdit={() => onEditRoomType(roomType)}
-              />
-            ))}
+            {roomAds.map(
+              ({ roomType, relatedRooms, listedCount, minPrice, totalBeds, listedBedCount }) => (
+                <RoomAdCard
+                  key={roomType.id}
+                  name={roomType.name}
+                  capacity={roomType.capacity}
+                  description={roomType.description}
+                  imageUrl={roomType.imageUrl}
+                  bedType={roomType.bedType}
+                  sizeSqm={roomType.sizeSqm}
+                  amenities={roomType.amenities}
+                  minPrice={minPrice}
+                  unitLabel={labels.unitSingular}
+                  totalUnits={isHostel ? totalBeds : relatedRooms.length}
+                  listedUnits={isHostel ? listedBedCount : listedCount}
+                  onEdit={() => onEditRoomType(roomType)}
+                />
+              ),
+            )}
           </div>
         )}
       </CardBody>
@@ -595,8 +636,9 @@ function RoomAdCard({
   sizeSqm,
   amenities,
   minPrice,
-  totalRooms,
-  listedCount,
+  unitLabel,
+  totalUnits,
+  listedUnits,
   onEdit,
 }: {
   name: string;
@@ -607,8 +649,9 @@ function RoomAdCard({
   sizeSqm?: number;
   amenities: string[];
   minPrice: number;
-  totalRooms: number;
-  listedCount: number;
+  unitLabel: string;
+  totalUnits: number;
+  listedUnits: number;
   onEdit: () => void;
 }) {
   return (
@@ -632,12 +675,12 @@ function RoomAdCard({
             <span
               className={cn(
                 "rounded-full px-2 py-0.5 text-[10px] font-semibold",
-                listedCount > 0
+                listedUnits > 0
                   ? "bg-accent-50 text-accent-700 dark:bg-accent-950/35 dark:text-accent-200"
                   : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800",
               )}
             >
-              {listedCount > 0 ? "Sotuvda" : "Yopiq"}
+              {listedUnits > 0 ? "Sotuvda" : "Yopiq"}
             </span>
           </div>
           <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--muted-foreground)]">
@@ -649,7 +692,7 @@ function RoomAdCard({
             {typeof sizeSqm === "number" && sizeSqm > 0 && (
               <span>{sizeSqm} m²</span>
             )}
-            <span>{listedCount}/{totalRooms} xona e'londa</span>
+            <span>{listedUnits}/{totalUnits} {unitLabel} e'londa</span>
           </p>
           {description && (
             <p className="mt-2 line-clamp-2 text-xs leading-5 text-[var(--muted-foreground)]">
@@ -730,6 +773,7 @@ function LivePreview({
   name,
   city,
   stars,
+  showStars,
   shortDescription,
   photosCount,
   onOpen,
@@ -738,6 +782,7 @@ function LivePreview({
   name: string;
   city: string;
   stars: number;
+  showStars: boolean;
   shortDescription: string;
   photosCount: number;
   onOpen: () => void;
@@ -768,19 +813,20 @@ function LivePreview({
         </span>
         <h2 className="text-xl font-semibold">{name || "Nomi kiritilmagan"}</h2>
         <div className="mt-1 flex items-center gap-1 text-sm text-white/85">
-          {Array.from({ length: 5 }).map((_, index) => (
-            <Star
-              key={index}
-              className={cn(
-                "h-3.5 w-3.5",
-                index < stars
-                  ? "fill-amber-400 stroke-amber-400"
-                  : "stroke-white/45",
-              )}
-              aria-hidden
-            />
-          ))}
-          <span className="ml-1">{city}</span>
+          {showStars &&
+            Array.from({ length: 5 }).map((_, index) => (
+              <Star
+                key={index}
+                className={cn(
+                  "h-3.5 w-3.5",
+                  index < stars
+                    ? "fill-amber-400 stroke-amber-400"
+                    : "stroke-white/45",
+                )}
+                aria-hidden
+              />
+            ))}
+          <span className={showStars ? "ml-1" : ""}>{city}</span>
         </div>
         <p className="mt-2 line-clamp-2 text-sm leading-5 text-white/80">
           {shortDescription || "Qisqa tavsif hali kiritilmagan."}
