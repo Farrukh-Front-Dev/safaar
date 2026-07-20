@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { Card, CardBody } from "@/components/ui/Card";
+import { Building2, Handshake, Headphones } from "lucide-react";
 
-// Stats qiymatlari JSON'da yo'q — chiroyli ko'rsatkichlar bilan hardcode qilamiz.
 const STAT_VALUES = {
   cities: "14+",
   partners: "120+",
@@ -35,16 +35,16 @@ export default async function AboutPage({
   const { about } = dict;
 
   const stats = [
-    { value: STAT_VALUES.cities, label: about.stats.cities },
-    { value: STAT_VALUES.partners, label: about.stats.partners },
-    { value: STAT_VALUES.support, label: about.stats.support },
+    { value: STAT_VALUES.cities, label: about.stats.cities, icon: Building2 },
+    { value: STAT_VALUES.partners, label: about.stats.partners, icon: Handshake },
+    { value: STAT_VALUES.support, label: about.stats.support, icon: Headphones },
   ];
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-12 px-6 py-12">
       {/* Hero */}
       <section className="flex flex-col gap-3">
-        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+        <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl dark:text-white">
           {about.title}
         </h1>
         <p className="max-w-3xl text-lg text-slate-600 dark:text-slate-400">
@@ -54,7 +54,7 @@ export default async function AboutPage({
 
       {/* Maqsad */}
       <section className="flex flex-col gap-3">
-        <h2 className="text-2xl font-semibold">{about.missionTitle}</h2>
+        <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">{about.missionTitle}</h2>
         <p className="max-w-3xl text-slate-600 dark:text-slate-400">
           {about.mission}
         </p>
@@ -62,28 +62,34 @@ export default async function AboutPage({
 
       {/* Statistika */}
       <section className="grid gap-4 sm:grid-cols-3">
-        {stats.map((stat, index) => (
-          <Card key={index} className="text-center">
-            <CardBody className="flex flex-col gap-1">
-              <span className="text-3xl font-bold text-primary-600">
-                {stat.value}
-              </span>
-              <span className="text-sm text-slate-500 dark:text-slate-400">
-                {stat.label}
-              </span>
-            </CardBody>
-          </Card>
-        ))}
+        {stats.map((stat, index) => {
+          const Icon = stat.icon;
+          return (
+            <Card key={index} className="text-center">
+              <CardBody className="flex flex-col items-center gap-2">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-100 text-primary-700 dark:bg-primary-950 dark:text-primary-300">
+                  <Icon className="h-5 w-5" />
+                </div>
+                <span className="text-3xl font-extrabold tracking-tight text-primary-600 dark:text-primary-400">
+                  {stat.value}
+                </span>
+                <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                  {stat.label}
+                </span>
+              </CardBody>
+            </Card>
+          );
+        })}
       </section>
 
       {/* Qadriyatlar */}
       <section className="flex flex-col gap-4">
-        <h2 className="text-2xl font-semibold">{about.valuesTitle}</h2>
+        <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">{about.valuesTitle}</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {about.values.map((value, index) => (
             <Card key={index}>
               <CardBody className="flex flex-col gap-2">
-                <h3 className="text-lg font-semibold">{value.title}</h3>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{value.title}</h3>
                 <p className="text-sm text-slate-600 dark:text-slate-400">
                   {value.text}
                 </p>

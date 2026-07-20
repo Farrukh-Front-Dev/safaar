@@ -31,7 +31,7 @@ export default async function HelpPage({
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10 px-6 py-12">
       {/* Sarlavha */}
       <section className="flex flex-col gap-2">
-        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+        <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl dark:text-white">
           {help.title}
         </h1>
         <p className="text-lg text-slate-600 dark:text-slate-400">
@@ -44,18 +44,18 @@ export default async function HelpPage({
         {help.faqs.map((faq, index) => (
           <details
             key={index}
-            className="group rounded-2xl border border-slate-200 bg-white shadow-sm"
+            className="group rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
           >
-            <summary className="flex cursor-pointer items-center justify-between gap-4 p-5 font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600">
+            <summary className="flex cursor-pointer items-center justify-between gap-4 p-5 font-semibold text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 dark:text-white">
               <span>{faq.q}</span>
               <span
                 aria-hidden="true"
-                className="text-primary-600 transition-transform group-open:rotate-45"
+                className="text-primary-600 transition-transform group-open:rotate-45 dark:text-primary-400"
               >
                 +
               </span>
             </summary>
-            <p className="px-5 pb-5 text-sm text-slate-600 dark:text-slate-400">
+            <p className="px-5 pb-5 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
               {faq.a}
             </p>
           </details>
@@ -65,13 +65,13 @@ export default async function HelpPage({
       {/* Aloqa */}
       <Card>
         <CardBody className="flex flex-col gap-2">
-          <h2 className="text-lg font-semibold">{help.contactTitle}</h2>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{help.contactTitle}</h2>
           <p className="text-sm text-slate-600 dark:text-slate-400">
             {help.contactText}
           </p>
           <a
             href="mailto:support@safaar.uz"
-            className="text-sm font-medium text-primary-600 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+            className="text-sm font-semibold text-primary-600 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 dark:text-primary-400"
           >
             support@safaar.uz
           </a>

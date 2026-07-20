@@ -26,12 +26,15 @@ export default async function LoginPage({
     ? nextRaw
     : "";
 
-  // Allaqachon kirgan bo'lsa — qaytib login ko'rsatmaymiz.
-  const session = await getSession();
+  // SENIOR OPTIMIZATION: Parallelize session check and dictionary loading
+  const [session, dict] = await Promise.all([
+    getSession(),
+    getDictionary(locale, "auth"),
+  ]);
+
   if (session) {
     redirect(next || `/${locale}`);
   }
 
-  const dict = await getDictionary(locale, "auth");
   return <LoginForm locale={locale} next={next} dict={dict} />;
 }

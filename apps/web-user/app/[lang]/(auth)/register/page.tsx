@@ -26,12 +26,15 @@ export default async function RegisterPage({
     ? nextRaw
     : "";
 
-  // Allaqachon kirgan bo'lsa — qaytib register ko'rsatmaymiz.
-  const session = await getSession();
+  // SENIOR OPTIMIZATION: Parallelize session check and dictionary loading
+  const [session, dict] = await Promise.all([
+    getSession(),
+    getDictionary(locale, "auth"),
+  ]);
+
   if (session) {
     redirect(next || `/${locale}`);
   }
 
-  const dict = await getDictionary(locale, "auth");
   return <RegisterForm locale={locale} next={next} dict={dict} />;
 }
