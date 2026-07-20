@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { api } from "@/lib/api";
 import type { HomeDict } from "@/i18n/dictionaries";
 import type { PartnerShowcaseView } from "@safaar/api-client";
@@ -49,12 +50,15 @@ export async function PartnersShowcase({
               className="group relative flex items-center justify-center rounded-xl border border-slate-200/80 bg-white/80 px-4 py-3 shadow-xs backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary-500/30 hover:bg-white hover:shadow-md dark:border-slate-800 dark:bg-slate-900/80 dark:hover:border-primary-500/40 dark:hover:bg-slate-900"
             >
               {partner.logoUrl ? (
-                <img
-                  src={partner.logoUrl}
-                  alt={partner.companyName}
-                  className="h-7 w-auto max-w-[120px] object-contain opacity-80 transition-opacity duration-200 group-hover:opacity-100 sm:h-8"
-                  loading="lazy"
-                />
+                <div className="relative h-7 w-28 sm:h-8">
+                  <Image
+                    src={partner.logoUrl}
+                    alt={partner.companyName}
+                    fill
+                    sizes="120px"
+                    className="object-contain opacity-80 transition-opacity duration-200 group-hover:opacity-100"
+                  />
+                </div>
               ) : (
                 <div className="flex items-center gap-2">
                   <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary-100 font-bold text-primary-700 dark:bg-primary-950 dark:text-primary-300">

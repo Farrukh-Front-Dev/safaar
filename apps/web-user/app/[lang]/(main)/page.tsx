@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
@@ -24,6 +26,13 @@ export async function generateMetadata({
   return { title: dict.hero.title, description: dict.hero.subtitle };
 }
 
+const FEATURED_FALLBACK: HotelListItem[] = [
+  { id: "mock-f1", slug: "tashkent-city-palace", name: "Tashkent City Palace", cityName: "Toshkent", stars: 5, rating: 4.8, reviewsCount: 234, minPriceSum: 650000, imageUrl: "/Tashkent-city-skyline.jpeg" },
+  { id: "mock-f2", slug: "samarkand-plaza", name: "Samarkand Plaza", cityName: "Samarqand", stars: 5, rating: 4.7, reviewsCount: 189, minPriceSum: 520000, imageUrl: "/Samarkand-Registan-cinematic.jpeg" },
+  { id: "mock-f3", slug: "grand-bukhara", name: "Grand Bukhara Hotel", cityName: "Buxoro", stars: 4, rating: 4.6, reviewsCount: 312, minPriceSum: 380000, imageUrl: "/Bukhara-old-city-golden-hour.jpeg" },
+  { id: "mock-f4", slug: "khiva-ichan-kala", name: "Ichan-Kala Premier", cityName: "Xiva", stars: 4, rating: 4.9, reviewsCount: 156, minPriceSum: 450000, imageUrl: "/Khiva-Ichan-Kala-aerial.jpeg" },
+];
+
 export default async function HomePage({
   params,
 }: {
@@ -33,22 +42,22 @@ export default async function HomePage({
   if (!isLocale(lang)) notFound();
   const locale = lang as Locale;
 
-  const [common, dict] = await Promise.all([
+  // SENIOR OPTIMIZATION 1: Parallelize dictionary and API requests to remove waterfall latency
+  const [common, dict, [citiesRes, featuredRes, dealsRes, statsRes]] = await Promise.all([
     getDictionary(locale, "common"),
     getDictionary(locale, "home"),
+    Promise.allSettled([
+      api.catalog.getCities(locale),
+      api.hotels.getFeaturedHotels(locale, { limit: 4 }),
+      api.cms.getDeals(locale),
+      api.cms.getPublicStats(),
+    ]),
   ]);
 
-  const cities = await api.catalog.getCities(locale).catch(() => []);
-  const featuredResult = await api.hotels.getFeaturedHotels(locale, { limit: 4 }).catch(
-    () => null,
-  );
-
-  const FEATURED_FALLBACK: HotelListItem[] = [
-    { id: "mock-f1", slug: "tashkent-city-palace", name: "Tashkent City Palace", cityName: "Toshkent", stars: 5, rating: 4.8, reviewsCount: 234, minPriceSum: 650000, imageUrl: "/Tashkent-city-skyline.jpeg" },
-    { id: "mock-f2", slug: "samarkand-plaza", name: "Samarkand Plaza", cityName: "Samarqand", stars: 5, rating: 4.7, reviewsCount: 189, minPriceSum: 520000, imageUrl: "/Samarkand-Registan-cinematic.jpeg" },
-    { id: "mock-f3", slug: "grand-bukhara", name: "Grand Bukhara Hotel", cityName: "Buxoro", stars: 4, rating: 4.6, reviewsCount: 312, minPriceSum: 380000, imageUrl: "/Bukhara-old-city-golden-hour.jpeg" },
-    { id: "mock-f4", slug: "khiva-ichan-kala", name: "Ichan-Kala Premier", cityName: "Xiva", stars: 4, rating: 4.9, reviewsCount: 156, minPriceSum: 450000, imageUrl: "/Khiva-Ichan-Kala-aerial.jpeg" },
-  ];
+  const cities = citiesRes.status === "fulfilled" ? citiesRes.value : [];
+  const featuredResult = featuredRes.status === "fulfilled" ? featuredRes.value : null;
+  const rawDeals = dealsRes.status === "fulfilled" ? dealsRes.value : [];
+  const stats = statsRes.status === "fulfilled" ? statsRes.value : null;
 
   const fromApi = featuredResult?.items ?? [];
   const hotels: HotelListItem[] = [...fromApi];
@@ -58,8 +67,7 @@ export default async function HomePage({
     hotels.push(fallback);
   }
 
-  const dealsResult = await api.cms.getDeals(locale).catch(() => []);
-  const deals: DealItem[] = dealsResult.map((d) => ({
+  const deals: DealItem[] = rawDeals.map((d) => ({
     id: d.id,
     slug: d.slug,
     name: d.name,
@@ -71,33 +79,30 @@ export default async function HomePage({
     endsAt: d.endsAt,
   }));
 
-  const stats = await api.cms.getPublicStats().catch(() => null);
-
   return (
     <main className="relative flex flex-1 flex-col">
-
       {/* ═══ EKRAN 1: Hero + SearchBar + Featured Hotels ═══ */}
       <div className="flex min-h-svh flex-col justify-between">
         <Hero dict={dict.hero} />
 
         <div className="relative z-10">
-          <section id="search-section" className="bg-slate-50 pb-10 pt-6 sm:pb-14 sm:pt-8">
+          <section id="search-section" className="bg-slate-50 pb-10 pt-6 sm:pb-14 sm:pt-8 dark:bg-slate-900/50">
             <div className="mx-auto max-w-4xl px-4">
               <SearchBar locale={locale} dict={common.search} cities={cities} />
             </div>
           </section>
 
-          {/* Quick city chips */}
+          {/* Quick city chips: Next.js <Link> for SPA navigation instead of hard page reload */}
           {cities.length > 0 && (
             <div className="mx-auto mt-4 flex max-w-4xl flex-wrap justify-center gap-1.5 px-4 sm:mt-6 sm:gap-2">
               {cities.slice(0, 10).map((city) => (
-                <a
+                <Link
                   key={city.id}
                   href={`/${locale}/hotels?city_id=${encodeURIComponent(city.id)}`}
-                  className="rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-[11px] font-medium text-slate-600 backdrop-blur-sm transition-all duration-150 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700 active:scale-95 sm:px-3.5 sm:py-1.5 sm:text-xs"
+                  className="rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-[11px] font-medium text-slate-600 backdrop-blur-sm transition-all duration-150 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700 active:scale-95 sm:px-3.5 sm:py-1.5 sm:text-xs dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-300 dark:hover:border-primary-700 dark:hover:bg-primary-950 dark:hover:text-primary-300"
                 >
                   {city.name}
-                </a>
+                </Link>
               ))}
             </div>
           )}
@@ -105,14 +110,16 @@ export default async function HomePage({
 
         {/* Tanlangan mehmonxonalar — auto-scroll carousel */}
         {hotels.length > 0 && (
-          <FeaturedHotelsCarousel
-            hotels={hotels}
-            dict={dict.featured}
-            locale={locale}
-          />
+          <Suspense fallback={<div className="h-48 w-full animate-pulse bg-slate-100 dark:bg-slate-900" />}>
+            <FeaturedHotelsCarousel
+              hotels={hotels}
+              dict={dict.featured}
+              locale={locale}
+            />
+          </Suspense>
         )}
 
-        {/* Scroll ishora — birinchi ekran eng pastida */}
+        {/* Scroll indicator */}
         <div className="flex justify-center pb-4 pt-4 sm:pb-6 sm:pt-6">
           <div className="flex animate-bounce flex-col items-center gap-0.5 text-slate-400">
             <span className="text-[10px] font-medium sm:text-xs">
@@ -127,21 +134,25 @@ export default async function HomePage({
 
       {/* ═══ EKRAN 2: Chegirmadagi takliflar ═══ */}
       <div className="py-10 sm:py-14">
-        <DealsSection deals={deals} dict={dict.deals} locale={locale} />
+        <Suspense fallback={<div className="h-64 w-full animate-pulse bg-slate-100 dark:bg-slate-900" />}>
+          <DealsSection deals={deals} dict={dict.deals} locale={locale} />
+        </Suspense>
       </div>
 
-      {/* ═══ EKRAN: Why Safaar ═══ */}
+      {/* ═══ EKRAN 3: Why Safaar ═══ */}
       <WhySafaar dict={dict.why} />
 
-      {/* ═══ EKRAN 3: City Cards (scroll qilganda) ═══ */}
+      {/* ═══ EKRAN 4: City Cards (scroll qilganda) ═══ */}
       <div className="py-10 sm:py-16 md:py-20">
-        <CityCardsSection locale={locale} dict={dict.popularCities} />
+        <Suspense fallback={<div className="h-64 w-full animate-pulse bg-slate-100 dark:bg-slate-900" />}>
+          <CityCardsSection locale={locale} dict={dict.popularCities} />
+        </Suspense>
       </div>
 
-      {/* ═══ EKRAN 4: Ishonchli hamkorlar ═══ */}
+      {/* ═══ EKRAN 5: Ishonchli hamkorlar ═══ */}
       <PartnersShowcase dict={dict.partners} />
 
-      {/* ═══ EKRAN 5: Trust Bar ═══ */}
+      {/* ═══ EKRAN 6: Trust Bar ═══ */}
       <TrustBar dict={dict.trust} stats={stats} />
     </main>
   );

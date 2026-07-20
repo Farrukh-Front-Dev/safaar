@@ -1,5 +1,5 @@
-/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
+import Image from "next/image";
 import { api } from "@/lib/api";
 import { resolveImage } from "@/lib/images";
 import type { Locale } from "@/i18n/config";
@@ -35,7 +35,7 @@ export async function CityCardsSection({
         resolveImage(c.imageUrl, c.slug, 600, 450) ??
         c.imageUrl ??
         KNOWN_CITY_IMAGES[c.slug.toLowerCase()] ??
-        "",
+        "/Uzbekistan-travel.jpeg",
       hotelCount: String(c.hotelCount),
       href: `/${locale}/hotels?city_id=${encodeURIComponent(c.slug)}`,
     }))
@@ -49,11 +49,11 @@ export async function CityCardsSection({
         <div className="mb-4 sm:mb-6">
           <h2
             id="city-cards-heading"
-            className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl"
+            className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl dark:text-white"
           >
             {dict.title}
           </h2>
-          <p className="mt-0.5 text-xs text-slate-500 sm:mt-1 sm:text-sm">
+          <p className="mt-0.5 text-xs text-slate-500 sm:mt-1 sm:text-sm dark:text-slate-400">
             {dict.subtitle}
           </p>
         </div>
@@ -63,19 +63,21 @@ export async function CityCardsSection({
             <Link
               key={city.name}
               href={city.href}
-              className="group relative w-1/2 shrink-0 snap-start overflow-hidden rounded-xl border border-slate-200 bg-white shadow-btn transition-all duration-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:scale-[0.97] active:shadow-btn-active sm:w-auto sm:rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+              className="group relative w-1/2 shrink-0 snap-start overflow-hidden rounded-xl border border-slate-200 bg-white shadow-btn transition-all duration-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:scale-[0.97] active:shadow-btn-active sm:w-auto sm:rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:border-slate-800 dark:bg-slate-900"
             >
-              <div className="aspect-[3/4] overflow-hidden sm:aspect-4/3">
-                <img
+              <div className="relative aspect-[3/4] overflow-hidden sm:aspect-4/3">
+                <Image
                   src={city.image}
                   alt={city.name}
-                  loading="lazy"
-                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 300px"
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  quality={85}
                 />
               </div>
 
               <div
-                className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent"
+                className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"
                 aria-hidden
               />
 
@@ -83,7 +85,7 @@ export async function CityCardsSection({
                 <h3 className="text-sm font-bold text-white drop-shadow-sm sm:text-base md:text-lg">
                   {city.name}
                 </h3>
-                <p className="mt-0.5 text-[11px] text-white/75 sm:text-xs md:text-sm">
+                <p className="mt-0.5 text-[11px] text-white/80 sm:text-xs md:text-sm">
                   {city.hotelCount} {dict.hotels}
                 </p>
               </div>

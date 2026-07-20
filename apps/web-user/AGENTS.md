@@ -92,6 +92,24 @@ npm run lint     # ESLint
 
 ---
 
+## 🌟 Senior AI Agent Falsafasi va Arxitektura Qoidalari (MAJBURIY)
+
+Sen shunchaki kod yozuvchi emas, **Senior Frontend Architect** sifatida fikrlaysan. Har bir yozgan kodingda **NIMA UCHUN** shu yechim tanlanganini chuqur tushunishing va quyidagi oltin qoidalarga qat'iy amal qilishing shart:
+
+### 1. Performance & Rendering Principles (Tezkorlik va Unumdorlik):
+- **Parallel Data Fetching (No Waterfalls):** Server-side data fetching qilganda so'rovlarni birin-ketin `await` qilma. Har doim `Promise.all` yoki `Promise.allSettled` orqali parallel bajar — TTFB render vaqtini 4-5 baravar tezlashtir.
+- **RSC Streaming & Suspense:** Sahifa to'liq serverda bloklanib qolmasligi uchun og'irroq dinamik komponentlarni `<Suspense fallback={<Skeleton />}>` bilan o'ra.
+- **Zero Hard Reloads:** Hech qachon loyiha ichidagi sahifalarga o'tish uchun `<a href="...">` ishlatma. Har doim Next.js `<Link href="...">` ishlat — bu SPA prefetching va lahzalik o'tishni beradi.
+- **Image Optimization (Core Web Vitals):** Standard `<img />` teglardan qoch. Har doim `next/image` (`<Image />`) ishlat: `width`/`height` yoki `fill` + `sizes` ko'rsatib LCP ni tezlashtir va CLS (Layout Shift) xatolarini 0 ga tushir.
+
+### 2. Code Quality & Professional Mindset:
+- **Niyatni Aniq Biling (Reasoning First):** Har bir o'zgarish yoki yangi komponent yaratishdan oldin uning arxitekturadagi o'rni va foydasini tushunib yoz.
+- **Strict TypeScript (Zero `any`):** Turlarni `@safaar/types`'dan ol yoki aniq interface yoz. Hech qachon `any` yoki `ts-ignore` ishlatma.
+- **Zero Warnings Standard:** Ishni yakunlashdan oldin `npm run lint` va `npm run build` noldan (0 warning, 0 error) yashil bo'lishi shart.
+- **Mobile-First & UI Excellence:** Har bir UI interfeys responsive, zamonaviy gradientlar, glassmorphism va silliq animationlar bilan Wow-effekt beradigan darajada bo'lsin.
+
+---
+
 ## Sen kimsan — qurilmadan aniqla
 
 Ishni boshlashda qaysi dasturchi ekaningni **o'zing aniqla**:

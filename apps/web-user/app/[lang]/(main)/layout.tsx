@@ -24,7 +24,7 @@ export default async function MainLayout({
 
   return (
     <>
-      {/* <PromoBar text={common.promo} /> */}
+      {common.promo && <PromoBar text={common.promo} />}
       <SiteHeader locale={locale} dict={common} authed={!!session} />
       <div className="flex flex-1 flex-col">{children}</div>
       <SiteFooter locale={locale} dict={common} />
