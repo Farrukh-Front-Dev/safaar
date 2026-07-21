@@ -6,9 +6,12 @@ import {
   MapPin,
   Navigation,
   Plus,
+  Search,
   Trash2,
+  X,
 } from "lucide-react";
-import { useState } from "react";
+import dynamic from "next/dynamic";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../../../_components/ui/button";
 import { Drawer } from "../../../_components/ui/drawer";
@@ -18,6 +21,16 @@ import { Label } from "../../../_components/ui/label";
 import { Tooltip } from "../../../_components/ui/tooltip";
 import { useListing } from "../../../_hooks/use-listing";
 import { useDataStore } from "../../../_stores/data-store";
+import { searchAddress, type GeocodeResult } from "../../../_lib/utils/geocoding";
+
+const LocationMap = dynamic(() => import("../../../_components/domain/location-map"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full w-full items-center justify-center bg-[var(--surface-muted)] text-sm text-[var(--muted-foreground)]">
+      Xarita yuklanmoqda...
+    </div>
+  ),
+});
 
 export function LocationEditor({
   open,
@@ -33,6 +46,54 @@ export function LocationEditor({
   const [name, setName] = useState("");
   const [distance, setDistance] = useState("");
   const [locating, setLocating] = useState(false);
+
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<GeocodeResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const [flyTo, setFlyTo] = useState<{ lat: number; lng: number } | null>(null);
+  const searchAbort = useRef<AbortController | null>(null);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleQueryChange = (value: string) => {
+    setQuery(value);
+    setShowResults(true);
+
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchAbort.current?.abort();
+
+    if (value.trim().length < 3) {
+      setResults([]);
+      setSearching(false);
+      return;
+    }
+
+    setSearching(true);
+    searchTimer.current = setTimeout(() => {
+      const controller = new AbortController();
+      searchAbort.current = controller;
+      searchAddress(value, controller.signal)
+        .then((r) => setResults(r))
+        .catch((err) => {
+          if (err.name !== "AbortError") setResults([]);
+        })
+        .finally(() => setSearching(false));
+    }, 400);
+  };
+
+  const handlePickResult = (result: GeocodeResult) => {
+    const latitude = Number(result.lat.toFixed(6));
+    const longitude = Number(result.lon.toFixed(6));
+    updateLocation({ latitude, longitude });
+    setFlyTo({ lat: latitude, lng: longitude });
+    setQuery(result.label);
+    setShowResults(false);
+    toast.success("Lakatsiya xaritada belgilandi");
+  };
+
+  const handleMapChange = (lat: number, lng: number) => {
+    updateLocation({ latitude: lat, longitude: lng });
+  };
 
   const hasCoordinates =
     typeof data.latitude === "number" && typeof data.longitude === "number";
@@ -68,6 +129,7 @@ export function LocationEditor({
         const latitude = Number(position.coords.latitude.toFixed(6));
         const longitude = Number(position.coords.longitude.toFixed(6));
         updateLocation({ latitude, longitude });
+        setFlyTo({ lat: latitude, lng: longitude });
         setLocating(false);
         toast.success("Lakatsiya belgilandi", {
           description: `${latitude}, ${longitude}`,
@@ -113,23 +175,14 @@ export function LocationEditor({
               Manzilni Sozlamalar → Mehmonxona bo'limidan o'zgartiring.
             </p>
           </div>
-          <div className="rounded-card border border-[var(--border)] bg-[var(--surface-muted)] p-3">
+          <div className="flex flex-col gap-2 rounded-card border border-[var(--border)] bg-[var(--surface-muted)] p-3">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-sm font-semibold">Xaritadagi lakatsiya</p>
                 <p className="mt-1 text-xs leading-5 text-[var(--muted-foreground)]">
-                  Brauzer orqali mehmonxona joyini belgilang. Bu mijozlarga
-                  xaritada aniq nuqtani ko'rsatish uchun kerak bo'ladi.
+                  Manzilni qidiring yoki xaritada bosib/pinni sudrab aniq
+                  nuqtani belgilang.
                 </p>
-                {hasCoordinates ? (
-                  <p className="mt-2 font-mono text-xs text-[var(--foreground)]">
-                    {data.latitude?.toFixed(6)}, {data.longitude?.toFixed(6)}
-                  </p>
-                ) : (
-                  <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-300">
-                    Lakatsiya hali belgilanmagan.
-                  </p>
-                )}
               </div>
               <div className="flex shrink-0 flex-wrap gap-2">
                 {mapUrl && (
@@ -145,6 +198,7 @@ export function LocationEditor({
                 )}
                 <Button
                   size="sm"
+                  variant="outline"
                   onClick={handleUseCurrentLocation}
                   disabled={locating}
                 >
@@ -153,10 +207,87 @@ export function LocationEditor({
                   ) : (
                     <Navigation className="h-4 w-4" aria-hidden />
                   )}
-                  {locating ? "Aniqlanmoqda..." : "Lakatsiyamdan foydalanish"}
+                  {locating ? "Aniqlanmoqda..." : "Joriy lakatsiyam"}
                 </Button>
               </div>
             </div>
+
+            {/* Manzil qidiruvi */}
+            <div className="relative">
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
+                aria-hidden
+              />
+              <Input
+                value={query}
+                onChange={(e) => handleQueryChange(e.target.value)}
+                onFocus={() => setShowResults(true)}
+                onBlur={() => setTimeout(() => setShowResults(false), 150)}
+                placeholder="Manzilni qidiring — masalan: Samarqand, Registon"
+                className="pl-9 pr-9"
+                aria-label="Manzil qidirish"
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuery("");
+                    setResults([]);
+                  }}
+                  aria-label="Tozalash"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-zinc-400 hover:bg-[var(--surface-hover)] hover:text-zinc-700"
+                >
+                  <X className="h-3.5 w-3.5" aria-hidden />
+                </button>
+              )}
+
+              {showResults && (searching || results.length > 0) && (
+                <ul className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-lg">
+                  {searching ? (
+                    <li className="flex items-center gap-2 px-3 py-2.5 text-sm text-[var(--muted-foreground)]">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                      Qidirilmoqda...
+                    </li>
+                  ) : (
+                    results.map((r, i) => (
+                      <li key={`${r.lat}-${r.lon}-${i}`}>
+                        <button
+                          type="button"
+                          onClick={() => handlePickResult(r)}
+                          className="flex w-full items-start gap-2 px-3 py-2.5 text-left text-sm hover:bg-[var(--surface-hover)]"
+                        >
+                          <MapPin
+                            className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-600"
+                            aria-hidden
+                          />
+                          <span className="line-clamp-2">{r.label}</span>
+                        </button>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              )}
+            </div>
+
+            {/* Interaktiv xarita */}
+            <div className="h-72 w-full overflow-hidden rounded-card border border-[var(--border)]">
+              <LocationMap
+                latitude={data.latitude}
+                longitude={data.longitude}
+                onChange={handleMapChange}
+                flyTo={flyTo}
+              />
+            </div>
+
+            {hasCoordinates ? (
+              <p className="font-mono text-xs text-[var(--foreground)]">
+                {data.latitude?.toFixed(6)}, {data.longitude?.toFixed(6)}
+              </p>
+            ) : (
+              <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                Lakatsiya hali belgilanmagan — xaritani bosib belgilang.
+              </p>
+            )}
           </div>
         </div>
 
