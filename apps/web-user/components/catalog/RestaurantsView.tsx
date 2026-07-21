@@ -7,6 +7,7 @@ import { formatSum } from "@/lib/money";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Badge } from "@/components/ui/Badge";
 
 export interface RestaurantItem {
   id: string;
@@ -92,7 +93,7 @@ export function RestaurantsView() {
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
-      {/* Clean Shadcn-Style Page Header */}
+      {/* Clean Header */}
       <div className="mb-8 border-b border-slate-200 pb-6 dark:border-slate-800">
         <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
           <Utensils className="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />
@@ -105,7 +106,7 @@ export function RestaurantsView() {
           O'zbekistonning eng saralangan restoranlari, milliy oshxonalar va shinam choyxonalari.
         </p>
 
-        {/* Clean Filter Controls */}
+        {/* Filters */}
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -131,70 +132,69 @@ export function RestaurantsView() {
         </div>
       </div>
 
-      {/* Clean Grid Listing */}
+      {/* Grid listing */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2">
         {filtered.map((item) => (
-          <Card key={item.id} className="group overflow-hidden">
-            <div className="flex flex-col sm:flex-row">
-              <div className="relative aspect-16/10 w-full shrink-0 overflow-hidden bg-slate-100 sm:w-48 sm:aspect-auto dark:bg-slate-800">
-                <Image
-                  src={item.imageUrl}
-                  alt={item.name}
-                  fill
-                  sizes="(max-width: 640px) 100vw, 200px"
-                  className="object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-                <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white/90 px-2 py-0.5 text-xs font-bold text-amber-600 shadow-xs backdrop-blur-xs dark:border-slate-700 dark:bg-slate-900/90 dark:text-amber-400">
-                  <Star className="h-3.5 w-3.5 fill-current" />
-                  {item.rating.toFixed(1)}
-                </span>
+          <Card key={item.id} className="group flex flex-col overflow-hidden">
+            {/* Aspect Ratio Container for Image */}
+            <div className="relative aspect-16/9 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+              <Image
+                src={item.imageUrl}
+                alt={item.name}
+                fill
+                sizes="(max-width: 640px) 100vw, 600px"
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+              <Badge variant="outline" className="absolute left-3 top-3 z-10 gap-1 text-amber-700 shadow-xs">
+                <Star className="h-3.5 w-3.5 fill-current text-amber-500" aria-hidden />
+                {item.rating.toFixed(1)}
+              </Badge>
+            </div>
+
+            <CardBody className="flex flex-1 flex-col justify-between p-5">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-start justify-between gap-2">
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                    {item.name}
+                  </h2>
+                  <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                    {item.cuisine}
+                  </span>
+                </div>
+
+                <p className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                  <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                  {item.cityName} · {item.address}
+                </p>
+
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-300">
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5 text-slate-400" />
+                    {item.workingHours}
+                  </span>
+                  <span className="font-semibold text-slate-900 dark:text-white">
+                    Chek: {formatSum(item.averageCheckSum)}
+                  </span>
+                </div>
               </div>
 
-              <CardBody className="flex flex-1 flex-col justify-between p-4 sm:p-5">
-                <div>
-                  <div className="flex items-start justify-between gap-2">
-                    <h2 className="text-base font-bold text-slate-900 dark:text-white sm:text-lg">
-                      {item.name}
-                    </h2>
-                    <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                      {item.cuisine}
-                    </span>
-                  </div>
-
-                  <p className="mt-1 flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-                    <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                    {item.address}
-                  </p>
-
-                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-300">
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5 text-slate-400" />
-                      {item.workingHours}
-                    </span>
-                    <span className="font-semibold text-slate-900 dark:text-white">
-                      Chek: {formatSum(item.averageCheckSum)}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
-                  <a
-                    href={`tel:${item.phone.replace(/\s+/g, "")}`}
-                    className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 transition-colors hover:text-primary-600 dark:text-slate-400 dark:hover:text-primary-400"
-                  >
-                    <PhoneCall className="h-3.5 w-3.5 text-slate-400" />
-                    {item.phone}
-                  </a>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => alert(`"Stol band qilish" xizmati tez orada ishga tushadi! Bog'lanish: ${item.phone}`)}
-                  >
-                    Stol band qilish
-                  </Button>
-                </div>
-              </CardBody>
-            </div>
+              <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3.5 dark:border-slate-800">
+                <a
+                  href={`tel:${item.phone.replace(/\s+/g, "")}`}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 transition-colors hover:text-primary-600 dark:text-slate-400 dark:hover:text-primary-400"
+                >
+                  <PhoneCall className="h-3.5 w-3.5 text-slate-400" />
+                  {item.phone}
+                </a>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => alert(`"Stol band qilish" xizmati tez orada ishga tushadi! Bog'lanish: ${item.phone}`)}
+                >
+                  Stol band qilish
+                </Button>
+              </div>
+            </CardBody>
           </Card>
         ))}
       </div>
