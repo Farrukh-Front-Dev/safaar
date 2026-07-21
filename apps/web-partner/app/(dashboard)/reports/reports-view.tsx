@@ -17,26 +17,65 @@ import {
 import { PageHeader } from "../../_components/layout/page-header";
 import { formatMoney } from "../../_lib/utils/format";
 import {
-  buildOccupancySeries,
-  buildRevenueSeries,
-  mockRoomTypeDistribution,
-  mockSourceDistribution,
-} from "../../_lib/mocks/reports-mock";
+  buildDachaAvailabilitySummary,
+  buildDailyStats,
+  buildSourceDistribution,
+  buildUnitTypeDistribution,
+} from "../../_lib/domain/reports";
+import { useReservations } from "../../_hooks/use-reservations";
+import { useRoomTypes } from "../../_hooks/use-room-types";
+import { useDataStore } from "../../_stores/data-store";
+import { useAuthStore } from "../../_stores/auth-store";
+import { getPartnerLabels, isDacha } from "../../_lib/utils/partner-labels";
+import { TODAY_ISO } from "../../_lib/mocks/data";
 import { cn } from "../../_lib/utils/cn";
 
 type TimeRange = "7days" | "30days" | "year";
 
 export function ReportsView() {
   const [timeRange, setTimeRange] = useState<TimeRange>("30days");
-  
-  const revenue = useMemo(() => buildRevenueSeries(), []);
-  const occupancy = useMemo(() => buildOccupancySeries(), []);
+  const { data: reservations } = useReservations();
+  const { data: roomTypes } = useRoomTypes();
+  const getStats = useDataStore((s) => s.getStats);
+  const partnerType = useAuthStore((s) => s.user?.partnerType);
+  const labels = getPartnerLabels(partnerType);
+  const dacha = isDacha(partnerType);
+
+  const dailyStats = useMemo(
+    () => buildDailyStats(reservations, TODAY_ISO, 30),
+    [reservations],
+  );
+  const stats = getStats();
+  const totalUnits = stats.totalRooms;
+
+  const revenue = useMemo(
+    () => dailyStats.map((d) => ({ date: d.date, revenue: d.revenue, bookings: d.bookings })),
+    [dailyStats],
+  );
+  const occupancy = useMemo(
+    () =>
+      dailyStats.map((d) => ({
+        date: d.date,
+        occupancy: totalUnits > 0 ? Math.min(100, Math.round((d.occupiedUnits / totalUnits) * 100)) : 0,
+      })),
+    [dailyStats, totalUnits],
+  );
+  const unitTypeDistribution = useMemo(
+    () => buildUnitTypeDistribution(reservations, roomTypes),
+    [reservations, roomTypes],
+  );
+  const sourceDistribution = useMemo(
+    () => buildSourceDistribution(reservations),
+    [reservations],
+  );
+  const dachaSummary = useMemo(
+    () => buildDachaAvailabilitySummary(dailyStats),
+    [dailyStats],
+  );
 
   const monthRevenue = revenue.reduce((s, d) => s + d.revenue, 0);
   const monthBookings = revenue.reduce((s, d) => s + d.bookings, 0);
-  const avgOccupancy = Math.round(
-    occupancy.reduce((s, d) => s + d.occupancy, 0) / occupancy.length,
-  );
+  const avgOccupancy = stats.occupancyPercent;
   const adr = monthBookings > 0 ? Math.round(monthRevenue / monthBookings) : 0;
 
   // Oxirgi 7 kunni olish
@@ -48,7 +87,7 @@ export function ReportsView() {
       <PageHeader
         eyebrow="Tahlil va Statistika"
         title="Biznes Hisobotlari"
-        description="Mehmonxonaning moliyaviy holati, mehmonlar oqimi va sotuvlar bo'yicha batafsil ko'rsatkichlar."
+        description={`${labels.dashboardTitle} moliyaviy holati, ${labels.guestLabel.toLowerCase()}lar oqimi va sotuvlar bo'yicha batafsil ko'rsatkichlar.`}
       />
 
       {/* Vaqt Filtrlari */}
@@ -189,8 +228,8 @@ export function ReportsView() {
               </div>
               
               {(() => {
-                const totalSrc = mockSourceDistribution.reduce((s, r) => s + r.value, 0);
-                const sortedSrc = [...mockSourceDistribution].sort((a,b) => b.value - a.value).slice(0, 5);
+                const totalSrc = sourceDistribution.reduce((s, r) => s + r.value, 0);
+                const sortedSrc = [...sourceDistribution].sort((a,b) => b.value - a.value).slice(0, 5);
                 
                 return sortedSrc.map((s) => {
                   const pct = totalSrc ? Math.round((s.value / totalSrc) * 100) : 0;
@@ -207,28 +246,62 @@ export function ReportsView() {
           </CardBody>
         </Card>
 
-        {/* Top Xonalar Ro'yxati (Progress barsiz toza yozuv) */}
-        <Card className="border-none shadow-sm ring-1 ring-zinc-200/50 dark:ring-zinc-800/50">
-          <CardBody className="p-6">
-            <div className="mb-6 border-b border-zinc-100 dark:border-zinc-800 pb-4">
-              <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white">Top xonalar (Daromad bo'yicha)</h2>
-              <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                Biznesga eng ko'p foyda keltiruvchi top-5 xona toifalari
-              </p>
-            </div>
-            
-            <div className="flex flex-col gap-0">
-              <div className="grid grid-cols-[auto_1fr_auto] gap-4 py-2 px-1 text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
-                <span className="w-6 text-center">#</span>
-                <span>Xona turi</span>
-                <span className="text-right">Daromad</span>
+        {/* Top xona/dorm turlari yoki dacha uchun bandlik xulosasi */}
+        {dacha ? (
+          <Card className="border-none shadow-sm ring-1 ring-zinc-200/50 dark:ring-zinc-800/50">
+            <CardBody className="p-6">
+              <div className="mb-6 border-b border-zinc-100 dark:border-zinc-800 pb-4">
+                <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white">Bandlik holati</h2>
+                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                  Oxirgi {dachaSummary.totalNights} kunda dachangiz qanchalik band bo'lgan
+                </p>
+              </div>
+              <div className="flex items-center gap-6">
+                <div>
+                  <p className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">
+                    {dachaSummary.bookedNights}/{dachaSummary.totalNights}
+                  </p>
+                  <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">kun band bo'lgan</p>
+                </div>
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                  <div
+                    className="h-full rounded-full bg-brand-600"
+                    style={{
+                      width: `${dachaSummary.totalNights > 0 ? Math.round((dachaSummary.bookedNights / dachaSummary.totalNights) * 100) : 0}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+        ) : (
+          <Card className="border-none shadow-sm ring-1 ring-zinc-200/50 dark:ring-zinc-800/50">
+            <CardBody className="p-6">
+              <div className="mb-6 border-b border-zinc-100 dark:border-zinc-800 pb-4">
+                <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white">
+                  Top {labels.unitTypeLabel.toLowerCase()}lari (Daromad bo'yicha)
+                </h2>
+                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                  Biznesga eng ko'p foyda keltiruvchi top-5 {labels.unitTypeLabel.toLowerCase()}
+                </p>
               </div>
 
-               {(() => {
-                  const sorted = [...mockRoomTypeDistribution].sort((a,b) => b.revenue - a.revenue).slice(0, 5);
-                  
-                  return sorted.map((r, index) => {
-                    return (
+              <div className="flex flex-col gap-0">
+                <div className="grid grid-cols-[auto_1fr_auto] gap-4 py-2 px-1 text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
+                  <span className="w-6 text-center">#</span>
+                  <span>{labels.unitTypeLabel}</span>
+                  <span className="text-right">Daromad</span>
+                </div>
+
+                {unitTypeDistribution.length === 0 ? (
+                  <p className="py-4 text-sm text-zinc-500 dark:text-zinc-400">
+                    Hali bronlar yo'q.
+                  </p>
+                ) : (
+                  [...unitTypeDistribution]
+                    .sort((a, b) => b.revenue - a.revenue)
+                    .slice(0, 5)
+                    .map((r, index) => (
                       <div key={r.name} className="grid grid-cols-[auto_1fr_auto] gap-4 py-3 px-1 border-b border-zinc-100 dark:border-zinc-800/60 last:border-0 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors rounded-md">
                         <span className="text-sm font-mono text-zinc-400 w-6 text-center">{index + 1}</span>
                         <div className="flex flex-col">
@@ -237,12 +310,12 @@ export function ReportsView() {
                         </div>
                         <span className="text-sm font-bold text-zinc-900 dark:text-white text-right self-center">{formatMoney(r.revenue)}</span>
                       </div>
-                    );
-                  });
-               })()}
-            </div>
-          </CardBody>
-        </Card>
+                    ))
+                )}
+              </div>
+            </CardBody>
+          </Card>
+        )}
       </div>
 
     </div>
