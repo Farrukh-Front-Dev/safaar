@@ -4,6 +4,9 @@ import { useState } from "react";
 import Image from "next/image";
 import { Search, MapPin, Star, Utensils, Clock, PhoneCall } from "lucide-react";
 import { formatSum } from "@/lib/money";
+import { Card, CardBody } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 
 export interface RestaurantItem {
   id: string;
@@ -88,115 +91,113 @@ export function RestaurantsView() {
   });
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
-      {/* Hero Header — Safaar Primary Brand Blue & Dark Navy */}
-      <header className="relative mb-8 overflow-hidden rounded-3xl bg-linear-to-r from-primary-950 via-primary-900 to-slate-900 p-6 sm:p-10 text-white shadow-xl">
-        <div className="relative z-10 max-w-2xl">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-400/30 bg-primary-500/20 px-3 py-1 text-xs font-semibold text-primary-300">
-            <Utensils className="h-3.5 w-3.5 text-primary-400" /> Milliy va Xalqaro Oshxona
-          </span>
-          <h1 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl text-white">
-            O'zbekistonning Eng Saralangan Restoranlari
-          </h1>
-          <p className="mt-2 text-sm text-slate-300 sm:text-base">
-            Toshkent palovidan Xorazm shivit oshigacha — shahringizdagi eng mazali maskanlarni kashf eting.
-          </p>
-
-          {/* Search controls */}
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Restoran nomi yoki taom turi..."
-                className="w-full rounded-2xl border border-white/10 bg-white/10 py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-400 backdrop-blur-md transition-all focus:bg-white/20 focus:outline-none focus:ring-2 focus:ring-primary-400"
-              />
-            </div>
-            <select
-              value={selectedCity}
-              onChange={(e) => setSelectedCity(e.target.value)}
-              className="rounded-2xl border border-white/10 bg-white/10 px-4 py-2.5 text-sm text-white backdrop-blur-md focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-400"
-            >
-              <option value="all" className="bg-slate-900 text-white">Barcha shaharlar</option>
-              <option value="Toshkent" className="bg-slate-900 text-white">Toshkent</option>
-              <option value="Samarqand" className="bg-slate-900 text-white">Samarqand</option>
-              <option value="Buxoro" className="bg-slate-900 text-white">Buxoro</option>
-              <option value="Xiva" className="bg-slate-900 text-white">Xiva</option>
-            </select>
-          </div>
+    <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
+      {/* Clean Shadcn-Style Page Header */}
+      <div className="mb-8 border-b border-slate-200 pb-6 dark:border-slate-800">
+        <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+          <Utensils className="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />
+          <span>Milliy va Xalqaro Oshxona</span>
         </div>
-      </header>
+        <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+          Restoranlar va Milliy Taomlar
+        </h1>
+        <p className="mt-2 text-base text-slate-600 dark:text-slate-400">
+          O'zbekistonning eng saralangan restoranlari, milliy oshxonalar va shinam choyxonalari.
+        </p>
 
-      {/* Grid listing */}
-      <section className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2">
-        {filtered.map((item) => (
-          <article
-            key={item.id}
-            className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-btn transition-all duration-200 hover:border-slate-300 hover:shadow-btn-hover active:scale-[0.99] sm:flex-row dark:border-slate-800 dark:bg-slate-900"
+        {/* Clean Filter Controls */}
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Restoran nomi yoki taom turi bo'yicha qidiruv..."
+              className="pl-10"
+            />
+          </div>
+          <select
+            value={selectedCity}
+            onChange={(e) => setSelectedCity(e.target.value)}
+            className="h-10 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-900 shadow-xs transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
           >
-            <div className="relative aspect-16/10 shrink-0 overflow-hidden sm:w-48 sm:aspect-auto bg-primary-50">
-              <Image
-                src={item.imageUrl}
-                alt={item.name}
-                fill
-                sizes="(max-width: 640px) 100vw, 200px"
-                className="object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-              <span className="absolute left-2.5 top-2.5 z-10 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white/90 px-2 py-0.5 text-xs font-bold text-amber-600 shadow-btn backdrop-blur-xs dark:border-slate-700 dark:bg-slate-900/90 dark:text-amber-400">
-                <Star className="h-3.5 w-3.5 fill-current" />
-                {item.rating.toFixed(1)}
-              </span>
-            </div>
+            <option value="all">Barcha shaharlar</option>
+            <option value="Toshkent">Toshkent</option>
+            <option value="Samarqand">Samarqand</option>
+            <option value="Buxoro">Buxoro</option>
+            <option value="Xiva">Xiva</option>
+          </select>
+        </div>
+      </div>
 
-            <div className="flex flex-1 flex-col justify-between p-4 sm:p-5">
-              <div>
-                <div className="flex items-start justify-between gap-2">
-                  <h2 className="text-base font-bold text-slate-900 dark:text-white sm:text-lg">
-                    {item.name}
-                  </h2>
-                  <span className="shrink-0 rounded-full bg-primary-50 px-2.5 py-0.5 text-[11px] font-semibold text-primary-700 dark:bg-primary-950 dark:text-primary-300">
-                    {item.cuisine}
-                  </span>
-                </div>
-
-                <p className="mt-1 flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-                  <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                  {item.address}
-                </p>
-
-                <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-600 dark:text-slate-300">
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3.5 w-3.5 text-slate-400" />
-                    {item.workingHours}
-                  </span>
-                  <span className="font-bold text-primary-700 dark:text-primary-400">
-                    O'rtacha chek: {formatSum(item.averageCheckSum)}
-                  </span>
-                </div>
+      {/* Clean Grid Listing */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2">
+        {filtered.map((item) => (
+          <Card key={item.id} className="group overflow-hidden">
+            <div className="flex flex-col sm:flex-row">
+              <div className="relative aspect-16/10 w-full shrink-0 overflow-hidden bg-slate-100 sm:w-48 sm:aspect-auto dark:bg-slate-800">
+                <Image
+                  src={item.imageUrl}
+                  alt={item.name}
+                  fill
+                  sizes="(max-width: 640px) 100vw, 200px"
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+                <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white/90 px-2 py-0.5 text-xs font-bold text-amber-600 shadow-xs backdrop-blur-xs dark:border-slate-700 dark:bg-slate-900/90 dark:text-amber-400">
+                  <Star className="h-3.5 w-3.5 fill-current" />
+                  {item.rating.toFixed(1)}
+                </span>
               </div>
 
-              <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
-                <a
-                  href={`tel:${item.phone.replace(/\s+/g, "")}`}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary-600 transition-colors hover:text-primary-700 dark:text-primary-400"
-                >
-                  <PhoneCall className="h-3.5 w-3.5" />
-                  {item.phone}
-                </a>
-                <button
-                  type="button"
-                  onClick={() => alert(`"Stol band qilish" xizmati tez orada ishga tushadi! Bog'lanish: ${item.phone}`)}
-                  className="rounded-full bg-accent-600 px-4 py-1.5 text-xs font-bold text-white shadow-btn transition-all hover:bg-accent-500 active:scale-95"
-                >
-                  Stol band qilish
-                </button>
-              </div>
+              <CardBody className="flex flex-1 flex-col justify-between p-4 sm:p-5">
+                <div>
+                  <div className="flex items-start justify-between gap-2">
+                    <h2 className="text-base font-bold text-slate-900 dark:text-white sm:text-lg">
+                      {item.name}
+                    </h2>
+                    <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                      {item.cuisine}
+                    </span>
+                  </div>
+
+                  <p className="mt-1 flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                    <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                    {item.address}
+                  </p>
+
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-300">
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3.5 w-3.5 text-slate-400" />
+                      {item.workingHours}
+                    </span>
+                    <span className="font-semibold text-slate-900 dark:text-white">
+                      Chek: {formatSum(item.averageCheckSum)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
+                  <a
+                    href={`tel:${item.phone.replace(/\s+/g, "")}`}
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 transition-colors hover:text-primary-600 dark:text-slate-400 dark:hover:text-primary-400"
+                  >
+                    <PhoneCall className="h-3.5 w-3.5 text-slate-400" />
+                    {item.phone}
+                  </a>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => alert(`"Stol band qilish" xizmati tez orada ishga tushadi! Bog'lanish: ${item.phone}`)}
+                  >
+                    Stol band qilish
+                  </Button>
+                </div>
+              </CardBody>
             </div>
-          </article>
+          </Card>
         ))}
-      </section>
-    </div>
+      </div>
+    </main>
   );
 }
