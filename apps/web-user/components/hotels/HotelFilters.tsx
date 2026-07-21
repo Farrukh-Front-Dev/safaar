@@ -7,7 +7,21 @@ import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
-import { Filter, ChevronDown, RotateCcw } from "lucide-react";
+import { Filter, ChevronDown, RotateCcw, Waves, Tv, ShieldCheck, CreditCard, Sparkles } from "lucide-react";
+
+const AMENITIES = [
+  { id: "pool", label: "Basseyn (Yopiq/Ochiq)", icon: Waves },
+  { id: "tapchan", label: "Tapchan (Chayxona)", icon: Sparkles },
+  { id: "sauna", label: "Sauna & Fin hammomi", icon: ShieldCheck },
+  { id: "wifi", label: "Yuqori tezlikdagi Wi-Fi", icon: Tv },
+  { id: "breakfast", label: "Nonushta (Breakfast)", icon: Sparkles },
+  { id: "billiards", label: "Bilyard xonasi", icon: Sparkles },
+] as const;
+
+const PAYMENT_TYPES = [
+  { id: "pay_at_property", label: "Joyida to'lash (Naqd/Karta)", icon: CreditCard },
+  { id: "online_payment", label: "Online to'lash (Click, Payme)", icon: CreditCard },
+] as const;
 
 export function HotelFilters({ dict }: { dict: Pick<HotelsDict, "filters"> }) {
   const router = useRouter();
@@ -18,6 +32,28 @@ export function HotelFilters({ dict }: { dict: Pick<HotelsDict, "filters"> }) {
   const [stars, setStars] = useState(searchParams.get("stars") ?? "");
   const [minPrice, setMinPrice] = useState(searchParams.get("min_price") ?? "");
   const [maxPrice, setMaxPrice] = useState(searchParams.get("max_price") ?? "");
+  
+  const [selectedAmenities, setSelectedAmenities] = useState<string[]>(() => {
+    const raw = searchParams.get("amenities");
+    return raw ? raw.split(",") : [];
+  });
+
+  const [selectedPayments, setSelectedPayments] = useState<string[]>(() => {
+    const raw = searchParams.get("payment");
+    return raw ? raw.split(",") : [];
+  });
+
+  function toggleAmenity(id: string) {
+    setSelectedAmenities((prev) =>
+      prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
+    );
+  }
+
+  function togglePayment(id: string) {
+    setSelectedPayments((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
+    );
+  }
 
   function setOrDelete(params: URLSearchParams, key: string, value: string) {
     if (value) params.set(key, value);
@@ -35,16 +71,20 @@ export function HotelFilters({ dict }: { dict: Pick<HotelsDict, "filters"> }) {
     setOrDelete(params, "stars", stars);
     setOrDelete(params, "min_price", minPrice);
     setOrDelete(params, "max_price", maxPrice);
+    setOrDelete(params, "amenities", selectedAmenities.join(","));
+    setOrDelete(params, "payment", selectedPayments.join(","));
     push(params);
     setOpen(false);
   }
 
   function reset() {
     const params = new URLSearchParams(searchParams.toString());
-    for (const key of ["stars", "min_price", "max_price"]) params.delete(key);
+    for (const key of ["stars", "min_price", "max_price", "amenities", "payment"]) params.delete(key);
     setStars("");
     setMinPrice("");
     setMaxPrice("");
+    setSelectedAmenities([]);
+    setSelectedPayments([]);
     push(params);
   }
 
@@ -79,6 +119,7 @@ export function HotelFilters({ dict }: { dict: Pick<HotelsDict, "filters"> }) {
           </h2>
         </div>
 
+        {/* Yulduzlar */}
         <label className="flex flex-col gap-1.5">
           <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
             {dict.filters.stars}
@@ -96,35 +137,105 @@ export function HotelFilters({ dict }: { dict: Pick<HotelsDict, "filters"> }) {
           />
         </label>
 
-        <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
-            {dict.filters.priceMin} ({dict.filters.currency})
-          </span>
-          <Input
-            type="number"
-            min={0}
-            inputMode="numeric"
-            placeholder="0"
-            value={minPrice}
-            onChange={(e) => setMinPrice(e.target.value)}
-          />
-        </label>
+        {/* Narx chegaralari */}
+        <div className="grid grid-cols-2 gap-2">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
+              Min ({dict.filters.currency})
+            </span>
+            <Input
+              type="number"
+              min={0}
+              inputMode="numeric"
+              placeholder="0"
+              value={minPrice}
+              onChange={(e) => setMinPrice(e.target.value)}
+            />
+          </label>
 
-        <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
-            {dict.filters.priceMax} ({dict.filters.currency})
-          </span>
-          <Input
-            type="number"
-            min={0}
-            inputMode="numeric"
-            placeholder="Maksimal narx"
-            value={maxPrice}
-            onChange={(e) => setMaxPrice(e.target.value)}
-          />
-        </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
+              Max ({dict.filters.currency})
+            </span>
+            <Input
+              type="number"
+              min={0}
+              inputMode="numeric"
+              placeholder="Maks"
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(e.target.value)}
+            />
+          </label>
+        </div>
 
-        <div className="flex gap-2 pt-2">
+        {/* Local Uzbek Amenities Filter */}
+        <div className="flex flex-col gap-2 pt-2 border-t border-slate-100">
+          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
+            Qulayliklar (Amenities)
+          </span>
+          <div className="flex flex-col gap-1.5">
+            {AMENITIES.map((item) => {
+              const checked = selectedAmenities.includes(item.id);
+              return (
+                <label
+                  key={item.id}
+                  className={cn(
+                    "flex cursor-pointer items-center justify-between rounded-xl border px-3 py-2 text-xs font-medium transition-all select-none",
+                    checked
+                      ? "border-blue-500 bg-blue-50/50 text-blue-900 font-bold"
+                      : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                  )}
+                >
+                  <span className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleAmenity(item.id)}
+                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span>{item.label}</span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Payment Type Filter */}
+        <div className="flex flex-col gap-2 pt-2 border-t border-slate-100">
+          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
+            To'lov turi
+          </span>
+          <div className="flex flex-col gap-1.5">
+            {PAYMENT_TYPES.map((item) => {
+              const checked = selectedPayments.includes(item.id);
+              return (
+                <label
+                  key={item.id}
+                  className={cn(
+                    "flex cursor-pointer items-center justify-between rounded-xl border px-3 py-2 text-xs font-medium transition-all select-none",
+                    checked
+                      ? "border-emerald-500 bg-emerald-50/50 text-emerald-900 font-bold"
+                      : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                  )}
+                >
+                  <span className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => togglePayment(item.id)}
+                      className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <span>{item.label}</span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-2 pt-2 border-t border-slate-100">
           <Button
             type="button"
             onClick={apply}

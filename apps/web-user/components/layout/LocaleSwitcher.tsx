@@ -1,122 +1,99 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Check } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { Globe } from "lucide-react";
 import { locales, localeNames, type Locale } from "@/i18n/config";
-import ShinyText from "@/components/ui/ShinyText";
 import { cn } from "@/lib/cn";
 
-/**
- * Til almashtirgich — ixcham bitta tugma (globus + joriy til kodi + chevron).
- * Bosilganda kichik animatsiyali menyu ochiladi; til tanlansa joriy URL
- * saqlanib faqat til segmenti almashadi: `/ru/hotels` → `/en/hotels`.
- *
- * A11y: `aria-haspopup`/`aria-expanded`, Escape va tashqariga bosishda yopiladi,
- * `aria-current` + check ikonka faol tilda, `focus-visible:ring`.
- */
-export function LocaleSwitcher({ current, light }: { current: Locale; light?: boolean }) {
-  const pathname = usePathname();
+export function LocaleSwitcher({
+  current,
+  light = false,
+}: {
+  current: Locale;
+  light?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-
-  function localizedHref(locale: Locale): string {
-    const segments = pathname.split("/");
-    // segments[0] = "" (boshlang'ich "/"), segments[1] = joriy til
-    if (segments.length > 1) {
-      segments[1] = locale;
-    }
-    return segments.join("/") || `/${locale}`;
-  }
+  const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
-    if (!open) return;
-    function onClick(e: MouseEvent) {
+    function handleClick(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setOpen(false);
       }
     }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("mousedown", onClick);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onClick);
-      document.removeEventListener("keydown", onKey);
-    };
+    if (open) document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
+  function switchLocale(nextLocale: Locale) {
+    if (nextLocale === current) {
+      setOpen(false);
+      return;
+    }
+    // Path: /[lang]/... -> /[nextLocale]/...
+    const segments = pathname.split("/").filter(Boolean);
+    if (segments.length > 0 && (locales as readonly string[]).includes(segments[0])) {
+      segments[0] = nextLocale;
+    } else {
+      segments.unshift(nextLocale);
+    }
+    const nextPath = `/${segments.join("/")}`;
+    setOpen(false);
+    router.push(nextPath);
+  }
+
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative inline-block text-left">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-haspopup="menu"
+        aria-haspopup="listbox"
         aria-expanded={open}
-        aria-label="Til tanlash"
+        aria-label="Tilni tanlash"
         className={cn(
-          "inline-flex h-8 items-center rounded-full border px-3.5 text-xs font-bold uppercase tracking-wide transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 active:scale-95",
+          "inline-flex h-8 items-center gap-1.5 rounded-full px-2.5 text-xs font-bold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1",
           light
-            ? open
-              ? "border-primary-200 bg-primary-50 text-primary-700 shadow-xs"
-              : "border-slate-300 bg-white text-slate-900 shadow-xs hover:bg-slate-50 hover:border-slate-400 active:bg-slate-100 active:scale-[0.97]"
-            : open
-              ? "border-white/50 bg-white/20 text-white shadow-xs"
-              : "border-white/40 bg-transparent text-white/90 hover:bg-white/10 hover:border-white/60 hover:text-white",
+            ? "border border-slate-200 bg-white text-slate-900 shadow-btn hover:bg-slate-50"
+            : "border border-white/40 bg-white/10 text-white shadow-xs backdrop-blur-md hover:bg-white/20 hover:border-white/60",
         )}
       >
-        <ShinyText
-          text={current.toUpperCase()}
-          speed={12}
-          color={light ? "#0f172a" : "#ffffff"}
-          shineColor={light ? "#2563eb" : "#7dd3fc"}
-          className="text-xs font-bold uppercase tracking-wide"
-        />
+        <Globe className={cn("h-3.5 w-3.5", light ? "text-slate-600" : "text-white/90")} aria-hidden />
+        <span className={cn("text-xs font-bold uppercase tracking-wide", light ? "text-slate-900" : "text-white")}>
+          {current.toUpperCase()}
+        </span>
       </button>
 
       {open && (
-        <ul
-          role="menu"
-          aria-label="Til tanlash"
-          className="absolute right-0 z-50 mt-2 min-w-44 origin-top-right overflow-hidden rounded-2xl border border-slate-200 bg-white p-1 shadow-lg animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-150"
+        <div
+          role="listbox"
+          aria-label="Tillar"
+          className="absolute right-0 top-full mt-1.5 w-36 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl z-50"
         >
-          {locales.map((locale) => {
-            const active = locale === current;
+          {locales.map((loc) => {
+            const active = loc === current;
             return (
-              <li key={locale} role="none">
-                <Link
-                  role="menuitem"
-                  href={localizedHref(locale)}
-                  onClick={() => setOpen(false)}
-                  aria-current={active ? "true" : undefined}
-                  className={cn(
-                    "flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors",
-                    active
-                      ? "bg-primary-50 font-semibold text-primary-700"
-                      : "text-slate-700 hover:bg-slate-100",
-                  )}
-                >
-                  <span className="flex w-4 shrink-0 justify-center">
-                    {active && (
-                      <Check className="h-4 w-4 text-primary-600" aria-hidden />
-                    )}
-                  </span>
-                  <span className="flex-1">{localeNames[locale]}</span>
-                  <span
-                    className={cn(
-                      "text-xs uppercase",
-                      active ? "text-primary-500" : "text-slate-400",
-                    )}
-                  >
-                    {locale}
-                  </span>
-                </Link>
-              </li>
+              <button
+                key={loc}
+                type="button"
+                role="option"
+                aria-selected={active}
+                onClick={() => switchLocale(loc)}
+                className={cn(
+                  "flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-xs font-bold transition-colors",
+                  active
+                    ? "bg-blue-600 text-white shadow-xs"
+                    : "text-slate-900 hover:bg-slate-100",
+                )}
+              >
+                <span>{localeNames[loc]}</span>
+                <span className="uppercase text-[10px] opacity-75">{loc}</span>
+              </button>
             );
           })}
-        </ul>
+        </div>
       )}
     </div>
   );

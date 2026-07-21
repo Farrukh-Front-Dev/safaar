@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X, ChevronDown } from "lucide-react";
-import ShinyText from "@/components/ui/ShinyText";
 import { cn } from "@/lib/cn";
 
 export type ScrollNavItem = {
@@ -98,14 +97,8 @@ export function ScrollNav({ items, brand, brandHref, actions, localeSwitcher, au
     <>
       {/* ═══ Mobile header ═══ */}
       <header className="sticky top-0 z-100 flex h-12 items-center justify-between border-b border-sky-300/30 bg-blue-600 px-4 text-white md:hidden">
-        <Link href={brandHref}>
-          <ShinyText
-            text={brand}
-            speed={6}
-            color="#ffffff"
-            shineColor="#7dd3fc"
-            className="font-black tracking-wide text-lg sm:text-xl text-white"
-          />
+        <Link href={brandHref} className="font-black tracking-wide text-lg sm:text-xl text-white">
+          {brand}
         </Link>
         <button
           type="button"
@@ -189,14 +182,8 @@ export function ScrollNav({ items, brand, brandHref, actions, localeSwitcher, au
       {/* ═══ Desktop navbar ═══ */}
       <nav className="sticky top-0 z-100 hidden border-b border-sky-300/30 bg-blue-600 shadow-md md:block">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
-          <Link href={brandHref} className="shrink-0">
-            <ShinyText
-              text={brand}
-              speed={6}
-              color="#ffffff"
-              shineColor="#7dd3fc"
-              className="font-black tracking-wide text-lg sm:text-xl text-white"
-            />
+          <Link href={brandHref} className="shrink-0 font-black tracking-wide text-lg sm:text-xl text-white">
+            {brand}
           </Link>
 
           <div className="flex items-center gap-1">

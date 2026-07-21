@@ -4,7 +4,6 @@ import type { Locale } from "@/i18n/config";
 import type { CommonDict } from "@/i18n/dictionaries";
 import { logoutAction } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/Button";
-import ShinyText from "@/components/ui/ShinyText";
 import { ScrollNav, type ScrollNavItem } from "./ScrollNav";
 import { LocaleSwitcher } from "./LocaleSwitcher";
 
@@ -45,13 +44,7 @@ export function SiteHeader({
         href={`${base}/account`}
         className="inline-flex h-8 items-center justify-center rounded-full px-3.5 text-sm font-bold text-white transition-colors hover:bg-white/20"
       >
-        <ShinyText
-          text={dict.actions.account}
-          speed={12}
-          color="#ffffff"
-          shineColor="#7dd3fc"
-          className="text-sm font-bold text-white"
-        />
+        {dict.actions.account}
       </Link>
       <form action={logoutAction.bind(null, locale)}>
         <Button size="sm" variant="secondary" type="submit">
@@ -63,27 +56,15 @@ export function SiteHeader({
     <div className="flex items-center gap-2">
       <Link
         href={`/${locale}/login`}
-        className="inline-flex h-9 items-center justify-center rounded-full border border-white/50 bg-white/10 px-4 text-xs font-bold text-white shadow-xs backdrop-blur-md transition-all duration-150 hover:bg-white/20 hover:border-white/70 active:scale-[0.97]"
+        className="inline-flex h-9 items-center justify-center rounded-full border border-white/60 bg-white/10 px-4 text-xs font-bold text-white shadow-xs backdrop-blur-md transition-all duration-150 hover:bg-white/20 active:scale-[0.97]"
       >
-        <ShinyText
-          text={dict.actions.login}
-          speed={12}
-          color="#ffffff"
-          shineColor="#7dd3fc"
-          className="text-xs font-bold text-white"
-        />
+        {dict.actions.login}
       </Link>
       <Link
         href={`/${locale}/register`}
-        className="inline-flex h-9 items-center justify-center rounded-full bg-white px-4 text-xs font-bold text-blue-700 shadow-sm transition-all duration-150 hover:bg-white/95 active:scale-[0.97]"
+        className="inline-flex h-9 items-center justify-center rounded-full bg-white px-4 text-xs font-bold text-blue-700 shadow-xs transition-all duration-150 hover:bg-white/95 active:scale-[0.97]"
       >
-        <ShinyText
-          text={dict.actions.register}
-          speed={12}
-          color="#1d4ed8"
-          shineColor="#38bdf8"
-          className="text-xs font-bold"
-        />
+        {dict.actions.register}
       </Link>
     </div>
   );
@@ -94,13 +75,7 @@ export function SiteHeader({
         href={`${base}/account`}
         className="inline-flex h-8 items-center justify-center rounded-full px-3.5 text-sm font-bold text-slate-900 transition-colors hover:bg-slate-100"
       >
-        <ShinyText
-          text={dict.actions.account}
-          speed={12}
-          color="#0f172a"
-          shineColor="#2563eb"
-          className="text-sm font-bold"
-        />
+        {dict.actions.account}
       </Link>
       <form action={logoutAction.bind(null, locale)}>
         <Button size="sm" variant="secondary" type="submit">
@@ -114,25 +89,13 @@ export function SiteHeader({
         href={`/${locale}/login`}
         className="inline-flex h-10 items-center justify-center rounded-full border border-slate-300 bg-white px-4 text-sm font-bold text-slate-900 shadow-xs transition-all duration-150 hover:bg-slate-50 active:scale-[0.97]"
       >
-        <ShinyText
-          text={dict.actions.login}
-          speed={12}
-          color="#0f172a"
-          shineColor="#2563eb"
-          className="text-sm font-bold"
-        />
+        {dict.actions.login}
       </Link>
       <Link
         href={`/${locale}/register`}
         className="inline-flex h-10 items-center justify-center rounded-full bg-blue-600 px-4 text-sm font-bold text-white shadow-xs transition-all duration-150 hover:bg-blue-700 active:scale-[0.97]"
       >
-        <ShinyText
-          text={dict.actions.register}
-          speed={12}
-          color="#ffffff"
-          shineColor="#7dd3fc"
-          className="text-sm font-bold text-white"
-        />
+        {dict.actions.register}
       </Link>
     </div>
   );
