@@ -7,12 +7,8 @@ import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
+import { Filter, ChevronDown, RotateCcw } from "lucide-react";
 
-/**
- * Filtr paneli (client). URL searchParams'ni yangilaydi — natija serverda shu
- * query asosida qayta olinadi. Mobilda yig'iladigan (collapsible). Saralash bu
- * yerda emas — u natijalar tepasida mustaqil dropdown (`HotelSortSelect`).
- */
 export function HotelFilters({ dict }: { dict: Pick<HotelsDict, "filters"> }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -29,7 +25,7 @@ export function HotelFilters({ dict }: { dict: Pick<HotelsDict, "filters"> }) {
   }
 
   function push(params: URLSearchParams) {
-    params.delete("page"); // filtr o'zgarsa — 1-sahifaga
+    params.delete("page");
     const query = params.toString();
     router.push(`${pathname}${query ? `?${query}` : ""}`);
   }
@@ -54,27 +50,39 @@ export function HotelFilters({ dict }: { dict: Pick<HotelsDict, "filters"> }) {
 
   return (
     <aside aria-label={dict.filters.title} className="lg:sticky lg:top-20 lg:h-fit">
+      {/* Mobile Toggle Button */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="mb-3 flex w-full items-center justify-between rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium shadow-btn transition-all hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:scale-[0.97] active:shadow-btn-active lg:hidden"
+        className="mb-3 flex w-full items-center justify-between rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-900 shadow-2xs transition-all hover:bg-slate-50 hover:border-slate-400 active:scale-[0.98] lg:hidden"
       >
-        {dict.filters.toggle}
-        <span aria-hidden>{open ? "▲" : "▼"}</span>
+        <span className="inline-flex items-center gap-2">
+          <Filter className="h-4 w-4 text-blue-600" />
+          <span>{dict.filters.toggle}</span>
+        </span>
+        <ChevronDown className={cn("h-4 w-4 transition-transform text-slate-600", open && "rotate-180")} />
       </button>
 
+      {/* Main Filter Container */}
       <div
         className={cn(
-          "flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-btn",
+          "flex-col gap-4.5 rounded-2xl border border-slate-300 bg-white p-5 shadow-sm",
           open ? "flex" : "hidden",
           "lg:flex",
         )}
       >
-        <h2 className="text-base font-semibold">{dict.filters.title}</h2>
+        <div className="flex items-center gap-2 border-b border-slate-200 pb-3">
+          <Filter className="h-4 w-4 text-blue-600" />
+          <h2 className="text-base font-extrabold uppercase tracking-wide text-slate-900">
+            {dict.filters.title}
+          </h2>
+        </div>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-sm text-slate-600">{dict.filters.stars}</span>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
+            {dict.filters.stars}
+          </span>
           <Select
             value={stars}
             onChange={setStars}
@@ -88,8 +96,8 @@ export function HotelFilters({ dict }: { dict: Pick<HotelsDict, "filters"> }) {
           />
         </label>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-sm text-slate-600">
+        <label className="flex flex-col gap-1.5">
+          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
             {dict.filters.priceMin} ({dict.filters.currency})
           </span>
           <Input
@@ -102,25 +110,36 @@ export function HotelFilters({ dict }: { dict: Pick<HotelsDict, "filters"> }) {
           />
         </label>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-sm text-slate-600">
+        <label className="flex flex-col gap-1.5">
+          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
             {dict.filters.priceMax} ({dict.filters.currency})
           </span>
           <Input
             type="number"
             min={0}
             inputMode="numeric"
+            placeholder="Maksimal narx"
             value={maxPrice}
             onChange={(e) => setMaxPrice(e.target.value)}
           />
         </label>
 
-        <div className="flex gap-2">
-          <Button type="button" onClick={apply} className="flex-1">
+        <div className="flex gap-2 pt-2">
+          <Button
+            type="button"
+            onClick={apply}
+            className="flex-1 rounded-xl bg-blue-600 font-bold text-white shadow-xs hover:bg-blue-700"
+          >
             {dict.filters.apply}
           </Button>
-          <Button type="button" variant="secondary" onClick={reset}>
-            {dict.filters.reset}
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={reset}
+            className="rounded-xl border border-slate-300 bg-white font-bold text-slate-800 shadow-2xs hover:bg-slate-50 hover:border-slate-400"
+          >
+            <RotateCcw className="h-4 w-4" />
+            <span>{dict.filters.reset}</span>
           </Button>
         </div>
       </div>

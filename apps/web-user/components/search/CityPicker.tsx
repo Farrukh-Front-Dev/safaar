@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ChevronDown, MapPin } from "lucide-react";
 import type { CityOption } from "@/types/view";
 
 interface Props {
@@ -32,19 +33,31 @@ export function CityPicker({ cities, value, onChange, placeholder }: Props) {
   }, [open]);
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative w-full">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full text-left"
+        className="flex w-full items-center justify-between gap-1 text-left focus:outline-hidden"
       >
-        <p className={`truncate text-sm font-medium ${selected ? "text-slate-900" : "text-slate-400"}`}>
+        <span
+          className={`truncate text-sm font-bold ${
+            selected ? "text-slate-900" : "text-slate-600"
+          }`}
+        >
           {selected ? selected.name : placeholder}
-        </p>
+        </span>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-slate-500 transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
       </button>
+
       {open && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-1 min-w-56 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
-          {cities.length === 0 && <p className="px-3 py-4 text-center text-sm text-slate-400">—</p>}
+        <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-60 overflow-y-auto rounded-2xl border-2 border-slate-300 bg-white p-1.5 shadow-2xl">
+          {cities.length === 0 && (
+            <p className="px-3 py-4 text-center text-sm font-medium text-slate-500">—</p>
+          )}
           {cities.map((city) => (
             <button
               key={city.id}
@@ -53,11 +66,14 @@ export function CityPicker({ cities, value, onChange, placeholder }: Props) {
                 onChange(city.id);
                 setOpen(false);
               }}
-              className={`w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors ${
-                city.id === value ? "bg-blue-50 text-blue-700" : "text-slate-600 hover:bg-slate-50"
+              className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition-colors ${
+                city.id === value
+                  ? "bg-blue-50 text-blue-700"
+                  : "text-slate-800 hover:bg-slate-100"
               }`}
             >
-              {city.name}
+              <MapPin className="h-3.5 w-3.5 shrink-0 text-blue-600" />
+              <span>{city.name}</span>
             </button>
           ))}
         </div>

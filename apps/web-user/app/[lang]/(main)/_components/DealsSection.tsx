@@ -83,49 +83,44 @@ export function DealsSection({
               href={`/${locale}/hotels/${deal.slug}`}
               className="group w-[calc(50%-0.375rem)] shrink-0 snap-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
             >
-              <article className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-btn transition-all duration-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:scale-[0.97] active:shadow-btn-active dark:border-slate-800 dark:bg-slate-900">
-                {/* Rasm */}
-                <div className="relative aspect-[16/10] overflow-hidden bg-primary-50 dark:bg-slate-800">
+              <article className="flex h-full flex-col overflow-hidden rounded-2xl border-2 border-slate-300 bg-white shadow-md transition-all duration-200 hover:border-blue-500 hover:shadow-xl active:scale-[0.98]">
+                <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">
                   {deal.imageUrl && (
                     <Image
                       src={deal.imageUrl}
                       alt={deal.name}
                       fill
-                      sizes="(max-width: 640px) 50vw, 300px"
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 300px"
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
                       quality={85}
                     />
                   )}
 
-                  {/* Chegirma badge */}
-                  <span className="absolute left-2 top-2 z-10 inline-flex items-center gap-1 rounded-full bg-red-500 px-2.5 py-1 text-xs font-bold text-white shadow-btn">
-                    <Tag className="h-3 w-3" aria-hidden />
+                  <span className="absolute left-2.5 top-2.5 z-10 inline-flex items-center gap-1 rounded-xl bg-red-600 px-2.5 py-1 text-xs font-black text-white shadow-xs">
+                    <Tag className="h-3.5 w-3.5" aria-hidden />
                     -{deal.discountPercent}%
                   </span>
 
-                  {/* Timer badge */}
-                  <span className="absolute right-2 top-2 z-10 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white/90 px-2 py-0.5 text-[10px] font-medium text-slate-700 shadow-btn backdrop-blur-xs dark:border-slate-700 dark:bg-slate-900/90 dark:text-slate-300">
-                    <Clock className="h-3 w-3" aria-hidden />
+                  <span className="absolute right-2.5 top-2.5 z-10 inline-flex items-center gap-1 rounded-xl border-2 border-slate-300 bg-white/95 px-2 py-0.5 text-xs font-bold text-slate-800 shadow-xs backdrop-blur-md">
+                    <Clock className="h-3.5 w-3.5 text-slate-600" aria-hidden />
                     {endsInDays} {dict.days}
                   </span>
                 </div>
 
-                {/* Info */}
-                <div className="flex flex-1 flex-col gap-1.5 p-3 sm:p-4">
-                  <h3 className="line-clamp-1 text-sm font-semibold text-slate-900 sm:text-base dark:text-white">
+                <div className="flex flex-1 flex-col gap-1 p-3.5">
+                  <h3 className="line-clamp-1 text-sm font-extrabold text-slate-900 sm:text-base">
                     {deal.name}
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">{deal.cityName}</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-700">{deal.cityName}</p>
 
-                  {/* Narxlar */}
-                  <div className="mt-auto flex items-center gap-2 pt-2">
-                    <span className="text-xs text-slate-400 line-through">
+                  <div className="mt-auto flex items-center gap-2 pt-2 border-t border-slate-200">
+                    <span className="text-xs font-bold text-slate-400 line-through">
                       {formatSum(deal.oldPriceSum)}
                     </span>
-                    <span className="text-base font-bold text-red-600 dark:text-red-400">
+                    <span className="text-base font-black text-red-600">
                       {formatSum(deal.newPriceSum)}
                     </span>
-                    <span className="text-[10px] text-slate-400">{dict.perNight}</span>
+                    <span className="text-xs font-bold text-slate-700">{dict.perNight}</span>
                   </div>
                 </div>
               </article>

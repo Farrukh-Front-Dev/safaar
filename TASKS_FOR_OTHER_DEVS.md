@@ -1,47 +1,91 @@
-# Safaar — Boshqa Dasturchilar Uchun Topshiriqlar va So'rovlar (DEV_REQUESTS)
+# 📋 Topshiriqlar Ro'yxati (Boshqa Dasturchilar Uchun)
 
-> **Maqsad:** Frontend (`web-user`) ishini to'liq yakunlash va platforma integratsiyasini ta'minlash uchun **Backend**, **Partner** va **Admin** dasturchilaridan talab qilinadigan API endpoints, turlar va sozlamalar ro'yxati.
-> **Status:** Faol (Har bir dasturchi o'z qismini bajargach `- [x]` belgilaydi)
-
----
-
-## 1. 🛠️ Backend Dasturchisi Uchun (`apps/backend/` va `packages/types/` — @Lazizdeveloper)
-
-### 🔑 1.1. SMS OTP va Autentifikatsiya API
-- [ ] **`POST /api/auth/send-otp`**: Foydalanuvchi telefon raqamiga 6 xonali SMS OTP kod yuborish (`phone: string`).
-- [ ] **`POST /api/auth/verify-otp`**: Kiritilgan OTP kodni tekshirish va JWT tokenlarni (`accessToken`, `refreshToken`) qaytarish.
-- [ ] **`POST /api/auth/refresh`**: Refresh token orqali yangi access token olish.
-
-### 💳 1.2. Mahalliy To'lov Tizimlari Integratsiyasi (Click, Payme, Uzcard)
-- [ ] **`POST /api/payments/click/prepare`**: Click Merchant API uchun checkout URL va tranzaksiya ID shakllantirish.
-- [ ] **`POST /api/payments/payme/prepare`**: Payme Merchant API uchun to'lov havolasini shakllantirish.
-- [ ] **`POST /api/payments/webhook/click`** & **`payme`**: Webhook callbacklarini qabul qilish hamda bron statusini `CONFIRMED` holatiga o'tkazish.
-
-### 🚌 1.3. Avtobus Chiptalari va Joylar (Seats) API
-- [ ] **`GET /api/buses/:tripId/seats`**: Tanlangan avtobus reysi bo'yicha band va bo'sh o'rinlar (seat numbers) ro'yxatini qaytarish.
-- [ ] **`POST /api/buses/book-seats`**: Tanlangan joylarni bron qilish hamda chipta generatsiya qilish.
-
-### ⭐ 1.4. Sharhlar va Keshbek / Bonuslar
-- [ ] **`POST /api/hotels/:id/reviews`**: Muvaffaqiyatli bronni yakunlagan foydalanuvchilar uchun sharh va reyting (1-5 yulduz) qoldirish API.
-- [ ] **`GET /api/users/me/bonuses`**: Foydalanuvchining to'plangan bonus ballari va keshbek tarixini olish.
-
-### 🍽️ 1.5. Restoranlar va Attraksionlar API
-- [ ] **`GET /api/catalog/restaurants`**: Restoranlar katalogi (Oshxona turi, reyting, o'rtacha chek, telefon va ish vaqti).
-- [ ] **`GET /api/catalog/attractions`**: Tarixiy obidalar, ziyoratgohlar va diqqatga sazovor maskanlar ro'yxati.
+Ushbu fayl `web-user` dasturchisi tomonidan PromoBar funksiyasini dinamik va `web-admin` orqali boshqariladigan qilish uchun tayyorlandi.
 
 ---
 
-## 2. 🤝 Web-Partner Dasturchisi Uchun (`apps/web-partner/` — @adhambek7717)
+## 1. ⚙️ Backend Dasturchi (`@safaar/backend` & `@safaar/types`)
 
-- [ ] **Xonalar va Narxlar Sinxronizatsiyasi**: Hamkor kabinetida xona narxi yoki bandlik sanasi o'zgarganda backend API orqali real-time `web-user` da aks etishini ta'minlash.
-- [ ] **Mehmonxona Rasmlari**: Hamkorlar tomonidan yuklanadigan rasmlar sifati va `imageUrl` larini to'g'ri shaklda backendga yuborish.
+### A. TypeScript Turlari (`packages/types/src/cms.ts`)
+`PromoBarConfig` turini qo'shing va re-export qiling:
+
+```ts
+export interface PromoBarConfig {
+  id?: string;
+  isActive: boolean;
+  text: {
+    uz: string;
+    ru: string;
+    en: string;
+  };
+  badge?: {
+    uz?: string;
+    ru?: string;
+    en?: string;
+  };
+  link?: string;
+  linkText?: {
+    uz?: string;
+    ru?: string;
+    en?: string;
+  };
+  endsAt?: string | null; // ISO Date string (e.g. "2026-08-01T00:00:00Z")
+  isDismissible?: boolean;
+}
+```
+
+### B. Database / Entity
+- `SystemSetting` yoki `PromoBar` jadvallarida promo bar ma'lumotlarini saqlash tuzilmasini yarating.
+
+### C. API Endpoint'lar (`apps/backend`)
+1. **Public Endpoint (Ochiq API):**
+   - **`GET /v1/cms/promo-bar`**
+   - Javob formati: `PromoBarConfig` obyekti.
+   - Kesh/revalidate: 60 sekund.
+   - Agar promo bar o'chirilgan bo'lsa: `{ isActive: false }` qaytarilsin.
+
+2. **Admin Endpoint (Himoyalangan API):**
+   - **`GET /v1/admin/cms/promo-bar`** — Hozirgi sozlamalarni olish (`ADMIN` / `SUPER_ADMIN` rollari uchun).
+   - **`PUT /v1/admin/cms/promo-bar`** — Sozlamalarni yangilash / yoqish / o'chirish.
 
 ---
 
-## 3. 🛡️ Web-Admin Dasturchisi Uchun (`apps/web-admin/` — @adhambek7717)
+## 2. 🖥️ Web-Admin Dasturchi (`@safaar/web-admin`)
 
-- [ ] **Moderatsiya va Tasdiq**: Yangi hamkor mehmonxonalarini moderatsiyadan o'tkazish (Pending ➔ Approved) va `web-user` qidiruv katalogida ko'rinishini faollashtirish.
+### A. CMS / Marketing sozlamalari sahifasi
+`web-admin` loyihasida (masalan: `/dashboard/marketing/promo-bar` yoki CMS bo'limida) quyidagi boshqaruv formalarini yarating:
+
+1. **Yoqish / O'chirish Tugmasi (Toggle Switch):**
+   - `isActive` (`boolean`) — Promo bar sahifada ko'rinsinmi yoki yo'qmi.
+
+2. **Ko'p tilli matn kiritish (Multilingual Text Inputs):**
+   - `text.uz` (O'zbekcha matn — *Majburiy*)
+   - `text.ru` (Ruscha matn)
+   - `text.en` (Inglizcha matn)
+
+3. **Nishon / Badge (Ixtiyoriy):**
+   - `badge.uz` (Masalan: `"🔥 AKSIYA"`, `"YAZGI CHEGIRMA"`)
+   - `badge.ru`, `badge.en`
+
+4. **Havola / Link (Ixtiyoriy):**
+   - `link` (Aksiya sahifasining URL manzili, masalan: `"/search?discount=true"`).
+   - `linkText` (Masalan: `"Batafsil"`, `"Ko'rish"`).
+
+5. **Tugash Sanasi / Expiration Picker (Ixtiyoriy):**
+   - `endsAt` — Aksiya tugaydigan sana va vaqt. Ushbu vaqt o'tgach, `web-user` banner joyini avtomatik yashiradi.
+
+6. **Yopish tugmasi (Is Dismissible):**
+   - `isDismissible` (`boolean`) — Foydalanuvchi `X` tugmasini bosib bannerni yopishiga ruxsat berish.
+
+7. **Saqlash tugmasi:**
+   - Formani `PUT /v1/admin/cms/promo-bar` endpoint'iga yuborish.
 
 ---
 
-*Eslatma: Backend va boshqa dasturchilar topshiriqni yakunlagach, shu fayldagi mos katakchani `- [x]` qilib statusni yangilaydi.*
+## 3. 🌐 Web-User (`apps/web-user`) — Bajarilgan ishlar
+
+- `web-user` da `PromoBar` komponenti to'liq tayyor qilindi.
+- `GET /v1/cms/promo-bar` API'ga parallel so'rov yuborish va revalidation o'rnatildi (`lib/promo.ts`).
+- Server offline yoki API hali tayyor bo'lmagan holatlar uchun xavfsiz fallback yaratildi.
+- Foydalanuvchi `X` tugmasi orqali yopsa, joriy seansda (`sessionStorage`) yopiq holatda saqlanadi.
+- Expiration (`endsAt`) sanasi o'tsa avtomatik yashiriladi.

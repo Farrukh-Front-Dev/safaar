@@ -84,11 +84,11 @@ export function LoginForm({
       {!otpState.ok ? (
         <form action={requestAction} className="flex flex-col gap-4">
           <header className="flex flex-col gap-1">
-            <h1 className="text-2xl font-bold">{dict.title}</h1>
-            <p className="text-sm text-slate-500">{dict.subtitle}</p>
+            <h1 className="text-2xl font-black tracking-tight text-slate-900">{dict.title}</h1>
+            <p className="text-sm font-bold text-slate-700">{dict.subtitle}</p>
           </header>
-          <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium">{dict.phone}</span>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">{dict.phone}</span>
             <Input
               name="phone"
               type="tel"
@@ -100,19 +100,19 @@ export function LoginForm({
             />
           </label>
           {otpState.error && (
-            <p className="text-sm text-red-600">
+            <p className="text-sm font-bold text-red-600">
               {otpState.error === "PHONE_REQUIRED" ? dict.phoneRequired : dict.error}
             </p>
           )}
-          <Button type="submit" size="lg" loading={sending}>
+          <Button type="submit" size="lg" loading={sending} className="rounded-xl bg-blue-600 font-bold text-white shadow-xs hover:bg-blue-700">
             {dict.sendCode}
           </Button>
 
-          <p className="text-center text-sm text-slate-500">
+          <p className="text-center text-sm font-bold text-slate-700">
             {dict.noAccount}{" "}
             <Link
               href={`/${locale}/register${next ? `?next=${encodeURIComponent(next)}` : ""}`}
-              className="font-medium text-primary-600 hover:text-primary-500"
+              className="font-extrabold text-blue-700 hover:text-blue-800"
             >
               {dict.register}
             </Link>
@@ -121,12 +121,12 @@ export function LoginForm({
       ) : (
         <form action={verifyAction} className="flex flex-col gap-4">
           <header className="flex flex-col gap-1">
-            <h1 className="text-2xl font-bold">{dict.codeTitle}</h1>
-            <p className="text-sm text-slate-500">{dict.codeSubtitle}</p>
+            <h1 className="text-2xl font-black tracking-tight text-slate-900">{dict.codeTitle}</h1>
+            <p className="text-sm font-bold text-slate-700">{dict.codeSubtitle}</p>
           </header>
 
           {otpState.devCode && (
-            <p className="rounded-lg border border-primary-200 bg-primary-50 px-3 py-2 text-sm text-primary-800">
+            <p className="rounded-xl border border-blue-300 bg-blue-50 px-3 py-2 text-sm font-bold text-blue-900">
               {dict.devCode}: <strong>{otpState.devCode}</strong>
             </p>
           )}
@@ -135,8 +135,8 @@ export function LoginForm({
           <input type="hidden" name="locale" value={locale} />
           <input type="hidden" name="next" value={next} />
 
-          <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium">{dict.code}</span>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">{dict.code}</span>
             <Input
               name="code"
               inputMode="numeric"
@@ -148,10 +148,10 @@ export function LoginForm({
           </label>
 
           {verifyState.error && (
-            <p className="text-sm text-red-600">{dict.error}</p>
+            <p className="text-sm font-bold text-red-600">{dict.error}</p>
           )}
 
-          <Button type="submit" size="lg" loading={verifying}>
+          <Button type="submit" size="lg" loading={verifying} className="rounded-xl bg-blue-600 font-bold text-white shadow-xs hover:bg-blue-700">
             {dict.verify}
           </Button>
         </form>
@@ -160,24 +160,24 @@ export function LoginForm({
       {/* Social login */}
       <div className="relative my-6">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-slate-200" />
+          <div className="w-full border-t border-slate-300" />
         </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-white px-2 text-slate-400">{dict.or}</span>
+        <div className="relative flex justify-center text-xs uppercase font-extrabold tracking-wider">
+          <span className="bg-white px-2.5 text-slate-700">{dict.or}</span>
         </div>
       </div>
 
       <div className="flex flex-col gap-3">
         <a
           href={`${API_URL}/auth/google?redirect=${encodeURIComponent(`/${locale}/auth/social-callback?next=${next}`)}`}
-          className="flex items-center justify-center gap-3 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98]"
+          className="flex items-center justify-center gap-3 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-900 shadow-2xs transition-all hover:border-slate-400 hover:bg-slate-50 active:scale-[0.98]"
         >
           <GoogleIcon />
           {dict.googleLogin}
         </a>
         <a
           href={`${API_URL}/auth/facebook?redirect=${encodeURIComponent(`/${locale}/auth/social-callback?next=${next}`)}`}
-          className="flex items-center justify-center gap-3 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98]"
+          className="flex items-center justify-center gap-3 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-900 shadow-2xs transition-all hover:border-slate-400 hover:bg-slate-50 active:scale-[0.98]"
         >
           <FacebookIcon />
           {dict.facebookLogin}

@@ -4,10 +4,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { HotelsDict } from "@/i18n/dictionaries";
 import { Select } from "@/components/ui/Select";
 
-/**
- * Saralash — natijalar tepasidagi mustaqil dropdown. O'zgarishi bilan darhol
- * qo'llanadi ("Qo'llash" shart emas) va sahifani 1-ga qaytaradi.
- */
 export function HotelSortSelect({ dict }: { dict: HotelsDict["sort"] }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -25,7 +21,9 @@ export function HotelSortSelect({ dict }: { dict: HotelsDict["sort"] }) {
 
   return (
     <label className="flex items-center gap-2 text-sm">
-      <span className="whitespace-nowrap text-slate-500">{dict.label}:</span>
+      <span className="whitespace-nowrap text-xs font-extrabold uppercase tracking-wider text-slate-700">
+        {dict.label}:
+      </span>
       <div className="w-48 sm:w-56">
         <Select
           value={current}

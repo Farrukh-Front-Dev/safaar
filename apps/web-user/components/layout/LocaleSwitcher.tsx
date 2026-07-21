@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Check } from "lucide-react";
 import { locales, localeNames, type Locale } from "@/i18n/config";
+import ShinyText from "@/components/ui/ShinyText";
 import { cn } from "@/lib/cn";
 
 /**
@@ -59,14 +60,20 @@ export function LocaleSwitcher({ current, light }: { current: Locale; light?: bo
           "inline-flex h-8 items-center rounded-full border px-3.5 text-xs font-bold uppercase tracking-wide transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 active:scale-95",
           light
             ? open
-              ? "border-primary-200 bg-primary-50 text-primary-700 shadow-sm"
-              : "border-slate-300 bg-white text-slate-900 shadow-btn hover:bg-slate-50 hover:border-slate-400 hover:shadow-btn-hover active:bg-slate-100 active:shadow-btn-active active:scale-[0.97]"
+              ? "border-primary-200 bg-primary-50 text-primary-700 shadow-xs"
+              : "border-slate-300 bg-white text-slate-900 shadow-xs hover:bg-slate-50 hover:border-slate-400 active:bg-slate-100 active:scale-[0.97]"
             : open
-              ? "border-white/50 bg-white/20 text-white shadow-sm"
-              : "border-white/40 bg-transparent text-white/80 hover:bg-white/10 hover:border-white/60 hover:text-white",
+              ? "border-white/50 bg-white/20 text-white shadow-xs"
+              : "border-white/40 bg-transparent text-white/90 hover:bg-white/10 hover:border-white/60 hover:text-white",
         )}
       >
-        {current}
+        <ShinyText
+          text={current.toUpperCase()}
+          speed={12}
+          color={light ? "#0f172a" : "#ffffff"}
+          shineColor={light ? "#2563eb" : "#7dd3fc"}
+          className="text-xs font-bold uppercase tracking-wide"
+        />
       </button>
 
       {open && (

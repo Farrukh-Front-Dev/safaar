@@ -78,15 +78,15 @@ export function RegisterForm({
   return (
     <AuthSplitLayout locale={locale} dict={dict}>
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold">{dict.registerTitle}</h1>
-        <p className="text-sm text-slate-500">{dict.registerSubtitle}</p>
+        <h1 className="text-2xl font-black tracking-tight text-slate-900">{dict.registerTitle}</h1>
+        <p className="text-sm font-bold text-slate-700">{dict.registerSubtitle}</p>
       </header>
 
       <form action={action} className="flex flex-col gap-4">
-        {/* Telefon + Send code — always visible */}
+        {/* Telefon + Send code */}
         <div className="flex items-end gap-2">
-          <label className="flex flex-1 flex-col gap-1">
-            <span className="text-sm font-medium">{dict.phone}</span>
+          <label className="flex flex-1 flex-col gap-1.5">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">{dict.phone}</span>
             <Input
               name="phone"
               type="tel"
@@ -104,24 +104,25 @@ export function RegisterForm({
             loading={sending}
             disabled={otpState.ok && !otpState.error}
             formAction={requestAction}
+            className="rounded-xl border border-slate-300 bg-white font-bold text-slate-900 shadow-2xs hover:bg-slate-50 hover:border-slate-400"
           >
             {otpState.ok ? dict.codeSent : dict.sendCode}
           </Button>
         </div>
 
         {otpState.error && (
-          <p className="-mt-2 text-sm text-red-600">{otpState.error === "PHONE_REQUIRED" ? dict.phoneRequired : dict.error}</p>
+          <p className="-mt-2 text-sm font-bold text-red-600">{otpState.error === "PHONE_REQUIRED" ? dict.phoneRequired : dict.error}</p>
         )}
 
         {otpState.devCode && (
-          <p className="rounded-lg border border-primary-200 bg-primary-50 px-3 py-2 text-sm text-primary-800">
+          <p className="rounded-xl border border-blue-300 bg-blue-50 px-3 py-2 text-sm font-bold text-blue-900">
             {dict.devCode}: <strong>{otpState.devCode}</strong>
           </p>
         )}
 
         {/* OTP input */}
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">{dict.code}</span>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">{dict.code}</span>
           <Input
             name="code"
             inputMode="numeric"
@@ -132,11 +133,11 @@ export function RegisterForm({
           />
         </label>
 
-        <hr className="border-slate-200" />
+        <hr className="border-slate-300" />
 
         {/* Profile fields */}
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">
+        <label className="flex flex-col gap-1.5">
+          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
             {dict.firstName} <span className="text-red-500">*</span>
           </span>
           <Input
@@ -146,16 +147,16 @@ export function RegisterForm({
           />
         </label>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">{dict.lastName}</span>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">{dict.lastName}</span>
           <Input
             name="lastName"
             placeholder={dict.lastNamePlaceholder}
           />
         </label>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">{dict.email}</span>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">{dict.email}</span>
           <Input
             name="email"
             type="email"
@@ -167,8 +168,8 @@ export function RegisterForm({
         </label>
 
         {/* Password */}
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">{dict.password}</span>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">{dict.password}</span>
           <div className="relative">
             <Input
               name="password"
@@ -182,7 +183,7 @@ export function RegisterForm({
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 hover:text-slate-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-500 hover:text-slate-700 font-bold"
               aria-label={showPassword ? "Parolni yashirish" : "Parolni ko'rsatish"}
             >
               {showPassword ? "🙈" : "👁"}
@@ -202,19 +203,19 @@ export function RegisterForm({
                 />
               ))}
             </div>
-            <p className="text-xs text-slate-500">{strength.label}</p>
+            <p className="text-xs font-bold text-slate-700">{strength.label}</p>
           </div>
         )}
 
         {/* Password requirements checklist */}
-        <div className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
-          <p className="mb-1 font-medium">{dict.passwordRequirements}</p>
-          <ul className="list-inside list-disc space-y-0.5">
-            <li className={password.length >= 8 ? "text-green-600" : ""}>{dict.passwordMinChars}</li>
-            <li className={/[A-Z]/.test(password) ? "text-green-600" : ""}>{dict.passwordUppercase}</li>
-            <li className={/[a-z]/.test(password) ? "text-green-600" : ""}>{dict.passwordLowercase}</li>
-            <li className={/[0-9]/.test(password) ? "text-green-600" : ""}>{dict.passwordNumber}</li>
-            <li className={/[^A-Za-z0-9]/.test(password) ? "text-green-600" : ""}>{dict.passwordSpecial}</li>
+        <div className="rounded-xl border border-slate-300 bg-slate-50 p-3.5 text-xs text-slate-700">
+          <p className="mb-1 font-extrabold uppercase tracking-wider text-slate-800">{dict.passwordRequirements}</p>
+          <ul className="list-inside list-disc space-y-0.5 font-bold">
+            <li className={password.length >= 8 ? "text-green-700 font-extrabold" : ""}>{dict.passwordMinChars}</li>
+            <li className={/[A-Z]/.test(password) ? "text-green-700 font-extrabold" : ""}>{dict.passwordUppercase}</li>
+            <li className={/[a-z]/.test(password) ? "text-green-700 font-extrabold" : ""}>{dict.passwordLowercase}</li>
+            <li className={/[0-9]/.test(password) ? "text-green-700 font-extrabold" : ""}>{dict.passwordNumber}</li>
+            <li className={/[^A-Za-z0-9]/.test(password) ? "text-green-700 font-extrabold" : ""}>{dict.passwordSpecial}</li>
           </ul>
         </div>
 
@@ -222,7 +223,7 @@ export function RegisterForm({
         <input type="hidden" name="next" value={next} />
 
         {errorMsg && (
-          <p className="text-sm text-red-600">
+          <p className="text-sm font-bold text-red-600">
             {passwordErrorMap[errorMsg] ||
               (profileState.error === "FIRST_NAME_REQUIRED"
                 ? dict.firstNameRequired
@@ -232,15 +233,15 @@ export function RegisterForm({
           </p>
         )}
 
-        <Button type="submit" size="lg" loading={loading}>
+        <Button type="submit" size="lg" loading={loading} className="rounded-xl bg-blue-600 font-bold text-white shadow-xs hover:bg-blue-700">
           {dict.verifyAndRegister}
         </Button>
 
-        <p className="text-center text-sm text-slate-500">
+        <p className="text-center text-sm font-bold text-slate-700">
           {dict.hasAccount}{" "}
           <Link
             href={`/${locale}/login${next ? `?next=${encodeURIComponent(next)}` : ""}`}
-            className="font-medium text-primary-600 hover:text-primary-500"
+            className="font-extrabold text-blue-700 hover:text-blue-800"
           >
             {dict.login}
           </Link>

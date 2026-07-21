@@ -43,9 +43,15 @@ export function SiteHeader({
     <div className="flex items-center gap-1.5">
       <Link
         href={`${base}/account`}
-        className="inline-flex h-8 items-center justify-center rounded-full px-3 text-sm font-medium text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+        className="inline-flex h-8 items-center justify-center rounded-full px-3.5 text-sm font-bold text-white transition-colors hover:bg-white/20"
       >
-        {dict.actions.account}
+        <ShinyText
+          text={dict.actions.account}
+          speed={12}
+          color="#ffffff"
+          shineColor="#7dd3fc"
+          className="text-sm font-bold text-white"
+        />
       </Link>
       <form action={logoutAction.bind(null, locale)}>
         <Button size="sm" variant="secondary" type="submit">
@@ -57,26 +63,26 @@ export function SiteHeader({
     <div className="flex items-center gap-2">
       <Link
         href={`/${locale}/login`}
-        className="inline-flex h-9 items-center justify-center rounded-full bg-white px-4 text-sm font-medium text-primary-700 shadow-btn transition-all duration-150 hover:bg-white/90 hover:shadow-btn-hover active:scale-[0.97]"
+        className="inline-flex h-9 items-center justify-center rounded-full border border-white/50 bg-white/10 px-4 text-xs font-bold text-white shadow-xs backdrop-blur-md transition-all duration-150 hover:bg-white/20 hover:border-white/70 active:scale-[0.97]"
       >
         <ShinyText
           text={dict.actions.login}
-          speed={3}
-          color="#1d4ed8"
-          shineColor="#93c5fd"
-          className="text-sm font-medium"
+          speed={12}
+          color="#ffffff"
+          shineColor="#7dd3fc"
+          className="text-xs font-bold text-white"
         />
       </Link>
       <Link
         href={`/${locale}/register`}
-        className="inline-flex h-9 items-center justify-center rounded-full bg-white px-4 text-sm font-medium text-primary-700 shadow-btn transition-all duration-150 hover:bg-white/90 hover:shadow-btn-hover active:scale-[0.97]"
+        className="inline-flex h-9 items-center justify-center rounded-full bg-white px-4 text-xs font-bold text-blue-700 shadow-sm transition-all duration-150 hover:bg-white/95 active:scale-[0.97]"
       >
         <ShinyText
           text={dict.actions.register}
-          speed={3}
+          speed={12}
           color="#1d4ed8"
-          shineColor="#93c5fd"
-          className="text-sm font-medium"
+          shineColor="#38bdf8"
+          className="text-xs font-bold"
         />
       </Link>
     </div>
@@ -86,9 +92,15 @@ export function SiteHeader({
     <div className="flex items-center gap-1.5">
       <Link
         href={`${base}/account`}
-        className="inline-flex h-8 items-center justify-center rounded-full px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+        className="inline-flex h-8 items-center justify-center rounded-full px-3.5 text-sm font-bold text-slate-900 transition-colors hover:bg-slate-100"
       >
-        {dict.actions.account}
+        <ShinyText
+          text={dict.actions.account}
+          speed={12}
+          color="#0f172a"
+          shineColor="#2563eb"
+          className="text-sm font-bold"
+        />
       </Link>
       <form action={logoutAction.bind(null, locale)}>
         <Button size="sm" variant="secondary" type="submit">
@@ -100,20 +112,26 @@ export function SiteHeader({
     <div className="flex flex-col gap-2">
       <Link
         href={`/${locale}/login`}
-        className="inline-flex h-10 items-center justify-center rounded-full border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 shadow-btn transition-all duration-150 hover:bg-slate-50 hover:shadow-btn-hover active:scale-[0.97]"
+        className="inline-flex h-10 items-center justify-center rounded-full border border-slate-300 bg-white px-4 text-sm font-bold text-slate-900 shadow-xs transition-all duration-150 hover:bg-slate-50 active:scale-[0.97]"
       >
-        {dict.actions.login}
+        <ShinyText
+          text={dict.actions.login}
+          speed={12}
+          color="#0f172a"
+          shineColor="#2563eb"
+          className="text-sm font-bold"
+        />
       </Link>
       <Link
         href={`/${locale}/register`}
-        className="inline-flex h-10 items-center justify-center rounded-full bg-primary-600 px-4 text-sm font-medium text-white shadow-btn transition-all duration-150 hover:bg-primary-500 hover:shadow-btn-hover active:bg-primary-700 active:shadow-btn-active active:scale-[0.97]"
+        className="inline-flex h-10 items-center justify-center rounded-full bg-blue-600 px-4 text-sm font-bold text-white shadow-xs transition-all duration-150 hover:bg-blue-700 active:scale-[0.97]"
       >
         <ShinyText
           text={dict.actions.register}
-          speed={3}
+          speed={12}
           color="#ffffff"
-          shineColor="#bbf7d0"
-          className="text-sm font-medium"
+          shineColor="#7dd3fc"
+          className="text-sm font-bold text-white"
         />
       </Link>
     </div>

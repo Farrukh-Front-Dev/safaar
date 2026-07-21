@@ -1,10 +1,7 @@
 "use client";
 
-import {
-  useState,
-  useRef,
-  useEffect,
-} from "react";
+import { useState, useRef, useEffect } from "react";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 export interface SelectOption {
@@ -59,34 +56,24 @@ export function Select({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={ariaLabel}
-        className="flex h-10 w-full items-center justify-between gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm text-slate-900 shadow-btn transition-all hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover focus-visible:border-primary-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 active:bg-slate-100"
+        className="flex h-10.5 w-full items-center justify-between gap-2 rounded-xl border border-slate-300 bg-white px-3.5 text-sm font-bold text-slate-900 shadow-2xs transition-all hover:border-slate-400 focus-visible:border-blue-600 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500/20 active:bg-slate-50"
       >
-        <span className={cn("truncate", !selected && "text-slate-400")}>
+        <span className={cn("truncate", !selected && "text-slate-500 font-medium")}>
           {display}
         </span>
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
+        <ChevronDown
           className={cn(
-            "h-4 w-4 shrink-0 text-slate-400 transition-transform",
+            "h-4 w-4 shrink-0 text-slate-600 transition-transform duration-200",
             open && "rotate-180",
           )}
           aria-hidden
-        >
-          <path
-            d="m6 9 6 6 6-6"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        />
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-1.5 w-full min-w-44 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
+        <div className="absolute left-0 top-full z-50 mt-2 w-full min-w-44 rounded-xl border border-slate-300 bg-white p-1.5 shadow-xl">
           {options.length === 0 && (
-            <span className="block px-3 py-2 text-sm text-slate-400">—</span>
+            <span className="block px-3 py-2 text-sm text-slate-500">—</span>
           )}
           {options.map((opt) => {
             const active = opt.value === value;
@@ -101,10 +88,10 @@ export function Select({
                   setOpen(false);
                 }}
                 className={cn(
-                  "flex w-full items-center rounded-full px-3 py-2 text-sm font-medium transition-all active:scale-[0.97]",
+                  "flex w-full items-center rounded-lg px-3 py-2 text-sm font-bold transition-all active:scale-[0.98]",
                   active
-                    ? "bg-primary-600 text-white"
-                    : "text-slate-700 hover:bg-primary-50 hover:text-primary-700",
+                    ? "bg-blue-600 text-white shadow-xs"
+                    : "text-slate-900 hover:bg-slate-100",
                 )}
               >
                 {opt.label}

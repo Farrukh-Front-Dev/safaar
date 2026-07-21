@@ -1,22 +1,54 @@
 import Link from "next/link";
 import Image from "next/image";
 import { api } from "@/lib/api";
-import { resolveImage } from "@/lib/images";
 import type { Locale } from "@/i18n/config";
 import type { HomeDict } from "@/i18n/dictionaries";
 
+/** Real, high-definition Uzbekistan city photos mapping */
 const KNOWN_CITY_IMAGES: Record<string, string> = {
   toshkent: "/Tashkent-city-skyline.jpeg",
+  tashkent: "/Tashkent-city-skyline.jpeg",
   samarqand: "/Samarkand-Registan-cinematic.jpeg",
+  samarkand: "/Samarkand-Registan-cinematic.jpeg",
   buxoro: "/Bukhara-old-city-golden-hour.jpeg",
+  bukhara: "/Bukhara-old-city-golden-hour.jpeg",
   xiva: "/Khiva-Ichan-Kala-aerial.jpeg",
-  fargona: "/Uzbekistan-travel.jpeg",
-  namangan: "/Uzbekistan-travel.jpeg",
+  khiva: "/Khiva-Ichan-Kala-aerial.jpeg",
   charvak: "/Charvak-Lake-drone.jpeg",
+  chorvoq: "/Charvak-Lake-drone.jpeg",
   chimgan: "/Chimgan-mountains-landscape.jpeg",
+  chimgon: "/Chimgan-mountains-landscape.jpeg",
   zaamin: "/Zaamin.jpeg",
+  zomin: "/Zaamin.jpeg",
+  fargona: "/Uzbekistan-travel.jpeg",
+  fergana: "/Uzbekistan-travel.jpeg",
+  namangan: "/Uzbekistan-travel.jpeg",
+  andijon: "/Uzbekistan-travel.jpeg",
+  andijan: "/Uzbekistan-travel.jpeg",
   nukus: "/Uzbekistan-travel.jpeg",
+  termez: "/Uzbekistan-travel.jpeg",
+  termiz: "/Uzbekistan-travel.jpeg",
 };
+
+/**
+ * Resolves authentic city image URL.
+ * Prefers real backend HTTP/HTTPS/Local URL if present, otherwise uses authentic local city photo.
+ */
+function getCityImage(imageUrl?: string | null, slug?: string, name?: string): string {
+  if (imageUrl && (imageUrl.startsWith("http://") || imageUrl.startsWith("https://") || imageUrl.startsWith("/"))) {
+    return imageUrl;
+  }
+
+  const slugKey = (slug || "").toLowerCase().trim();
+  const nameKey = (name || "").toLowerCase().trim();
+
+  return (
+    KNOWN_CITY_IMAGES[slugKey] ??
+    KNOWN_CITY_IMAGES[nameKey] ??
+    Object.entries(KNOWN_CITY_IMAGES).find(([k]) => slugKey.includes(k) || nameKey.includes(k))?.[1] ??
+    "/Uzbekistan-travel.jpeg"
+  );
+}
 
 export async function CityCardsSection({
   locale,
@@ -31,11 +63,7 @@ export async function CityCardsSection({
     .slice(0, 8)
     .map((c) => ({
       name: c.name,
-      image:
-        resolveImage(c.imageUrl, c.slug, 600, 450) ??
-        c.imageUrl ??
-        KNOWN_CITY_IMAGES[c.slug.toLowerCase()] ??
-        "/Uzbekistan-travel.jpeg",
+      image: getCityImage(c.imageUrl, c.slug, c.name),
       hotelCount: String(c.hotelCount),
       href: `/${locale}/hotels?city_id=${encodeURIComponent(c.slug)}`,
     }))
@@ -63,7 +91,7 @@ export async function CityCardsSection({
             <Link
               key={city.name}
               href={city.href}
-              className="group relative w-1/2 shrink-0 snap-start overflow-hidden rounded-xl border border-slate-200 bg-white shadow-btn transition-all duration-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:scale-[0.97] active:shadow-btn-active sm:w-auto sm:rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:border-slate-800 dark:bg-slate-900"
+              className="group relative w-1/2 shrink-0 snap-start overflow-hidden rounded-2xl border-2 border-slate-300 bg-white shadow-md transition-all duration-200 hover:border-blue-500 hover:shadow-xl active:scale-[0.98] sm:w-auto"
             >
               <div className="relative aspect-[3/4] overflow-hidden sm:aspect-4/3">
                 <Image

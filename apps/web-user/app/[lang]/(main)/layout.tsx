@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth/session";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { PromoBar } from "@/components/layout/PromoBar";
 import { SiteFooter } from "@/components/layout/SiteFooter";
+import { getPromoBarConfig } from "@/lib/promo";
 
 /**
  * Main layout — SiteHeader + PromoBar + Footer.
@@ -19,12 +20,15 @@ export default async function MainLayout({
   const { lang } = await params;
   const locale = (isLocale(lang) ? lang : "uz") as Locale;
 
-  const common = await getDictionary(locale, "common");
-  const session = await getSession();
+  const [common, session, promoConfig] = await Promise.all([
+    getDictionary(locale, "common"),
+    getSession(),
+    getPromoBarConfig(locale),
+  ]);
 
   return (
     <>
-      {common.promo && <PromoBar text={common.promo} />}
+      <PromoBar config={promoConfig} fallbackText={common.promo} locale={locale} />
       <SiteHeader locale={locale} dict={common} authed={!!session} />
       <div className="flex flex-1 flex-col">{children}</div>
       <SiteFooter locale={locale} dict={common} />

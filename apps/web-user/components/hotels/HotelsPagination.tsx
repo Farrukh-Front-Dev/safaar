@@ -1,10 +1,6 @@
 import Link from "next/link";
 import type { HotelsDict } from "@/i18n/dictionaries";
 
-/**
- * Sahifalash — server komponent, oddiy `Link`'lar (JS shart emas).
- * Joriy parametrlarni saqlab, faqat `page`ni o'zgartiradi.
- */
 export function HotelsPagination({
   basePath,
   params,
@@ -40,7 +36,7 @@ export function HotelsPagination({
       <PageLink href={href(page - 1)} disabled={page <= 1}>
         {dict.prev}
       </PageLink>
-      <span className="text-sm text-slate-500" aria-current="page">
+      <span className="text-xs font-bold uppercase tracking-wider text-slate-700" aria-current="page">
         {label}
       </span>
       <PageLink href={href(page + 1)} disabled={page >= totalPages}>
@@ -59,12 +55,12 @@ function PageLink({
   disabled: boolean;
   children: React.ReactNode;
 }) {
-  const base = "rounded-full border px-4 py-2 text-sm font-medium transition-all duration-150 shadow-btn";
+  const base = "rounded-xl border px-4 py-2 text-xs font-bold uppercase tracking-wide transition-all duration-150 shadow-2xs";
   if (disabled) {
     return (
       <span
         aria-disabled="true"
-        className={`${base} border-slate-200 text-slate-300 bg-white`}
+        className={`${base} border-slate-200 text-slate-300 bg-white opacity-40`}
       >
         {children}
       </span>
@@ -73,7 +69,7 @@ function PageLink({
   return (
     <Link
       href={href}
-      className={`${base} border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:scale-[0.97] active:shadow-btn-active`}
+      className={`${base} border-slate-300 bg-white text-slate-900 hover:bg-slate-50 hover:border-slate-400 active:bg-slate-100 active:scale-[0.97]`}
     >
       {children}
     </Link>

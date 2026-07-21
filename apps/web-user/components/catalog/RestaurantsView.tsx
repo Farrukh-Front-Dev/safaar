@@ -89,13 +89,13 @@ export function RestaurantsView() {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
-      {/* Hero Header */}
-      <header className="relative mb-8 overflow-hidden rounded-3xl bg-linear-to-r from-slate-900 via-primary-950 to-slate-900 p-6 sm:p-10 text-white shadow-xl">
+      {/* Hero Header — Safaar Primary Brand Blue & Dark Navy */}
+      <header className="relative mb-8 overflow-hidden rounded-3xl bg-linear-to-r from-primary-950 via-primary-900 to-slate-900 p-6 sm:p-10 text-white shadow-xl">
         <div className="relative z-10 max-w-2xl">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-400/30 bg-primary-500/20 px-3 py-1 text-xs font-semibold text-primary-300">
-            <Utensils className="h-3.5 w-3.5" /> Milliy va Xalqaro Oshxona
+            <Utensils className="h-3.5 w-3.5 text-primary-400" /> Milliy va Xalqaro Oshxona
           </span>
-          <h1 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl">
+          <h1 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-4xl text-white">
             O'zbekistonning Eng Saralangan Restoranlari
           </h1>
           <p className="mt-2 text-sm text-slate-300 sm:text-base">
@@ -117,7 +117,7 @@ export function RestaurantsView() {
             <select
               value={selectedCity}
               onChange={(e) => setSelectedCity(e.target.value)}
-              className="rounded-2xl border border-white/10 bg-white/10 px-4 py-2.5 text-sm text-white backdrop-blur-md focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-400"
+              className="rounded-2xl border border-white/10 bg-white/10 px-4 py-2.5 text-sm text-white backdrop-blur-md focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-400"
             >
               <option value="all" className="bg-slate-900 text-white">Barcha shaharlar</option>
               <option value="Toshkent" className="bg-slate-900 text-white">Toshkent</option>
@@ -134,17 +134,17 @@ export function RestaurantsView() {
         {filtered.map((item) => (
           <article
             key={item.id}
-            className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-btn transition-all duration-200 hover:border-slate-300 hover:shadow-btn-hover sm:flex-row dark:border-slate-800 dark:bg-slate-900"
+            className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-btn transition-all duration-200 hover:border-slate-300 hover:shadow-btn-hover active:scale-[0.99] sm:flex-row dark:border-slate-800 dark:bg-slate-900"
           >
-            <div className="relative aspect-16/10 shrink-0 overflow-hidden sm:w-48 sm:aspect-auto">
+            <div className="relative aspect-16/10 shrink-0 overflow-hidden sm:w-48 sm:aspect-auto bg-primary-50">
               <Image
                 src={item.imageUrl}
                 alt={item.name}
                 fill
                 sizes="(max-width: 640px) 100vw, 200px"
-                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
               />
-              <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white/90 px-2 py-0.5 text-xs font-bold text-amber-600 shadow-btn backdrop-blur-xs dark:border-slate-700 dark:bg-slate-900/90 dark:text-amber-400">
+              <span className="absolute left-2.5 top-2.5 z-10 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white/90 px-2 py-0.5 text-xs font-bold text-amber-600 shadow-btn backdrop-blur-xs dark:border-slate-700 dark:bg-slate-900/90 dark:text-amber-400">
                 <Star className="h-3.5 w-3.5 fill-current" />
                 {item.rating.toFixed(1)}
               </span>
@@ -156,7 +156,7 @@ export function RestaurantsView() {
                   <h2 className="text-base font-bold text-slate-900 dark:text-white sm:text-lg">
                     {item.name}
                   </h2>
-                  <span className="shrink-0 rounded-md bg-primary-50 px-2 py-0.5 text-[11px] font-semibold text-primary-700 dark:bg-primary-950 dark:text-primary-300">
+                  <span className="shrink-0 rounded-full bg-primary-50 px-2.5 py-0.5 text-[11px] font-semibold text-primary-700 dark:bg-primary-950 dark:text-primary-300">
                     {item.cuisine}
                   </span>
                 </div>
@@ -171,7 +171,7 @@ export function RestaurantsView() {
                     <Clock className="h-3.5 w-3.5 text-slate-400" />
                     {item.workingHours}
                   </span>
-                  <span className="font-semibold text-primary-700 dark:text-primary-400">
+                  <span className="font-bold text-primary-700 dark:text-primary-400">
                     O'rtacha chek: {formatSum(item.averageCheckSum)}
                   </span>
                 </div>
@@ -188,7 +188,7 @@ export function RestaurantsView() {
                 <button
                   type="button"
                   onClick={() => alert(`"Stol band qilish" xizmati tez orada ishga tushadi! Bog'lanish: ${item.phone}`)}
-                  className="rounded-full bg-primary-600 px-4 py-1.5 text-xs font-semibold text-white shadow-btn transition-all hover:bg-primary-700 active:scale-95"
+                  className="rounded-full bg-accent-600 px-4 py-1.5 text-xs font-bold text-white shadow-btn transition-all hover:bg-accent-500 active:scale-95"
                 >
                   Stol band qilish
                 </button>

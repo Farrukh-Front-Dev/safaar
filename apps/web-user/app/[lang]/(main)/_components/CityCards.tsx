@@ -5,7 +5,6 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { HomeDict } from "@/i18n/dictionaries";
-import { resolveImage } from "@/lib/images";
 
 export interface CityCardData {
   name: string;
@@ -94,7 +93,7 @@ export function CityCards({
           >
             <div className="aspect-[3/4] overflow-hidden sm:aspect-4/3">
               <img
-                src={resolveImage(city.image, city.name, 600, 450) ?? ""}
+                src={city.image || "/Uzbekistan-travel.jpeg"}
                 alt={city.name}
                 loading="lazy"
                 className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"

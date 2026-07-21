@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { motion, useMotionValue, useAnimationFrame, useTransform } from "motion/react";
 
-interface ShinyTextProps {
+export interface ShinyTextProps {
   text: string;
   disabled?: boolean;
   speed?: number;
@@ -15,20 +15,27 @@ interface ShinyTextProps {
   pauseOnHover?: boolean;
   direction?: "left" | "right";
   delay?: number;
+  /**
+   * "css" uses GPU hardware-accelerated CSS keyframes (0% JS thread CPU overhead).
+   * "js" uses Framer Motion frame loop.
+   * Default is "css" for maximum performance.
+   */
+  mode?: "css" | "js";
 }
 
 const ShinyText: React.FC<ShinyTextProps> = ({
   text,
   disabled = false,
-  speed = 2,
+  speed = 12,
   className = "",
-  color = "#b5b5b5",
-  shineColor = "#ffffff",
-  spread = 120,
+  color = "#ffffff",
+  shineColor = "#7dd3fc",
+  spread = 110,
   yoyo = false,
   pauseOnHover = false,
   direction = "left",
   delay = 0,
+  mode = "css",
 }) => {
   const [isPaused, setIsPaused] = useState(false);
   const progress = useMotionValue(0);
@@ -40,7 +47,7 @@ const ShinyText: React.FC<ShinyTextProps> = ({
   const delayDuration = delay * 1000;
 
   useAnimationFrame((time) => {
-    if (disabled || isPaused) {
+    if (mode === "css" || disabled || isPaused) {
       lastTimeRef.current = null;
       return;
     }
@@ -89,12 +96,11 @@ const ShinyText: React.FC<ShinyTextProps> = ({
     directionRef.current = direction === "left" ? 1 : -1;
     elapsedRef.current = 0;
     progress.set(0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [direction]);
+  }, [direction, progress]);
 
   const backgroundPosition = useTransform(
     progress,
-    (p) => `${150 - p * 2}% center`,
+    (p) => `${130 - p * 2.6}% center`
   );
 
   const handleMouseEnter = useCallback(() => {
@@ -105,9 +111,37 @@ const ShinyText: React.FC<ShinyTextProps> = ({
     if (pauseOnHover) setIsPaused(false);
   }, [pauseOnHover]);
 
-  const gradientStyle: React.CSSProperties = {
-    backgroundImage: `linear-gradient(${spread}deg, ${color} 0%, ${color} 35%, ${shineColor} 50%, ${color} 65%, ${color} 100%)`,
-    backgroundSize: "200% auto",
+  // High contrast white base text + concentrated sky blue shine beam
+  const baseGradient = `linear-gradient(${spread}deg, ${color} 0%, ${color} 38%, ${shineColor} 50%, ${color} 62%, ${color} 100%)`;
+
+  if (mode === "css") {
+    const cssStyle: React.CSSProperties = {
+      backgroundImage: baseGradient,
+      backgroundSize: "220% 100%",
+      WebkitBackgroundClip: "text",
+      backgroundClip: "text",
+      WebkitTextFillColor: "transparent",
+      animation: disabled
+        ? "none"
+        : `shinySweep ${speed}s ease-in-out infinite${delay ? ` ${delay}s` : ""}`,
+      willChange: "background-position",
+    };
+
+    return (
+      <span
+        className={`inline-block ${className}`}
+        style={cssStyle}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        {text}
+      </span>
+    );
+  }
+
+  const jsGradientStyle: React.CSSProperties = {
+    backgroundImage: baseGradient,
+    backgroundSize: "220% auto",
     WebkitBackgroundClip: "text",
     backgroundClip: "text",
     WebkitTextFillColor: "transparent",
@@ -116,7 +150,7 @@ const ShinyText: React.FC<ShinyTextProps> = ({
   return (
     <motion.span
       className={`inline-block ${className}`}
-      style={{ ...gradientStyle, backgroundPosition }}
+      style={{ ...jsGradientStyle, backgroundPosition }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >

@@ -3,11 +3,8 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { HotelsDict } from "@/i18n/dictionaries";
 import { formatSum } from "@/lib/money";
+import { X } from "lucide-react";
 
-/**
- * Faol filtrlarni chip ko'rinishida ko'rsatadi; har biri olib tashlanadi.
- * "Filtrlarni tozalash" hammasini bekor qiladi (city/sana saqlanadi).
- */
 export function ActiveFilters({ dict }: { dict: HotelsDict }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -64,18 +61,16 @@ export function ActiveFilters({ dict }: { dict: HotelsDict }) {
           type="button"
           onClick={() => remove([chip.key])}
           aria-label={`${dict.removeFilter}: ${chip.label}`}
-          className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-sm font-medium text-primary-700 shadow-btn transition-all hover:bg-primary-100 hover:border-primary-300 hover:shadow-btn-hover active:bg-primary-200 active:scale-[0.97]"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-950 shadow-2xs transition-all hover:bg-blue-100 hover:border-blue-400 active:scale-[0.97]"
         >
-          {chip.label}
-          <span aria-hidden className="text-base leading-none">
-            ×
-          </span>
+          <span>{chip.label}</span>
+          <X className="h-3.5 w-3.5 stroke-[2.5] text-blue-700" aria-hidden />
         </button>
       ))}
       <button
         type="button"
         onClick={() => remove(["stars", "min_price", "max_price", "sort"])}
-        className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-medium text-slate-600 shadow-btn transition-all hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:scale-[0.97] active:shadow-btn-active"
+        className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-800 shadow-2xs transition-all hover:bg-slate-50 hover:border-slate-400 active:scale-[0.97]"
       >
         {dict.clearFilters}
       </button>

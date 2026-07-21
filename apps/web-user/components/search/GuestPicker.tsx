@@ -14,20 +14,22 @@ export function GuestPicker({ value, onChange }: Props) {
         type="button"
         onClick={() => onChange(Math.max(1, value - 1))}
         disabled={value <= 1}
-        className="grid h-6 w-6 place-items-center rounded-full border border-slate-200 text-slate-400 transition-all duration-150 hover:border-blue-300 hover:text-blue-600 active:scale-90 disabled:opacity-30"
+        className="grid h-7 w-7 place-items-center rounded-full border border-slate-300 bg-slate-50 text-slate-800 transition-all duration-150 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700 active:scale-90 disabled:opacity-30 disabled:hover:bg-slate-50 disabled:hover:text-slate-800"
+        aria-label="Kamaytirish"
       >
-        <Minus className="h-3 w-3" />
+        <Minus className="h-3.5 w-3.5 stroke-[2.5]" />
       </button>
-      <span className="w-5 text-center text-sm font-semibold tabular-nums text-slate-900">
+      <span className="min-w-6 text-center text-sm font-bold tabular-nums text-slate-900">
         {value}
       </span>
       <button
         type="button"
         onClick={() => onChange(Math.min(20, value + 1))}
         disabled={value >= 20}
-        className="grid h-6 w-6 place-items-center rounded-full border border-slate-200 text-slate-400 transition-all duration-150 hover:border-blue-300 hover:text-blue-600 active:scale-90 disabled:opacity-30"
+        className="grid h-7 w-7 place-items-center rounded-full border border-slate-300 bg-slate-50 text-slate-800 transition-all duration-150 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700 active:scale-90 disabled:opacity-30 disabled:hover:bg-slate-50 disabled:hover:text-slate-800"
+        aria-label="Oshirish"
       >
-        <Plus className="h-3 w-3" />
+        <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
       </button>
     </div>
   );
