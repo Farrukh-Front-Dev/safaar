@@ -2,7 +2,7 @@
 
 import { CalendarDays, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { BookingStatus } from "@agoda/types";
+import { BookingStatus } from "@safaar/types";
 import { Button } from "../../../_components/ui/button";
 import { PageHeader } from "../../../_components/layout/page-header";
 import { WalkInDialog, type WalkInInitial } from "../../../_components/domain/walk-in-dialog";
