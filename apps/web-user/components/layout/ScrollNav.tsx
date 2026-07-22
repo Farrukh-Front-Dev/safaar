@@ -50,10 +50,11 @@ function NavDropdown({ item, pathname }: { item: ScrollNavItem; pathname: string
     };
   }, [open]);
 
-  const hasActiveChild = item.children && item.children.some(
-    (c) => pathname === c.href || pathname.startsWith(`${c.href}/`),
+  const activeChild = item.children?.find(
+    (c) => isActive(pathname, c.href, c.exact),
   );
-  const active = hasActiveChild || isActive(pathname, item.href, item.exact);
+  const displayItem = activeChild ?? item;
+  const active = Boolean(activeChild) || isActive(pathname, item.href, item.exact);
 
   return (
     <div ref={ref} className="relative">
@@ -62,7 +63,7 @@ function NavDropdown({ item, pathname }: { item: ScrollNavItem; pathname: string
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="true"
-        aria-label={item.label}
+        aria-label={displayItem.label}
         className={cn(
           "inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-bold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80",
           active
@@ -70,8 +71,8 @@ function NavDropdown({ item, pathname }: { item: ScrollNavItem; pathname: string
             : "text-white/95 hover:bg-white/15 hover:text-white",
         )}
       >
-        {item.icon}
-        <span className="text-sm font-bold tracking-wide">{item.label}</span>
+        {displayItem.icon}
+        <span className="text-sm font-bold tracking-wide">{displayItem.label}</span>
         <ChevronDown className={cn("h-3.5 w-3.5 transition-transform text-white/90", open && "rotate-180")} />
       </button>
       {open && item.children && (
