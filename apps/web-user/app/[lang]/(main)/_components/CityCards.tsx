@@ -1,8 +1,8 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { HomeDict } from "@/i18n/dictionaries";
 
@@ -91,12 +91,13 @@ export function CityCards({
             href={city.href}
             className="group relative w-[calc(50%-0.375rem)] shrink-0 snap-start overflow-hidden rounded-xl border border-slate-200 bg-white shadow-btn transition-all duration-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-btn-hover active:bg-slate-100 active:scale-[0.97] active:shadow-btn-active sm:w-[220px] sm:rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
           >
-            <div className="aspect-[3/4] overflow-hidden sm:aspect-4/3">
-              <img
+            <div className="relative aspect-[3/4] overflow-hidden sm:aspect-4/3">
+              <Image
                 src={city.image || "/Uzbekistan-travel.jpeg"}
                 alt={city.name}
-                loading="lazy"
-                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                fill
+                sizes="(max-width: 640px) 50vw, 220px"
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
               />
             </div>
 

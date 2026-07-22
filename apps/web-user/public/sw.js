@@ -2,11 +2,10 @@
  * Maqsad: online ishni BUZMASLIK. Faqat sahifa navigatsiyasi (navigate)
  * tarmoqsiz qolganda offline fallback ko'rsatamiz. Qolgan hamma narsa
  * (API, _next/data, RSC, POST va h.k.) tarmoqqa to'g'ridan-to'g'ri o'tadi.
- *
- * Bu oddiy JS (TS emas) — to'g'ridan-to'g'ri brauzerda ishlaydi.
  */
 
-const CACHE_NAME = "safaar-v1";
+const CACHE_PREFIX = "safaar-cache";
+const CACHE_NAME = `${CACHE_PREFIX}-v1.2.0`;
 
 // Tilga mos offline sahifalar oldindan keshlanadi.
 const OFFLINE_URLS = ["/uz/offline", "/ru/offline", "/en/offline"];
@@ -31,7 +30,7 @@ self.addEventListener("activate", (event) => {
       .then((keys) =>
         Promise.all(
           keys
-            .filter((key) => key !== CACHE_NAME)
+            .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME)
             .map((key) => caches.delete(key)),
         ),
       )
