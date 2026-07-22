@@ -26,6 +26,7 @@ const loaders = {
     reviews: () => import("@/locales/uz/reviews.json"),
     favorites: () => import("@/locales/uz/favorites.json"),
     errors: () => import("@/locales/uz/errors.json"),
+    catalog: () => import("@/locales/uz/catalog.json"),
   },
   ru: {
     common: () => import("@/locales/ru/common.json"),
@@ -40,6 +41,7 @@ const loaders = {
     reviews: () => import("@/locales/ru/reviews.json"),
     favorites: () => import("@/locales/ru/favorites.json"),
     errors: () => import("@/locales/ru/errors.json"),
+    catalog: () => import("@/locales/ru/catalog.json"),
   },
   en: {
     common: () => import("@/locales/en/common.json"),
@@ -54,6 +56,7 @@ const loaders = {
     reviews: () => import("@/locales/en/reviews.json"),
     favorites: () => import("@/locales/en/favorites.json"),
     errors: () => import("@/locales/en/errors.json"),
+    catalog: () => import("@/locales/en/catalog.json"),
   },
 } as const;
 
@@ -79,6 +82,7 @@ export type StaticDict = Dict<"static">;
 export type ReviewsDict = Dict<"reviews">;
 export type FavoritesDict = Dict<"favorites">;
 export type ErrorsDict = Dict<"errors">;
+export type CatalogDict = Dict<"catalog">;
 
 export async function getDictionary<NS extends Namespace>(
   locale: Locale,

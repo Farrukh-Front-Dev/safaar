@@ -8,6 +8,7 @@ import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
+import type { CatalogDict } from "@/i18n/dictionaries";
 
 export interface RestaurantItem {
   id: string;
@@ -78,7 +79,18 @@ const MOCK_RESTAURANTS: RestaurantItem[] = [
   },
 ];
 
-export function RestaurantsView() {
+const FALLBACK_DICT: CatalogDict["restaurants"] = {
+  badge: "Milliy va Xalqaro Oshxona",
+  title: "Restoranlar va Milliy Taomlar",
+  subtitle: "O'zbekistonning eng saralangan restoranlari, milliy oshxonalar va shinam choyxonalari.",
+  searchPlaceholder: "Restoran nomi yoki taom turi bo'yicha qidiruv...",
+  allCities: "Barcha shaharlar",
+  avgCheck: "Chek",
+  reserveTable: "Stol band qilish",
+  comingSoon: "\"Stol band qilish\" xizmati tez orada ishga tushadi! Bog'lanish: {phone}",
+};
+
+export function RestaurantsView({ dict = FALLBACK_DICT }: { dict?: CatalogDict["restaurants"] }) {
   const [query, setQuery] = useState("");
   const [selectedCity, setSelectedCity] = useState("all");
 
@@ -97,13 +109,13 @@ export function RestaurantsView() {
       <div className="mb-8 border-b border-slate-200 pb-6 dark:border-slate-800">
         <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
           <Utensils className="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />
-          <span>Milliy va Xalqaro Oshxona</span>
+          <span>{dict.badge}</span>
         </div>
         <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-          Restoranlar va Milliy Taomlar
+          {dict.title}
         </h1>
         <p className="mt-2 text-base text-slate-600 dark:text-slate-400">
-          O'zbekistonning eng saralangan restoranlari, milliy oshxonalar va shinam choyxonalari.
+          {dict.subtitle}
         </p>
 
         {/* Filters */}
@@ -114,7 +126,7 @@ export function RestaurantsView() {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Restoran nomi yoki taom turi bo'yicha qidiruv..."
+              placeholder={dict.searchPlaceholder}
               className="pl-10"
             />
           </div>
@@ -123,7 +135,7 @@ export function RestaurantsView() {
             onChange={(e) => setSelectedCity(e.target.value)}
             className="h-10 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-900 shadow-xs transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
           >
-            <option value="all">Barcha shaharlar</option>
+            <option value="all">{dict.allCities}</option>
             <option value="Toshkent">Toshkent</option>
             <option value="Samarqand">Samarqand</option>
             <option value="Buxoro">Buxoro</option>
@@ -173,7 +185,7 @@ export function RestaurantsView() {
                     {item.workingHours}
                   </span>
                   <span className="font-semibold text-slate-900 dark:text-white">
-                    Chek: {formatSum(item.averageCheckSum)}
+                    {dict.avgCheck}: {formatSum(item.averageCheckSum)}
                   </span>
                 </div>
               </div>
@@ -190,9 +202,9 @@ export function RestaurantsView() {
                   variant="primary"
                   size="sm"
                   className="w-full text-xs font-bold whitespace-nowrap px-3 sm:w-auto"
-                  onClick={() => alert(`"Stol band qilish" xizmati tez orada ishga tushadi! Bog'lanish: ${item.phone}`)}
+                  onClick={() => alert(dict.comingSoon.replace("{phone}", item.phone))}
                 >
-                  Stol band qilish
+                  {dict.reserveTable}
                 </Button>
               </div>
             </CardBody>

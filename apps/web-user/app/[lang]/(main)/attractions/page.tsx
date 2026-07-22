@@ -11,10 +11,13 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { lang } = await params;
   if (!isLocale(lang)) return {};
-  const common = await getDictionary(lang as Locale, "common");
+  const [commonDict, catalogDict] = await Promise.all([
+    getDictionary(lang as Locale, "common"),
+    getDictionary(lang as Locale, "catalog"),
+  ]);
   return {
-    title: `${common.nav.attractions} — Safaar`,
-    description: "O'zbekistonning tarixiy obidalari va diqqatga sazovor maskanlari.",
+    title: `${commonDict.nav.attractions} — Safaar`,
+    description: catalogDict.attractions.subtitle,
   };
 }
 
@@ -25,10 +28,13 @@ export default async function AttractionsPage({
 }) {
   const { lang } = await params;
   if (!isLocale(lang)) notFound();
+  const locale = lang as Locale;
+
+  const catalogDict = await getDictionary(locale, "catalog");
 
   return (
     <main className="flex flex-1 flex-col">
-      <AttractionsView />
+      <AttractionsView dict={catalogDict.attractions} />
     </main>
   );
 }

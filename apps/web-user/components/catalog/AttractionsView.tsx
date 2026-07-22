@@ -6,6 +6,7 @@ import { Search, MapPin, Compass, Camera, Info } from "lucide-react";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import type { CatalogDict } from "@/i18n/dictionaries";
 
 export interface AttractionItem {
   id: string;
@@ -63,7 +64,18 @@ const MOCK_ATTRACTIONS: AttractionItem[] = [
   },
 ];
 
-export function AttractionsView() {
+const FALLBACK_DICT: CatalogDict["attractions"] = {
+  badge: "Sayohat va Ziyorat",
+  title: "Attraksionlar va Diqqatga Sazovor Joylar",
+  subtitle: "Buyuk Ipak Yo'li durdonalari, ko'hna me'moriy ansambllar va bahavo tog' manzaralari.",
+  searchPlaceholder: "Obida nomi yoki shahar bo'yicha qidiruv...",
+  allPlaces: "Barcha joylar",
+  bestTime: "Ziyorat:",
+  moreInfo: "Batafsil",
+  comingSoon: "{name} bo'yicha ma'lumotlar tez orada kengaytiriladi!",
+};
+
+export function AttractionsView({ dict = FALLBACK_DICT }: { dict?: CatalogDict["attractions"] }) {
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
@@ -83,13 +95,13 @@ export function AttractionsView() {
       <div className="mb-8 border-b border-slate-200 pb-6 dark:border-slate-800">
         <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
           <Compass className="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />
-          <span>Sayohat va Ziyorat</span>
+          <span>{dict.badge}</span>
         </div>
         <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-          Attraksionlar va Diqqatga Sazovor Joylar
+          {dict.title}
         </h1>
         <p className="mt-2 text-base text-slate-600 dark:text-slate-400">
-          Buyuk Ipak Yo'li durdonalari, ko'hna me'moriy ansambllar va bahavo tog' manzaralari.
+          {dict.subtitle}
         </p>
 
         {/* Clean Filter Controls */}
@@ -100,7 +112,7 @@ export function AttractionsView() {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Obida nomi yoki shahar bo'yicha qidiruv..."
+              placeholder={dict.searchPlaceholder}
               className="pl-10"
             />
           </div>
@@ -116,7 +128,7 @@ export function AttractionsView() {
                     : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
                 }`}
               >
-                {cat === "all" ? "Barcha joylar" : cat}
+                {cat === "all" ? dict.allPlaces : cat}
               </button>
             ))}
           </div>
@@ -157,15 +169,15 @@ export function AttractionsView() {
               <div className="mt-4 flex flex-col gap-2.5 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
                 <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300">
                   <Info className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                  <span className="truncate">Ziyorat: {item.bestTimeToVisit}</span>
+                  <span className="truncate">{dict.bestTime} {item.bestTimeToVisit}</span>
                 </span>
                 <Button
                   variant="secondary"
                   size="sm"
                   className="w-full text-xs font-bold whitespace-nowrap px-3 sm:w-auto"
-                  onClick={() => alert(`${item.name} bo'yicha ma'lumotlar tez orada kengaytiriladi!`)}
+                  onClick={() => alert(dict.comingSoon.replace("{name}", item.name))}
                 >
-                  Batafsil
+                  {dict.moreInfo}
                 </Button>
               </div>
             </CardBody>
