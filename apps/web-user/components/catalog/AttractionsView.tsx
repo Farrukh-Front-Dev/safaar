@@ -123,8 +123,8 @@ export function AttractionsView() {
         </div>
       </div>
 
-      {/* Clean Grid Listing */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+      {/* Grid listing: 2 columns mobile, 4 columns desktop */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-4">
         {filtered.map((item) => (
           <Card key={item.id} className="group overflow-hidden">
             <div className="relative aspect-16/9 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">

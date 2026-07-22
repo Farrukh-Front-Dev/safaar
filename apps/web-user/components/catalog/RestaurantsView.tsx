@@ -132,8 +132,8 @@ export function RestaurantsView() {
         </div>
       </div>
 
-      {/* Grid listing */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2">
+      {/* Grid listing: 2 columns mobile, 4 columns desktop */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-4">
         {filtered.map((item) => (
           <Card key={item.id} className="group flex flex-col overflow-hidden">
             {/* Aspect Ratio Container for Image */}
