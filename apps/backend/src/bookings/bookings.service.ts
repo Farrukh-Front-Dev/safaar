@@ -44,7 +44,7 @@ export class BookingsService {
       [hotelId],
     );
     const [room] = await this.pg.query(
-      "SELECT id, base_price, hotel_id FROM hotel_rooms WHERE id = $1 AND hotel_id = $2 AND status = 'active'",
+      "SELECT id, base_price, hotel_id FROM hotel_rooms WHERE id = $1 AND hotel_id = $2 AND status = 'active' FOR UPDATE",
       [roomId, hotelId],
     );
 
@@ -124,7 +124,7 @@ export class BookingsService {
         ).map((s) => s.seat_code);
 
     const seats = await this.pg.query(
-      'SELECT * FROM trip_seats WHERE trip_id = $1 AND seat_code = ANY($2::text[])',
+      'SELECT * FROM trip_seats WHERE trip_id = $1 AND seat_code = ANY($2::text[]) FOR UPDATE',
       [tripId, seatCodes],
     );
 

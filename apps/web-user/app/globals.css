@@ -1,17 +1,56 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "./theme.css";
 
 /*
- * Light-mode only.
- * `dark:` variantini OS sozlamasidan ajratamiz — faqat `.dark` klassi bo'lsa
- * ishlaydi. Biz `.dark` qo'shmaymiz, shuning uchun sayt har doim light qoladi.
+ * Safaar Single Global Design System & Unified Background
  */
 @custom-variant dark (&:where(.dark, .dark *));
 
+:root {
+  /* ── Brand colors ── */
+  --brand-50: #eff6ff;
+  --brand-100: #dbeafe;
+  --brand-200: #bfdbfe;
+  --brand-300: #93c5fd;
+  --brand-400: #60a5fa;
+  --brand-500: #3b82f6;
+  --brand-600: #1d4ed8;
+  --brand-700: #1e40af;
+  --brand-800: #1e3a8a;
+  --brand-900: #172554;
+
+  /* ── Brand Accent ── */
+  --brand-accent-50: #fff7ed;
+  --brand-accent-100: #ffedd5;
+  --brand-accent-400: #fb923c;
+  --brand-accent-500: #f97316;
+  --brand-accent-600: #ea580c;
+  --brand-accent-700: #c2410c;
+
+  /* ── Single Unified Background & Card System ── */
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --card: #f8fafc;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary: #1e3a8a;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #334155;
+  --accent: #f8fafc;
+  --accent-foreground: #0f172a;
+  --destructive: #dc2626;
+  --border: #cbd5e1;
+  --input: #cbd5e1;
+  --ring: #3b82f6;
+  --radius: 0.625rem;
+}
+
 @theme {
-  /* ── Brand ranglar — theme.css'dagi CSS variablelarga bog'langan ── */
   --color-primary-50: var(--brand-50);
   --color-primary-100: var(--brand-100);
   --color-primary-200: var(--brand-200);
@@ -23,7 +62,6 @@
   --color-primary-800: var(--brand-800);
   --color-primary-900: var(--brand-900);
 
-  /* ── Accent ── */
   --color-accent-50: var(--brand-accent-50);
   --color-accent-100: var(--brand-accent-100);
   --color-accent-400: var(--brand-accent-400);
@@ -31,17 +69,13 @@
   --color-accent-600: var(--brand-accent-600);
   --color-accent-700: var(--brand-accent-700);
 
-  /* ── Semantik holat ── */
   --color-success: #16a34a;
   --color-warning: #f59e0b;
   --color-danger: #dc2626;
 
-  /* ── Fontlar ── */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-heading: var(--font-manrope), var(--font-inter), sans-serif;
 
-  /* ── 3D-ko'rinish soyalari (tashqi drop + ichki highlight/qirra) —
-     faqat vizual: element ko'tarilgandek/3D ko'rinadi. ── */
   --shadow-card:
     0 1px 2px rgba(15, 23, 42, 0.06),
     0 6px 16px -4px rgba(15, 23, 42, 0.1),
@@ -61,41 +95,6 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.34),
     inset 0 -2px 4px rgba(0, 0, 0, 0.14);
   --shadow-btn-active: inset 0 2px 6px rgba(0, 0, 0, 0.22);
-}
-
-:root {
-  --background: #ffffff;
-  --foreground: #0f172a;
-  --card: #f8fafc;
-  --card-foreground: #0f172a;
-  --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --primary: #1e3a8a;
-  --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-  --muted: #f1f5f9;
-  --muted-foreground: #334155;
-  --accent: #f8fafc;
-  --accent-foreground: #0f172a;
-  --destructive: #dc2626;
-  --border: #cbd5e1;
-  --input: #cbd5e1;
-  --ring: #3b82f6;
-  --chart-1: #2563eb;
-  --chart-2: #334155;
-  --chart-3: #1e293b;
-  --chart-4: #0f172a;
-  --chart-5: #020617;
-  --radius: 0.625rem;
-  --sidebar: #f8fafc;
-  --sidebar-foreground: #0f172a;
-  --sidebar-primary: #1e3a8a;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f1f5f9;
-  --sidebar-accent-foreground: #0f172a;
-  --sidebar-border: #cbd5e1;
-  --sidebar-ring: #3b82f6;
 }
 
 @layer base {
@@ -119,9 +118,6 @@
     @apply font-sans;
   }
 
-  /* ── Interaktiv elementlar uchun global efektlar ── */
-
-  /* Linklar — ko'k, hover'da to'qroq */
   a:not([class]) {
     color: var(--brand-600);
     font-weight: 500;
@@ -134,7 +130,6 @@
     color: var(--brand-800);
   }
 
-  /* Input focus — aniq ko'k ring va border */
   input:focus, select:focus, textarea:focus {
     outline: none;
     box-shadow: 0 0 0 2px var(--brand-200);
@@ -153,7 +148,6 @@
   }
 }
 
-/* Gorizontal scroll — scrollbar yashirish (mobil UX). */
 .scrollbar-none {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -162,42 +156,7 @@
   display: none;
 }
 
-/* ── Hardware-accelerated GPU Shiny Text animation (Slow, calm & smooth) ── */
-@keyframes shinySweep {
-  0% {
-    background-position: 130% center;
-  }
-  15% {
-    background-position: 130% center;
-  }
-  85% {
-    background-position: -130% center;
-  }
-  100% {
-    background-position: -130% center;
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════
-   LIQUID GLASS — Apple uslubidagi shisha effekti
-   Eslatma: blur/fon endi ScrollNav.tsx'da INLINE style sifatida
-   beriladi (CSS processing muammosini chetlab o'tish uchun).
-   ═══════════════════════════════════════════════════════════ */
-
 @theme inline {
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -216,16 +175,8 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* ── Custom scrollbar: thin + blue ── */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--brand-500) transparent;
