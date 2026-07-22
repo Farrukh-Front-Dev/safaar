@@ -27,11 +27,11 @@ export function Hero({ dict }: { dict: HomeDict["hero"] }) {
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
           <span className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-900 shadow-xs sm:text-sm">
             <Zap className="h-4 w-4 text-emerald-600 shrink-0" aria-hidden />
-            <span>Soniyalarda tezkor tasdiq</span>
+            <span>{dict.trustChip1}</span>
           </span>
           <span className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-900 shadow-xs sm:text-sm">
             <ShieldCheck className="h-4 w-4 text-blue-600 shrink-0" aria-hidden />
-            <span>Kafolatlangan eng yaxshi narxlar</span>
+            <span>{dict.trustChip2}</span>
           </span>
         </div>
       </div>

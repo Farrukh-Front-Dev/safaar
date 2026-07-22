@@ -1,108 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Search, MapPin, Car, ShieldCheck, Users, PhoneCall, CheckCircle2, X } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { MapPin, Car, ShieldCheck, Users, PhoneCall, CheckCircle2, X, Calendar, Fuel } from "lucide-react";
 import { formatSum } from "@/lib/money";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import type { CatalogDict } from "@/i18n/dictionaries";
+import { CatalogHeader } from "./CatalogHeader";
+import { MOCK_TRANSPORTS } from "./data";
+import type { TransportItem } from "./types";
 
-export interface TransportItem {
-  id: string;
-  name: string;
-  cityName: string;
-  categoryKey: "rent" | "transfer" | "vip";
-  categoryDefault: string;
-  seats: number;
-  hasDriver: boolean;
-  pricePerDaySum: number;
-  rating: number;
-  imageUrl: string;
-  phone: string;
-}
+export type { TransportItem };
 
-const MOCK_TRANSPORTS: TransportItem[] = [
-  {
-    id: "t-1",
-    name: "Chevrolet Cobalt (2024)",
-    cityName: "Toshkent",
-    categoryKey: "rent",
-    categoryDefault: "Avto Ijarasi",
-    seats: 4,
-    hasDriver: false,
-    pricePerDaySum: 350000,
-    rating: 4.8,
-    imageUrl: "/Tashkent-city-skyline.jpeg",
-    phone: "+998 90 123 45 67",
-  },
-  {
-    id: "t-2",
-    name: "Kia K5 GT-Line (2024)",
-    cityName: "Toshkent",
-    categoryKey: "vip",
-    categoryDefault: "VIP Taksi",
-    seats: 4,
-    hasDriver: true,
-    pricePerDaySum: 850000,
-    rating: 4.9,
-    imageUrl: "/Samarkand-Registan-cinematic.jpeg",
-    phone: "+998 90 987 65 43",
-  },
-  {
-    id: "t-3",
-    name: "Mercedes-Benz Sprinter VIP (15 o'rin)",
-    cityName: "Samarqand",
-    categoryKey: "transfer",
-    categoryDefault: "Aeroport Transfer",
-    seats: 15,
-    hasDriver: true,
-    pricePerDaySum: 1500000,
-    rating: 5.0,
-    imageUrl: "/Bukhara-old-city-golden-hour.jpeg",
-    phone: "+998 66 200 30 40",
-  },
-  {
-    id: "t-4",
-    name: "Chevrolet Tahoe Premier",
-    cityName: "Toshkent / Samarqand / Buxoro",
-    categoryKey: "vip",
-    categoryDefault: "VIP & Biznes Taksi",
-    seats: 7,
-    hasDriver: true,
-    pricePerDaySum: 2200000,
-    rating: 4.9,
-    imageUrl: "/Khiva-Ichan-Kala-aerial.jpeg",
-    phone: "+998 71 500 00 00",
-  },
-];
+export function TransportView({ dict }: { dict: CatalogDict["transport"] }) {
+  const searchParams = useSearchParams();
+  const typeParam = searchParams.get("type");
 
-const FALLBACK_DICT: CatalogDict["transport"] = {
-  badge: "Avtotransport & Transfer",
-  title: "Avto Ijarasi va Transfer Xizmatlari",
-  subtitle: "O'zbekiston bo'ylab qulay sayohat qilish uchun avtomobil ijarasi, VIP taksi va aeroport transferlari.",
-  searchPlaceholder: "Avto rusumi yoki shahar bo'yicha qidiruv...",
-  allTypes: "Barcha turlar",
-  categories: {
-    all: "Barcha turlar",
-    rent: "Avto Ijarasi (Rent a Car)",
-    transfer: "Aeroport Transfer",
-    vip: "VIP & Biznes Taksi",
-  },
-  perDay: "kuniga",
-  driverIncluded: "Haydovchi bilan",
-  withoutDriver: "Haydovchisiz",
-  reserve: "Ijaraga olish",
-  comingSoon: "{name} bo'yicha buyurtma tez orada ishga tushadi! Bog'lanish: {phone}",
-};
-
-export function TransportView({ dict = FALLBACK_DICT }: { dict?: CatalogDict["transport"] }) {
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedItem, setSelectedItem] = useState<TransportItem | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  useEffect(() => {
+    if (typeParam && ["rent", "transfer", "vip"].includes(typeParam)) {
+      setSelectedCategory(typeParam);
+    }
+  }, [typeParam]);
 
   const categories = [
     { id: "all", label: dict.categories?.all ?? dict.allTypes },
@@ -122,38 +49,22 @@ export function TransportView({ dict = FALLBACK_DICT }: { dict?: CatalogDict["tr
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
-      {/* Clean Header */}
-      <div className="mb-8 border-b border-slate-200 pb-6 dark:border-slate-800">
-        <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-          <Car className="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />
-          <span>{dict.badge}</span>
-        </div>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-          {dict.title}
-        </h1>
-        <p className="mt-2 text-base text-slate-600 dark:text-slate-400">
-          {dict.subtitle}
-        </p>
-
-        {/* Filter Controls */}
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <Input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={dict.searchPlaceholder}
-              className="pl-10"
-            />
-          </div>
+      <CatalogHeader
+        icon={<Car className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />}
+        badge={dict.badge}
+        title={dict.title}
+        subtitle={dict.subtitle}
+        searchValue={query}
+        onSearchChange={setQuery}
+        searchPlaceholder={dict.searchPlaceholder}
+        filterControls={
           <div className="flex flex-wrap gap-2">
             {categories.map((cat) => (
               <button
                 key={cat.id}
                 type="button"
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`rounded-xl px-3 py-2 text-xs font-bold transition-all ${
+                className={`rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
                   selectedCategory === cat.id
                     ? "bg-blue-600 text-white shadow-xs"
                     : "border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
@@ -163,24 +74,24 @@ export function TransportView({ dict = FALLBACK_DICT }: { dict?: CatalogDict["tr
               </button>
             ))}
           </div>
-        </div>
-      </div>
+        }
+      />
 
-      {/* Grid listing: 2 columns mobile, 4 columns desktop */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-4">
+      {/* Grid listing */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
         {filtered.map((item) => {
           const catLabel = dict.categories?.[item.categoryKey] ?? item.categoryDefault;
           return (
-            <Card key={item.id} className="group flex flex-col overflow-hidden">
+            <Card key={item.id} className="group flex flex-col overflow-hidden transition-all duration-200 hover:shadow-lg">
               <div className="relative aspect-16/9 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
                 <Image
                   src={item.imageUrl}
                   alt={item.name}
                   fill
-                  sizes="(max-width: 640px) 100vw, 600px"
+                  sizes="(max-width: 640px) 100vw, 500px"
                   className="object-cover transition-transform duration-300 group-hover:scale-105"
                 />
-                <Badge variant="outline" className="absolute left-3 top-3 z-10 gap-1 bg-black/40 text-white backdrop-blur-xs shadow-xs">
+                <Badge variant="outline" className="absolute left-3 top-3 z-10 gap-1 bg-black/50 text-white backdrop-blur-xs shadow-xs border-white/20">
                   <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
                   {catLabel}
                 </Badge>
@@ -188,27 +99,41 @@ export function TransportView({ dict = FALLBACK_DICT }: { dict?: CatalogDict["tr
 
               <CardBody className="flex flex-1 flex-col justify-between p-4 sm:p-5">
                 <div className="flex flex-col gap-2">
-                  <h2 className="text-base font-bold text-slate-900 dark:text-white sm:text-lg">
-                    {item.name}
-                  </h2>
+                  <div className="flex items-start justify-between gap-2">
+                    <h2 className="text-base font-bold text-slate-900 dark:text-white sm:text-lg">
+                      {item.name}
+                    </h2>
+                    <span className="shrink-0 rounded-md bg-amber-50 px-2 py-0.5 text-xs font-bold text-amber-700 dark:bg-amber-950/60 dark:text-amber-400">
+                      ★ {item.rating}
+                    </span>
+                  </div>
 
                   <p className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                     <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" />
                     {item.cityName}
                   </p>
 
-                  <div className="mt-1 flex items-center gap-3 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <div className="mt-2 flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-700 dark:text-slate-300">
                     <span className="flex items-center gap-1">
                       <Users className="h-3.5 w-3.5 text-slate-400" />
-                      {item.seats} o'rin
+                      {item.seats} {dict.seats ?? "o'rin"}
                     </span>
+                    {item.fuelType && (
+                      <>
+                        <span>·</span>
+                        <span className="flex items-center gap-1">
+                          <Fuel className="h-3.5 w-3.5 text-slate-400" />
+                          {item.fuelType}
+                        </span>
+                      </>
+                    )}
                     <span>·</span>
-                    <span className="text-blue-600 dark:text-blue-400">
+                    <span className="text-blue-600 dark:text-blue-400 font-bold">
                       {item.hasDriver ? dict.driverIncluded : dict.withoutDriver}
                     </span>
                   </div>
 
-                  <div className="mt-2 text-sm font-extrabold text-slate-900 dark:text-white">
+                  <div className="mt-3 text-base font-extrabold text-slate-900 dark:text-white">
                     {formatSum(item.pricePerDaySum)} <span className="text-xs font-normal text-slate-500">/ {dict.perDay}</span>
                   </div>
                 </div>
@@ -216,7 +141,7 @@ export function TransportView({ dict = FALLBACK_DICT }: { dict?: CatalogDict["tr
                 <div className="mt-4 flex flex-col gap-2 border-t border-slate-100 pt-3 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
                   <a
                     href={`tel:${item.phone.replace(/\s+/g, "")}`}
-                    className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 transition-colors hover:text-primary-600 dark:text-slate-400 dark:hover:text-primary-400"
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
                   >
                     <PhoneCall className="h-3.5 w-3.5 shrink-0 text-slate-400" />
                     <span className="truncate">{item.phone}</span>
@@ -224,7 +149,7 @@ export function TransportView({ dict = FALLBACK_DICT }: { dict?: CatalogDict["tr
                   <Button
                     variant="primary"
                     size="sm"
-                    className="w-full text-xs font-bold whitespace-nowrap px-3 sm:w-auto"
+                    className="w-full text-xs font-bold whitespace-nowrap px-4 sm:w-auto"
                     onClick={() => {
                       setSelectedItem(item);
                       setIsSuccess(false);
@@ -264,7 +189,7 @@ export function TransportView({ dict = FALLBACK_DICT }: { dict?: CatalogDict["tr
                 className="flex flex-col gap-5"
               >
                 <div className="flex items-center gap-3 border-b border-slate-100 pb-4 dark:border-slate-800">
-                  <div className="relative h-14 w-14 overflow-hidden rounded-2xl bg-slate-100">
+                  <div className="relative h-14 w-14 overflow-hidden rounded-2xl bg-slate-100 shrink-0">
                     <Image
                       src={selectedItem.imageUrl}
                       alt={selectedItem.name}
@@ -273,7 +198,7 @@ export function TransportView({ dict = FALLBACK_DICT }: { dict?: CatalogDict["tr
                     />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white sm:text-xl">
                       {selectedItem.name}
                     </h2>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -284,22 +209,28 @@ export function TransportView({ dict = FALLBACK_DICT }: { dict?: CatalogDict["tr
 
                 <div className="grid grid-cols-2 gap-3">
                   <label className="flex flex-col gap-1.5">
-                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Olish kuni</span>
+                    <span className="flex items-center gap-1 text-xs font-bold text-slate-700 dark:text-slate-300">
+                      <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                      {dict.pickupDate ?? "Olish kuni"}
+                    </span>
                     <Input type="date" required className="h-10 text-xs font-semibold" />
                   </label>
                   <label className="flex flex-col gap-1.5">
-                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Topshirish kuni</span>
+                    <span className="flex items-center gap-1 text-xs font-bold text-slate-700 dark:text-slate-300">
+                      <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                      {dict.returnDate ?? "Topshirish kuni"}
+                    </span>
                     <Input type="date" required className="h-10 text-xs font-semibold" />
                   </label>
                 </div>
 
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Ismingiz</span>
-                  <Input type="text" required placeholder="Masalan: Sardor Alimov" />
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{dict.fullName ?? "Ismingiz"}</span>
+                  <Input type="text" required placeholder="Masalan: Jasur Bek" />
                 </label>
 
                 <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Telefon raqamingiz</span>
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{dict.phone ?? "Telefon raqamingiz"}</span>
                   <Input type="tel" required defaultValue="+998" />
                 </label>
 
@@ -313,10 +244,10 @@ export function TransportView({ dict = FALLBACK_DICT }: { dict?: CatalogDict["tr
                   <CheckCircle2 className="h-10 w-10" />
                 </div>
                 <h3 className="mt-4 text-xl font-extrabold text-slate-900 dark:text-white">
-                  Buyurtmangiz qabul qilindi!
+                  {dict.successTitle ?? "Buyurtmangiz qabul qilindi!"}
                 </h3>
                 <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-                  Operatormiz avtoulov holati va yetkazishni tasdiqlash uchun tez orada siz bilan bog'lanadi.
+                  {dict.successDesc ?? "Operatormiz avtoulov holati va yetkazishni tasdiqlash uchun tez orada siz bilan bog'lanadi."}
                 </p>
 
                 <div className="mt-6 flex w-full flex-col gap-3">
@@ -325,7 +256,7 @@ export function TransportView({ dict = FALLBACK_DICT }: { dict?: CatalogDict["tr
                     className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-3 text-sm font-bold text-white shadow-md hover:bg-emerald-700"
                   >
                     <PhoneCall className="h-4 w-4" />
-                    <span>Hozir qo'ng'iroq qilish: {selectedItem.phone}</span>
+                    <span>{dict.callNow ?? "Hozir qo'ng'iroq qilish"}: {selectedItem.phone}</span>
                   </a>
                   <Button
                     type="button"
@@ -333,7 +264,7 @@ export function TransportView({ dict = FALLBACK_DICT }: { dict?: CatalogDict["tr
                     onClick={() => setSelectedItem(null)}
                     className="w-full rounded-2xl"
                   >
-                    Yopish
+                    {dict.close ?? "Yopish"}
                   </Button>
                 </div>
               </div>

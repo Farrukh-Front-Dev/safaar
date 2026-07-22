@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
@@ -35,7 +36,9 @@ export default async function TransportPage({
 
   return (
     <main className="flex flex-1 flex-col">
-      <TransportView dict={catalogDict.transport} />
+      <Suspense fallback={<div className="mx-auto w-full max-w-6xl p-8 animate-pulse bg-slate-100 dark:bg-slate-900 rounded-2xl h-96 mt-6" />}>
+        <TransportView dict={catalogDict.transport} />
+      </Suspense>
     </main>
   );
 }

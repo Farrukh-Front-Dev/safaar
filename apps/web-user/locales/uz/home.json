@@ -1,7 +1,9 @@
 {
   "hero": {
     "title": "O'zbekiston bo'ylab turar joy toping",
-    "subtitle": "Eng yaxshi narxlar, tezkor tasdiq — barchasi Safaar'da."
+    "subtitle": "Eng yaxshi narxlar, tezkor tasdiq — barchasi Safaar'da.",
+    "trustChip1": "Soniyalarda tezkor tasdiq",
+    "trustChip2": "Kafolatlangan eng yaxshi narxlar"
   },
   "popularCities": {
     "title": "Mashhur yo'nalishlar",

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Image from "next/image";
 import {
-  Search,
   MapPin,
   Star,
   Utensils,
@@ -22,98 +21,13 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import type { CatalogDict } from "@/i18n/dictionaries";
+import { CatalogHeader } from "./CatalogHeader";
+import { MOCK_RESTAURANTS } from "./data";
+import type { RestaurantItem } from "./types";
 
-export interface RestaurantItem {
-  id: string;
-  name: string;
-  cityName: string;
-  address: string;
-  cuisine: string;
-  rating: number;
-  reviewsCount: number;
-  averageCheckSum: number;
-  workingHours: string;
-  imageUrl: string;
-  phone: string;
-}
+export type { RestaurantItem };
 
-const MOCK_RESTAURANTS: RestaurantItem[] = [
-  {
-    id: "r-1",
-    name: "Besh Qozon (Osh Markazi)",
-    cityName: "Toshkent",
-    address: "Iftxor ko'chasi, 1-uy (Toshkent teleminorasi atrofi)",
-    cuisine: "Milliy taomlar / Palov",
-    rating: 4.9,
-    reviewsCount: 1420,
-    averageCheckSum: 65000,
-    workingHours: "09:00 – 17:00",
-    imageUrl: "/Tashkent-city-skyline.jpeg",
-    phone: "+998 71 200 01 01",
-  },
-  {
-    id: "r-2",
-    name: "Platan Restaurant & Garden",
-    cityName: "Samarqand",
-    address: "Pushkin ko'chasi, 56",
-    cuisine: "Yevropa va Sharq oshxonasi",
-    rating: 4.8,
-    reviewsCount: 680,
-    averageCheckSum: 140000,
-    workingHours: "11:00 – 23:00",
-    imageUrl: "/Samarkand-Registan-cinematic.jpeg",
-    phone: "+998 66 233 80 80",
-  },
-  {
-    id: "r-3",
-    name: "Chor Bakr Milliy Choyxonasi",
-    cityName: "Buxoro",
-    address: "Chor Bakr majmuasi yaqinida",
-    cuisine: "Buxoro Somsa & Kabob",
-    rating: 4.7,
-    reviewsCount: 450,
-    averageCheckSum: 85000,
-    workingHours: "10:00 – 22:00",
-    imageUrl: "/Bukhara-old-city-golden-hour.jpeg",
-    phone: "+998 65 224 12 34",
-  },
-  {
-    id: "r-4",
-    name: "Muzey Choyxonasi (Ichan Kala)",
-    cityName: "Xiva",
-    address: "Ichan Qal'a markazi",
-    cuisine: "Xorazm Tuxum-barak va Shivit Oshi",
-    rating: 4.9,
-    reviewsCount: 380,
-    averageCheckSum: 95000,
-    workingHours: "10:00 – 23:00",
-    imageUrl: "/Khiva-Ichan-Kala-aerial.jpeg",
-    phone: "+998 62 375 44 11",
-  },
-];
-
-const FALLBACK_DICT: CatalogDict["restaurants"] = {
-  badge: "Milliy va Xalqaro Oshxona",
-  title: "Restoranlar va Milliy Taomlar",
-  subtitle: "O'zbekistonning eng saralangan restoranlari, milliy oshxonalar va shinam choyxonalari.",
-  searchPlaceholder: "Restoran nomi yoki taom turi bo'yicha qidiruv...",
-  allCities: "Barcha shaharlar",
-  avgCheck: "Chek",
-  reserveTable: "Stol band qilish",
-  modalTitle: "Stol band qilish",
-  guests: "Kishilar soni",
-  date: "Sana",
-  time: "Vaqt",
-  fullName: "Ismingiz",
-  phone: "Telefon raqamingiz",
-  confirm: "Band qilishni tasdiqlash",
-  successTitle: "Stolingiz muvaffaqiyatli band qilindi!",
-  successDesc: "Restoran ma'muriyati bandlikni tasdiqlash uchun tez orada siz bilan bog'lanadi.",
-  callNow: "Hozir qo'ng'iroq qilish",
-  close: "Yopish",
-};
-
-export function RestaurantsView({ dict = FALLBACK_DICT }: { dict?: CatalogDict["restaurants"] }) {
+export function RestaurantsView({ dict }: { dict: CatalogDict["restaurants"] }) {
   const [query, setQuery] = useState("");
   const [selectedCity, setSelectedCity] = useState("all");
   const [selectedRestaurant, setSelectedRestaurant] = useState<RestaurantItem | null>(null);
@@ -125,6 +39,8 @@ export function RestaurantsView({ dict = FALLBACK_DICT }: { dict?: CatalogDict["
   const [fullName, setFullName] = useState("");
   const [phoneInput, setPhoneInput] = useState("+998");
   const [isSuccess, setIsSuccess] = useState(false);
+
+  const cities = Array.from(new Set(MOCK_RESTAURANTS.map((r) => r.cityName)));
 
   const filtered = MOCK_RESTAURANTS.filter((r) => {
     const matchesQuery =
@@ -153,50 +69,32 @@ export function RestaurantsView({ dict = FALLBACK_DICT }: { dict?: CatalogDict["
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
-      {/* Clean Header */}
-      <div className="mb-8 border-b border-slate-200 pb-6 dark:border-slate-800">
-        <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-          <Utensils className="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />
-          <span>{dict.badge}</span>
-        </div>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-          {dict.title}
-        </h1>
-        <p className="mt-2 text-base text-slate-600 dark:text-slate-400">
-          {dict.subtitle}
-        </p>
-
-        {/* Filters */}
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <Input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={dict.searchPlaceholder}
-              className="pl-10"
-            />
-          </div>
+      <CatalogHeader
+        icon={<Utensils className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />}
+        badge={dict.badge}
+        title={dict.title}
+        subtitle={dict.subtitle}
+        searchValue={query}
+        onSearchChange={setQuery}
+        searchPlaceholder={dict.searchPlaceholder}
+        filterControls={
           <select
             value={selectedCity}
             onChange={(e) => setSelectedCity(e.target.value)}
             className="h-10 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-900 shadow-xs transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
           >
             <option value="all">{dict.allCities}</option>
-            <option value="Toshkent">Toshkent</option>
-            <option value="Samarqand">Samarqand</option>
-            <option value="Buxoro">Buxoro</option>
-            <option value="Xiva">Xiva</option>
+            {cities.map((city) => (
+              <option key={city} value={city}>{city}</option>
+            ))}
           </select>
-        </div>
-      </div>
+        }
+      />
 
       {/* Grid listing: 2 columns mobile, 4 columns desktop */}
       <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-4">
         {filtered.map((item) => (
           <Card key={item.id} className="group flex flex-col overflow-hidden">
-            {/* Aspect Ratio Container for Image */}
             <div className="relative aspect-16/9 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
               <Image
                 src={item.imageUrl}
@@ -222,12 +120,12 @@ export function RestaurantsView({ dict = FALLBACK_DICT }: { dict?: CatalogDict["
                   </span>
                 </div>
 
-                <p className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                <p className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
                   <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                  {item.cityName} · {item.address}
+                  <span>{item.cityName} · {item.address}</span>
                 </p>
 
-                <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-300">
+                <div className="mt-2 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
                   <span className="flex items-center gap-1">
                     <Clock className="h-3.5 w-3.5 text-slate-400" />
                     {item.workingHours}
@@ -238,7 +136,7 @@ export function RestaurantsView({ dict = FALLBACK_DICT }: { dict?: CatalogDict["
                 </div>
               </div>
 
-              <div className="mt-4 flex flex-col gap-2.5 border-t border-slate-100 pt-3.5 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+              <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4 dark:border-slate-800">
                 <a
                   href={`tel:${item.phone.replace(/\s+/g, "")}`}
                   className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 transition-colors hover:text-primary-600 dark:text-slate-400 dark:hover:text-primary-400"
@@ -249,7 +147,7 @@ export function RestaurantsView({ dict = FALLBACK_DICT }: { dict?: CatalogDict["
                 <Button
                   variant="primary"
                   size="sm"
-                  className="w-full text-xs font-bold whitespace-nowrap px-3 sm:w-auto"
+                  className="text-xs font-bold"
                   onClick={() => handleOpenModal(item)}
                 >
                   {dict.reserveTable}
@@ -263,13 +161,11 @@ export function RestaurantsView({ dict = FALLBACK_DICT }: { dict?: CatalogDict["
       {/* Interactive Table Reservation Modal */}
       {selectedRestaurant && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
           <div
             className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
             onClick={handleCloseModal}
           />
 
-          {/* Modal Card */}
           <div className="relative z-10 w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
             <button
               type="button"
@@ -300,89 +196,77 @@ export function RestaurantsView({ dict = FALLBACK_DICT }: { dict?: CatalogDict["
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <label className="flex flex-col gap-1.5">
-                    <span className="flex items-center gap-1 text-xs font-bold text-slate-700 dark:text-slate-300">
-                      <Users className="h-3.5 w-3.5 text-blue-600" />
+                    <span className="flex items-center gap-1 text-xs font-medium text-slate-700 dark:text-slate-300">
+                      <Users className="h-3.5 w-3.5 text-slate-400" />
                       {dict.guests}
                     </span>
-                    <select
+                    <Input
+                      type="number"
+                      min={1}
+                      max={20}
                       value={guestCount}
                       onChange={(e) => setGuestCount(Number(e.target.value))}
-                      className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-900 dark:border-slate-800 dark:bg-slate-800 dark:text-white"
-                    >
-                      {[1, 2, 3, 4, 5, 6, 8, 10].map((n) => (
-                        <option key={n} value={n}>
-                          {n} kishi
-                        </option>
-                      ))}
-                    </select>
+                      className="h-10 text-xs font-semibold"
+                    />
                   </label>
-
                   <label className="flex flex-col gap-1.5">
-                    <span className="flex items-center gap-1 text-xs font-bold text-slate-700 dark:text-slate-300">
-                      <Calendar className="h-3.5 w-3.5 text-blue-600" />
+                    <span className="flex items-center gap-1 text-xs font-medium text-slate-700 dark:text-slate-300">
+                      <Calendar className="h-3.5 w-3.5 text-slate-400" />
                       {dict.date}
                     </span>
                     <Input
                       type="date"
                       value={date}
                       onChange={(e) => setDate(e.target.value)}
-                      required
+                      className="h-10 text-xs font-semibold"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1.5">
+                    <span className="flex items-center gap-1 text-xs font-medium text-slate-700 dark:text-slate-300">
+                      <Clock className="h-3.5 w-3.5 text-slate-400" />
+                      {dict.time}
+                    </span>
+                    <Input
+                      type="time"
+                      value={time}
+                      onChange={(e) => setTime(e.target.value)}
                       className="h-10 text-xs font-semibold"
                     />
                   </label>
                 </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <span className="flex items-center gap-1 text-xs font-bold text-slate-700 dark:text-slate-300">
-                    <Clock className="h-3.5 w-3.5 text-blue-600" />
-                    {dict.time}
-                  </span>
-                  <div className="flex flex-wrap gap-2">
-                    {["12:00", "14:00", "18:00", "19:30", "20:30"].map((t) => (
-                      <button
-                        key={t}
-                        type="button"
-                        onClick={() => setTime(t)}
-                        className={`rounded-xl border px-3.5 py-1.5 text-xs font-bold transition-all ${
-                          time === t
-                            ? "border-blue-600 bg-blue-600 text-white"
-                            : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300"
-                        }`}
-                      >
-                        {t}
-                      </button>
-                    ))}
-                  </div>
+                <div className="flex flex-col gap-3">
+                  <label className="flex flex-col gap-1.5">
+                    <span className="flex items-center gap-1 text-xs font-medium text-slate-700 dark:text-slate-300">
+                      <User className="h-3.5 w-3.5 text-slate-400" />
+                      {dict.fullName}
+                    </span>
+                    <Input
+                      type="text"
+                      required
+                      placeholder="Sardor Alimov"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className="h-10"
+                    />
+                  </label>
+
+                  <label className="flex flex-col gap-1.5">
+                    <span className="flex items-center gap-1 text-xs font-medium text-slate-700 dark:text-slate-300">
+                      <Phone className="h-3.5 w-3.5 text-slate-400" />
+                      {dict.phone}
+                    </span>
+                    <Input
+                      type="tel"
+                      required
+                      value={phoneInput}
+                      onChange={(e) => setPhoneInput(e.target.value)}
+                      className="h-10"
+                    />
+                  </label>
                 </div>
-
-                <label className="flex flex-col gap-1.5">
-                  <span className="flex items-center gap-1 text-xs font-bold text-slate-700 dark:text-slate-300">
-                    <User className="h-3.5 w-3.5 text-blue-600" />
-                    {dict.fullName}
-                  </span>
-                  <Input
-                    type="text"
-                    required
-                    placeholder="Masalan: Jasur Rahimov"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                  />
-                </label>
-
-                <label className="flex flex-col gap-1.5">
-                  <span className="flex items-center gap-1 text-xs font-bold text-slate-700 dark:text-slate-300">
-                    <Phone className="h-3.5 w-3.5 text-blue-600" />
-                    {dict.phone}
-                  </span>
-                  <Input
-                    type="tel"
-                    required
-                    value={phoneInput}
-                    onChange={(e) => setPhoneInput(e.target.value)}
-                  />
-                </label>
 
                 <Button
                   type="submit"

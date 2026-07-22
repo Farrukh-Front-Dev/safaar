@@ -63,7 +63,7 @@ export function PartnersSection({
       {/* Umumiy ko'rsatkich */}
       <div className="mt-4 flex items-center justify-center gap-2 text-xs text-slate-400 sm:text-sm">
         <Building2 className="h-4 w-4" aria-hidden />
-        <span>500+ mehmonxona va transport hamkorlari</span>
+        <span>{dict.subtitle}</span>
       </div>
     </section>
   );

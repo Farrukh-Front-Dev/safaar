@@ -2,89 +2,17 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Search, MapPin, Compass, Camera, Info } from "lucide-react";
+import { MapPin, Compass, Camera, Info } from "lucide-react";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import type { CatalogDict } from "@/i18n/dictionaries";
+import { CatalogHeader } from "./CatalogHeader";
+import { MOCK_ATTRACTIONS } from "./data";
+import type { AttractionItem } from "./types";
 
-export interface AttractionItem {
-  id: string;
-  name: string;
-  cityName: string;
-  categoryKey: "historical" | "unesco" | "nature";
-  categoryDefault: string;
-  description: string;
-  rating: number;
-  imageUrl: string;
-  bestTimeToVisit: string;
-}
+export type { AttractionItem };
 
-const MOCK_ATTRACTIONS: AttractionItem[] = [
-  {
-    id: "a-1",
-    name: "Registon Majmuasi",
-    cityName: "Samarqand",
-    categoryKey: "historical",
-    categoryDefault: "Tarixiy Obida",
-    description: "XV-XVII asrlarga oid 3 ta muhtasham madrasadan iborat dunyoga mashhur me'moriy ansambl.",
-    rating: 5.0,
-    imageUrl: "/Samarkand-Registan-cinematic.jpeg",
-    bestTimeToVisit: "Bahor va Kuz (Kechki chiroqlar bilan)",
-  },
-  {
-    id: "a-2",
-    name: "Ichan Qal'a (Ochiq Osmon Ostidagi Muzey)",
-    cityName: "Xiva",
-    categoryKey: "unesco",
-    categoryDefault: "UNESCO Merosi",
-    description: "O'rta asr osiyo shaharsozligining saqlanib qolgan yagona qadimiy devorlar bilan o'ralgan majmuasi.",
-    rating: 4.9,
-    imageUrl: "/Khiva-Ichan-Kala-aerial.jpeg",
-    bestTimeToVisit: "Erta tong va Quyosh botishi",
-  },
-  {
-    id: "a-3",
-    name: "Poyi Kalon va Minora",
-    cityName: "Buxoro",
-    categoryKey: "historical",
-    categoryDefault: "Tarixiy Obida",
-    description: "47 metr balandlikdagi 1127-yilda qurilgan afsonaviy Kalon minorasi va Jome masjidi.",
-    rating: 4.9,
-    imageUrl: "/Bukhara-old-city-golden-hour.jpeg",
-    bestTimeToVisit: "Oltin soat (Golden Hour)",
-  },
-  {
-    id: "a-4",
-    name: "Chorvoq Suv Ombori & Chimgon Tog'lari",
-    cityName: "Toshkent viloyati",
-    categoryKey: "nature",
-    categoryDefault: "Tabiat & Hordiq",
-    description: "Tog'lar bag'ridagi ko'k-mo'jiza ko'l va yil davomida faol bo'lgan kurort zonasi.",
-    rating: 4.8,
-    imageUrl: "/Charvak-Lake-drone.jpeg",
-    bestTimeToVisit: "Yoz oylari va Qishki chang'i mavsumi",
-  },
-];
-
-const FALLBACK_DICT: CatalogDict["attractions"] = {
-  badge: "Sayohat va Ziyorat",
-  title: "Attraksionlar va Diqqatga Sazovor Joylar",
-  subtitle: "Buyuk Ipak Yo'li durdonalari, ko'hna me'moriy ansambllar va bahavo tog' manzaralari.",
-  searchPlaceholder: "Obida nomi yoki shahar bo'yicha qidiruv...",
-  allPlaces: "Barcha joylar",
-  categories: {
-    all: "Barcha joylar",
-    historical: "Tarixiy Obida",
-    unesco: "UNESCO Merosi",
-    nature: "Tabiat & Hordiq",
-  },
-  bestTime: "Ziyorat:",
-  moreInfo: "Batafsil",
-  comingSoon: "{name} bo'yicha ma'lumotlar tez orada kengaytiriladi!",
-};
-
-export function AttractionsView({ dict = FALLBACK_DICT }: { dict?: CatalogDict["attractions"] }) {
+export function AttractionsView({ dict }: { dict: CatalogDict["attractions"] }) {
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
@@ -107,38 +35,22 @@ export function AttractionsView({ dict = FALLBACK_DICT }: { dict?: CatalogDict["
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
-      {/* Header */}
-      <div className="mb-8 border-b border-slate-200 pb-6 dark:border-slate-800">
-        <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-          <Compass className="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />
-          <span>{dict.badge}</span>
-        </div>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-          {dict.title}
-        </h1>
-        <p className="mt-2 text-base text-slate-600 dark:text-slate-400">
-          {dict.subtitle}
-        </p>
-
-        {/* Filter Controls */}
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <Input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={dict.searchPlaceholder}
-              className="pl-10"
-            />
-          </div>
+      <CatalogHeader
+        icon={<Compass className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />}
+        badge={dict.badge}
+        title={dict.title}
+        subtitle={dict.subtitle}
+        searchValue={query}
+        onSearchChange={setQuery}
+        searchPlaceholder={dict.searchPlaceholder}
+        filterControls={
           <div className="flex flex-wrap gap-2">
             {categories.map((cat) => (
               <button
                 key={cat.id}
                 type="button"
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`rounded-xl px-3 py-2 text-xs font-bold transition-all ${
+                className={`rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
                   selectedCategory === cat.id
                     ? "bg-blue-600 text-white shadow-xs"
                     : "border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
@@ -148,8 +60,8 @@ export function AttractionsView({ dict = FALLBACK_DICT }: { dict?: CatalogDict["
               </button>
             ))}
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Grid listing: 2 columns mobile, 4 columns desktop */}
       <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-4">
