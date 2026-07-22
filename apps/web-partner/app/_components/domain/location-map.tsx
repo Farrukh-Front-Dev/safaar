@@ -41,7 +41,7 @@ function ClickHandler({
   onChange: (lat: number, lng: number) => void;
 }) {
   useMapEvents({
-    click(e) {
+    click(e: { latlng: { lat: number; lng: number } }) {
       onChange(Number(e.latlng.lat.toFixed(6)), Number(e.latlng.lng.toFixed(6)));
     },
   });
@@ -86,7 +86,7 @@ export default function LocationMap({
           icon={markerIcon}
           draggable
           eventHandlers={{
-            dragend: (e) => {
+            dragend: (e: { target: unknown }) => {
               const pos = (e.target as L.Marker).getLatLng();
               onChange(Number(pos.lat.toFixed(6)), Number(pos.lng.toFixed(6)));
             },

@@ -92,7 +92,7 @@ export function DealsSection({
               href={`/${locale}/hotels/${deal.slug}`}
               className="group w-[calc(50%-0.375rem)] shrink-0 snap-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
             >
-              <Card className="flex h-full flex-col overflow-hidden border border-slate-200 bg-white shadow-xs transition-all duration-200 hover:border-slate-300 hover:shadow-md active:scale-[0.98]">
+              <Card className="flex h-full flex-col overflow-hidden border border-slate-200 shadow-xs transition-all duration-200 hover:border-slate-300 hover:shadow-md active:scale-[0.98]">
                 <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">
                   {deal.imageUrl && (
                     <Image
@@ -154,7 +154,7 @@ export function DealsSection({
               href={`/${locale}/hotels/${deal.slug}`}
               className="group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
             >
-              <Card className="flex h-full flex-col overflow-hidden border border-slate-200 bg-white shadow-xs transition-all duration-200 hover:border-slate-300 hover:shadow-md active:scale-[0.98]">
+              <Card className="flex h-full flex-col overflow-hidden border border-slate-200 shadow-xs transition-all duration-200 hover:border-slate-300 hover:shadow-md active:scale-[0.98]">
                 <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">
                   {deal.imageUrl && (
                     <Image

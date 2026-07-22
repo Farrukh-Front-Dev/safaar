@@ -42,7 +42,7 @@ export function HotelCard({
       href={`/${locale}/hotels/${hotel.slug}`}
       className="group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
     >
-      <Card className="flex h-full flex-col overflow-hidden border border-slate-200 bg-white shadow-xs transition-all duration-200 hover:border-slate-300 hover:shadow-md active:scale-[0.98]">
+      <Card className="flex h-full flex-col overflow-hidden border border-slate-200 shadow-xs transition-all duration-200 hover:border-slate-300 hover:shadow-md active:scale-[0.98]">
         {/* Rasm */}
         <div className="relative aspect-4/3 overflow-hidden bg-slate-100">
           {imageUrl ? (
