@@ -10,6 +10,10 @@
     "resorts": "Resorts",
     "restaurants": "Restaurants",
     "attractions": "Attractions",
+    "transport": "Transport",
+    "carRent": "Car Rental",
+    "transfers": "Transfers",
+    "vipTaxi": "VIP Taxi",
     "about": "About us",
     "help": "Help",
     "terms": "Terms"

@@ -34,5 +34,23 @@
     "bestTime": "Ziyorat:",
     "moreInfo": "Batafsil",
     "comingSoon": "{name} bo'yicha ma'lumotlar tez orada kengaytiriladi!"
+  },
+  "transport": {
+    "badge": "Avtotransport & Transfer",
+    "title": "Avto Ijarasi va Transfer Xizmatlari",
+    "subtitle": "O'zbekiston bo'ylab qulay sayohat qilish uchun avtomobil ijarasi, VIP taksi va aeroport transferlari.",
+    "searchPlaceholder": "Avto rusumi yoki shahar bo'yicha qidiruv...",
+    "allTypes": "Barcha turlar",
+    "categories": {
+      "all": "Barcha turlar",
+      "rent": "Avto Ijarasi (Rent a Car)",
+      "transfer": "Aeroport Transfer",
+      "vip": "VIP & Biznes Taksi"
+    },
+    "perDay": "kuniga",
+    "driverIncluded": "Haydovchi bilan",
+    "withoutDriver": "Haydovchisiz",
+    "reserve": "Ijaraga olish",
+    "comingSoon": "{name} bo'yicha buyurtma tez orada ishga tushadi! Bog'lanish: {phone}"
   }
 }

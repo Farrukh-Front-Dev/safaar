@@ -34,5 +34,23 @@
     "bestTime": "Best time:",
     "moreInfo": "Details",
     "comingSoon": "Detailed guide for {name} coming soon!"
+  },
+  "transport": {
+    "badge": "Transport & Transfers",
+    "title": "Car Rentals & Airport Transfers",
+    "subtitle": "Car rental services, VIP taxis, and airport transfers for comfortable travel across Uzbekistan.",
+    "searchPlaceholder": "Search by car brand or city...",
+    "allTypes": "All Types",
+    "categories": {
+      "all": "All Types",
+      "rent": "Car Rental (Rent a Car)",
+      "transfer": "Airport Transfer",
+      "vip": "VIP & Business Taxi"
+    },
+    "perDay": "per day",
+    "driverIncluded": "With Driver",
+    "withoutDriver": "Self-drive",
+    "reserve": "Book Vehicle",
+    "comingSoon": "Booking for {name} launching soon! Contact: {phone}"
   }
 }

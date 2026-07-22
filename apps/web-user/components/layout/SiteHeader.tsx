@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Home, Hotel, MountainSnow, HelpCircle, Building2, TreePine, HeartPulse, Mountain, UtensilsCrossed } from "lucide-react";
+import { Home, Hotel, MountainSnow, HelpCircle, Building2, TreePine, HeartPulse, Mountain, UtensilsCrossed, Car, Compass, ShieldCheck } from "lucide-react";
 import type { Locale } from "@/i18n/config";
 import type { CommonDict } from "@/i18n/dictionaries";
 import { logoutAction } from "@/lib/auth/actions";
@@ -17,6 +17,12 @@ export function SiteHeader({
   authed: boolean;
 }) {
   const base = `/${locale}`;
+  const navDict = dict.nav as typeof dict.nav & {
+    transport?: string;
+    carRent?: string;
+    transfers?: string;
+    vipTaxi?: string;
+  };
 
   const desktopItems: ScrollNavItem[] = [
     { href: base, label: dict.nav.home, icon: <Home className="h-4 w-4" />, exact: true },
@@ -28,6 +34,14 @@ export function SiteHeader({
         { href: `${base}/guesthouses`, label: dict.nav.guesthouses ?? "Guest Houses", icon: <TreePine className="h-4 w-4" /> },
         { href: `${base}/sanatoriums`, label: dict.nav.sanatoriums ?? "Sanatoriums", icon: <HeartPulse className="h-4 w-4" /> },
         { href: `${base}/resorts`, label: dict.nav.resorts ?? "Resorts", icon: <Mountain className="h-4 w-4" /> },
+      ],
+    },
+    {
+      href: `${base}/transport`, label: navDict.transport ?? "Transport", icon: <Car className="h-4 w-4" />,
+      children: [
+        { href: `${base}/transport?type=rent`, label: navDict.carRent ?? "Avto ijarasi", icon: <Car className="h-4 w-4" /> },
+        { href: `${base}/transport?type=transfer`, label: navDict.transfers ?? "Aeroport Transfer", icon: <Compass className="h-4 w-4" /> },
+        { href: `${base}/transport?type=vip`, label: navDict.vipTaxi ?? "VIP Taksi", icon: <ShieldCheck className="h-4 w-4" /> },
       ],
     },
     { href: `${base}/restaurants`, label: dict.nav.restaurants ?? "Restaurants", icon: <UtensilsCrossed className="h-4 w-4" /> },
