@@ -154,14 +154,15 @@ export function AttractionsView() {
                 {item.description}
               </p>
 
-              <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
+              <div className="mt-4 flex flex-col gap-2.5 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
                 <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300">
-                  <Info className="h-3.5 w-3.5 text-slate-400" />
-                  Ziyorat vaqti: {item.bestTimeToVisit}
+                  <Info className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                  <span className="truncate">Ziyorat: {item.bestTimeToVisit}</span>
                 </span>
                 <Button
                   variant="secondary"
                   size="sm"
+                  className="w-full text-xs font-bold whitespace-nowrap px-3 sm:w-auto"
                   onClick={() => alert(`${item.name} bo'yicha ma'lumotlar tez orada kengaytiriladi!`)}
                 >
                   Batafsil

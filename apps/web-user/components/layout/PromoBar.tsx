@@ -15,16 +15,10 @@ const emptySubscribe = () => () => {};
 
 export function PromoBar({ config, fallbackText, locale = "uz" }: PromoBarProps) {
   const [now] = useState(() => Date.now());
-  const promoId = config?.id ?? "default_promo";
-
+  const [isDismissed, setIsDismissed] = useState(false);
   const isMounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
-  const [isDismissed, setIsDismissed] = useState(() => {
-    if (typeof window !== "undefined") {
-      return sessionStorage.getItem(`safaar_promo_dismissed_${promoId}`) === "1";
-    }
-    return false;
-  });
+  const promoId = config?.id ?? "default_promo";
 
   const handleDismiss = () => {
     setIsDismissed(true);
@@ -42,7 +36,7 @@ export function PromoBar({ config, fallbackText, locale = "uz" }: PromoBarProps)
   const badgeText = config ? getLocalizedText(config.badge, locale) : "";
   const linkText = config ? getLocalizedText(config.linkText, locale) : "";
 
-  if (!isActive || isExpired || isDismissed || !text) {
+  if (!isActive || isExpired || (isMounted && isDismissed) || !text) {
     return null;
   }
 

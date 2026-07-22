@@ -19,13 +19,22 @@ export function LocaleSwitcher({
   const router = useRouter();
 
   useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
     function handleClick(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setOpen(false);
       }
     }
-    if (open) document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    if (open) {
+      document.addEventListener("mousedown", handleClick);
+      document.addEventListener("keydown", handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, [open]);
 
   function switchLocale(nextLocale: Locale) {
@@ -33,7 +42,6 @@ export function LocaleSwitcher({
       setOpen(false);
       return;
     }
-    // Path: /[lang]/... -> /[nextLocale]/...
     const segments = pathname.split("/").filter(Boolean);
     if (segments.length > 0 && (locales as readonly string[]).includes(segments[0])) {
       segments[0] = nextLocale;
@@ -70,7 +78,7 @@ export function LocaleSwitcher({
         <div
           role="listbox"
           aria-label="Tillar"
-          className="absolute right-0 top-full mt-1.5 w-36 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl z-50"
+          className="absolute right-0 top-full mt-1.5 w-36 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-100"
         >
           {locales.map((loc) => {
             const active = loc === current;
@@ -98,3 +106,4 @@ export function LocaleSwitcher({
     </div>
   );
 }
+

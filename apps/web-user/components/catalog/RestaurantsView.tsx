@@ -178,17 +178,18 @@ export function RestaurantsView() {
                 </div>
               </div>
 
-              <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3.5 dark:border-slate-800">
+              <div className="mt-4 flex flex-col gap-2.5 border-t border-slate-100 pt-3.5 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
                 <a
                   href={`tel:${item.phone.replace(/\s+/g, "")}`}
                   className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 transition-colors hover:text-primary-600 dark:text-slate-400 dark:hover:text-primary-400"
                 >
-                  <PhoneCall className="h-3.5 w-3.5 text-slate-400" />
-                  {item.phone}
+                  <PhoneCall className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                  <span className="truncate">{item.phone}</span>
                 </a>
                 <Button
                   variant="primary"
                   size="sm"
+                  className="w-full text-xs font-bold whitespace-nowrap px-3 sm:w-auto"
                   onClick={() => alert(`"Stol band qilish" xizmati tez orada ishga tushadi! Bog'lanish: ${item.phone}`)}
                 >
                   Stol band qilish
