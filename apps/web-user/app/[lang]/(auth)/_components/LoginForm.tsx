@@ -163,7 +163,7 @@ export function LoginForm({
           <div className="w-full border-t border-slate-300" />
         </div>
         <div className="relative flex justify-center text-xs uppercase font-extrabold tracking-wider">
-          <span className="bg-white px-2.5 text-slate-700">{dict.or}</span>
+          <span className="bg-slate-50 px-2.5 text-slate-700">{dict.or}</span>
         </div>
       </div>
 

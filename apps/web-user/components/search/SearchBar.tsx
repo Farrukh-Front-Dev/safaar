@@ -72,7 +72,7 @@ export function SearchBar({
     <div className="mx-auto w-full max-w-4xl">
       <form
         onSubmit={handleSubmit}
-        className="rounded-2xl border-2 border-slate-300 bg-white p-3 shadow-lg shadow-slate-200/60 transition-all duration-200 hover:border-slate-400 sm:p-3.5"
+        className="rounded-2xl border-2 border-slate-300 bg-slate-50 p-3 shadow-lg shadow-slate-200/60 transition-all duration-200 hover:border-slate-400 sm:p-3.5"
       >
         {/* Desktop grid layout & Mobile stack layout */}
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-2">

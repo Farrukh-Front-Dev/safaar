@@ -150,7 +150,7 @@ export async function AccommodationPage({
               </Link>
             </div>
           ) : items.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-white py-16 text-center shadow-btn dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 py-16 text-center shadow-btn dark:border-slate-800 dark:bg-slate-900">
               <p className="font-medium text-slate-700 dark:text-slate-200">{dict.empty}</p>
               <p className="text-sm text-slate-500 dark:text-slate-400">{dict.emptyHint}</p>
               <Link href={clearedHref}>

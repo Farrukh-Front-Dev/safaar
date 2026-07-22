@@ -95,7 +95,7 @@ export function HotelFilters({ dict }: { dict: Pick<HotelsDict, "filters"> }) {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="mb-3 flex w-full items-center justify-between rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-900 shadow-2xs transition-all hover:bg-slate-50 hover:border-slate-400 active:scale-[0.98] lg:hidden"
+        className="mb-3 flex w-full items-center justify-between rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-900 shadow-2xs transition-all hover:bg-slate-100 hover:border-slate-400 active:scale-[0.98] lg:hidden"
       >
         <span className="inline-flex items-center gap-2">
           <Filter className="h-4 w-4 text-blue-600" />
@@ -107,7 +107,7 @@ export function HotelFilters({ dict }: { dict: Pick<HotelsDict, "filters"> }) {
       {/* Main Filter Container */}
       <div
         className={cn(
-          "flex-col gap-4.5 rounded-2xl border border-slate-300 bg-white p-5 shadow-sm",
+          "flex-col gap-4.5 rounded-2xl border border-slate-300 bg-slate-50 p-5 shadow-sm",
           open ? "flex" : "hidden",
           "lg:flex",
         )}

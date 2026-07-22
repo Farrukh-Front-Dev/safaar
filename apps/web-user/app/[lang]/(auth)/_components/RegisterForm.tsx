@@ -104,7 +104,7 @@ export function RegisterForm({
             loading={sending}
             disabled={otpState.ok && !otpState.error}
             formAction={requestAction}
-            className="rounded-xl border border-slate-300 bg-white font-bold text-slate-900 shadow-2xs hover:bg-slate-50 hover:border-slate-400"
+            className="rounded-xl border border-slate-300 bg-slate-100 font-bold text-slate-900 shadow-2xs hover:bg-slate-200 hover:border-slate-400"
           >
             {otpState.ok ? dict.codeSent : dict.sendCode}
           </Button>

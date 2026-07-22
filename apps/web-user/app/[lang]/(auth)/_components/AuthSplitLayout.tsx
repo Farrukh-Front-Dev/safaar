@@ -17,7 +17,7 @@ interface AuthSplitLayoutProps {
   */
 export function AuthSplitLayout({ children, locale, dict }: AuthSplitLayoutProps) {
   return (
-    <div className="flex flex-1 flex-col lg:flex-row w-full bg-slate-50">
+    <div className="flex flex-1 flex-col lg:flex-row w-full bg-white">
       {/* Left panel: Safaar branding (Desktop only) */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-center items-center text-center p-16 bg-primary-600 text-white relative select-none rounded-r-[2.5rem] border-r-8 border-black shadow-lg">
         {/* Brand & Hero Slogan Grouped (Vertically Centered) */}
@@ -44,7 +44,7 @@ export function AuthSplitLayout({ children, locale, dict }: AuthSplitLayoutProps
           <LocaleSwitcher current={locale} light />
         </div>
         
-        <div className="w-full max-w-md space-y-6 bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
+        <div className="w-full max-w-md space-y-6 bg-slate-50 dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
           {children}
         </div>
       </div>
