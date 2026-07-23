@@ -158,7 +158,7 @@ export function DatePicker({
         <>
           {/* Mobilda overlay */}
           <div className="fixed inset-0 z-40 bg-black/20 md:hidden" aria-hidden />
-          <div className="fixed inset-x-4 top-1/2 z-50 -translate-y-1/2 rounded-3xl border border-slate-200 bg-white p-4 shadow-xl md:absolute md:inset-auto md:left-0 md:top-full md:mt-2 md:w-72 md:translate-y-0">
+          <div className="fixed inset-x-4 top-1/2 z-100 -translate-y-1/2 rounded-3xl border border-slate-200 bg-white p-4 shadow-xl md:absolute md:inset-auto md:left-0 md:top-full md:z-100 md:mt-2 md:w-72 md:translate-y-0">
           {/* Oy navigatsiyasi */}
           <div className="mb-3 flex items-center justify-between">
             <button
