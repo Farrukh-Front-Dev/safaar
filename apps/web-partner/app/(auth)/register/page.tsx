@@ -14,7 +14,7 @@ import { access } from "../../_lib/api";
 import { isValidPhone, maskPhone, normalizePhone } from "../../_lib/utils/phone";
 
 const schema = z.object({
-  type: z.enum(["hotel", "bus", "hostel", "guesthouse", "motel", "dacha"]),
+  type: z.enum(["hotel", "bus", "hostel", "guesthouse", "motel", "dacha", "restaurant"]),
   companyName: z.string().min(2, "Obyekt/Kompaniya nomini kiriting"),
   contactPerson: z.string().min(2, "Mas'ul shaxsni kiriting"),
   phone: z.string().min(1, "Telefon raqamni kiriting").refine(isValidPhone, "Telefon noto'g'ri formatda"),
@@ -114,6 +114,7 @@ export default function RegisterPage() {
           <option value="guesthouse">Mehmon uyi</option>
           <option value="motel">Motel</option>
           <option value="dacha">Dacha</option>
+          <option value="restaurant">Restoran</option>
           <option value="bus" disabled>Transport (Tez kunda)</option>
         </select>
       </Field>

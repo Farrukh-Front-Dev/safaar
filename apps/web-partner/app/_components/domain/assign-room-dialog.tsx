@@ -10,6 +10,8 @@ import { useRoomTypes } from "../../_hooks/use-room-types";
 import { useAssignRoom } from "../../_hooks/use-reservations";
 import { RoomStatus, type ReservationView, type Room, type RoomType } from "../../_lib/domain/types";
 import { cn } from "../../_lib/utils/cn";
+import { useAuthStore } from "../../_stores/auth-store";
+import { getPartnerLabels } from "../../_lib/utils/partner-labels";
 
 interface Props {
   open: boolean;
@@ -29,6 +31,10 @@ export function AssignRoomDialog({
   const { data: roomTypes } = useRoomTypes();
   const assignRoom = useAssignRoom();
   const [selected, setSelected] = useState<string | null>(null);
+  const partnerType = useAuthStore((s) => s.user?.partnerType);
+  const labels = getPartnerLabels(partnerType);
+  const unitCap = labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1);
+  const floorCap = labels.floorSingular.charAt(0).toUpperCase() + labels.floorSingular.slice(1);
 
   const availableRoomsCount = useMemo(() => {
     if (!reservation) return 0;
@@ -61,7 +67,7 @@ export function AssignRoomDialog({
     if (!reservation || !selected) return;
     assignRoom.mutate({ id: reservation.id, roomNumber: selected }, {
       onSuccess: () => {
-        toast.success(`Xona ${selected} muvaffaqiyatli tayinlandi.`);
+        toast.success(`${unitCap} ${selected} muvaffaqiyatli tayinlandi.`);
         onAssigned?.(selected);
         setSelected(null);
         onClose();
@@ -76,7 +82,7 @@ export function AssignRoomDialog({
         setSelected(null);
         onClose();
       }}
-      title="Aqlli Xona Tayinlash"
+      title={`Aqlli ${unitCap} Tayinlash`}
       description={
         reservation
           ? `${reservation.guest.fullName} · Bron: ${reservation.roomTypeName}`
@@ -95,10 +101,10 @@ export function AssignRoomDialog({
               </div>
               <div>
                 <p className="text-sm font-semibold text-brand-900 dark:text-brand-100">
-                  Mos keladigan {availableRoomsCount} ta toza xona bor
+                  Mos keladigan {availableRoomsCount} ta bo'sh {labels.unitSingular} bor
                 </p>
                 <p className="text-xs text-brand-700 dark:text-brand-300">
-                  Tizim avtomatik ravishda mos xonalarni yashil rangda ko'rsatmoqda.
+                  Tizim avtomatik ravishda mos {labels.unitPlural}ni yashil rangda ko'rsatmoqda.
                 </p>
               </div>
             </div>
@@ -109,7 +115,7 @@ export function AssignRoomDialog({
           {floors.map(({ floor, rooms }) => (
             <div key={floor} className="flex flex-col gap-3">
               <h3 className="text-sm font-bold text-zinc-900 dark:text-white border-b border-zinc-100 dark:border-zinc-800 pb-1">
-                {floor}-Qavat
+                {floor}-{floorCap}
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {rooms.map((room) => {
@@ -142,7 +148,7 @@ export function AssignRoomDialog({
             Bekor qilish
           </Button>
           <Button onClick={handleConfirm} disabled={!selected} loading={assignRoom.isPending}>
-            {selected ? `Tayinlash` : "Xona tanlang"}
+            {selected ? `Tayinlash` : `${unitCap} tanlang`}
           </Button>
         </div>
       </div>

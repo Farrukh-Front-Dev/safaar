@@ -78,7 +78,9 @@ export function RoomsView() {
         {floors.map(({ floor, rooms }) => (
           <section key={floor} className="flex flex-col gap-4">
             <div className="flex items-center gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-2">
-              <h2 className="text-xl font-bold text-zinc-900 dark:text-white">{floor}-Qavat</h2>
+              <h2 className="text-xl font-bold text-zinc-900 dark:text-white">
+                {floor}-{labels.floorSingular.charAt(0).toUpperCase()}{labels.floorSingular.slice(1)}
+              </h2>
               <span className="text-sm font-medium text-zinc-500">
                 {rooms.length} ta {labels.unitSingular}
               </span>

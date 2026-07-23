@@ -5,7 +5,7 @@ import { SettingsTabLink } from "./_components/settings-tab-link";
 const TABS = [
   {
     href: "/settings/hotel",
-    label: "Mehmonxona",
+    label: "Biznes",
     icon: Building2,
     desc: "Asosiy ma'lumotlar",
   },
@@ -25,10 +25,10 @@ export default function SettingsLayout({ children }: { children: ReactNode }) {
           Sozlamalar
         </span>
         <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-          Mehmonxonangizni sozlang
+          Biznesingizni sozlang
         </h1>
         <p className="text-sm text-[var(--muted-foreground)]">
-          Asosiy ma'lumotlar va mehmonxona sozlamalari.
+          Asosiy ma'lumotlar va biznes sozlamalari.
         </p>
       </header>
 

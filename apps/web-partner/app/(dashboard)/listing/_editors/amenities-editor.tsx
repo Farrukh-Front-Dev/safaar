@@ -5,7 +5,9 @@ import { Button } from "../../../_components/ui/button";
 import { Drawer } from "../../../_components/ui/drawer";
 import { useListing } from "../../../_hooks/use-listing";
 import { useDataStore } from "../../../_stores/data-store";
-import { AMENITY_GROUPS } from "../../../_lib/domain/listing";
+import { useAuthStore } from "../../../_stores/auth-store";
+import { isRestaurant } from "../../../_lib/utils/partner-labels";
+import { AMENITY_GROUPS, RESTAURANT_AMENITY_GROUPS } from "../../../_lib/domain/listing";
 import { cn } from "../../../_lib/utils/cn";
 
 export function AmenitiesEditor({
@@ -17,6 +19,8 @@ export function AmenitiesEditor({
 }) {
   const { data } = useListing();
   const toggle = useDataStore((s) => s.toggleAmenity);
+  const partnerType = useAuthStore((s) => s.user?.partnerType);
+  const groups = isRestaurant(partnerType) ? RESTAURANT_AMENITY_GROUPS : AMENITY_GROUPS;
   const selected = new Set(data.amenities);
 
   return (
@@ -31,7 +35,7 @@ export function AmenitiesEditor({
       }
     >
       <div className="flex flex-col gap-6">
-        {AMENITY_GROUPS.map((group) => (
+        {groups.map((group) => (
           <div key={group.key} className="flex flex-col gap-2.5">
             <h3 className="text-xs font-semibold uppercase tracking-widest text-[var(--muted-foreground)]">
               {group.label}

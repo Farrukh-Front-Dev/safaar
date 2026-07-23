@@ -177,6 +177,56 @@ export const AMENITY_GROUPS: AmenityGroup[] = [
   },
 ];
 
+/** Restoran uchun umumiy qulayliklar (AMENITY_GROUPS'ning restoranga mos varianti). */
+export const RESTAURANT_AMENITY_GROUPS: AmenityGroup[] = [
+  {
+    key: "food",
+    label: "Taom va ichimlik",
+    items: [
+      { id: "halal", label: "Halol taomlar" },
+      { id: "vegan", label: "Vegetarian/vegan menyu" },
+      { id: "kids_menu", label: "Bolalar menyusi" },
+      { id: "bar", label: "Bar" },
+      { id: "alcohol", label: "Alkogolli ichimliklar" },
+      { id: "hookah", label: "Kalyan" },
+    ],
+  },
+  {
+    key: "ambience",
+    label: "Muhit va o'yin-kulgi",
+    items: [
+      { id: "live_music", label: "Jonli musiqa" },
+      { id: "karaoke", label: "Karaoke" },
+      { id: "outdoor_seating", label: "Ochiq terrasa" },
+      { id: "private_room", label: "Alohida (VIP) zal" },
+      { id: "kids_zone", label: "Bolalar zonasi" },
+      { id: "tv_screens", label: "Sport translyatsiyasi (TV)" },
+    ],
+  },
+  {
+    key: "services",
+    label: "Xizmatlar",
+    items: [
+      { id: "wifi", label: "Bepul Wi-Fi" },
+      { id: "parking", label: "Bepul parking" },
+      { id: "delivery", label: "Yetkazib berish" },
+      { id: "takeaway", label: "Olib ketish" },
+      { id: "reservation_required", label: "Oldindan bron talab qilinadi" },
+      { id: "catering", label: "Ketering xizmati" },
+    ],
+  },
+  {
+    key: "facilities",
+    label: "Qulayliklar",
+    items: [
+      { id: "ac", label: "Konditsioner" },
+      { id: "smoking_area", label: "Chekish joyi" },
+      { id: "wheelchair", label: "Nogironlar aravasi uchun" },
+      { id: "family_friendly", label: "Oilaviylar uchun qulay" },
+    ],
+  },
+];
+
 /** Bekor qilish siyosati tavsifi (UI'da tanlash uchun). */
 export const CANCELLATION_POLICY_INFO: Record<
   CancellationPolicy,

@@ -13,6 +13,8 @@ import { BookingStatus } from "@safaar/types";
 import type { ReservationView } from "../../_lib/domain/types";
 import { cn } from "../../_lib/utils/cn";
 import { formatDateTime } from "../../_lib/utils/format";
+import { useAuthStore } from "../../_stores/auth-store";
+import { getPartnerLabels } from "../../_lib/utils/partner-labels";
 
 interface TimelineStep {
   key: string;
@@ -23,7 +25,7 @@ interface TimelineStep {
   state: "done" | "current" | "pending" | "skipped";
 }
 
-function buildSteps(r: ReservationView): TimelineStep[] {
+function buildSteps(r: ReservationView, unitLabel: string): TimelineStep[] {
   const cancelled = r.status === BookingStatus.CANCELLED;
   const completed = r.status === BookingStatus.COMPLETED;
   const inHouse = r.status === "IN_HOUSE";
@@ -51,7 +53,7 @@ function buildSteps(r: ReservationView): TimelineStep[] {
       key: "checkin",
       icon: LogIn,
       label: "Check-in",
-      detail: r.roomNumber ? `Xona ${r.roomNumber}` : undefined,
+      detail: r.roomNumber ? `${unitLabel} ${r.roomNumber}` : undefined,
       state: cancelled
         ? "skipped"
         : inHouse || completed
@@ -91,7 +93,10 @@ export function ReservationTimeline({
 }: {
   reservation: ReservationView;
 }) {
-  const steps = buildSteps(reservation);
+  const partnerType = useAuthStore((s) => s.user?.partnerType);
+  const labels = getPartnerLabels(partnerType);
+  const unitCap = labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1);
+  const steps = buildSteps(reservation, unitCap);
 
   return (
     <ol className="flex flex-col">

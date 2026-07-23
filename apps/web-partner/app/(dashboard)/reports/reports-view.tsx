@@ -174,7 +174,7 @@ export function ReportsView() {
               <div>
                 <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white">Oxirgi kunlar bandligi</h2>
                 <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                  Xonalar qanchalik to'lganligi (foizda)
+                  {labels.unitPlural.charAt(0).toUpperCase()}{labels.unitPlural.slice(1)} qanchalik to'lganligi (foizda)
                 </p>
               </div>
             </div>

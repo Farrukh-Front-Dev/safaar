@@ -13,6 +13,7 @@ import { useMounted } from "../../_hooks/use-mounted";
 import { useReservations } from "../../_hooks/use-reservations";
 import { useGuests } from "../../_hooks/use-guests";
 import { useAuthStore } from "../../_stores/auth-store";
+import { getPartnerLabels } from "../../_lib/utils/partner-labels";
 import { getNavGroups } from "./sidebar-nav";
 import { cn } from "../../_lib/utils/cn";
 import { formatPhone } from "../../_lib/utils/format";
@@ -65,6 +66,7 @@ export function CommandPalette() {
 
   const user = useAuthStore((s) => s.user);
   const partnerType = user?.partnerType || "hotel";
+  const labels = getPartnerLabels(partnerType);
 
   const results = useMemo<ResultItem[]>(() => {
     const q = query.trim().toLowerCase();
@@ -199,7 +201,7 @@ export function CommandPalette() {
                     setQuery(e.target.value);
                     setSelectedIdx(0);
                   }}
-                  placeholder="Bron ID, mijoz, xona yoki sahifa qidiring..."
+                  placeholder={`Bron ID, mijoz, ${labels.unitSingular} yoki sahifa qidiring...`}
                   className="flex-1 border-0 bg-[var(--surface)] py-4 text-sm focus:outline-none"
                   aria-label="Qidiruv"
                 />

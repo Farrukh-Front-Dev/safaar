@@ -11,9 +11,11 @@ import { Dialog } from "../../../../_components/ui/dialog";
 import { Input } from "../../../../_components/ui/input";
 import { Label } from "../../../../_components/ui/label";
 import { useDataStore } from "../../../../_stores/data-store";
+import { useAuthStore } from "../../../../_stores/auth-store";
+import { getPartnerLabels, isRestaurant } from "../../../../_lib/utils/partner-labels";
 import type { RoomType } from "../../../../_lib/domain/types";
 
-const AMENITY_OPTIONS = [
+const ROOM_AMENITY_OPTIONS = [
   { value: "wifi", label: "Wi-Fi" },
   { value: "tv", label: "TV" },
   { value: "ac", label: "Konditsioner" },
@@ -25,6 +27,17 @@ const AMENITY_OPTIONS = [
   { value: "pool", label: "Hovuz" },
   { value: "spa", label: "Spa" },
   { value: "gym", label: "Sport zal" },
+];
+
+const TABLE_AMENITY_OPTIONS = [
+  { value: "window", label: "Deraza yonida" },
+  { value: "terrace", label: "Terrasa/tashqarida" },
+  { value: "vip", label: "VIP xona" },
+  { value: "quiet", label: "Tinch burchak" },
+  { value: "near_stage", label: "Sahna/musiqa yonida" },
+  { value: "high_chair", label: "Bolalar kursisi" },
+  { value: "wheelchair", label: "Nogironlar aravachasiga qulay" },
+  { value: "smoking", label: "Chekish joyi" },
 ];
 
 const schema = z.object({
@@ -51,6 +64,10 @@ interface Props {
 export function RoomTypeDialog({ open, onClose, editing }: Props) {
   const addRoomType = useDataStore((s) => s.addRoomType);
   const updateRoomType = useDataStore((s) => s.updateRoomType);
+  const partnerType = useAuthStore((s) => s.user?.partnerType);
+  const labels = getPartnerLabels(partnerType);
+  const restaurant = isRestaurant(partnerType);
+  const amenityOptions = restaurant ? TABLE_AMENITY_OPTIONS : ROOM_AMENITY_OPTIONS;
 
   const form = useForm<Values>({
     resolver: zodResolver(schema),
@@ -127,8 +144,12 @@ export function RoomTypeDialog({ open, onClose, editing }: Props) {
     <Dialog
       open={open}
       onClose={onClose}
-      title={editing ? "Xona turini tahrirlash" : "Yangi xona turi"}
-      description="Masalan: Standart, Lyuks, Family Suite"
+      title={editing ? `${labels.unitTypeLabel}ni tahrirlash` : `Yangi ${labels.unitTypeLabel.toLowerCase()}`}
+      description={
+        restaurant
+          ? "Masalan: 2 kishilik, Terrasa, VIP xona"
+          : "Masalan: Standart, Lyuks, Family Suite"
+      }
       size="lg"
     >
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
@@ -162,7 +183,7 @@ export function RoomTypeDialog({ open, onClose, editing }: Props) {
             <Label htmlFor="rt-desc">Qisqa tavsif</Label>
             <Input
               id="rt-desc"
-              placeholder="Keng, balkonli xona..."
+              placeholder={restaurant ? "Deraza yonida, 4 kishilik..." : "Keng, balkonli xona..."}
               {...form.register("description")}
             />
             {err.description && (
@@ -172,31 +193,37 @@ export function RoomTypeDialog({ open, onClose, editing }: Props) {
             )}
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="rt-bed">Karavot turi</Label>
-            <Input
-              id="rt-bed"
-              placeholder="1 king bed"
-              {...form.register("bedType")}
-            />
-          </div>
+          {!restaurant && (
+            <>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="rt-bed">Karavot turi</Label>
+                <Input
+                  id="rt-bed"
+                  placeholder="1 king bed"
+                  {...form.register("bedType")}
+                />
+              </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="rt-size">Maydon (m²)</Label>
-            <Input
-              id="rt-size"
-              type="number"
-              min={0}
-              max={500}
-              {...form.register("sizeSqm", {
-                setValueAs: (value) =>
-                  value === "" ? undefined : Number(value),
-              })}
-            />
-          </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="rt-size">Maydon (m²)</Label>
+                <Input
+                  id="rt-size"
+                  type="number"
+                  min={0}
+                  max={500}
+                  {...form.register("sizeSqm", {
+                    setValueAs: (value) =>
+                      value === "" ? undefined : Number(value),
+                  })}
+                />
+              </div>
+            </>
+          )}
 
           <div className="flex flex-col gap-1.5 md:col-span-2">
-            <Label htmlFor="rt-price">Bir kechalik narx (so'm)</Label>
+            <Label htmlFor="rt-price">
+              {restaurant ? "Bron narxi (so'm)" : "Bir kechalik narx (so'm)"}
+            </Label>
             <Input
               id="rt-price"
               type="number"
@@ -209,7 +236,7 @@ export function RoomTypeDialog({ open, onClose, editing }: Props) {
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label>Xona rasmi</Label>
+            <Label>{labels.unitSingular.charAt(0).toUpperCase()}{labels.unitSingular.slice(1)} rasmi</Label>
             <label className="group relative aspect-[4/3] cursor-pointer overflow-hidden rounded-card border-2 border-dashed border-[var(--border)] bg-[var(--surface-muted)] transition-colors hover:border-brand-500 hover:bg-[var(--surface)]">
               {imageUrl ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
@@ -246,7 +273,7 @@ export function RoomTypeDialog({ open, onClose, editing }: Props) {
         <div className="flex flex-col gap-2">
           <Label>Qulayliklar</Label>
           <div className="flex flex-wrap gap-2">
-            {AMENITY_OPTIONS.map((a) => {
+            {amenityOptions.map((a) => {
               const checked = selectedAmenities.includes(a.value);
               return (
                 <button

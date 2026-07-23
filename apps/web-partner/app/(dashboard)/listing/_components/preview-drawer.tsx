@@ -7,20 +7,23 @@ import {
   Image as ImageIcon,
   MapPin,
   Star,
+  UtensilsCrossed,
   Users,
 } from "lucide-react";
 import { Button } from "../../../_components/ui/button";
 import { Drawer } from "../../../_components/ui/drawer";
-import { AMENITY_GROUPS } from "../../../_lib/domain/listing";
+import { AMENITY_GROUPS, RESTAURANT_AMENITY_GROUPS } from "../../../_lib/domain/listing";
 import { useListing } from "../../../_hooks/use-listing";
 import { useRooms } from "../../../_hooks/use-rooms";
 import { useRoomTypes } from "../../../_hooks/use-room-types";
+import { useAuthStore } from "../../../_stores/auth-store";
+import { getPartnerLabels, hasStarRating, isRestaurant } from "../../../_lib/utils/partner-labels";
 import { cn } from "../../../_lib/utils/cn";
 import { formatMoney } from "../../../_lib/utils/format";
 
-// Amenities'ni label'ga aylantirish uchun map
+// Amenities'ni label'ga aylantirish uchun map (barcha turlar birlashtirilgan)
 const AMENITY_LABEL = new Map<string, string>();
-for (const g of AMENITY_GROUPS) {
+for (const g of [...AMENITY_GROUPS, ...RESTAURANT_AMENITY_GROUPS]) {
   for (const it of g.items) AMENITY_LABEL.set(it.id, it.label);
 }
 
@@ -34,6 +37,10 @@ export function PreviewDrawer({
   const { data: l } = useListing();
   const { data: rooms } = useRooms();
   const { data: roomTypes } = useRoomTypes();
+  const partnerType = useAuthStore((s) => s.user?.partnerType);
+  const labels = getPartnerLabels(partnerType);
+  const showStars = hasStarRating(partnerType);
+  const restaurant = isRestaurant(partnerType);
   const cover = l.photos.find((p) => p.isCover) ?? l.photos[0];
   const otherPhotos = l.photos.filter((p) => !p.isCover).slice(0, 4);
   const roomAds = roomTypes.map((roomType) => {
@@ -110,21 +117,25 @@ export function PreviewDrawer({
             {l.name || "Nomi kiritilmagan"}
           </h1>
           <div className="flex items-center gap-2">
-            <div className="inline-flex">
-              {[1, 2, 3, 4, 5].map((n) => (
-                <Star
-                  key={n}
-                  className={cn(
-                    "h-4 w-4",
-                    n <= l.stars
-                      ? "fill-amber-400 stroke-amber-500"
-                      : "fill-transparent stroke-zinc-300",
-                  )}
-                  aria-hidden
-                />
-              ))}
-            </div>
-            <span className="text-sm text-[var(--muted-foreground)]">·</span>
+            {showStars && (
+              <>
+                <div className="inline-flex">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Star
+                      key={n}
+                      className={cn(
+                        "h-4 w-4",
+                        n <= l.stars
+                          ? "fill-amber-400 stroke-amber-500"
+                          : "fill-transparent stroke-zinc-300",
+                      )}
+                      aria-hidden
+                    />
+                  ))}
+                </div>
+                <span className="text-sm text-[var(--muted-foreground)]">·</span>
+              </>
+            )}
             <span className="inline-flex items-center gap-1 text-sm text-[var(--muted-foreground)]">
               <MapPin className="h-3.5 w-3.5" aria-hidden />
               {l.city} · {l.address}
@@ -164,7 +175,7 @@ export function PreviewDrawer({
         {roomAds.length > 0 && (
           <div className="flex flex-col gap-2">
             <h2 className="text-sm font-semibold uppercase tracking-widest text-[var(--muted-foreground)]">
-              Xona variantlari
+              {labels.unitTypesTitle}
             </h2>
             <div className="grid gap-3">
               {roomAds.map(({ roomType, listedCount, minPrice }) => (
@@ -189,10 +200,11 @@ export function PreviewDrawer({
                     </div>
                     <div className="min-w-0 p-4">
                       <div className="flex flex-wrap items-center gap-2">
-                        <BedDouble
-                          className="h-4 w-4 text-brand-600"
-                          aria-hidden
-                        />
+                        {restaurant ? (
+                          <UtensilsCrossed className="h-4 w-4 text-brand-600" aria-hidden />
+                        ) : (
+                          <BedDouble className="h-4 w-4 text-brand-600" aria-hidden />
+                        )}
                         <h3 className="font-semibold">{roomType.name}</h3>
                         {listedCount <= 2 && listedCount > 0 && (
                           <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700">
@@ -210,7 +222,7 @@ export function PreviewDrawer({
                           roomType.sizeSqm > 0 && (
                             <span>{roomType.sizeSqm} m²</span>
                           )}
-                        <span>{listedCount} xona mavjud</span>
+                        <span>{listedCount} {labels.unitSingular} mavjud</span>
                       </p>
                       {roomType.description && (
                         <p className="mt-2 line-clamp-2 text-sm leading-6 text-[var(--muted-foreground)]">
@@ -230,7 +242,7 @@ export function PreviewDrawer({
                     </div>
                     <div className="border-t border-[var(--border)] p-4 text-left sm:border-l sm:border-t-0 sm:text-right">
                       <p className="text-[11px] text-[var(--muted-foreground)]">
-                        1 kecha
+                        {restaurant ? "narxi" : "1 kecha"}
                       </p>
                       <p className="text-lg font-bold text-brand-700 dark:text-brand-300">
                         {formatMoney(minPrice)}
@@ -304,11 +316,11 @@ export function PreviewDrawer({
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <span className="inline-flex items-center gap-1.5">
                 <Calendar className="h-4 w-4 text-brand-600" aria-hidden />
-                Check-in: <strong>{l.checkInTime}</strong>
+                {labels.checkInLabel}: <strong>{l.checkInTime}</strong>
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <Calendar className="h-4 w-4 text-brand-600" aria-hidden />
-                Check-out: <strong>{l.checkOutTime}</strong>
+                {labels.checkOutLabel}: <strong>{l.checkOutTime}</strong>
               </span>
             </div>
             <div className="mt-3 flex flex-wrap gap-1.5">

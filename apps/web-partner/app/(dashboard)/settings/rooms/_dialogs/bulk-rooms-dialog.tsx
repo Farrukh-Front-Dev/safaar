@@ -12,7 +12,7 @@ import { Input } from "../../../../_components/ui/input";
 import { Label } from "../../../../_components/ui/label";
 import { useDataStore } from "../../../../_stores/data-store";
 import { useAuthStore } from "../../../../_stores/auth-store";
-import { hasBeds } from "../../../../_lib/utils/partner-labels";
+import { getPartnerLabels, hasBeds } from "../../../../_lib/utils/partner-labels";
 
 const schema = z.object({
   floor: z.number().int().min(1).max(50),
@@ -33,6 +33,7 @@ export function BulkRoomsDialog({ open, onClose }: Props) {
   const bulkAddRooms = useDataStore((s) => s.bulkAddRooms);
   const generateBedsForRoom = useDataStore((s) => s.generateBedsForRoom);
   const partnerType = useAuthStore((s) => s.user?.partnerType);
+  const labels = getPartnerLabels(partnerType);
 
   const form = useForm<Values>({
     resolver: zodResolver(schema),
@@ -77,7 +78,7 @@ export function BulkRoomsDialog({ open, onClose }: Props) {
         generateBedsForRoom(room.id, roomType?.capacity ?? 1),
       );
     }
-    toast.success(`${result.added} ta xona qo'shildi`);
+    toast.success(`${result.added} ta ${labels.unitSingular} qo'shildi`);
     if (result.reason) {
       toast.warning(result.reason);
     }
@@ -90,14 +91,16 @@ export function BulkRoomsDialog({ open, onClose }: Props) {
     <Dialog
       open={open}
       onClose={onClose}
-      title="Ko'p xonani birdaniga qo'shish"
-      description="Bir qavatdagi ketma-ket xonalarni tez yaratish."
+      title={`Ko'p ${labels.unitSingular}ni birdaniga qo'shish`}
+      description={`Bir ${labels.floorSingular}dagi ketma-ket ${labels.unitPlural}ni tez yaratish.`}
       size="lg"
     >
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="bulk-floor">Qavat</Label>
+            <Label htmlFor="bulk-floor">
+              {labels.floorSingular.charAt(0).toUpperCase()}{labels.floorSingular.slice(1)}
+            </Label>
             <Input
               id="bulk-floor"
               type="number"
@@ -133,14 +136,14 @@ export function BulkRoomsDialog({ open, onClose }: Props) {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="bulk-type">Xona turi</Label>
+          <Label htmlFor="bulk-type">{labels.unitTypeLabel}</Label>
           <select
             id="bulk-type"
             className="h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm focus:border-brand-600 focus:outline-none"
             {...form.register("roomTypeId")}
           >
             {roomTypes.length === 0 ? (
-              <option value="">Avval xona turini yarating</option>
+              <option value="">Avval {labels.unitTypeLabel.toLowerCase()}ni yarating</option>
             ) : (
               roomTypes.map((rt) => (
                 <option key={rt.id} value={rt.id}>
@@ -159,14 +162,14 @@ export function BulkRoomsDialog({ open, onClose }: Props) {
           />
           <div className="flex flex-col gap-1">
             <p className="font-medium text-brand-900 dark:text-brand-100">
-              Yaratiladigan xonalar
+              Yaratiladigan {labels.unitPlural}
             </p>
             <p className="text-brand-800 dark:text-brand-200">
               {previewNumbers.join(", ")}
               {showEllipsis && ", ..., "}
               {showEllipsis && lastNumber}
               {" — jami "}
-              <strong>{values.count || 0} ta xona</strong>
+              <strong>{values.count || 0} ta {labels.unitSingular}</strong>
             </p>
           </div>
         </div>
@@ -176,7 +179,7 @@ export function BulkRoomsDialog({ open, onClose }: Props) {
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
           <p>
             Agar ba'zi raqamlar mavjud bo'lsa — ular avtomatik o'tkazib
-            yuboriladi. Holat: barcha yangi xonalar "Toza & bo'sh".
+            yuboriladi. Holat: barcha yangi {labels.unitPlural} "Toza & bo'sh".
           </p>
         </div>
 

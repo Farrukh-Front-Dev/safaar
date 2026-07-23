@@ -5,6 +5,8 @@ import { BookingStatus } from "@safaar/types";
 import type { ReservationView } from "../../../_lib/domain/types";
 import { cn } from "../../../_lib/utils/cn";
 import { formatDate, formatMoney, formatPhone } from "../../../_lib/utils/format";
+import { useAuthStore } from "../../../_stores/auth-store";
+import { getPartnerLabels, isRestaurant } from "../../../_lib/utils/partner-labels";
 
 function statusClasses(status: ReservationView["status"]): string {
   switch (status) {
@@ -46,6 +48,10 @@ export function ReservationBar({
   truncatedEnd,
 }: ReservationBarProps) {
   const router = useRouter();
+  const partnerType = useAuthStore((s) => s.user?.partnerType);
+  const labels = getPartnerLabels(partnerType);
+  const restaurant = isRestaurant(partnerType);
+  const unitCap = labels.unitSingular.charAt(0).toUpperCase() + labels.unitSingular.slice(1);
   const balance = reservation.totalPrice - reservation.paidAmount;
   const paymentLabel =
     reservation.paidAmount <= 0
@@ -74,7 +80,11 @@ export function ReservationBar({
           e.stopPropagation();
           router.push(`/reservations/${reservation.id}`);
         }}
-        title={`${reservation.guest.fullName} · ${formatDate(reservation.checkIn)} → ${formatDate(reservation.checkOut)}`}
+        title={
+          restaurant
+            ? `${reservation.guest.fullName} · ${formatDate(reservation.checkIn)} ${reservation.slotTime ?? ""}`
+            : `${reservation.guest.fullName} · ${formatDate(reservation.checkIn)} → ${formatDate(reservation.checkOut)}`
+        }
         className={cn(
           "flex h-full w-full min-w-0 items-center gap-1.5 px-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--surface)]",
           statusClasses(reservation.status),
@@ -104,17 +114,25 @@ export function ReservationBar({
           {formatPhone(reservation.guest.phone)}
         </p>
         <div className="my-2 h-px bg-[var(--border)]" />
+        {restaurant ? (
+          <p>
+            <span className="text-[var(--muted-foreground)]">Vaqt: </span>
+            {formatDate(reservation.checkIn)}
+            {reservation.slotTime && ` · ${reservation.slotTime}`}
+          </p>
+        ) : (
+          <p>
+            <span className="text-[var(--muted-foreground)]">Sanalar: </span>
+            {formatDate(reservation.checkIn)} →{" "}
+            {formatDate(reservation.checkOut)}
+            <span className="text-[var(--muted-foreground)]">
+              {" "}
+              ({reservation.nights} kech.)
+            </span>
+          </p>
+        )}
         <p>
-          <span className="text-[var(--muted-foreground)]">Sanalar: </span>
-          {formatDate(reservation.checkIn)} →{" "}
-          {formatDate(reservation.checkOut)}
-          <span className="text-[var(--muted-foreground)]">
-            {" "}
-            ({reservation.nights} kech.)
-          </span>
-        </p>
-        <p>
-          <span className="text-[var(--muted-foreground)]">Xona: </span>
+          <span className="text-[var(--muted-foreground)]">{unitCap}: </span>
           {reservation.roomTypeName}
           {reservation.roomNumber && (
             <span className="font-mono text-brand-700 dark:text-brand-300">

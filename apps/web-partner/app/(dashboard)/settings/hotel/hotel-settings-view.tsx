@@ -47,7 +47,7 @@ export function HotelSettingsView() {
   const onSubmit = form.handleSubmit(async (values) => {
     setSaving(true);
     await new Promise((r) => setTimeout(r, 400));
-    toast.success("Mehmonxona ma'lumotlari saqlandi");
+    toast.success("Ma'lumotlar saqlandi");
     form.reset(values);
     setSaving(false);
   });
@@ -63,7 +63,7 @@ export function HotelSettingsView() {
         <CardBody>
           <form onSubmit={onSubmit} className="grid gap-4 md:grid-cols-2">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="name">Mehmonxona nomi</Label>
+              <Label htmlFor="name">Biznes nomi</Label>
               <Input
                 id="name"
                 aria-invalid={Boolean(err.name)}
@@ -87,7 +87,7 @@ export function HotelSettingsView() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="phone">Resepsiyon telefoni</Label>
+              <Label htmlFor="phone">Aloqa telefoni</Label>
               <Input
                 id="phone"
                 type="tel"
@@ -129,7 +129,7 @@ export function HotelSettingsView() {
               <textarea
                 id="description"
                 rows={3}
-                placeholder="Mehmonxona haqida qisqacha ma'lumot..."
+                placeholder="Biznesingiz haqida qisqacha ma'lumot..."
                 className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 text-sm focus:border-brand-600 focus:outline-none"
                 {...form.register("description")}
               />

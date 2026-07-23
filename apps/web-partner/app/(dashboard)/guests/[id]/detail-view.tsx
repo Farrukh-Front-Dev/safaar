@@ -8,6 +8,7 @@ import {
   MessageSquare,
   Phone,
   Tag,
+  UtensilsCrossed,
   Wallet,
 } from "lucide-react";
 import Link from "next/link";
@@ -25,6 +26,8 @@ import { ReservationStatusBadge } from "../../../_components/domain/reservation-
 import { SourceBadge } from "../../../_components/domain/source-badge";
 import { useGuests } from "../../../_hooks/use-guests";
 import { useReservations } from "../../../_hooks/use-reservations";
+import { useAuthStore } from "../../../_stores/auth-store";
+import { isRestaurant } from "../../../_lib/utils/partner-labels";
 import {
   formatDate,
   formatMoney,
@@ -34,6 +37,9 @@ import {
 export function GuestDetailView({ id }: { id: string }) {
   const { data: guests } = useGuests();
   const { data: reservations } = useReservations();
+  const partnerType = useAuthStore((s) => s.user?.partnerType);
+  const restaurant = isRestaurant(partnerType);
+  const UnitIcon = restaurant ? UtensilsCrossed : BedDouble;
 
   const guest = guests.find((g) => g.id === id);
 
@@ -147,7 +153,7 @@ export function GuestDetailView({ id }: { id: string }) {
       {/* KPI'lar */}
       <div className="grid gap-3 sm:grid-cols-3">
         <StatBox
-          icon={<BedDouble className="h-4 w-4" aria-hidden />}
+          icon={<UnitIcon className="h-4 w-4" aria-hidden />}
           label="Jami tashriflar"
           value={guest.totalStays}
         />
@@ -174,7 +180,7 @@ export function GuestDetailView({ id }: { id: string }) {
         <CardBody className="p-0">
           {bookings.length === 0 ? (
             <EmptyState
-              icon={<BedDouble className="h-8 w-8" aria-hidden />}
+              icon={<UnitIcon className="h-8 w-8" aria-hidden />}
               title="Bronlar yo'q"
               description="Bu mijoz hozircha bron qilmagan."
             />
@@ -201,8 +207,9 @@ export function GuestDetailView({ id }: { id: string }) {
                       )}
                     </span>
                     <span className="text-xs text-[var(--muted-foreground)]">
-                      {formatDate(b.checkIn)} → {formatDate(b.checkOut)} ·{" "}
-                      {b.nights} kech.
+                      {restaurant
+                        ? `${formatDate(b.checkIn)}${b.slotTime ? ` · ${b.slotTime}` : ""}`
+                        : `${formatDate(b.checkIn)} → ${formatDate(b.checkOut)} · ${b.nights} kech.`}
                     </span>
                   </div>
                   <SourceBadge source={b.source} />

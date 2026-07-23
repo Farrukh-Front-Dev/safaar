@@ -56,6 +56,8 @@ export interface PartnerLabels {
   newBookingLabel: string;
   /** Walk-in dialog sarlavhasi */
   walkInTitle: string;
+  /** Xonalar xaritasida guruhlash birligi (qavat/zal), birlik shaklda */
+  floorSingular: string;
 }
 
 const HOTEL_LABELS: PartnerLabels = {
@@ -84,6 +86,7 @@ const HOTEL_LABELS: PartnerLabels = {
   unitTypesTitle: "Xona Turlari",
   newBookingLabel: "Yangi bron",
   walkInTitle: "Walk-in bron",
+  floorSingular: "qavat",
 };
 
 const DACHA_LABELS: PartnerLabels = {
@@ -112,6 +115,7 @@ const DACHA_LABELS: PartnerLabels = {
   unitTypesTitle: "Xona Turlari",
   newBookingLabel: "Yangi band qilish",
   walkInTitle: "Bevosita band qilish",
+  floorSingular: "qavat",
 };
 
 const HOSTEL_LABELS: PartnerLabels = {
@@ -140,6 +144,7 @@ const HOSTEL_LABELS: PartnerLabels = {
   unitTypesTitle: "Xona / Dormitory Turlari",
   newBookingLabel: "Yangi band qilish",
   walkInTitle: "Bevosita band qilish",
+  floorSingular: "qavat",
 };
 
 const BUS_LABELS: PartnerLabels = {
@@ -168,6 +173,7 @@ const BUS_LABELS: PartnerLabels = {
   unitTypesTitle: "Avtobus Turlari",
   newBookingLabel: "Yangi chipta",
   walkInTitle: "Kassadan chipta sotish",
+  floorSingular: "qavat",
 };
 
 const RESTAURANT_LABELS: PartnerLabels = {
@@ -196,6 +202,7 @@ const RESTAURANT_LABELS: PartnerLabels = {
   unitTypesTitle: "Stol Turlari",
   newBookingLabel: "Yangi bron",
   walkInTitle: "Bevosita bron",
+  floorSingular: "zal",
 };
 
 const GUESTHOUSE_LABELS: PartnerLabels = {
