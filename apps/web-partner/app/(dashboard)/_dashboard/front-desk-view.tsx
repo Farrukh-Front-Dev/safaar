@@ -473,6 +473,11 @@ function TaskCard({
                     {bed && ` · ${bed.label}`}
                   </strong>
                 )}
+                {reservation.slotTime && (
+                  <strong className="text-zinc-700 dark:text-zinc-300 ml-1">
+                    · {reservation.slotTime}
+                  </strong>
+                )}
               </span>
             </div>
           )}
@@ -558,6 +563,7 @@ function NextTaskCard({ task, labels }: { task: Task; labels: PartnerLabels }) {
         <p className="truncate text-xs text-zinc-500 mt-0.5">
           {kindLabel} · {task.reservation.roomTypeName}
           {bed && ` · ${bed.label}`}
+          {task.reservation.slotTime && ` · ${task.reservation.slotTime}`}
         </p>
       </div>
     </Link>

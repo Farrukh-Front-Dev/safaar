@@ -120,6 +120,7 @@ export function UserMenu({ name, phone, onLogout }: UserMenuProps) {
               <option value="motel">Motel</option>
               <option value="dacha">Dacha</option>
               <option value="hostel">Hostel</option>
+              <option value="restaurant">Restoran</option>
               <option value="bus">Transport (Bus)</option>
             </select>
           </div>

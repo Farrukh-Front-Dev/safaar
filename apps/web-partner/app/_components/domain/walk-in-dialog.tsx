@@ -12,7 +12,8 @@ import { Label } from "../ui/label";
 import { TODAY_ISO } from "../../_lib/mocks/data";
 import { useDataStore } from "../../_stores/data-store";
 import { useAuthStore } from "../../_stores/auth-store";
-import { getPartnerLabels, isDacha } from "../../_lib/utils/partner-labels";
+import { getPartnerLabels, isDacha, isRestaurant } from "../../_lib/utils/partner-labels";
+import { buildTimeSlots } from "../../_lib/utils/time-slots";
 import {
   isValidPhone,
   maskPhone,
@@ -25,6 +26,7 @@ const schema = z.object({
   roomTypeId: z.string().min(1, "Xona turini tanlang"),
   checkIn: z.string().min(1),
   checkOut: z.string().min(1),
+  slotTime: z.string().optional(),
   adults: z.number().int().min(1).max(8),
   children: z.number().int().min(0).max(8),
 });
@@ -50,6 +52,8 @@ export interface WalkInInitial {
   roomNumber?: string;
   /** Faqat hostel: kalendardan oldindan tanlangan yotoq. */
   bedId?: string;
+  /** Faqat restoran: kalendardan oldindan tanlangan vaqt-slot ("HH:MM"). */
+  slotTime?: string;
 }
 
 interface WalkInDialogProps {
@@ -69,10 +73,15 @@ export function WalkInDialog({
   const addReservation = useDataStore((s) => s.addReservation);
   const ensureSingleUnitRoom = useDataStore((s) => s.ensureSingleUnitRoom);
   const listingName = useDataStore((s) => s.listing.name);
+  const listingCheckInTime = useDataStore((s) => s.listing.checkInTime);
+  const listingCheckOutTime = useDataStore((s) => s.listing.checkOutTime);
   const partnerType = useAuthStore((s) => s.user?.partnerType);
   const labels = getPartnerLabels(partnerType);
   const dacha = isDacha(partnerType);
+  const restaurant = isRestaurant(partnerType);
   const [submitting, setSubmitting] = useState(false);
+
+  const timeSlots = restaurant ? buildTimeSlots(listingCheckInTime, listingCheckOutTime) : [];
 
   useEffect(() => {
     if (open && dacha) ensureSingleUnitRoom(listingName || "Dacha");
@@ -91,6 +100,7 @@ export function WalkInDialog({
       roomTypeId: initialValues?.roomTypeId ?? roomTypes[0]?.id ?? "",
       checkIn: defaultCheckIn,
       checkOut: defaultCheckOut,
+      slotTime: initialValues?.slotTime ?? timeSlots[0],
       adults: 2,
       children: 0,
     },
@@ -105,11 +115,13 @@ export function WalkInDialog({
         phone: "+998 ",
         roomTypeId: initialValues?.roomTypeId ?? roomTypes[0]?.id ?? "",
         checkIn: ci,
-        checkOut: initialValues?.checkOut ?? addDaysIso(ci, 1),
+        checkOut: restaurant ? ci : (initialValues?.checkOut ?? addDaysIso(ci, 1)),
+        slotTime: initialValues?.slotTime ?? timeSlots[0],
         adults: 2,
         children: 0,
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initialValues, form, roomTypes]);
 
   const onSubmit = form.handleSubmit((values) => {
@@ -121,7 +133,12 @@ export function WalkInDialog({
         toast.error("Avval xona turi yarating");
         return;
       }
-      const nights = nightsBetween(values.checkIn, values.checkOut);
+      if (restaurant && !values.slotTime) {
+        toast.error("Vaqtni tanlang");
+        return;
+      }
+      const checkOut = restaurant ? values.checkIn : values.checkOut;
+      const nights = nightsBetween(values.checkIn, checkOut);
       const selectedRoom = initialValues?.roomNumber
         ? rooms.find((room) => room.number === initialValues.roomNumber)
         : null;
@@ -134,8 +151,9 @@ export function WalkInDialog({
         roomTypeId: values.roomTypeId,
         roomNumber: initialValues?.roomNumber,
         bedId: initialValues?.bedId,
+        slotTime: restaurant ? values.slotTime : undefined,
         checkIn: values.checkIn,
-        checkOut: values.checkOut,
+        checkOut,
         adults: values.adults,
         children: values.children,
         nights,
@@ -221,17 +239,34 @@ export function WalkInDialog({
         )}
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="checkIn">{labels.checkInLabel}</Label>
+          <Label htmlFor="checkIn">{restaurant ? "Sana" : labels.checkInLabel}</Label>
           <Input id="checkIn" type="date" {...form.register("checkIn")} />
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="checkOut">{labels.checkOutLabel}</Label>
-          <Input id="checkOut" type="date" {...form.register("checkOut")} />
-        </div>
+        {restaurant ? (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="slotTime">Vaqt</Label>
+            <select
+              id="slotTime"
+              className="h-10 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 text-sm focus:border-brand-600 focus:outline-none"
+              {...form.register("slotTime")}
+            >
+              {timeSlots.map((slot) => (
+                <option key={slot} value={slot}>
+                  {slot}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="checkOut">{labels.checkOutLabel}</Label>
+            <Input id="checkOut" type="date" {...form.register("checkOut")} />
+          </div>
+        )}
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="adults">Kattalar</Label>
+          <Label htmlFor="adults">{restaurant ? "Kishilar soni" : "Kattalar"}</Label>
           <Input
             id="adults"
             type="number"
@@ -241,16 +276,18 @@ export function WalkInDialog({
           />
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="children">Bolalar</Label>
-          <Input
-            id="children"
-            type="number"
-            min={0}
-            max={8}
-            {...form.register("children", { valueAsNumber: true })}
-          />
-        </div>
+        {!restaurant && (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="children">Bolalar</Label>
+            <Input
+              id="children"
+              type="number"
+              min={0}
+              max={8}
+              {...form.register("children", { valueAsNumber: true })}
+            />
+          </div>
+        )}
 
         <div className="md:col-span-2 flex justify-end gap-2 border-t border-[var(--border)] pt-4">
           <Button type="button" variant="outline" onClick={onClose}>

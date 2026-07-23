@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronLeft, Hotel, X, Trees, Bus, Bed, Home } from "lucide-react";
+import { ChevronLeft, Hotel, X, Trees, Bus, Bed, Home, UtensilsCrossed } from "lucide-react";
 import { useEffect } from "react";
 import { cn } from "../../_lib/utils/cn";
 import { useUiStore } from "../../_stores/ui-store";
@@ -79,6 +79,8 @@ export function Sidebar() {
                 <Bed className="h-4 w-4" aria-hidden />
               ) : partnerType === "guesthouse" ? (
                 <Home className="h-4 w-4" aria-hidden />
+              ) : partnerType === "restaurant" ? (
+                <UtensilsCrossed className="h-4 w-4" aria-hidden />
               ) : (
                 <Hotel className="h-4 w-4" aria-hidden />
               )}
@@ -93,7 +95,9 @@ export function Sidebar() {
                       ? "Tashuvchi"
                       : partnerType === "hostel"
                         ? "Hostel"
-                        : "Hamkor"}
+                        : partnerType === "restaurant"
+                          ? "Restoran egasi"
+                          : "Hamkor"}
                 </span>
               </span>
             )}

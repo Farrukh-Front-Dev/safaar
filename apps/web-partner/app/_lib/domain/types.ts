@@ -102,6 +102,8 @@ export interface ReservationView {
   roomNumber?: string;
   /** Faqat hostel: tayinlangan yotoq (Bed.id). */
   bedId?: string;
+  /** Faqat restoran: bron vaqt-sloti ("HH:MM"). */
+  slotTime?: string;
   checkIn: string;
   checkOut: string;
   nights: number;

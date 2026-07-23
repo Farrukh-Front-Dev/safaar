@@ -298,7 +298,8 @@ export function ReservationsView() {
                         <ChevronRight className="h-4 w-4 shrink-0 text-[var(--muted-foreground)]" />
                       </div>
                       <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-                        {formatDate(r.checkIn)} · {r.roomTypeName}
+                        {formatDate(r.checkIn)}
+                        {r.slotTime ? ` ${r.slotTime}` : ""} · {r.roomTypeName}
                       </p>
                       <div className="mt-2">
                         <ReservationStatusBadge status={r.status} />
@@ -554,7 +555,7 @@ function ReservationCard({
                   reservation.bedId
                     ? ` · ${beds.find((b) => b.id === reservation.bedId)?.label ?? ""}`
                     : ""
-                }`}
+                }${reservation.slotTime ? ` · ${reservation.slotTime}` : ""}`}
               />
             </div>
 

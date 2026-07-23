@@ -170,6 +170,34 @@ const BUS_LABELS: PartnerLabels = {
   walkInTitle: "Kassadan chipta sotish",
 };
 
+const RESTAURANT_LABELS: PartnerLabels = {
+  dashboardTitle: "Bugungi Bronlar",
+  dashboardEyebrow: "Bugungi navbat",
+  unitSingular: "stol",
+  unitPlural: "stollar",
+  addUnitLabel: "Yangi stol qo'shish",
+  reservationLabel: "Bron",
+  reservationsTitle: "Bronlar",
+  topbarSubtitle: "Restoran boshqaruv paneli",
+  calendarTitle: "Kunlik Jadval",
+  calendarDescription: "Bugungi stollar va vaqt-slotlar bo'yicha bandlikni kuzating.",
+  unitsPageTitle: "Stollar Xaritasi",
+  unitsPageDescription: "Restorandagi barcha stollarning joylashuvi va sig'imi.",
+  listingTitle: "Restoran E'loni",
+  checkInLabel: "Ochilish vaqti",
+  checkOutLabel: "Yopilish vaqti",
+  guestLabel: "Mehmon",
+  frontDeskTitle: "Bugungi Bronlar",
+  frontDeskDescription: "Bugungi rezervatsiyalar va navbat.",
+  unitsMapTitle: "Stollar Xaritasi",
+  availabilityLabel: "Bo'sh stollar",
+  entityTypeLabel: "Taom turi",
+  unitTypeLabel: "Stol turi",
+  unitTypesTitle: "Stol Turlari",
+  newBookingLabel: "Yangi bron",
+  walkInTitle: "Bevosita bron",
+};
+
 const GUESTHOUSE_LABELS: PartnerLabels = {
   ...HOTEL_LABELS,
   topbarSubtitle: "Mehmon uyi boshqaruv paneli",
@@ -191,6 +219,7 @@ const LABELS_MAP: Record<string, PartnerLabels> = {
   bus: BUS_LABELS,
   guesthouse: GUESTHOUSE_LABELS,
   motel: MOTEL_LABELS,
+  restaurant: RESTAURANT_LABELS,
   mixed: HOTEL_LABELS,
 };
 
@@ -228,4 +257,14 @@ export function hasBeds(partnerType?: string | null): boolean {
 export function hasStarRating(partnerType?: string | null): boolean {
   const type = (partnerType ?? "hotel").toLowerCase();
   return type === "hotel" || type === "motel" || type === "guesthouse" || type === "mixed";
+}
+
+/** Restoran — bron kecha-oralig'i emas, kun ichidagi vaqt-slot asosida. */
+export function isRestaurant(partnerType?: string | null): boolean {
+  return (partnerType ?? "hotel").toLowerCase() === "restaurant";
+}
+
+/** Vaqt-slot asosida band qilinadigan hamkor turlari (hozircha faqat restoran). */
+export function hasTimeSlots(partnerType?: string | null): boolean {
+  return isRestaurant(partnerType);
 }

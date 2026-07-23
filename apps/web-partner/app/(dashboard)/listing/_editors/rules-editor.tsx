@@ -14,6 +14,8 @@ import { Label } from "../../../_components/ui/label";
 import { Tooltip } from "../../../_components/ui/tooltip";
 import { useListing } from "../../../_hooks/use-listing";
 import { useDataStore } from "../../../_stores/data-store";
+import { useAuthStore } from "../../../_stores/auth-store";
+import { getPartnerLabels } from "../../../_lib/utils/partner-labels";
 import {
   CANCELLATION_POLICY_INFO,
   CancellationPolicy,
@@ -43,6 +45,8 @@ export function RulesEditor({
   const update = useDataStore((s) => s.updateListingRules);
   const addFee = useDataStore((s) => s.addExtraFee);
   const removeFee = useDataStore((s) => s.removeExtraFee);
+  const partnerType = useAuthStore((s) => s.user?.partnerType);
+  const labels = getPartnerLabels(partnerType);
 
   const form = useForm<Values>({
     resolver: zodResolver(schema),
@@ -70,7 +74,7 @@ export function RulesEditor({
       open={open}
       onClose={onClose}
       title="Uy qoidalari"
-      description="Check-in vaqtlari, bekor qilish siyosati va qo'shimcha to'lovlar."
+      description="Ish vaqtlari, bekor qilish siyosati va qo'shimcha to'lovlar."
       size="lg"
       footer={
         <>
@@ -91,7 +95,7 @@ export function RulesEditor({
           </h3>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="in">Check-in vaqti</Label>
+              <Label htmlFor="in">{labels.checkInLabel}</Label>
               <Input
                 id="in"
                 type="time"
@@ -99,7 +103,7 @@ export function RulesEditor({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="out">Check-out vaqti</Label>
+              <Label htmlFor="out">{labels.checkOutLabel}</Label>
               <Input
                 id="out"
                 type="time"

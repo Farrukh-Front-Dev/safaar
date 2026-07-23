@@ -187,6 +187,7 @@ export function ReservationDetailView({ id }: { id: string }) {
                         · {data.roomNumber}
                         {data.bedId &&
                           ` · ${beds.find((b) => b.id === data.bedId)?.label ?? ""}`}
+                        {data.slotTime && ` · ${data.slotTime}`}
                       </span>
                     )}
                   </>

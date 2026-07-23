@@ -37,6 +37,8 @@ export interface WalkInDraft {
   roomNumber?: string;
   /** Faqat hostel: oldindan tanlangan yotoq. */
   bedId?: string;
+  /** Faqat restoran: bron vaqt-sloti ("HH:MM"). */
+  slotTime?: string;
   checkIn: string;
   checkOut: string;
   adults: number;
@@ -316,6 +318,7 @@ export const useDataStore = create<DataState>((set, get) => ({
       roomTypeName: roomType?.name ?? "—",
       roomNumber: draft.roomNumber,
       bedId: draft.bedId,
+      slotTime: draft.slotTime,
       checkIn: draft.checkIn,
       checkOut: draft.checkOut,
       nights: draft.nights,
