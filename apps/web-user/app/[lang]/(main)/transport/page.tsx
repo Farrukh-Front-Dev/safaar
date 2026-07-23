@@ -1,9 +1,8 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
-import { TransportView } from "@/components/catalog/TransportView";
+import { TransportView } from "@/components/features/transport/TransportView";
 
 export async function generateMetadata({
   params,
@@ -12,14 +11,14 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { lang } = await params;
   if (!isLocale(lang)) return {};
-  const [commonDict, catalogDict] = await Promise.all([
+  const [commonDict, transportDict] = await Promise.all([
     getDictionary(lang as Locale, "common"),
-    getDictionary(lang as Locale, "catalog"),
+    getDictionary(lang as Locale, "transport"),
   ]);
   const transportTitle = (commonDict.nav as typeof commonDict.nav & { transport?: string }).transport ?? "Transport";
   return {
     title: `${transportTitle} — Safaar`,
-    description: catalogDict.transport.subtitle,
+    description: transportDict.subtitle,
   };
 }
 
@@ -32,13 +31,11 @@ export default async function TransportPage({
   if (!isLocale(lang)) notFound();
   const locale = lang as Locale;
 
-  const catalogDict = await getDictionary(locale, "catalog");
+  const transportDict = await getDictionary(locale, "transport");
 
   return (
     <main className="flex flex-1 flex-col">
-      <Suspense fallback={<div className="mx-auto w-full max-w-6xl p-8 animate-pulse bg-slate-100 dark:bg-slate-900 rounded-2xl h-96 mt-6" />}>
-        <TransportView dict={catalogDict.transport} />
-      </Suspense>
+      <TransportView dict={transportDict} />
     </main>
   );
 }

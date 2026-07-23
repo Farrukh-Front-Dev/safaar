@@ -1,0 +1,16 @@
+{
+  "badge": "Sayohat va Ziyorat",
+  "title": "Attraksionlar va Diqqatga Sazovor Joylar",
+  "subtitle": "Buyuk Ipak Yo'li durdonalari, ko'hna me'moriy ansambllar va bahavo tog' manzaralari.",
+  "searchPlaceholder": "Obida nomi yoki shahar bo'yicha qidiruv...",
+  "allPlaces": "Barcha joylar",
+  "categories": {
+    "all": "Barcha joylar",
+    "historical": "Tarixiy Obida",
+    "unesco": "UNESCO Merosi",
+    "nature": "Tabiat & Hordiq"
+  },
+  "bestTime": "Ziyorat:",
+  "moreInfo": "Batafsil",
+  "comingSoon": "{name} bo'yicha ma'lumotlar tez orada kengaytiriladi!"
+}

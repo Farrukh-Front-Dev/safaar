@@ -42,7 +42,7 @@ export async function PartnersShowcase({
           </h2>
         </div>
 
-        {/* Infinite marquee / grid of partner logos */}
+        {/* Logo showcase */}
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3 sm:mt-10 sm:gap-4">
           {partners.map((partner) => (
             <div

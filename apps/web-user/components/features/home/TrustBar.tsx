@@ -2,10 +2,6 @@ import { Building2, MapPin, Star, Headphones } from "lucide-react";
 import type { HomeDict } from "@/i18n/dictionaries";
 import type { PublicStatsView } from "@safaar/api-client";
 
-/**
- * Ishonch qatori — raqamlar + to'lov logolari.
- * Oq fon, matnlar to'q. Sahifadagi boshqa bo'limlardan border bilan ajraladi.
- */
 export function TrustBar({
   dict,
   stats,
@@ -13,7 +9,6 @@ export function TrustBar({
   dict: HomeDict["trust"];
   stats?: PublicStatsView | null;
 }) {
-  // Backend'dan kelsa real raqamlar, bo'lmasa i18n statik matn.
   const statsItems = stats
     ? [
         {
@@ -63,7 +58,7 @@ export function TrustBar({
   return (
     <section className="border-t border-slate-200 px-4 py-10 sm:px-6 sm:py-14">
       <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-8 sm:flex-row sm:justify-between">
-        {/* Statistika */}
+        {/* Statistics */}
         <div className="grid grid-cols-2 gap-5 sm:flex sm:flex-wrap sm:items-center sm:gap-10">
           {statsItems.map((stat) => (
             <div key={stat.label} className="flex items-center gap-3">
@@ -80,7 +75,7 @@ export function TrustBar({
           ))}
         </div>
 
-        {/* To'lov logolari */}
+        {/* Payment Partner Logos */}
         <div className="flex items-center gap-2.5">
           {["Payme", "Click", "Uzcard", "Humo"].map((name) => (
             <span

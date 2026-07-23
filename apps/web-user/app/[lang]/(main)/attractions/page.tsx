@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
-import { AttractionsView } from "@/components/catalog/AttractionsView";
+import { AttractionsView } from "@/components/features/attractions/AttractionsView";
 
 export async function generateMetadata({
   params,
@@ -11,13 +11,13 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { lang } = await params;
   if (!isLocale(lang)) return {};
-  const [commonDict, catalogDict] = await Promise.all([
+  const [commonDict, attractionsDict] = await Promise.all([
     getDictionary(lang as Locale, "common"),
-    getDictionary(lang as Locale, "catalog"),
+    getDictionary(lang as Locale, "attractions"),
   ]);
   return {
     title: `${commonDict.nav.attractions} — Safaar`,
-    description: catalogDict.attractions.subtitle,
+    description: attractionsDict.subtitle,
   };
 }
 
@@ -30,11 +30,11 @@ export default async function AttractionsPage({
   if (!isLocale(lang)) notFound();
   const locale = lang as Locale;
 
-  const catalogDict = await getDictionary(locale, "catalog");
+  const attractionsDict = await getDictionary(locale, "attractions");
 
   return (
     <main className="flex flex-1 flex-col">
-      <AttractionsView dict={catalogDict.attractions} />
+      <AttractionsView dict={attractionsDict} />
     </main>
   );
 }

@@ -23,7 +23,6 @@ export function FeaturedHotelCard({
 }) {
   const imageUrl = resolveImage(hotel.imageUrl, hotel.id, 400, 300);
 
-  // Conversion & Trust Badges Logic
   const hash = hotel.id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
   const isFreeCancellation = hash % 2 === 0;
   const isBreakfastIncluded = hotel.stars >= 4 || hash % 3 === 0;
@@ -36,7 +35,7 @@ export function FeaturedHotelCard({
       className="group block overflow-hidden rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
     >
       <Card className="flex h-full flex-col overflow-hidden border border-slate-200 shadow-xs transition-all duration-200 hover:border-slate-300 hover:shadow-md active:scale-[0.98]">
-        {/* Rasm */}
+        {/* Image */}
         <div className="relative aspect-4/3 overflow-hidden bg-slate-100">
           {imageUrl ? (
             <Image
@@ -53,7 +52,7 @@ export function FeaturedHotelCard({
             </div>
           )}
 
-          {/* Reyting badge */}
+          {/* Rating badge */}
           {hotel.rating > 0 && (
             <Badge variant="outline" className="absolute left-2.5 top-2.5 z-10 gap-1 text-amber-700 shadow-xs">
               <Star className="h-3.5 w-3.5 fill-current text-amber-500" aria-hidden />
@@ -61,7 +60,7 @@ export function FeaturedHotelCard({
             </Badge>
           )}
 
-          {/* Low availability trigger */}
+          {/* Low availability badge */}
           {isLowAvailability && (
             <Badge variant="destructive" className="absolute right-2.5 top-2.5 z-10 gap-1 bg-red-600/90 text-white backdrop-blur-xs shadow-xs text-[10px]">
               <Flame className="h-3 w-3 fill-current text-amber-300" aria-hidden />

@@ -27,6 +27,9 @@ const loaders = {
     favorites: () => import("@/locales/uz/favorites.json"),
     errors: () => import("@/locales/uz/errors.json"),
     catalog: () => import("@/locales/uz/catalog.json"),
+    restaurants: () => import("@/locales/uz/restaurants.json"),
+    attractions: () => import("@/locales/uz/attractions.json"),
+    transport: () => import("@/locales/uz/transport.json"),
   },
   ru: {
     common: () => import("@/locales/ru/common.json"),
@@ -42,6 +45,9 @@ const loaders = {
     favorites: () => import("@/locales/ru/favorites.json"),
     errors: () => import("@/locales/ru/errors.json"),
     catalog: () => import("@/locales/ru/catalog.json"),
+    restaurants: () => import("@/locales/ru/restaurants.json"),
+    attractions: () => import("@/locales/ru/attractions.json"),
+    transport: () => import("@/locales/ru/transport.json"),
   },
   en: {
     common: () => import("@/locales/en/common.json"),
@@ -57,6 +63,9 @@ const loaders = {
     favorites: () => import("@/locales/en/favorites.json"),
     errors: () => import("@/locales/en/errors.json"),
     catalog: () => import("@/locales/en/catalog.json"),
+    restaurants: () => import("@/locales/en/restaurants.json"),
+    attractions: () => import("@/locales/en/attractions.json"),
+    transport: () => import("@/locales/en/transport.json"),
   },
 } as const;
 
@@ -83,6 +92,9 @@ export type ReviewsDict = Dict<"reviews">;
 export type FavoritesDict = Dict<"favorites">;
 export type ErrorsDict = Dict<"errors">;
 export type CatalogDict = Dict<"catalog">;
+export type RestaurantsDict = Dict<"restaurants">;
+export type AttractionsDict = Dict<"attractions">;
+export type TransportDict = Dict<"transport">;
 
 export async function getDictionary<NS extends Namespace>(
   locale: Locale,

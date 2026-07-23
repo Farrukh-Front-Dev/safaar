@@ -6,12 +6,12 @@ import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { api } from "@/lib/api";
 import { SearchBar } from "@/components/search/SearchBar";
-import { Hero } from "./_components/Hero";
-import { CityCardsSection } from "./_components/CityCardsSection";
-import { TrustBar } from "./_components/TrustBar";
-import { FeaturedHotelsCarousel } from "./_components/FeaturedHotelsCarousel";
-import { DealsSection, type DealItem } from "./_components/DealsSection";
-import { PartnersShowcase } from "./_components/PartnersShowcase";
+import { Hero } from "@/components/features/home/Hero";
+import { CityCardsSection } from "@/components/features/home/CityCardsSection";
+import { TrustBar } from "@/components/features/home/TrustBar";
+import { FeaturedHotelsCarousel } from "@/components/features/home/FeaturedHotelsCarousel";
+import { DealsSection, type DealItem } from "@/components/features/home/DealsSection";
+import { PartnersShowcase } from "@/components/features/home/PartnersShowcase";
 import type { HotelListItem } from "@/types/view";
 
 export async function generateMetadata({
@@ -41,7 +41,6 @@ export default async function HomePage({
   if (!isLocale(lang)) notFound();
   const locale = lang as Locale;
 
-  // SENIOR OPTIMIZATION 1: Parallelize dictionary and API requests to remove waterfall latency
   const [common, dict, [citiesRes, featuredRes, dealsRes, statsRes]] = await Promise.all([
     getDictionary(locale, "common"),
     getDictionary(locale, "home"),
@@ -80,7 +79,7 @@ export default async function HomePage({
 
   return (
     <main className="relative flex flex-1 flex-col">
-      {/* ═══ EKRAN 1: Hero + SearchBar + Featured Hotels ═══ */}
+      {/* EKRAN 1: Hero + SearchBar + Featured Hotels */}
       <div className="flex min-h-svh flex-col justify-between">
         <Hero dict={dict.hero} />
 
@@ -91,7 +90,6 @@ export default async function HomePage({
             </div>
           </section>
 
-          {/* Quick city chips: Next.js <Link> for SPA navigation instead of hard page reload */}
           {cities.length > 0 && (
             <div className="mx-auto mt-4 flex max-w-4xl flex-wrap justify-center gap-1.5 px-4 sm:mt-6 sm:gap-2">
               {cities.slice(0, 10).map((city) => (
@@ -107,7 +105,6 @@ export default async function HomePage({
           )}
         </div>
 
-        {/* Tanlangan mehmonxonalar — auto-scroll carousel */}
         {hotels.length > 0 && (
           <Suspense fallback={<div className="h-48 w-full animate-pulse bg-slate-100 dark:bg-slate-900" />}>
             <FeaturedHotelsCarousel
@@ -118,7 +115,6 @@ export default async function HomePage({
           </Suspense>
         )}
 
-        {/* Scroll indicator */}
         <div className="flex justify-center pb-4 pt-4 sm:pb-6 sm:pt-6">
           <div className="flex animate-bounce flex-col items-center gap-0.5 text-slate-800">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
@@ -131,24 +127,24 @@ export default async function HomePage({
         </div>
       </div>
 
-      {/* ═══ EKRAN 2: Chegirmadagi takliflar ═══ */}
+      {/* EKRAN 2: Chegirmadagi takliflar */}
       <div className="py-10 sm:py-14">
         <Suspense fallback={<div className="h-64 w-full animate-pulse bg-slate-100 dark:bg-slate-900" />}>
           <DealsSection deals={deals} dict={dict.deals} locale={locale} />
         </Suspense>
       </div>
 
-      {/* ═══ EKRAN 4: City Cards (scroll qilganda) ═══ */}
+      {/* EKRAN 4: City Cards */}
       <div className="py-10 sm:py-16 md:py-20">
         <Suspense fallback={<div className="h-64 w-full animate-pulse bg-slate-100 dark:bg-slate-900" />}>
           <CityCardsSection locale={locale} dict={dict.popularCities} />
         </Suspense>
       </div>
 
-      {/* ═══ EKRAN 5: Ishonchli hamkorlar ═══ */}
+      {/* EKRAN 5: Ishonchli hamkorlar */}
       <PartnersShowcase dict={dict.partners} />
 
-      {/* ═══ EKRAN 6: Trust Bar ═══ */}
+      {/* EKRAN 6: Trust Bar */}
       <TrustBar dict={dict.trust} stats={stats} />
     </main>
   );

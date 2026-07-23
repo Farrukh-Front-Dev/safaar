@@ -30,10 +30,6 @@ const KNOWN_CITY_IMAGES: Record<string, string> = {
   termiz: "/Uzbekistan-travel.jpeg",
 };
 
-/**
- * Resolves authentic city image URL.
- * Prefers real backend HTTP/HTTPS/Local URL if present, otherwise uses authentic local city photo.
- */
 function getCityImage(imageUrl?: string | null, slug?: string, name?: string): string {
   if (imageUrl && (imageUrl.startsWith("http://") || imageUrl.startsWith("https://") || imageUrl.startsWith("/"))) {
     return imageUrl;
