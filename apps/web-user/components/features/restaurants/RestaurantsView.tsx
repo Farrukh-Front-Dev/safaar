@@ -20,6 +20,7 @@ import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
+import { DatePicker } from "@/components/ui/DatePicker";
 import type { CatalogDict } from "@/i18n/dictionaries";
 import { CatalogHeader } from "@/components/catalog/CatalogHeader";
 import { MOCK_RESTAURANTS } from "@/components/catalog/data";
@@ -217,19 +218,17 @@ export function RestaurantsView({ dict }: { dict: CatalogDict["restaurants"] }) 
                     </select>
                   </label>
 
-                  <label className="flex flex-col gap-1.5">
+                  <div className="flex flex-col gap-1.5">
                     <span className="flex items-center gap-1 text-xs font-bold text-slate-700 dark:text-slate-300">
                       <Calendar className="h-3.5 w-3.5 text-blue-600" />
                       {dict.date}
                     </span>
-                    <Input
-                      type="date"
+                    <DatePicker
                       value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                      required
-                      className="h-10 text-xs font-semibold"
+                      onChange={setDate}
+                      min={new Date().toISOString().split("T")[0]}
                     />
-                  </label>
+                  </div>
                 </div>
 
                 <div className="flex flex-col gap-1.5">

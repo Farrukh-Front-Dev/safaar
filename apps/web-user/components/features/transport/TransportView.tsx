@@ -8,6 +8,7 @@ import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
+import { DatePicker } from "@/components/ui/DatePicker";
 import type { CatalogDict } from "@/i18n/dictionaries";
 import { CatalogHeader } from "@/components/catalog/CatalogHeader";
 import { MOCK_TRANSPORTS } from "@/components/catalog/data";
@@ -19,6 +20,12 @@ export function TransportView({ dict }: { dict: CatalogDict["transport"] }) {
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedItem, setSelectedItem] = useState<TransportItem | null>(null);
+  const [pickupDate, setPickupDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [returnDate, setReturnDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split("T")[0];
+  });
   const [isSuccess, setIsSuccess] = useState(false);
 
   const categories = [
@@ -184,14 +191,22 @@ export function TransportView({ dict }: { dict: CatalogDict["transport"] }) {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <label className="flex flex-col gap-1.5">
+                  <div className="flex flex-col gap-1.5">
                     <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{dict.pickupDate}</span>
-                    <Input type="date" required className="h-10 text-xs font-semibold" />
-                  </label>
-                  <label className="flex flex-col gap-1.5">
+                    <DatePicker
+                      value={pickupDate}
+                      onChange={setPickupDate}
+                      min={new Date().toISOString().split("T")[0]}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
                     <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{dict.returnDate}</span>
-                    <Input type="date" required className="h-10 text-xs font-semibold" />
-                  </label>
+                    <DatePicker
+                      value={returnDate}
+                      onChange={setReturnDate}
+                      min={pickupDate || new Date().toISOString().split("T")[0]}
+                    />
+                  </div>
                 </div>
 
                 <label className="flex flex-col gap-1.5">
