@@ -95,33 +95,33 @@ export function HotelFilters({ dict }: { dict: Pick<HotelsDict, "filters"> }) {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="mb-3 flex w-full items-center justify-between rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-900 shadow-2xs transition-all hover:bg-slate-100 hover:border-slate-400 active:scale-[0.98] lg:hidden"
+        className="mb-3 flex w-full items-center justify-between rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-900 shadow-2xs transition-all hover:bg-slate-100 hover:border-slate-400 active:scale-[0.98] dark:border-slate-800 dark:bg-slate-900 dark:text-white lg:hidden"
       >
         <span className="inline-flex items-center gap-2">
-          <Filter className="h-4 w-4 text-blue-600" />
+          <Filter className="h-4 w-4 text-blue-600 dark:text-blue-400" />
           <span>{dict.filters.toggle}</span>
         </span>
-        <ChevronDown className={cn("h-4 w-4 transition-transform text-slate-600", open && "rotate-180")} />
+        <ChevronDown className={cn("h-4 w-4 transition-transform text-slate-600 dark:text-slate-400", open && "rotate-180")} />
       </button>
 
       {/* Main Filter Container */}
       <div
         className={cn(
-          "flex-col gap-4.5 rounded-2xl border border-slate-300 bg-slate-50 p-5 shadow-sm",
+          "flex-col gap-4.5 rounded-2xl border border-slate-300 bg-slate-50 p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900",
           open ? "flex" : "hidden",
           "lg:flex",
         )}
       >
-        <div className="flex items-center gap-2 border-b border-slate-200 pb-3">
-          <Filter className="h-4 w-4 text-blue-600" />
-          <h2 className="text-base font-extrabold uppercase tracking-wide text-slate-900">
+        <div className="flex items-center gap-2 border-b border-slate-200 pb-3 dark:border-slate-800">
+          <Filter className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <h2 className="text-base font-extrabold uppercase tracking-wide text-slate-900 dark:text-white">
             {dict.filters.title}
           </h2>
         </div>
 
         {/* Yulduzlar */}
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
+          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
             {dict.filters.stars}
           </span>
           <Select
@@ -140,7 +140,7 @@ export function HotelFilters({ dict }: { dict: Pick<HotelsDict, "filters"> }) {
         {/* Narx chegaralari */}
         <div className="grid grid-cols-2 gap-2">
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
               Min ({dict.filters.currency})
             </span>
             <Input
@@ -154,7 +154,7 @@ export function HotelFilters({ dict }: { dict: Pick<HotelsDict, "filters"> }) {
           </label>
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
               Max ({dict.filters.currency})
             </span>
             <Input
@@ -169,8 +169,8 @@ export function HotelFilters({ dict }: { dict: Pick<HotelsDict, "filters"> }) {
         </div>
 
         {/* Local Uzbek Amenities Filter */}
-        <div className="flex flex-col gap-2 pt-2 border-t border-slate-100">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
+        <div className="flex flex-col gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
             Qulayliklar (Amenities)
           </span>
           <div className="flex flex-col gap-1.5">
@@ -182,8 +182,8 @@ export function HotelFilters({ dict }: { dict: Pick<HotelsDict, "filters"> }) {
                   className={cn(
                     "flex cursor-pointer items-center justify-between rounded-xl border px-3 py-2 text-xs font-medium transition-all select-none",
                     checked
-                      ? "border-blue-500 bg-blue-50/50 text-blue-900 font-bold"
-                      : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                      ? "border-blue-500 bg-blue-50/50 text-blue-900 font-bold dark:bg-blue-950/50 dark:text-blue-300"
+                      : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-300"
                   )}
                 >
                   <span className="flex items-center gap-2">
@@ -202,8 +202,8 @@ export function HotelFilters({ dict }: { dict: Pick<HotelsDict, "filters"> }) {
         </div>
 
         {/* Payment Type Filter */}
-        <div className="flex flex-col gap-2 pt-2 border-t border-slate-100">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
+        <div className="flex flex-col gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
             To'lov turi
           </span>
           <div className="flex flex-col gap-1.5">
@@ -215,8 +215,8 @@ export function HotelFilters({ dict }: { dict: Pick<HotelsDict, "filters"> }) {
                   className={cn(
                     "flex cursor-pointer items-center justify-between rounded-xl border px-3 py-2 text-xs font-medium transition-all select-none",
                     checked
-                      ? "border-emerald-500 bg-emerald-50/50 text-emerald-900 font-bold"
-                      : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                      ? "border-emerald-500 bg-emerald-50/50 text-emerald-900 font-bold dark:bg-emerald-950/50 dark:text-emerald-300"
+                      : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-300"
                   )}
                 >
                   <span className="flex items-center gap-2">
@@ -235,7 +235,7 @@ export function HotelFilters({ dict }: { dict: Pick<HotelsDict, "filters"> }) {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-2 pt-2 border-t border-slate-100">
+        <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
           <Button
             type="button"
             onClick={apply}
@@ -247,7 +247,7 @@ export function HotelFilters({ dict }: { dict: Pick<HotelsDict, "filters"> }) {
             type="button"
             variant="secondary"
             onClick={reset}
-            className="rounded-xl border border-slate-300 bg-white font-bold text-slate-800 shadow-2xs hover:bg-slate-50 hover:border-slate-400"
+            className="rounded-xl border border-slate-300 bg-white font-bold text-slate-800 shadow-2xs hover:bg-slate-50 hover:border-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
           >
             <RotateCcw className="h-4 w-4" />
             <span>{dict.filters.reset}</span>

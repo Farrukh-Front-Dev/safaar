@@ -6,6 +6,7 @@ import { logoutAction } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/Button";
 import { ScrollNav, type ScrollNavItem } from "./ScrollNav";
 import { LocaleSwitcher } from "./LocaleSwitcher";
+import { FavoritesBadge } from "@/components/features/favorites/FavoritesBadge";
 
 export function SiteHeader({
   locale,
@@ -51,6 +52,8 @@ export function SiteHeader({
 
   const localeSwitcher = <LocaleSwitcher current={locale} />;
   const localeSwitcherLight = <LocaleSwitcher current={locale} light />;
+  const favoritesBadge = <FavoritesBadge locale={locale} />;
+  const favoritesBadgeLight = <FavoritesBadge locale={locale} light />;
 
   const authActions = authed ? (
     <div className="flex items-center gap-1.5">
@@ -115,10 +118,11 @@ export function SiteHeader({
   );
 
   const actions = (
-    <>
+    <div className="flex items-center gap-2">
+      {favoritesBadge}
       {localeSwitcher}
       {authActions}
-    </>
+    </div>
   );
 
   return (
@@ -127,7 +131,12 @@ export function SiteHeader({
       brand={dict.brand}
       brandHref={base}
       actions={actions}
-      localeSwitcher={localeSwitcherLight}
+      localeSwitcher={
+        <div className="flex items-center gap-2 justify-center">
+          {favoritesBadgeLight}
+          {localeSwitcherLight}
+        </div>
+      }
       authActions={authActionsLight}
     />
   );
